@@ -1,0 +1,279 @@
+PROMPT DEVELOPMENT - JOBFINANCE
+================================
+
+Saya ingin membangun aplikasi demo bernama JobFinance menggunakan Laravel 12,
+Blade, Tailwind CSS, Vite, dan MySQL.
+
+TUJUAN APLIKASI
+---------------
+JobFinance adalah aplikasi Job Costing, Billing, dan Accounting untuk perusahaan
+jasa berbasis pekerjaan/job, terutama perusahaan logistik atau freight forwarding.
+
+Alur utama:
+Customer -> Quotation -> Job Order -> Input Biaya -> Close Job -> Invoice/Piutang
+-> Journal -> General Ledger -> Trial Balance -> Laporan Keuangan -> Profit per Job.
+
+KONSEP BIAYA
+------------
+1. Temporary / Reimbursement
+   Biaya yang dikeluarkan untuk kebutuhan job dan akan ditagihkan kembali kepada
+   customer. Saat job open dicatat sebagai temporary. Saat job ditutup nilainya
+   dipindahkan menjadi piutang/tagihan customer. Temporary tidak dihitung sebagai
+   profit perusahaan.
+
+2. Provision / Non-Reimbursement
+   Modal perusahaan untuk menjalankan job. Provision mempunyai nilai modal dan
+   nilai jual. Saat job ditutup, modal provision menjadi HPP dan nilai jual
+   provision menjadi pendapatan.
+
+Rumus:
+Profit Job = Total Nilai Jual Provision - Total Modal Provision
+Margin (%) = Profit Job / Total Nilai Jual Provision x 100
+
+Contoh:
+- Temporary                       : Rp5.000.000
+- Modal provision                 : Rp3.000.000
+- Nilai jual provision            : Rp4.500.000
+- Profit job                      : Rp1.500.000
+- Total tagihan sebelum pajak     : Rp9.500.000
+
+ROLE DAN AKSES
+--------------
+1. Super Admin
+   Mengakses semua modul, user, role, permission, COA, dan pengaturan.
+
+2. Operational
+   Mengelola customer, quotation, Job Order, dan data operasional job.
+
+3. Finance
+   Mengelola biaya job, closing, invoice, pembayaran, jurnal, dan laporan.
+
+4. Management
+   Melihat dashboard dan laporan tanpa mengubah transaksi.
+
+MODUL MVP
+---------
+1. Authentication dan Role-Based Access Control
+2. Dashboard
+3. Master Customer
+4. Chart of Accounts (COA)
+5. Quotation dan Quotation Items
+6. Job Order
+7. Job Costs (Temporary dan Provision)
+8. Closing Job
+9. Invoice
+10. Customer Payment
+11. Journal dan Journal Entries
+12. General Ledger
+13. Trial Balance
+14. Neraca
+15. Laba Rugi
+16. Cash Flow
+17. Profit per Job
+18. Activity Log
+
+WORKFLOW STATUS
+---------------
+Quotation:
+Draft -> Submitted -> Approved -> Converted
+                         \-> Rejected
+
+Job Order:
+Draft -> Open -> Closed
+              \-> Cancelled
+
+Invoice:
+Draft -> Issued -> Partially Paid -> Paid
+
+ATURAN CLOSING JOB
+------------------
+Sebelum job ditutup, validasi bahwa:
+- Job berstatus Open.
+- Customer tersedia.
+- Job mempunyai detail biaya.
+- Semua transaksi biaya sudah final.
+- Tanggal closing diisi.
+- User memiliki permission untuk closing.
+
+Ketika Close Job dikonfirmasi:
+1. Hitung total temporary.
+2. Hitung total modal provision.
+3. Hitung total nilai jual provision.
+4. Hitung profit dan margin job.
+5. Simpan snapshot nilai closing agar histori tidak berubah.
+6. Temporary dipindahkan menjadi piutang/tagihan customer.
+7. Modal provision diakui sebagai HPP.
+8. Nilai jual provision diakui sebagai pendapatan.
+9. Buat invoice.
+10. Buat jurnal otomatis yang debit dan kreditnya seimbang.
+11. Ubah status job menjadi Closed.
+
+Seluruh proses closing wajib menggunakan DB::transaction(). Jika satu proses
+gagal, seluruh perubahan harus rollback. Job Closed tidak boleh diedit langsung;
+koreksi dilakukan melalui adjustment/reversal atau reopen oleh user berwenang.
+
+ATURAN INVOICE DAN PEMBAYARAN
+-----------------------------
+Subtotal Invoice = Total Temporary + Total Nilai Jual Provision
+Sisa Tagihan = Total Invoice - Total Pembayaran
+
+- Pembayaran tidak boleh melebihi sisa tagihan.
+- Pembayaran sebagian menghasilkan status Partially Paid.
+- Pembayaran penuh menghasilkan status Paid.
+- Setiap pembayaran membuat jurnal otomatis.
+- Untuk demo awal, pajak dapat dibuat opsional dengan nilai default nol.
+
+LAPORAN
+-------
+Dashboard:
+- Jumlah job Open dan Closed
+- Total temporary, provision, pendapatan, HPP, piutang, dan profit
+- Grafik pendapatan/profit per bulan
+- Job terbaru dan invoice belum lunas
+
+Laba Rugi:
+- Pendapatan provision dari job Closed
+- HPP provision dari job Closed
+- Laba kotor dan laba bersih
+
+Neraca:
+- Aset, liabilitas, dan ekuitas
+- Piutang berasal dari tagihan customer yang belum dibayar
+
+Cash Flow:
+- Penerimaan pembayaran customer
+- Pengeluaran temporary
+- Pengeluaran provision
+- Pengeluaran operasional
+
+Profit per Job:
+- Nomor job, customer, temporary, modal provision, nilai jual provision,
+  profit, margin, dan status job
+
+TABEL DATABASE UTAMA
+--------------------
+- users
+- roles dan permissions (dapat menggunakan package RBAC yang sesuai)
+- customers
+- chart_of_accounts
+- quotations
+- quotation_items
+- jobs
+- job_costs
+- job_closing_snapshots
+- invoices
+- invoice_items
+- payments
+- journals
+- journal_entries
+- activity_logs
+
+KETENTUAN DATABASE
+------------------
+- Gunakan foreign key dan index yang tepat.
+- Gunakan DECIMAL(18,2) untuk semua nominal uang; jangan gunakan FLOAT/DOUBLE.
+- Gunakan enum/string terkontrol untuk status dan jenis transaksi.
+- Gunakan soft delete untuk master data yang sudah pernah dipakai.
+- Nomor quotation, job, invoice, pembayaran, dan jurnal dibuat otomatis serta unik.
+- Simpan created_by, updated_by, closed_by, posted_by, dan timestamp jika relevan.
+
+CONTOH COA MINIMAL
+------------------
+1101 Kas                       (Asset)
+1102 Bank                      (Asset)
+1103 Piutang Customer          (Asset)
+1104 Temporary Job             (Asset)
+1105 Provision / Job Cost WIP  (Asset)
+4101 Pendapatan Jasa           (Revenue)
+5101 HPP Job                   (Cost of Goods Sold)
+6101 Beban Operasional         (Expense)
+
+KETENTUAN TEKNIS
+----------------
+- Gunakan Laravel 12, Blade, Tailwind CSS, Vite, dan MySQL.
+- Gunakan Bahasa Indonesia untuk label antarmuka.
+- Gunakan Bahasa Inggris untuk nama class, method, route, dan database.
+- Controller harus tipis.
+- Validasi menggunakan Form Request.
+- Authorization menggunakan middleware, Policy, role, dan permission.
+- Business logic ditempatkan pada Service Class.
+- Gunakan Eloquent relationship, eager loading, pagination, dan query yang efisien.
+- Jurnal wajib seimbang: total debit = total kredit.
+- Jurnal Posted tidak boleh diedit atau dihapus langsung.
+- Gunakan reversal/adjustment untuk koreksi jurnal.
+- Tambahkan activity log untuk transaksi penting.
+- Buat factory, seeder, dan akun demo untuk setiap role.
+- Buat Feature Test untuk authorization, workflow status, perhitungan, closing,
+  invoice, pembayaran, dan keseimbangan jurnal.
+- Tampilan harus sederhana, profesional, responsif, dan mudah digunakan.
+- Jangan menghapus atau mengubah file yang tidak berkaitan dengan pekerjaan.
+
+SERVICE CLASS YANG DISARANKAN
+-----------------------------
+- QuotationService
+- JobService
+- JobClosingService
+- InvoiceService
+- PaymentService
+- JournalService
+- FinancialReportService
+
+TAHAP IMPLEMENTASI
+------------------
+Tahap 1:
+Periksa project yang tersedia: versi PHP, Laravel, Composer, Node.js, database,
+frontend tooling, struktur repository, .env.example, dan Git status. Jangan
+mengubah file sebelum pemeriksaan selesai.
+
+Tahap 2:
+Buat authentication, RBAC, layout dashboard, navigasi, dan akun demo.
+
+Tahap 3:
+Buat Master Customer dan Chart of Accounts.
+
+Tahap 4:
+Buat Quotation, items, workflow status, approval, dan konversi ke Job Order.
+
+Tahap 5:
+Buat Job Order dan pencatatan Temporary/Provision.
+
+Tahap 6:
+Buat Closing Job, snapshot closing, invoice, dan jurnal otomatis.
+
+Tahap 7:
+Buat pencatatan pembayaran customer dan update status invoice.
+
+Tahap 8:
+Buat Journal, General Ledger, dan Trial Balance.
+
+Tahap 9:
+Buat Neraca, Laba Rugi, Cash Flow, Dashboard, dan Profit per Job.
+
+Tahap 10:
+Lengkapi factory, seeder, test, authorization, validasi, dokumentasi, dan QA.
+
+INSTRUKSI KERJA UNTUK CODEX
+---------------------------
+Sebelum mulai implementasi, tampilkan:
+1. Hasil pemeriksaan project.
+2. Rancangan database dan relasinya.
+3. Daftar migration yang akan dibuat.
+4. Matriks role dan permission.
+5. Rancangan jurnal otomatis.
+6. Tahapan implementasi.
+7. Asumsi atau aturan bisnis yang perlu dikonfirmasi.
+
+Setelah analisis, mulai dari Tahap 1 dan Tahap 2. Jangan mengerjakan seluruh
+modul sekaligus. Selesaikan per tahap, jalankan migration dan test, lalu laporkan:
+- Fitur yang selesai.
+- File yang dibuat atau diubah.
+- Hasil test.
+- Asumsi yang digunakan.
+- Kendala atau keputusan yang masih memerlukan konfirmasi.
+
+CATATAN BISNIS PENTING
+----------------------
+Aturan jurnal dan posisi akun pada demo harus dibuat mudah dikonfigurasi karena
+masih mungkin dikoreksi oleh Finance. Jangan hard-code ID akun. Gunakan mapping
+COA/pengaturan akun. Closing snapshot harus menjaga nilai historis walaupun data
+master atau harga kemudian berubah.

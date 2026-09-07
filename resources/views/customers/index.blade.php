@@ -1,0 +1,8 @@
+@extends('layouts.app')
+@section('title','Customer')
+@section('content')
+<div class="page-heading"><div><p class="eyebrow">MASTER DATA</p><h1>Customer</h1><p>Kelola identitas dan kontak pelanggan Anda.</p></div><a class="button button-primary" href="{{ route('customers.create') }}">+ Tambah customer</a></div>
+<section class="panel">
+<form class="filter-bar" method="GET"><input name="search" value="{{ $search }}" placeholder="Cari nama, kode, atau email" aria-label="Cari customer"><select name="archived" aria-label="Status customer"><option value="0">Customer aktif</option><option value="1" @selected(request('archived')==='1')>Diarsipkan</option></select><button class="button button-primary">Cari</button><a class="text-link" href="{{ route('customers.index') }}">Reset</a></form>
+<div class="table-scroll"><table><thead><tr><th>Kode</th><th>Customer</th><th>Kontak</th><th>Email / Telepon</th><th>Aksi</th></tr></thead><tbody>@forelse($customers as $customer)<tr><td>{{ $customer->code }}</td><td><strong>{{ $customer->name }}</strong></td><td>{{ $customer->contact_name ?? '—' }}</td><td>{{ $customer->email ?? '—' }}<br><small>{{ $customer->phone }}</small></td><td>@if(!$customer->trashed())<a class="text-link" href="{{ route('customers.edit',$customer) }}">Lihat / Edit</a>@else<span class="count-badge">Diarsipkan</span>@endif</td></tr>@empty<tr><td colspan="5"><div class="empty-state"><x-icon name="users"/><h3>Belum ada customer yang sesuai</h3><p>Tambahkan customer atau sesuaikan pencarian.</p></div></td></tr>@endforelse</tbody></table></div><div class="pagination">{{ $customers->links() }}</div></section>
+@endsection
