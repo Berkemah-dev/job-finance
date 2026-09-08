@@ -1,4 +1,5 @@
 import './bootstrap';
+import './job-cost';
 import './quotation';
 document.addEventListener('submit', (event) => {
     const message = event.target.dataset.confirm;

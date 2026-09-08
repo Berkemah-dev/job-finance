@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'before_or_equal' => ':attribute harus sama atau sebelum :date.',
     'enum' => ':attribute tidak valid.',
     'required' => ':attribute wajib diisi.', 'string' => ':attribute harus berupa teks.', 'email' => ':attribute harus berupa email yang valid.',
     'unique' => ':attribute sudah digunakan, termasuk pada data yang diarsipkan.', 'exists' => ':attribute tidak tersedia.',

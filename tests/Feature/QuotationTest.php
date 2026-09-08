@@ -142,7 +142,7 @@ class QuotationTest extends TestCase
             foreach (['submit', 'approve', 'reject', 'convert'] as $action) {
                 $this->post('/quotations/'.$q->id.'/'.$action, ['lock_version' => 0])->assertForbidden();
             }
-            $this->get('/jobs')->assertForbidden();
+            $this->get('/jobs')->assertStatus($role === 'finance' ? 200 : 403);
         }
         $this->actingAs($this->actor);
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
@@ -251,10 +251,10 @@ class QuotationTest extends TestCase
         $one = $this->draft();
         $two = $this->draft();
         $this->assertNotSame($one->number, $two->number);
-        $this->assertStringEndsWith('-00002',$two->number);
+        $this->assertStringEndsWith('-00002', $two->number);
         Queue::connection('database')->pushRaw(json_encode(['displayName' => 'Test', 'job' => 'Test', 'data' => []]));
-        $this->assertSame('queue_jobs',config('queue.connections.database.table'));
-        $this->assertDatabaseCount('queue_jobs',1);
-        $this->assertDatabaseCount('jobs',0);
+        $this->assertSame('queue_jobs', config('queue.connections.database.table'));
+        $this->assertDatabaseCount('queue_jobs', 1);
+        $this->assertDatabaseCount('jobs', 0);
     }
 }

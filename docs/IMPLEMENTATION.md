@@ -1,5 +1,7 @@
 # JobFinance — Tahap 1 dan 2
 
+Tahap 6–7 (closing, invoice, jurnal otomatis, dan pembayaran) selesai. Lihat [STAGE_6_7.md](STAGE_6_7.md). Dokumentasi Tahap 5 tetap tersedia di [STAGE_5.md](STAGE_5.md).
+
 Catatan ini mendokumentasikan fondasi awal. Implementasi terbaru Tahap 3–4, perubahan migration Job Order, aturan quotation, dan hasil QA tersedia di [STAGE_3_4.md](STAGE_3_4.md).
 
 ## Pemeriksaan awal

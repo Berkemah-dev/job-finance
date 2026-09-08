@@ -16,7 +16,7 @@
         <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><x-icon/>Dashboard</a>
         @php
         $groups = [
-            'OPERASIONAL' => [['customers.manage','users','Customer'],['quotations.manage','file','Quotation'],['jobs.manage','briefcase','Job Order']],
+            'OPERASIONAL' => [['customers.manage','users','Customer'],['quotations.manage','file','Quotation'],['jobs.view','briefcase','Job Order']],
             'KEUANGAN' => [['costs.manage','wallet','Biaya Job'],['jobs.close','check','Closing Job'],['invoices.manage','file','Invoice'],['payments.manage','wallet','Pembayaran']],
             'AKUNTANSI' => [['coa.manage','file','Chart of Accounts'],['journals.manage','file','Jurnal'],['reports.view','chart','Laporan Keuangan'],['reports.view','chart','Profit per Job']],
         ];
@@ -26,9 +26,13 @@
             <p class="nav-heading">{{ $heading }}</p>
             @foreach($items as [$permission, $icon, $label])
                 @can($permission)
-                @php $destination = ['customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.manage'=>'jobs.index'][$permission] ?? null; @endphp
+                @php
+                $destination = ['customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index'][$permission] ?? null;
+                $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
+                $active = $permission === 'costs.manage' ? $isCostPage : ($destination && request()->routeIs(explode('.',$destination)[0].'.*') && !($permission === 'jobs.view' && $isCostPage));
+                @endphp
                 @if($destination)
-                <a class="nav-item {{ request()->routeIs(explode('.',$destination)[0].'.*') ? 'active' : '' }}" href="{{ route($destination) }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
+                <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
                 @else
                 <span class="nav-item upcoming" aria-disabled="true"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
                 @endif

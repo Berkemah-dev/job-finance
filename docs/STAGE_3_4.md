@@ -1,5 +1,7 @@
 # JobFinance — Tahap 3 dan 4
 
+Tahap berikutnya sudah tersedia: [operasional Job Order dan biaya — Tahap 5](STAGE_5.md). Finance kini memiliki hak baca Job Order untuk pencatatan biaya.
+
 ## Fitur yang selesai
 
 ### Tahap 3: Master Customer dan COA

@@ -11,5 +11,6 @@ return [
         'revenue' => ['label' => 'Pendapatan Jasa', 'type' => 'revenue', 'code' => '4101', 'name' => 'Pendapatan Jasa'],
         'cogs' => ['label' => 'HPP Job', 'type' => 'cogs', 'code' => '5101', 'name' => 'HPP Job'],
         'expense' => ['label' => 'Beban Operasional', 'type' => 'expense', 'code' => '6101', 'name' => 'Beban Operasional'],
+        'tax_payable' => ['label' => 'Utang Pajak', 'type' => 'liability', 'code' => '2102', 'name' => 'Utang Pajak'],
     ],
 ];
