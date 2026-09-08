@@ -6,7 +6,6 @@ use App\Enums\QuotationStatus;
 use App\Models\Customer;
 use App\Models\Job;
 use App\Models\Quotation;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class OperationalDocumentController extends Controller
@@ -86,7 +85,7 @@ class OperationalDocumentController extends Controller
     public function quotationPdf(Request $request, Quotation $quotation)
     {
         $quotation->load(['items', 'customer', 'creator', 'approver']);
-        $pdf = Pdf::loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
         $filename = $quotation->number.'.pdf';
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : $pdf->stream($filename);
@@ -96,7 +95,7 @@ class OperationalDocumentController extends Controller
     {
         $quotation->load(['job.customer', 'job.quotation']);
         abort_unless($quotation->job, 404);
-        $pdf = Pdf::loadView('documents.pdf.job-order', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.job-order', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
         $filename = $quotation->job->number.'.pdf';
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : $pdf->stream($filename);
