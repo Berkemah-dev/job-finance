@@ -21,8 +21,15 @@ $events = collect([
         <p>{{ $quotation->customer_snapshot['name'] }} · {{ $quotation->subject }}</p>
     </div>
     <div class="action-group">
-        @if($job)@can('update',$job)<a class="button button-secondary" href="{{ route('jobs.edit',$job) }}">Edit</a>@endcan
-        @else@can('update',$quotation)<a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">Edit</a>@endcan @endif
+        @if($job)
+            @can('update',$job)
+            <a class="button button-secondary" href="{{ route('jobs.edit',$job) }}">Edit</a>
+            @endcan
+        @else
+            @can('update',$quotation)
+            <a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">Edit</a>
+            @endcan
+        @endif
         <a class="button button-secondary" href="{{ route('documents.quotation.preview',$quotation) }}">Preview PDF</a>
         <a class="button button-primary" href="{{ route('documents.quotation.pdf',['quotation'=>$quotation,'mode'=>'download']) }}">Download PDF</a>
     </div>
