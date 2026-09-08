@@ -16,7 +16,7 @@
         <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><x-icon/>Dashboard</a>
         @php
         $groups = [
-            'OPERASIONAL' => [['customers.manage','users','Customer'],['quotations.manage','file','Quotation'],['jobs.view','briefcase','Job Order']],
+            'OPERASIONAL' => [['customers.manage','users','Customer'],['jobs.view','file','Dokumen Job','documents.index']],
             'KEUANGAN' => [['costs.manage','wallet','Biaya Job'],['jobs.close','check','Closing Job'],['invoices.manage','file','Invoice'],['payments.manage','wallet','Pembayaran']],
             'AKUNTANSI' => [['coa.manage','file','Chart of Accounts'],['journals.manage','file','Jurnal'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
             'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job']],
@@ -31,7 +31,7 @@
                 @php
                 $destination = $item[3] ?? ['customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index'][$permission] ?? null;
                 $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
-                $active = str_starts_with((string)$destination,'reports.') ? request()->routeIs($destination) : ($permission === 'costs.manage' ? $isCostPage : ($destination && request()->routeIs(explode('.',$destination)[0].'.*') && !($permission === 'jobs.view' && $isCostPage)));
+                $active = $destination === 'documents.index' ? request()->routeIs('documents.*','quotations.*','jobs.*') && ! $isCostPage : (str_starts_with((string)$destination,'reports.') ? request()->routeIs($destination) : ($permission === 'costs.manage' ? $isCostPage : ($destination && request()->routeIs(explode('.',$destination)[0].'.*') && !($permission === 'jobs.view' && $isCostPage))));
                 @endphp
                 @if($destination)
                 <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>

@@ -10,6 +10,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\JobCostController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\OperationalDocumentController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ReportController;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
         Route::get('/profit-per-job', [ReportController::class, 'profitPerJob'])->name('profit-per-job');
     });
+    Route::get('/documents', [OperationalDocumentController::class, 'index'])->middleware('can:jobs.view')->name('documents.index');
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
     foreach (['submit', 'approve', 'reject', 'convert'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.manage')->name('quotations.'.$action);
