@@ -39,7 +39,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
         Route::get('/profit-per-job', [ReportController::class, 'profitPerJob'])->name('profit-per-job');
     });
-    Route::get('/documents', [OperationalDocumentController::class, 'index'])->middleware('can:jobs.view')->name('documents.index');
+    Route::redirect('/documents', '/dokumen-job');
+    Route::get('/dokumen-job', [OperationalDocumentController::class, 'index'])->middleware('can:jobs.view')->name('documents.index');
+    Route::get('/dokumen-job/{quotation}', [OperationalDocumentController::class, 'show'])->middleware('can:jobs.view')->name('documents.show');
+    Route::get('/dokumen-job/{quotation}/quotation/preview', [OperationalDocumentController::class, 'quotationPreview'])->middleware('can:jobs.view')->name('documents.quotation.preview');
+    Route::get('/dokumen-job/{quotation}/job-order/preview', [OperationalDocumentController::class, 'jobPreview'])->middleware('can:jobs.view')->name('documents.job.preview');
+    Route::get('/api/dokumen-job/{quotation}/quotation/pdf', [OperationalDocumentController::class, 'quotationPdf'])->middleware('can:jobs.view')->name('documents.quotation.pdf');
+    Route::get('/api/dokumen-job/{quotation}/job-order/pdf', [OperationalDocumentController::class, 'jobPdf'])->middleware('can:jobs.view')->name('documents.job.pdf');
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
     foreach (['submit', 'approve', 'reject', 'convert'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.manage')->name('quotations.'.$action);
