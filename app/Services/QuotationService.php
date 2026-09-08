@@ -9,6 +9,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -34,7 +35,7 @@ class QuotationService
             }
             $customer = $this->activeCustomer($data['customer_id']);
             $calculated = $this->calculate($data['items']);
-            $quotation->fill($data);
+            $quotation->fill(Arr::only($data, ['customer_id', 'subject', 'quotation_date', 'valid_until', 'notes']));
             $quotation->customer_snapshot = $customer->only(['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number']);
             $quotation->forceFill($calculated['totals']);
             $quotation->updated_by = $actor->id;

@@ -9,8 +9,10 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\JobCostController;
+use App\Http\Controllers\JournalController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -26,6 +28,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('can:payments.manage')->name('payments.index');
     Route::get('/invoices/{invoice}/payments/create', [PaymentController::class, 'create'])->middleware('can:payments.manage')->name('payments.create');
     Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->middleware('can:payments.manage')->name('payments.store');
+    Route::resource('journals', JournalController::class)->only(['index', 'create', 'store', 'show'])->middleware('can:journals.manage');
+    Route::post('/journals/{journal}/reverse', [JournalController::class, 'reverse'])->middleware('can:journals.manage')->name('journals.reverse');
+    Route::middleware('can:reports.view')->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/ledger', [ReportController::class, 'ledger'])->name('ledger');
+        Route::get('/trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
+        Route::get('/balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
+        Route::get('/income-statement', [ReportController::class, 'incomeStatement'])->name('income-statement');
+        Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
+        Route::get('/profit-per-job', [ReportController::class, 'profitPerJob'])->name('profit-per-job');
+    });
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
     foreach (['submit', 'approve', 'reject', 'convert'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.manage')->name('quotations.'.$action);
@@ -47,5 +59,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
     Route::get('/users', [AccessController::class, 'users'])->middleware('can:users.view')->name('users.index');
+    Route::get('/users/create', [AccessController::class, 'createUser'])->middleware('can:users.manage')->name('users.create');
+    Route::post('/users', [AccessController::class, 'storeUser'])->middleware('can:users.manage')->name('users.store');
+    Route::get('/users/{user}/edit', [AccessController::class, 'editUser'])->middleware('can:users.manage')->name('users.edit');
+    Route::put('/users/{user}', [AccessController::class, 'updateUser'])->middleware('can:users.manage')->name('users.update');
     Route::get('/activity', [AccessController::class, 'activity'])->middleware('can:activity.view')->name('activity.index');
 });

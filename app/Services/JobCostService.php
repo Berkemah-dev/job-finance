@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -60,7 +61,7 @@ class JobCostService
             if ($data['type'] === 'temporary' && ! $unitCost->isEqualTo($unitPrice)) {
                 throw ValidationException::withMessages(['unit_price' => 'Nilai jual Temporary harus sama dengan modal karena ditagihkan kembali tanpa profit.']);
             }
-            $cost->fill($data);
+            $cost->fill(Arr::only($data, ['description', 'type', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'payee', 'reference', 'notes']));
             $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->updated_by = $actor->id;

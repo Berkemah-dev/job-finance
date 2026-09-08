@@ -20,6 +20,7 @@ class DashboardService
         $revenue = Money::decimal(0);
         $cogs = Money::decimal(0);
         $profit = Money::decimal(0);
+        $monthly = collect(range(5, 0))->mapWithKeys(fn ($monthsAgo) => [today()->subMonths($monthsAgo)->format('Y-m') => ['label' => today()->subMonths($monthsAgo)->locale('id')->translatedFormat('M'), 'revenue' => Money::decimal(0), 'profit' => Money::decimal(0)]]);
         if (Gate::allows('reports.view')) {
             foreach (JobCost::where('status', 'final')->whereHas('job', fn ($q) => $q->where('status', 'open'))->select(['id', 'type', 'total_cost'])->cursor() as $cost) {
                 if ($cost->type === 'temporary') {
@@ -36,10 +37,20 @@ class DashboardService
                 $cogs = $cogs->plus($snapshot->total_provision_cost);
                 $profit = $profit->plus($snapshot->profit);
             }
+            foreach (JobClosingSnapshot::where('closing_date', '>=', today()->subMonths(5)->startOfMonth())->get() as $snapshot) {
+                $key = $snapshot->closing_date->format('Y-m');
+                if ($monthly->has($key)) {
+                    $row = $monthly->get($key);
+                    $row['revenue'] = $row['revenue']->plus($snapshot->total_provision_sell);
+                    $row['profit'] = $row['profit']->plus($snapshot->profit);
+                    $monthly->put($key, $row);
+                }
+            }
         }
 
         return ['temporaryBalance' => (string) $temporary, 'provisionBalance' => (string) $provision, 'openJobs' => (int) ($counts['open'] ?? 0), 'closedJobs' => (int) ($counts['closed'] ?? 0),
             'receivableBalance' => (string) $receivable, 'revenueBalance' => (string) $revenue, 'cogsBalance' => (string) $cogs, 'profitBalance' => (string) $profit,
+            'monthlyPerformance' => $monthly->map(fn ($row) => ['label' => $row['label'], 'revenue' => (string) $row['revenue'], 'profit' => (string) $row['profit']])->values(),
             'unpaidInvoices' => Gate::allows('reports.view') ? Invoice::where('balance', '>', 0)->orderBy('due_date')->limit(5)->get() : collect(),
             'draftJobs' => (int) ($counts['draft'] ?? 0), 'recentJobs' => Job::latest('id')->limit(5)->get()];
     }

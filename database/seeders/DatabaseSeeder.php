@@ -17,5 +17,8 @@ class DatabaseSeeder extends Seeder
         if (app()->environment(['local', 'testing'])) {
             $this->call(DemoUserSeeder::class);
         }
+        if (app()->environment('local')) {
+            $this->call(BusinessDemoSeeder::class);
+        }
     }
 }
