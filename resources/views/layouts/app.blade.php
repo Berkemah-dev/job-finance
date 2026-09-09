@@ -10,7 +10,7 @@
 <a class="skip-link" href="#main">Lewati ke konten</a>
 <button class="sidebar-backdrop" data-menu-close aria-label="Tutup navigasi" tabindex="-1"></button>
 <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
-    <a href="{{ route('dashboard') }}" class="brand"><span class="brand-symbol"><x-icon name="chart"/></span><span>Job<span class="brand-blue">Finance</span><small>JOB COSTING & ACCOUNTING</small></span></a>
+    <a href="{{ route('dashboard') }}" class="brand brand-logo"><img src="{{ asset('images/logo-rdx-350x250.png') }}" alt="JobFinance Logo" class="brand-img"></a>
     <nav>
         <p class="nav-heading">WORKSPACE</p>
         <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><x-icon/>Dashboard</a>
