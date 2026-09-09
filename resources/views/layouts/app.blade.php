@@ -16,9 +16,11 @@
         <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><x-icon/>Dashboard</a>
         @php
         $groups = [
-            'OPERASIONAL' => [['customers.manage','users','Customer'],['jobs.view','file','Dokumen Job','documents.index']],
-            'KEUANGAN' => [['costs.manage','wallet','Biaya Job'],['jobs.close','check','Closing Job'],['invoices.manage','file','Invoice'],['payments.manage','wallet','Pembayaran']],
-            'AKUNTANSI' => [['coa.manage','file','Chart of Accounts'],['journals.manage','file','Jurnal'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
+            'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer'],['vendors.manage','users','Vendor']],
+            'PRICING' => [['pricing.view','chart','Weekly Pricing','pricing.weekly.index'],['pricing.view','briefcase','Trucking Price List','pricing.trucking.index']],
+            'OPERASIONAL' => [['jobs.view','file','Dokumen Job','documents.index']],
+            'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index']],
+            'AKUNTANSI' => [['coa.manage','file','Chart of Accounts','accounts.index'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
             'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job']],
         ];
         @endphp

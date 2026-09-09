@@ -76,7 +76,7 @@ class JobClosingService
             $job->updated_by = $actor->id;
             $job->lock_version++;
             $job->save();
-            $this->master->log($actor, 'job.closed', $job->number.' → '.$invoice->number);
+            $this->master->log($actor, 'job.closed', $job->number.' → '.$invoice->number, ['module' => 'job_closing', 'record_id' => $snapshot->id, 'after' => ['invoice' => $invoice->number, 'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => $invoice->total, 'profit' => $summary['profit'], 'margin' => $summary['margin']]]);
 
             return $invoice;
         }, 3);

@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\ChartOfAccount;
 use App\Models\Customer;
 use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -14,10 +15,28 @@ use Illuminate\Validation\ValidationException;
 
 class MasterDataService
 {
+    private function permissionFor(Model $model): string
+    {
+        return match (true) {
+            $model instanceof Customer => 'customers.manage',
+            $model instanceof Vendor => 'vendors.manage',
+            default => 'coa.manage',
+        };
+    }
+
+    private function keyFor(Model $model): string
+    {
+        return match (true) {
+            $model instanceof Customer => 'customer',
+            $model instanceof Vendor => 'vendor',
+            default => 'account',
+        };
+    }
+
     public function save(Model $model, array $data, User $actor): Model
     {
         return DB::transaction(function () use ($model, $data, $actor) {
-            Gate::forUser($actor)->authorize($model instanceof Customer ? 'customers.manage' : 'coa.manage');
+            Gate::forUser($actor)->authorize($this->permissionFor($model));
             $new = ! $model->exists;
             if (! $new) {
                 $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
@@ -33,7 +52,7 @@ class MasterDataService
             $model->updated_by = $actor->id;
             $model->lock_version = $new ? 0 : $model->lock_version + 1;
             $model->save();
-            $this->log($actor, ($model instanceof Customer ? 'customer' : 'account').($new ? '.created' : '.updated'), ($new ? 'Membuat ' : 'Memperbarui ').$model->code.' · '.$model->name);
+            $this->log($actor, $this->keyFor($model).($new ? '.created' : '.updated'), ($new ? 'Membuat ' : 'Memperbarui ').$model->code.' · '.$model->name, ['module' => $this->keyFor($model), 'record_id' => $model->id]);
 
             return $model;
         }, 3);
@@ -42,7 +61,7 @@ class MasterDataService
     public function archive(Model $model, array $data, User $actor): void
     {
         DB::transaction(function () use ($model, $data, $actor) {
-            Gate::forUser($actor)->authorize($model instanceof Customer ? 'customers.manage' : 'coa.manage');
+            Gate::forUser($actor)->authorize($this->permissionFor($model));
             $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
             $this->checkVersion($model, $data);
             if ($model instanceof ChartOfAccount && $model->mappings()->exists()) {
@@ -52,7 +71,7 @@ class MasterDataService
             $model->lock_version++;
             $model->save();
             $model->delete();
-            $this->log($actor, ($model instanceof Customer ? 'customer' : 'account').'.archived', 'Mengarsipkan '.$model->code.' · '.$model->name);
+            $this->log($actor, $this->keyFor($model).'.archived', 'Mengarsipkan '.$model->code.' · '.$model->name, ['module' => $this->keyFor($model), 'record_id' => $model->id]);
         }, 3);
     }
 
@@ -79,8 +98,18 @@ class MasterDataService
         }
     }
 
-    public function log(User $actor, string $action, string $description): void
+    public function log(User $actor, string $action, string $description, array $context = []): void
     {
-        ActivityLog::create(['user_id' => $actor->id, 'action' => $action, 'description' => mb_substr($description,0,255)]);
+        ActivityLog::create([
+            'user_id' => $actor->id,
+            'role_id' => $actor->role_id,
+            'action' => $action,
+            'module' => $context['module'] ?? null,
+            'record_id' => $context['record_id'] ?? null,
+            'before' => $context['before'] ?? null,
+            'after' => $context['after'] ?? null,
+            'ip' => $context['ip'] ?? request()->ip(),
+            'description' => mb_substr($description, 0, 255),
+        ]);
     }
 }

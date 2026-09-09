@@ -5,7 +5,24 @@
 <div class="field"><label for="item-{{ $index }}-type">Jenis biaya</label><select id="item-{{ $index }}-type" name="items[{{ $index }}][type]" data-cost-type><option value="provision" @selected(($item['type'] ?? '')==='provision')>Provision</option><option value="temporary" @selected(($item['type'] ?? '')==='temporary')>Temporary</option></select></div>
 <div class="field"><label for="item-{{ $index }}-unit">Satuan</label><input id="item-{{ $index }}-unit" name="items[{{ $index }}][unit]" value="{{ $item['unit'] ?? 'Layanan' }}" maxlength="30" required placeholder="Layanan"></div>
 <div class="field"><label for="item-{{ $index }}-quantity">Jumlah</label><input id="item-{{ $index }}-quantity" type="number" name="items[{{ $index }}][quantity]" value="{{ $item['quantity'] ?? '1' }}" min="0.01" max="999999.99" step="0.01" required data-quantity></div>
-<div class="field"><label for="item-{{ $index }}-unit_cost">Modal / unit (Rp)</label><input id="item-{{ $index }}-unit_cost" type="number" name="items[{{ $index }}][unit_cost]" value="{{ $item['unit_cost'] ?? '0' }}" min="0" max="999999999.99" step="0.01" required data-unit-cost></div>
-<div class="field"><label for="item-{{ $index }}-unit_price">Nilai jual / unit (Rp)</label><input id="item-{{ $index }}-unit_price" type="number" name="items[{{ $index }}][unit_price]" value="{{ $item['unit_price'] ?? '0' }}" min="0" max="999999999.99" step="0.01" required data-unit-price></div>
-</div><p class="form-help">Temporary ditagihkan sebesar modal; profit hanya berasal dari provision.</p>
+<div class="field"><label for="item-{{ $index }}-unit_cost">Modal / unit (IDR)</label><input id="item-{{ $index }}-unit_cost" type="number" name="items[{{ $index }}][unit_cost]" value="{{ $item['unit_cost'] ?? '0' }}" min="0" max="999999999.99" step="0.01" required data-unit-cost></div>
+<div class="field"><label for="item-{{ $index }}-unit_price">Nilai jual / unit (IDR)</label><input id="item-{{ $index }}-unit_price" type="number" name="items[{{ $index }}][unit_price]" value="{{ $item['unit_price'] ?? '0' }}" min="0" max="999999999.99" step="0.01" required data-unit-price></div>
+</div>
+<div class="item-pricing" data-pricing-block>
+<div class="field"><label for="item-{{ $index }}-pricing-source">Sumber tarif</label><select id="item-{{ $index }}-pricing-source" data-pricing-source><option value="manual" @selected(($item['pricing_source'] ?? 'manual')==='manual')>Manual</option><option value="trucking" @selected(($item['pricing_source'] ?? '')==='trucking')>Tarif trucking</option></select></div>
+<div class="field"><label for="item-{{ $index }}-container_type">Kontainer</label><select id="item-{{ $index }}-container_type" name="items[{{ $index }}][container_type]" data-container><option value="">—</option>@foreach(config('operations.container_types') as $key=>$label)<option value="{{ $key }}" @selected(($item['container_type'] ?? '')===$key)>{{ $label }}</option>@endforeach</select></div>
+<div class="field"><label for="item-{{ $index }}-overweight"><input id="item-{{ $index }}-overweight" type="checkbox" name="items[{{ $index }}][overweight]" value="1" data-overweight @checked(($item['overweight'] ?? false))> Overweight</label></div>
+<div class="field"><label for="item-{{ $index }}-gross_weight">Berat kotor (kg)</label><input id="item-{{ $index }}-gross_weight" type="number" name="items[{{ $index }}][gross_weight]" value="{{ $item['gross_weight'] ?? '' }}" min="0" max="999999.99" step="0.01" data-gross-weight></div>
+<div class="field"><label for="item-{{ $index }}-volume">Volume (m³)</label><input id="item-{{ $index }}-volume" type="number" name="items[{{ $index }}][volume]" value="{{ $item['volume'] ?? '' }}" min="0" max="999999.99" step="0.001" data-volume></div>
+<div class="field lookup-field" data-lookup-only><label for="item-{{ $index }}-origin">Pelabuhan asal</label><input id="item-{{ $index }}-origin" data-origin value="{{ $item['pricing_snapshot']['port_origin'] ?? '' }}" placeholder="cth: Tanjung Priok" data-lookup-only></div>
+<div class="field lookup-field" data-lookup-only><label for="item-{{ $index }}-destination">Tujuan</label><input id="item-{{ $index }}-destination" data-destination value="{{ $item['pricing_snapshot']['destination'] ?? '' }}" placeholder="cth: Surabaya" data-lookup-only></div>
+<div class="field lookup-field" data-lookup-only><label>&nbsp;</label><button class="button button-secondary button-sm" type="button" data-pricing-search>Tarik tarif</button></div>
+<input type="hidden" name="items[{{ $index }}][pricing_source]" data-field-pricing-source value="{{ $item['pricing_source'] ?? 'manual' }}">
+<input type="hidden" name="items[{{ $index }}][pricing_id]" data-field-pricing-id value="{{ $item['pricing_id'] ?? '' }}">
+<input type="hidden" name="items[{{ $index }}][currency]" data-field-currency value="{{ $item['currency'] ?? 'IDR' }}">
+<input type="hidden" name="items[{{ $index }}][exchange_rate]" data-field-exchange-rate value="{{ $item['exchange_rate'] ?? '1.00' }}">
+<input type="hidden" name="items[{{ $index }}][pricing_snapshot]" data-field-snapshot value="{{ ($item['pricing_snapshot'] ?? null) ? json_encode($item['pricing_snapshot']) : '' }}">
+</div>
+<p class="pricing-status" data-pricing-status></p>
+<p class="form-help">Temporary ditagihkan sebesar modal; profit hanya dari provision. Tarif trucking memakai kurs mingguan aktif saat quotation.</p>
 </div>

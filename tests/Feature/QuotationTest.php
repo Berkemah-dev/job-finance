@@ -8,7 +8,9 @@ use App\Models\Customer;
 use App\Models\Job;
 use App\Models\Permission;
 use App\Models\Quotation;
+use App\Models\TruckingPrice;
 use App\Models\User;
+use App\Models\WeeklyPricing;
 use App\Services\QuotationService;
 use App\Support\Money;
 use Database\Seeders\DatabaseSeeder;
@@ -22,13 +24,16 @@ class QuotationTest extends TestCase
 
     private User $actor;
 
+    private User $approver;
+
     private Customer $customer;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
-        $this->actor = User::where('email', 'operational@jobfinance.test')->firstOrFail();
+        $this->actor = User::where('email', 'sales@jobfinance.test')->firstOrFail();
+        $this->approver = User::where('email', 'sales-manager@jobfinance.test')->firstOrFail();
         $this->customer = Customer::factory()->create(['created_by' => $this->actor->id, 'updated_by' => $this->actor->id]);
         $this->actingAs($this->actor);
     }
@@ -53,7 +58,9 @@ class QuotationTest extends TestCase
     {
         $q = $this->draft();
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
+        $this->actingAs($this->approver);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
+        $this->actingAs($this->actor);
 
         return $q->fresh();
     }
@@ -93,15 +100,19 @@ class QuotationTest extends TestCase
     public function test_full_workflow_converts_once_and_preserves_snapshot(): void
     {
         $q = $this->approved();
+        $this->actingAs($this->approver);
         $this->get('/quotations/'.$q->id)->assertSee('Konversi ke Job Order')->assertDontSee('Edit draft');
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
+        $this->actingAs($this->actor);
         $job = Job::firstOrFail();
         $this->assertSame('draft', $job->status);
         $this->assertSame($q->id, $job->quotation_id);
         $this->assertSame('9500000.00', $job->quotation_snapshot['totals']['subtotal']);
         $this->assertCount(2, $job->quotation_snapshot['items']);
         $this->assertSame(QuotationStatus::Converted, $q->fresh()->status);
+        $this->actingAs($this->approver);
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertForbidden();
+        $this->actingAs($this->actor);
         $this->assertDatabaseCount('jobs', 1);
         $original = $job->quotation_snapshot['customer']['name'];
         $this->customer->update(['name' => 'Changed master']);
@@ -122,10 +133,12 @@ class QuotationTest extends TestCase
         $this->put('/quotations/'.$q->id, $this->data() + ['lock_version' => 1])->assertForbidden();
         $this->get('/quotations/'.$q->id.'/edit')->assertForbidden();
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 1])->assertForbidden();
+        $this->actingAs($this->approver);
         $this->post('/quotations/'.$q->id.'/reject', ['lock_version' => 1])->assertSessionHasErrors('reason');
         $this->post('/quotations/'.$q->id.'/reject', ['lock_version' => 1, 'reason' => 'Harga perlu disesuaikan'])->assertSessionHasNoErrors();
         $this->assertSame(QuotationStatus::Rejected, $q->fresh()->status);
         $this->get('/quotations/'.$q->id)->assertSee('Harga perlu disesuaikan');
+        $this->actingAs($this->actor);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 2])->assertForbidden();
         $this->assertDatabaseCount('jobs', 0);
     }
@@ -146,8 +159,12 @@ class QuotationTest extends TestCase
         }
         $this->actingAs($this->actor);
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
-        $this->actor->role->permissions()->detach(Permission::where('name', 'quotations.approve')->value('id'));
+        $this->assertSame(QuotationStatus::Submitted, $q->fresh()->status);
         $this->actingAs($this->actor->fresh());
+        $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertForbidden();
+        $this->assertSame(QuotationStatus::Submitted, $q->fresh()->status);
+        $this->approver->role->permissions()->detach(Permission::where('name', 'quotations.approve')->value('id'));
+        $this->actingAs($this->approver->fresh());
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertForbidden();
         $this->assertSame(QuotationStatus::Submitted, $q->fresh()->status);
     }
@@ -191,7 +208,9 @@ class QuotationTest extends TestCase
         $this->customer->delete();
         $this->post('/quotations', $this->data())->assertSessionHasErrors('customer_id');
         $this->post('/quotations/'.$draft->id.'/submit', ['lock_version' => 0])->assertSessionHasErrors('customer_id');
+        $this->actingAs($this->approver);
         $this->post('/quotations/'.$approved->id.'/convert', ['lock_version' => 2])->assertSessionHasErrors('customer_id');
+        $this->actingAs($this->actor);
         $this->assertDatabaseCount('jobs', 0);
     }
 
@@ -232,7 +251,7 @@ class QuotationTest extends TestCase
             }
         });
         try {
-            app(QuotationService::class)->convert($q, ['lock_version' => 2], $this->actor);
+            app(QuotationService::class)->convert($q, ['lock_version' => 2], $this->approver);
             $this->fail('Failure should be propagated');
         } catch (\RuntimeException $e) {
             $this->assertSame('Simulated failure', $e->getMessage());
@@ -242,7 +261,7 @@ class QuotationTest extends TestCase
         $this->assertDatabaseCount('jobs', 0);
         $this->assertSame(QuotationStatus::Approved, $q->fresh()->status);
         $this->assertDatabaseMissing('document_sequences', ['type' => 'job']);
-        $job = app(QuotationService::class)->convert($q->fresh(), ['lock_version' => 2], $this->actor);
+        $job = app(QuotationService::class)->convert($q->fresh(), ['lock_version' => 2], $this->approver);
         $this->assertStringEndsWith('-00001', $job->number);
     }
 
@@ -256,5 +275,98 @@ class QuotationTest extends TestCase
         $this->assertSame('queue_jobs', config('queue.connections.database.table'));
         $this->assertDatabaseCount('queue_jobs', 1);
         $this->assertDatabaseCount('jobs', 0);
+    }
+
+    public function test_trucking_pricing_item_fills_modal_from_master_and_converts_currency(): void
+    {
+        WeeklyPricing::factory()->create(['currency' => 'USD', 'exchange_rate' => '15850.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
+        $trucking = TruckingPrice::factory()->create(['port_origin' => 'Jakarta', 'destination' => 'Surabaya', 'container_type' => '40ft', 'overweight' => false, 'currency' => 'USD', 'price' => '1800.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
+        $data = $this->data();
+        $data['quotation_date'] = '2026-09-08';
+        $data['items'] = [['description' => 'Trucking FCL', 'type' => 'provision', 'unit' => 'Container', 'quantity' => '1', 'unit_cost' => '0', 'unit_price' => '32000000.00', 'pricing_source' => 'trucking', 'pricing_id' => (string) $trucking->id]];
+        $this->post('/quotations', $data)->assertSessionHasNoErrors()->assertRedirect();
+
+        $item = Quotation::firstOrFail()->items()->first();
+        $this->assertSame('28530000.00', $item->unit_cost);
+        $this->assertSame('28530000.00', $item->total_cost);
+        $this->assertSame('USD', $item->currency);
+        $this->assertSame('15850.00', $item->exchange_rate);
+        $this->assertSame('40ft', $item->container_type);
+        $this->assertFalse($item->overweight);
+        $this->assertSame('trucking', $item->pricing_source);
+        $this->assertSame($trucking->id, $item->pricing_id);
+        $this->assertSame('Surabaya', $item->pricing_snapshot['destination']);
+        $this->assertSame('1800.00', $item->pricing_snapshot['price']);
+        $this->assertSame('USD', $item->pricing_snapshot['currency']);
+        $this->assertSame('Jakarta', $item->pricing_snapshot['port_origin']);
+    }
+
+    public function test_trucking_pricing_recomputes_modal_from_master_when_tampered(): void
+    {
+        WeeklyPricing::factory()->create(['currency' => 'USD', 'exchange_rate' => '15850.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
+        $trucking = TruckingPrice::factory()->create(['currency' => 'USD', 'price' => '1800.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
+        $data = $this->data();
+        $data['quotation_date'] = '2026-09-08';
+        $data['items'] = [['description' => 'Trucking', 'type' => 'provision', 'unit' => 'Container', 'quantity' => '1', 'unit_cost' => '1.00', 'unit_price' => '30000000.00', 'pricing_source' => 'trucking', 'pricing_id' => (string) $trucking->id]];
+        $this->post('/quotations', $data)->assertSessionHasNoErrors()->assertRedirect();
+
+        $item = Quotation::firstOrFail()->items()->first();
+        $this->assertSame('28530000.00', $item->unit_cost);
+    }
+
+    public function test_trucking_pricing_rejects_inactive_or_missing_master(): void
+    {
+        $trucking = TruckingPrice::factory()->create(['is_active' => false]);
+        $data = $this->data();
+        $data['items'] = [['description' => 'Trucking', 'type' => 'provision', 'unit' => 'Container', 'quantity' => '1', 'unit_cost' => '0', 'unit_price' => '1', 'pricing_source' => 'trucking', 'pricing_id' => (string) $trucking->id]];
+        $this->post('/quotations', $data)->assertSessionHasErrors('items.0.pricing');
+        $this->assertDatabaseCount('quotations', 0);
+    }
+
+    public function test_foreign_currency_item_requires_active_weekly_rate(): void
+    {
+        $data = $this->data();
+        $data['items'] = [['description' => 'Agen luar negeri', 'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '1500', 'unit_price' => '1600', 'currency' => 'USD']];
+        $this->post('/quotations', $data)->assertSessionHasErrors('items.*.currency');
+        $this->assertDatabaseCount('quotations', 0);
+    }
+
+    public function test_manual_foreign_currency_item_uses_active_weekly_rate_and_rejects_invalid_currency(): void
+    {
+        WeeklyPricing::factory()->create(['currency' => 'USD', 'exchange_rate' => '15850.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
+        $data = $this->data();
+        $data['quotation_date'] = '2026-09-08';
+        $data['items'] = [['description' => 'Agen luar negeri', 'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '1500', 'unit_price' => '1600', 'currency' => 'USD']];
+        $this->post('/quotations', $data)->assertSessionHasNoErrors()->assertRedirect();
+        $item = Quotation::firstOrFail()->items()->first();
+        $this->assertSame('1500.00', $item->unit_cost);
+        $this->assertSame('USD', $item->currency);
+        $this->assertSame('15850.00', $item->exchange_rate);
+        $this->assertFalse($item->overweight);
+        $data['items'][0]['currency'] = 'EUR';
+        $this->post('/quotations', $data)->assertSessionHasErrors('items.0.currency');
+    }
+
+    public function test_trucking_suggestion_endpoint_quotes_and_respects_ability(): void
+    {
+        WeeklyPricing::factory()->create(['currency' => 'USD', 'exchange_rate' => '15850.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
+        $trucking = TruckingPrice::factory()->create(['port_origin' => 'Jakarta', 'destination' => 'Surabaya', 'container_type' => '40ft', 'currency' => 'USD', 'price' => '1800.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
+        $this->actingAs(User::where('email', 'finance@jobfinance.test')->firstOrFail());
+        $this->getJson('/api/pricing/suggest-trucking?port_origin=Jakarta&destination=Surabaya&container_type=40ft')->assertForbidden();
+        $this->actingAs($this->actor);
+
+        $json = $this->getJson('/api/pricing/suggest-trucking?port_origin=Jakarta&destination=Surabaya&container_type=40ft&date=2026-09-08')
+            ->assertOk()->assertJsonPath('found', true)->assertJsonPath('pricing_id', $trucking->id)->json();
+        $this->assertSame('28530000.00', $json['unit_cost']);
+        $this->assertSame('USD', $json['currency']);
+        $this->assertSame('15850.00', $json['exchange_rate']);
+        $this->assertSame('40ft', $json['container_type']);
+        $this->assertSame('1800.00', $json['snapshot']['price']);
+        $this->assertSame('Surabaya', $json['snapshot']['destination']);
+
+        $this->getJson('/api/pricing/suggest-trucking?port_origin=Jakarta&destination=Medan&container_type=40ft&date=2026-09-08')
+            ->assertOk()->assertJsonPath('found', false);
+        $this->getJson('/api/pricing/suggest-trucking?port_origin=Jakarta&destination=Surabaya&container_type=99ft&date=2026-09-08')
+            ->assertStatus(422);
     }
 }

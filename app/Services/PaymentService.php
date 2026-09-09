@@ -40,7 +40,8 @@ class PaymentService
             $this->journals->post('customer_payment', Payment::class, $payment->id, $data['payment_date'], 'Pembayaran '.$payment->number.' untuk '.$invoice->number, [
                 ['account_id' => $maps[$data['deposit_account']]->id, 'description' => 'Penerimaan customer', 'debit' => (string) $amount, 'credit' => 0],
                 ['account_id' => $maps['receivable']->id, 'description' => 'Pelunasan piutang', 'debit' => 0, 'credit' => (string) $amount]], $actor);
-            $this->master->log($actor, 'payment.created', $payment->number.' · '.$invoice->number);
+            $state = ['paid_amount' => $invoice->paid_amount, 'balance' => $invoice->balance, 'status' => $invoice->status];
+            $this->master->log($actor, 'payment.created', $payment->number.' · '.$invoice->number, ['module' => 'payment', 'record_id' => $payment->id, 'after' => array_merge(['amount' => (string) $amount], $state)]);
 
             return $payment;
         }, 3);

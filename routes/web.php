@@ -12,8 +12,12 @@ use App\Http\Controllers\JobCostController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\OperationalDocumentController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PricingSuggestionController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TruckingPriceController;
+use App\Http\Controllers\VendorController;
+use App\Http\Controllers\WeeklyPricingController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -46,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dokumen-job/{quotation}/job-order/preview', [OperationalDocumentController::class, 'jobPreview'])->middleware('can:jobs.view')->name('documents.job.preview');
     Route::get('/api/dokumen-job/{quotation}/quotation/pdf', [OperationalDocumentController::class, 'quotationPdf'])->middleware('can:jobs.view')->name('documents.quotation.pdf');
     Route::get('/api/dokumen-job/{quotation}/job-order/pdf', [OperationalDocumentController::class, 'jobPdf'])->middleware('can:jobs.view')->name('documents.job.pdf');
+    Route::get('/api/pricing/suggest-trucking', [PricingSuggestionController::class, 'suggestTrucking'])->name('pricing.suggest-trucking');
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
     foreach (['submit', 'approve', 'reject', 'convert'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.manage')->name('quotations.'.$action);
@@ -61,6 +66,25 @@ Route::middleware('auth')->group(function () {
         Route::post('/jobs/{job}/costs/{cost}/finalize', [JobCostController::class, 'finalize'])->name('jobs.costs.finalize');
     });
     Route::resource('customers', CustomerController::class)->except('show')->middleware('can:customers.manage');
+    Route::resource('vendors', VendorController::class)->except('show')->middleware('can:vendors.manage');
+    Route::middleware('can:pricing.view')->prefix('pricing')->name('pricing.')->group(function () {
+        Route::get('/weekly', [WeeklyPricingController::class, 'index'])->name('weekly.index');
+        Route::get('/trucking', [TruckingPriceController::class, 'index'])->name('trucking.index');
+    });
+    Route::middleware('can:pricing.manage')->prefix('pricing')->name('pricing.')->group(function () {
+        Route::get('/weekly/create', [WeeklyPricingController::class, 'create'])->name('weekly.create');
+        Route::post('/weekly', [WeeklyPricingController::class, 'store'])->name('weekly.store');
+        Route::get('/weekly/{weeklyPricing}/edit', [WeeklyPricingController::class, 'edit'])->name('weekly.edit');
+        Route::put('/weekly/{weeklyPricing}', [WeeklyPricingController::class, 'update'])->name('weekly.update');
+        Route::post('/weekly/{weeklyPricing}/toggle', [WeeklyPricingController::class, 'toggle'])->name('weekly.toggle');
+        Route::delete('/weekly/{weeklyPricing}', [WeeklyPricingController::class, 'destroy'])->name('weekly.destroy');
+        Route::get('/trucking/create', [TruckingPriceController::class, 'create'])->name('trucking.create');
+        Route::post('/trucking', [TruckingPriceController::class, 'store'])->name('trucking.store');
+        Route::get('/trucking/{truckingPrice}/edit', [TruckingPriceController::class, 'edit'])->name('trucking.edit');
+        Route::put('/trucking/{truckingPrice}', [TruckingPriceController::class, 'update'])->name('trucking.update');
+        Route::post('/trucking/{truckingPrice}/toggle', [TruckingPriceController::class, 'toggle'])->name('trucking.toggle');
+        Route::delete('/trucking/{truckingPrice}', [TruckingPriceController::class, 'destroy'])->name('trucking.destroy');
+    });
     Route::get('/accounts/mappings', [AccountController::class, 'mappings'])->middleware('can:coa.manage')->name('accounts.mappings');
     Route::put('/accounts/mappings', [AccountController::class, 'updateMappings'])->middleware('can:coa.manage')->name('accounts.mappings.update');
     Route::resource('accounts', AccountController::class)->except('show')->middleware('can:coa.manage');
