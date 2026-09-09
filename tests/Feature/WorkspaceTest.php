@@ -63,11 +63,14 @@ class WorkspaceTest extends TestCase
     {
         foreach (['operational', 'finance', 'management'] as $role) {
             $user = User::where('email', $role.'@jobfinance.test')->firstOrFail();
-            $this->actingAs($user)->get('/dashboard')->assertOk()->assertDontSee('Pengguna &amp; Akses', false)->assertDontSee('Log Aktivitas');
+            $this->actingAs($user)->get('/dashboard')->assertOk()->assertDontSee('Pengguna &amp; Akses', false);
             $this->get('/users')->assertForbidden();
-            $this->get('/activity')->assertForbidden();
             $this->assertFalse(Gate::forUser($user)->allows('viewAny', User::class));
         }
+        foreach (['operational', 'management'] as $role) {
+            $this->actingAs(User::where('email', $role.'@jobfinance.test')->firstOrFail())->get('/activity')->assertForbidden();
+        }
+        $this->actingAs(User::where('email', 'finance@jobfinance.test')->firstOrFail())->get('/activity')->assertOk();
         $admin = User::where('email', 'admin@jobfinance.test')->firstOrFail();
         $this->actingAs($admin)->get('/users')->assertOk()->assertSee('Pengguna terdaftar');
         $this->get('/activity')->assertOk();
@@ -85,7 +88,7 @@ class WorkspaceTest extends TestCase
         $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail())
             ->get('/dashboard')->assertSee('Quotation')->assertDontSee('Piutang Customer')->assertDontSee('Laporan Keuangan');
         $this->actingAs(User::where('email', 'management@jobfinance.test')->firstOrFail())
-            ->get('/dashboard')->assertSee('Laporan Keuangan')->assertDontSee('Closing Job');
+            ->get('/dashboard')->assertDontSee('Laporan Keuangan')->assertDontSee('Closing Job');
     }
 
     public function test_user_without_role_is_denied_and_role_cannot_be_mass_assigned(): void
@@ -102,8 +105,8 @@ class WorkspaceTest extends TestCase
         $user->update(['password' => 'ChangedPassword!']);
         $hash = $user->password;
         $this->seed(DatabaseSeeder::class);
-        $this->assertDatabaseCount('users', 4);
-        $this->assertDatabaseCount('roles', 4);
+        $this->assertDatabaseCount('users', 8);
+        $this->assertDatabaseCount('roles', 8);
         $this->assertSame($hash, $user->fresh()->password);
     }
 }

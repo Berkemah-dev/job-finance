@@ -21,17 +21,19 @@ class BusinessDemoSeeder extends Seeder
             return;
         }
         DB::transaction(function () {
-            $operational = User::where('email', 'operational@jobfinance.test')->firstOrFail();
+            $sales = User::where('email', 'sales@jobfinance.test')->firstOrFail();
+            $salesManager = User::where('email', 'sales-manager@jobfinance.test')->firstOrFail();
+            $operation = User::where('email', 'operational@jobfinance.test')->firstOrFail();
             $finance = User::where('email', 'finance@jobfinance.test')->firstOrFail();
-            $customer = app(MasterDataService::class)->save(new Customer, ['code' => 'DEMO-001', 'name' => 'PT Nusantara Logistik', 'contact_name' => 'Budi Santoso', 'email' => 'finance@nusantara.test', 'phone' => '021-555-0101', 'address' => 'Jakarta'], $operational);
+            $customer = app(MasterDataService::class)->save(new Customer, ['code' => 'DEMO-001', 'name' => 'PT Nusantara Logistik', 'contact_name' => 'Budi Santoso', 'email' => 'finance@nusantara.test', 'phone' => '021-555-0101', 'address' => 'Jakarta'], $sales);
             $quotation = app(QuotationService::class)->save(null, ['customer_id' => $customer->id, 'subject' => 'Pengiriman Jakarta ke Surabaya', 'quotation_date' => today()->toDateString(), 'valid_until' => today()->addDays(30)->toDateString(), 'notes' => 'Data demo alur lengkap JobFinance', 'items' => [
                 ['description' => 'Dokumen dan reimbursement', 'type' => 'temporary', 'unit' => 'Paket', 'quantity' => '1', 'unit_cost' => '5000000', 'unit_price' => '5000000'],
                 ['description' => 'Jasa trucking', 'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '3000000', 'unit_price' => '4500000'],
-            ]], $operational);
-            app(QuotationService::class)->transition($quotation, 'submit', ['lock_version' => 0], $operational);
-            app(QuotationService::class)->transition($quotation, 'approve', ['lock_version' => 1], $operational);
-            $job = app(QuotationService::class)->convert($quotation, ['lock_version' => 2], $operational);
-            app(JobService::class)->transition($job, 'open', ['lock_version' => 0], $operational);
+            ]], $sales);
+            app(QuotationService::class)->transition($quotation, 'submit', ['lock_version' => 0], $sales);
+            app(QuotationService::class)->transition($quotation, 'approve', ['lock_version' => 1], $salesManager);
+            $job = app(QuotationService::class)->convert($quotation, ['lock_version' => 2], $salesManager);
+            app(JobService::class)->transition($job, 'open', ['lock_version' => 0], $operation);
             $costService = app(JobCostService::class);
             $temporary = $costService->save($job, null, ['job_version' => 1, 'description' => 'Dokumen dan reimbursement', 'type' => 'temporary', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Paket', 'unit_cost' => '5000000', 'unit_price' => '5000000'], $finance);
             $provision = $costService->save($job, null, ['job_version' => 2, 'description' => 'Jasa trucking', 'type' => 'provision', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Layanan', 'unit_cost' => '3000000', 'unit_price' => '4500000'], $finance);

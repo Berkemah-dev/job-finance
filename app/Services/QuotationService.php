@@ -6,6 +6,7 @@ use App\Enums\QuotationStatus;
 use App\Models\Customer;
 use App\Models\Job;
 use App\Models\Quotation;
+use App\Models\TruckingPrice;
 use App\Models\User;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
@@ -16,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class QuotationService
 {
-    public function __construct(private DocumentNumberService $numbers, private MasterDataService $master) {}
+    public function __construct(private DocumentNumberService $numbers, private MasterDataService $master, private PricingService $pricing) {}
 
     public function save(?Quotation $quotation, array $data, User $actor): Quotation
     {
@@ -34,7 +35,7 @@ class QuotationService
                 $this->master->checkVersion($quotation, $data);
             }
             $customer = $this->activeCustomer($data['customer_id']);
-            $calculated = $this->calculate($data['items']);
+            $calculated = $this->calculate($data['items'], $data['quotation_date'] ?? now());
             $quotation->fill(Arr::only($data, ['customer_id', 'subject', 'quotation_date', 'valid_until', 'notes']));
             $quotation->customer_snapshot = $customer->only(['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number']);
             $quotation->forceFill($calculated['totals']);
@@ -130,13 +131,14 @@ class QuotationService
         return $customer;
     }
 
-    public function calculate(array $rows): array
+    public function calculate(array $rows, string|Carbon|null $date = null): array
     {
         $temporary = Money::decimal('0');
         $cost = Money::decimal('0');
         $sell = Money::decimal('0');
         $items = [];
         foreach (array_values($rows) as $i => $row) {
+            $row = $this->normalizePricingRow($row, $i, $date);
             $quantity = Money::decimal($row['quantity']);
             $unitCost = Money::decimal($row['unit_cost']);
             $unitPrice = Money::decimal($row['unit_price']);
@@ -158,5 +160,81 @@ class QuotationService
 
         return ['items' => $items, 'totals' => ['total_temporary' => Money::checked($temporary), 'total_provision_cost' => Money::checked($cost),
             'total_provision_sell' => Money::checked($sell), 'subtotal' => Money::checked($temporary->plus($sell)), 'profit' => Money::checked($profit), 'margin' => Money::checked($margin)]];
+    }
+
+    /**
+     * Normalisasi baris item: mata uang + kurs (weekly pricing sebagai sumber kebenaran),
+     * lalu bila bersumber tarif trucking, modal diambil dari master tarif, bukan dari input klien.
+     */
+    private function normalizePricingRow(array $row, int $index, string|Carbon|null $date): array
+    {
+        $currency = (string) ($row['currency'] ?? 'IDR');
+        if ($currency === '' || ! in_array($currency, array_keys(config('operations.currencies')), true)) {
+            throw ValidationException::withMessages(['items.'.$index.'.currency' => 'Mata uang tidak valid.']);
+        }
+        $containerType = isset($row['container_type']) && $row['container_type'] !== ''
+            ? (string) $row['container_type']
+            : null;
+        if ($containerType !== null && ! in_array($containerType, array_keys(config('operations.container_types')), true)) {
+            throw ValidationException::withMessages(['items.'.$index.'.container_type' => 'Jenis kontainer tidak valid.']);
+        }
+        $row['currency'] = $currency;
+        $row['overweight'] = filter_var($row['overweight'] ?? false, FILTER_VALIDATE_BOOL);
+        $row['container_type'] = $containerType;
+        $row['gross_weight'] = $this->nullableNumber($row['gross_weight'] ?? null);
+        $row['volume'] = $this->nullableNumber($row['volume'] ?? null);
+        $row['pricing_snapshot'] = null;
+
+        if (($row['pricing_source'] ?? '') === 'trucking') {
+            $suggestion = $this->truckingSuggestion($row, $date);
+            if (! $suggestion['found']) {
+                throw ValidationException::withMessages(['items.'.$index.'.pricing' => 'Tarif trucking tidak ditemukan atau sudah tidak aktif.']);
+            }
+            $row['unit_cost'] = $suggestion['unit_cost'];
+            $row['pricing_source'] = 'trucking';
+            $row['pricing_id'] = $suggestion['pricing_id'];
+            $row['currency'] = $suggestion['currency'];
+            $row['exchange_rate'] = $suggestion['exchange_rate'];
+            $row['container_type'] = $suggestion['container_type'];
+            $row['overweight'] = $suggestion['overweight'];
+            $row['pricing_snapshot'] = $suggestion['snapshot'];
+        } else {
+            $row['pricing_source'] = 'manual';
+            $row['pricing_id'] = null;
+            $row['exchange_rate'] = $this->pricing->convertedRate($currency, $date);
+        }
+
+        return $row;
+    }
+
+    private function truckingSuggestion(array $row, string|Carbon|null $date): array
+    {
+        $price = null;
+        if (! empty($row['pricing_id'])) {
+            $price = TruckingPrice::whereKey((int) $row['pricing_id'])->where('is_active', true)->first();
+        }
+        if (! $price) {
+            $price = $this->pricing->findTruckingPrice(
+                (string) ($row['port_origin'] ?? ''),
+                (string) ($row['destination'] ?? ''),
+                (string) ($row['container_type'] ?? 'lcl'),
+                (bool) ($row['overweight'] ?? false),
+                ! empty($row['vendor_id']) ? (int) $row['vendor_id'] : null,
+                $date
+            );
+        }
+
+        return $price
+            ? $this->pricing->suggestTrucking($price->port_origin, $price->destination, $price->container_type, (bool) $price->overweight, $price->vendor_id, $date)
+            : ['found' => false];
+    }
+
+    private function nullableNumber(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (string) $value;
     }
 }

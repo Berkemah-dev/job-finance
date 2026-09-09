@@ -24,12 +24,12 @@ class AuthenticationService
         }
         RateLimiter::clear($key);
         $request->session()->regenerate();
-        ActivityLog::create(['user_id' => Auth::id(), 'action' => 'auth.login', 'description' => 'Masuk ke aplikasi']);
+        ActivityLog::create(['user_id' => Auth::id(), 'role_id' => $request->user()?->role_id, 'action' => 'auth.login', 'module' => 'auth', 'ip' => $request->ip(), 'description' => 'Masuk ke aplikasi']);
     }
 
     public function logout(Request $request): void
     {
-        ActivityLog::create(['user_id' => Auth::id(), 'action' => 'auth.logout', 'description' => 'Keluar dari aplikasi']);
+        ActivityLog::create(['user_id' => Auth::id(), 'role_id' => $request->user()?->role_id, 'action' => 'auth.logout', 'module' => 'auth', 'ip' => $request->ip(), 'description' => 'Keluar dari aplikasi']);
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

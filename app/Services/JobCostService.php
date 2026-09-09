@@ -50,6 +50,7 @@ class JobCostService
                 $cost->setRelation('job', $job);
                 Gate::forUser($actor)->authorize('update', $cost);
                 $this->master->checkVersion($cost, $data);
+                $before = $cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
             }
             $date = Carbon::parse($data['cost_date']);
             if ($date->isBefore($job->job_date) || $date->isAfter(today())) {
@@ -69,7 +70,8 @@ class JobCostService
             $cost->save();
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
             $this->touchJob($job, $actor);
-            $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number);
+            $after = $cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
+            $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => $new ? null : $before, 'after' => $after]);
 
             return $cost;
         }, 3);
@@ -91,7 +93,7 @@ class JobCostService
             $cost->lock_version++;
             $cost->save();
             $this->touchJob($job, $actor);
-            $this->master->log($actor, 'job_cost.finalized', 'Finalisasi '.$cost->number.' · '.$job->number);
+            $this->master->log($actor, 'job_cost.finalized', 'Finalisasi '.$cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'after' => $cost->only(['type', 'total_cost', 'total_price', 'status'])]);
         }, 3);
     }
 
@@ -110,7 +112,7 @@ class JobCostService
             $cost->save();
             $cost->delete();
             $this->touchJob($job, $actor);
-            $this->master->log($actor, 'job_cost.deleted', 'Menghapus Draft '.$cost->number.' · '.$job->number);
+            $this->master->log($actor, 'job_cost.deleted', 'Menghapus Draft '.$cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'after' => ['deleted' => true]]);
         }, 3);
     }
 

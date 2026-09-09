@@ -125,11 +125,11 @@ class AccountingReportTest extends TestCase
         $this->assertDatabaseCount('journals', 0);
     }
 
-    public function test_management_can_read_reports_but_cannot_manage_journals(): void
+    public function test_management_cannot_read_reports_or_manage_journals(): void
     {
         $this->actingAs(User::where('email', 'management@jobfinance.test')->firstOrFail());
         foreach (['ledger', 'trial-balance', 'balance-sheet', 'income-statement', 'cash-flow', 'profit-per-job'] as $report) {
-            $this->get('/reports/'.$report)->assertOk();
+            $this->get('/reports/'.$report)->assertForbidden();
         }
         $this->get('/journals')->assertForbidden();
         $this->post('/journals', $this->adjustmentData())->assertForbidden();

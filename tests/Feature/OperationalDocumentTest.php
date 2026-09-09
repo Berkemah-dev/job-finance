@@ -43,10 +43,13 @@ class OperationalDocumentTest extends TestCase
 
     private function approvedQuotation(): Quotation
     {
-        $this->post('/quotations', $this->quotationData())->assertSessionHasNoErrors();
+        $sales = User::where('email', 'sales@jobfinance.test')->firstOrFail();
+        $salesManager = User::where('email', 'sales-manager@jobfinance.test')->firstOrFail();
+        $this->actingAs($sales)->post('/quotations', $this->quotationData())->assertSessionHasNoErrors();
         $quotation = Quotation::firstOrFail();
-        $this->post('/quotations/'.$quotation->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
-        $this->post('/quotations/'.$quotation->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
+        $this->actingAs($sales)->post('/quotations/'.$quotation->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
+        $this->actingAs($salesManager)->post('/quotations/'.$quotation->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
+        $this->actingAs($this->actor);
 
         return $quotation->fresh();
     }
@@ -59,7 +62,13 @@ class OperationalDocumentTest extends TestCase
             ->assertOk()
             ->assertSee('Dokumen Job')
             ->assertSee($quotation->number)
+            ->assertDontSee('Create JO');
+
+        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
+        $this->get('/dokumen-job?search='.$quotation->number)
+            ->assertOk()
             ->assertSee('Create JO');
+        $this->actingAs($this->actor);
 
         $this->get('/dokumen-job/'.$quotation->id)
             ->assertOk()
@@ -70,7 +79,9 @@ class OperationalDocumentTest extends TestCase
             ->assertOk()
             ->assertSee('Job Order belum dibuat');
 
+        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
         $this->post('/quotations/'.$quotation->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
+        $this->actingAs($this->actor);
         $job = Job::firstOrFail();
 
         $this->get('/dokumen-job/'.$quotation->id.'?tab=job')
