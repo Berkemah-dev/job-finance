@@ -74,7 +74,8 @@ class ShipmentStatusTest extends TestCase
         $this->assertNotNull($job->shipment_status_at);
         $this->assertSame($this->operator->id, $job->shipment_status_by);
         $this->assertSame(2, $job->lock_version);
-        $history = $job->shipmentStatusHistory()->firstOrFail();
+        $history = $job->shipmentStatusHistory()->orderBy('id')->get()->firstWhere('to_status', 'booked');
+        $this->assertNotNull($history);
         $this->assertNull($history->from_status);
         $this->assertSame('booked', $history->to_status);
         $this->assertSame('Booking kapal KM SINAR', $history->note);

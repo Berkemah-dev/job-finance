@@ -24,7 +24,12 @@ class Job extends Model
 
     public function shipmentStatusHistory(): HasMany
     {
-        return $this->hasMany(JobShipmentStatus::class);
+        return $this->hasMany(JobStatusHistory::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(JobDocument::class);
     }
 
     public function closingSnapshot(): HasOne
@@ -62,5 +67,14 @@ class Job extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class)->withTrashed();
+    }
+
+    public function etaApproaching(): bool
+    {
+        if (! $this->eta) {
+            return false;
+        }
+
+        return $this->eta->gte(today()) && $this->eta->lte(today()->addDays(3));
     }
 }

@@ -29,33 +29,39 @@ class MasterDataTest extends TestCase
     public function test_customer_crud_search_archive_and_unique_code(): void
     {
         $this->login('operational');
-        $this->post('/customers', ['code' => 'cus-001', 'name' => 'PT Pelanggan', 'email' => 'contact@example.test'])->assertSessionHasNoErrors()->assertRedirect('/customers');
+        $this->post('/customers', ['name' => 'PT Pelanggan', 'email' => 'contact@example.test'])->assertSessionHasNoErrors()->assertRedirect('/customers/1');
         $customer = Customer::firstOrFail();
+        $this->assertMatchesRegularExpression('/^CUS-'.now()->year.'-\d{5}$/', $customer->code);
         $this->get('/customers?search=Pelangg')->assertOk()->assertSee('PT Pelanggan');
         $this->get('/customers/'.$customer->id.'/edit')->assertOk();
-        $this->put('/customers/'.$customer->id, ['code' => 'CUS-001', 'name' => 'Nama Baru', 'lock_version' => 0])->assertSessionHasNoErrors();
-        $this->put('/customers/'.$customer->id, ['code' => 'CUS-001', 'name' => 'Stale', 'lock_version' => 0])->assertSessionHasErrors('lock_version');
+        $this->put('/customers/'.$customer->id, ['name' => 'Nama Baru', 'lock_version' => 0])->assertSessionHasNoErrors();
+        $this->put('/customers/'.$customer->id, ['name' => 'Stale', 'lock_version' => 0])->assertSessionHasErrors('lock_version');
         $this->assertSame('Nama Baru', $customer->fresh()->name);
         $this->delete('/customers/'.$customer->id, ['lock_version' => 1])->assertSessionHasNoErrors();
         $this->assertSoftDeleted($customer);
         $this->get('/customers')->assertDontSee('Nama Baru');
-        $this->get('/customers?archived=1')->assertSee('Nama Baru');
-        $this->post('/customers', ['code' => 'CUS-001', 'name' => 'Duplicate'])->assertSessionHasErrors('code');
+        $this->get('/customers?status=inactive')->assertSee('Nama Baru');
+        $again = $this->post('/customers', ['name' => 'PT Lain'])->assertSessionHasNoErrors();
+        $second = Customer::whereKey(Customer::latest('id')->value('id'))->first();
+        $this->assertNotSame($customer->code, $second->code);
         $this->assertDatabaseHas('activity_logs', ['action' => 'customer.archived']);
     }
 
     public function test_customer_validation_and_direct_access_authorization(): void
     {
         $customer = Customer::factory()->create();
-        foreach (['finance', 'management'] as $role) {
-            $this->login($role);
-            $this->get('/customers')->assertForbidden();
-            $this->post('/customers', ['code' => 'NEW', 'name' => 'Blocked'])->assertForbidden();
-            $this->put('/customers/'.$customer->id, ['code' => 'BAD', 'name' => 'Blocked', 'lock_version' => 0])->assertForbidden();
-            $this->delete('/customers/'.$customer->id, ['lock_version' => 0])->assertForbidden();
-        }
+        $this->login('finance');
+        $this->get('/customers')->assertOk();
+        $this->post('/customers', ['name' => 'Blocked'])->assertForbidden();
+        $this->put('/customers/'.$customer->id, ['name' => 'Blocked', 'lock_version' => 0])->assertForbidden();
+        $this->delete('/customers/'.$customer->id, ['lock_version' => 0])->assertForbidden();
+        $this->login('management');
+        $this->get('/customers')->assertForbidden();
+        $this->post('/customers', ['name' => 'Blocked'])->assertForbidden();
+        $this->put('/customers/'.$customer->id, ['name' => 'Blocked', 'lock_version' => 0])->assertForbidden();
+        $this->delete('/customers/'.$customer->id, ['lock_version' => 0])->assertForbidden();
         $this->login('operational');
-        $this->post('/customers', ['code' => 'invalid code', 'name' => '', 'email' => 'wrong'])->assertSessionHasErrors(['code', 'name', 'email']);
+        $this->post('/customers', ['name' => '', 'email' => 'wrong'])->assertSessionHasErrors(['name', 'email']);
     }
 
     public function test_coa_mapping_type_and_archive_protection(): void
@@ -140,4 +146,3 @@ class MasterDataTest extends TestCase
         $this->assertSoftDeleted($subAccount);
     }
 }
-

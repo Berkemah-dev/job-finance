@@ -90,6 +90,39 @@ class MasterDataService
         }, 3);
     }
 
+    public function restore(Model $model, array $data, User $actor): void
+    {
+        DB::transaction(function () use ($model, $data, $actor) {
+            Gate::forUser($actor)->authorize($this->permissionFor($model));
+            $model = $model->newQueryWithoutScopes()->whereNotNull($model->getDeletedAtColumn())->whereKey($model->id)->lockForUpdate()->firstOrFail();
+            $this->checkVersion($model, $data);
+            $model->restore();
+            $model->updated_by = $actor->id;
+            $model->lock_version++;
+            $model->save();
+            $this->log($actor, $this->keyFor($model).'.restored', 'Mengaktifkan kembali '.$model->code.' · '.$model->name, ['module' => $this->keyFor($model), 'record_id' => $model->id]);
+        }, 3);
+    }
+
+    public function toggleActive(Model $model, array $data, User $actor): void
+    {
+        DB::transaction(function () use ($model, $data, $actor) {
+            Gate::forUser($actor)->authorize($this->permissionFor($model));
+            $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
+            $this->checkVersion($model, $data);
+            $model->is_active = ! $model->is_active;
+            $model->updated_by = $actor->id;
+            $model->lock_version++;
+            $model->save();
+            $this->log($actor, $this->keyFor($model).'.'.$this->stateFor($model), 'Mengubah status '.$model->code.' · '.$model->name, ['module' => $this->keyFor($model), 'record_id' => $model->id, 'after' => ['is_active' => $model->is_active]]);
+        }, 3);
+    }
+
+    private function stateFor(Model $model): string
+    {
+        return $model->is_active ? 'activated' : 'deactivated';
+    }
+
     public function mappings(array $data, User $actor): void
     {
         Gate::forUser($actor)->authorize('coa.manage');

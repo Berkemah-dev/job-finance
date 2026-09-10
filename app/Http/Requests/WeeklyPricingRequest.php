@@ -22,6 +22,7 @@ class WeeklyPricingRequest extends FormRequest
         return [
             'week' => ['required', 'string', 'max:20'],
             'effective_date' => ['required', 'date'],
+            'effective_until' => ['nullable', 'date', 'after_or_equal:effective_date'],
             'currency' => ['required', Rule::in(array_keys(config('operations.currencies')))],
             'exchange_rate' => ['required', 'numeric', 'min:0.000001', 'max:99999999999.99'],
             'service' => ['nullable', 'string', 'max:40', Rule::in(array_keys(config('operations.service_types')))],
@@ -33,6 +34,6 @@ class WeeklyPricingRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['week' => 'pekan', 'effective_date' => 'tanggal berlaku', 'currency' => 'mata uang', 'exchange_rate' => 'kurs', 'is_active' => 'status aktif', 'lock_version' => 'versi data'];
+        return ['week' => 'pekan', 'effective_date' => 'tanggal berlaku', 'effective_until' => 'berlaku sampai', 'currency' => 'mata uang', 'exchange_rate' => 'kurs', 'is_active' => 'status aktif', 'lock_version' => 'versi data'];
     }
 }

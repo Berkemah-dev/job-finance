@@ -11,11 +11,11 @@ class TruckingPrice extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'currency', 'effective_date', 'is_active'];
+    protected $fillable = ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'currency', 'effective_date', 'effective_until', 'is_active'];
 
     protected function casts(): array
     {
-        return ['overweight' => 'boolean', 'price' => 'decimal:2', 'effective_date' => 'date', 'is_active' => 'boolean'];
+        return ['overweight' => 'boolean', 'price' => 'decimal:2', 'effective_date' => 'date', 'effective_until' => 'date', 'is_active' => 'boolean'];
     }
 
     public function vendor(): BelongsTo

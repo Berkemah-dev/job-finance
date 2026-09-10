@@ -27,7 +27,7 @@ class QuotationController extends Controller
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when($customerId, fn ($q) => $q->where('customer_id', $customerId))
-            ->when($salesId, fn ($q) => $q->where('created_by', $salesId))
+            ->when($salesId, fn ($q) => $q->where(fn ($q) => $q->where('sales_id', $salesId)->orWhere(fn ($q) => $q->whereNull('sales_id')->where('created_by', $salesId))))
             ->when($serviceType !== '' && in_array($serviceType, array_keys(config('operations.service_types')), true), fn ($q) => $q->where('service_type', $serviceType))
             ->when($dateFrom, fn ($q) => $q->whereDate('quotation_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('quotation_date', '<=', $dateTo))
@@ -40,7 +40,7 @@ class QuotationController extends Controller
 
     public function create()
     {
-        return view('quotations.form', ['quotation' => new Quotation, 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name'])]);
+        return view('quotations.form', ['quotation' => new Quotation, 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']), 'sales' => $this->salesUsers()]);
     }
 
     public function store(QuotationRequest $request, QuotationService $service)
@@ -69,7 +69,7 @@ class QuotationController extends Controller
     {
         Gate::authorize('update', $quotation);
 
-        return view('quotations.form', ['quotation' => $quotation->load('items'), 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name'])]);
+        return view('quotations.form', ['quotation' => $quotation->load('items'), 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']), 'sales' => $this->salesUsers()]);
     }
 
     public function update(QuotationRequest $request, Quotation $quotation, QuotationService $service)
@@ -94,11 +94,30 @@ class QuotationController extends Controller
         return $this->change($request, $quotation, $service, 'reject');
     }
 
+    public function revise(VersionRequest $request, Quotation $quotation, QuotationService $service)
+    {
+        return $this->change($request, $quotation, $service, 'revise');
+    }
+
+    public function duplicate(Request $request, Quotation $quotation, QuotationService $service)
+    {
+        $copy = $service->duplicate($quotation, $request->user());
+
+        return redirect()->route('quotations.edit', $copy)->with('success', 'Draft quotation disalin. Nomor <strong>'.$copy->number.'</strong> dihasilkan otomatis.');
+    }
+
     private function change(VersionRequest $request, Quotation $quotation, QuotationService $service, string $action)
     {
         $service->transition($quotation, $action, $request->validated(), $request->user());
 
         return redirect()->route('quotations.show', $quotation)->with('success', 'Status quotation berhasil diperbarui.');
+    }
+
+    private function salesUsers()
+    {
+        return User::whereHas('role', function ($q) {
+            $q->whereIn('name', ['sales', 'sales-manager']);
+        })->orderBy('name')->get(['id', 'name']);
     }
 
     public function convert(VersionRequest $request, Quotation $quotation, QuotationService $service)

@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CustomerDocument extends Model
 {
-    protected $fillable = ['customer_id', 'type', 'filename', 'path', 'disk', 'uploaded_by'];
+    protected $fillable = ['customer_id', 'type', 'filename', 'original_name', 'path', 'disk', 'mime', 'size', 'uploaded_by'];
+
+    protected function casts(): array
+    {
+        return ['size' => 'integer'];
+    }
 
     public function customer(): BelongsTo
     {

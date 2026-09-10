@@ -13,7 +13,7 @@ class Quotation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['customer_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate'];
+    protected $fillable = ['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate'];
 
     protected function casts(): array
     {
@@ -26,6 +26,11 @@ class Quotation extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class)->withTrashed();
+    }
+
+    public function sales(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sales_id');
     }
 
     public function items(): HasMany

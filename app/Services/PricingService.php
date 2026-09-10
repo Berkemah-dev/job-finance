@@ -86,6 +86,7 @@ class PricingService
 
         return WeeklyPricing::where('currency', $currency)->where('is_active', true)
             ->where('effective_date', '<=', $date->toDateString())
+            ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', $date->toDateString()))
             ->orderByDesc('effective_date')->orderByDesc('id')
             ->when($service, fn ($q, $s) => $q->where(fn ($q) => $q->where('service', $s)->orWhereNull('service')))
             ->first();
@@ -98,6 +99,7 @@ class PricingService
         return TruckingPrice::where('port_origin', $portOrigin)->where('destination', $destination)
             ->where('container_type', $containerType)->where('overweight', $overweight)
             ->where('is_active', true)->where('effective_date', '<=', $date->toDateString())
+            ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', $date->toDateString()))
             ->when($vendorId, fn ($q, $id) => $q->where('vendor_id', $id))
             ->orderByDesc('effective_date')->orderByDesc('id')->first();
     }
@@ -149,8 +151,8 @@ class PricingService
     private function editableKeys(Model $model): array
     {
         return $model instanceof WeeklyPricing
-            ? ['week', 'effective_date', 'currency', 'exchange_rate', 'service', 'notes', 'is_active']
-            : ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'currency', 'effective_date', 'is_active'];
+            ? ['week', 'effective_date', 'effective_until', 'currency', 'exchange_rate', 'service', 'notes', 'is_active']
+            : ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'currency', 'effective_date', 'effective_until', 'is_active'];
     }
 
     private function actionFor(Model $model, string $suffix): string

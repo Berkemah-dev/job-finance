@@ -1,5 +1,49 @@
 const form = document.querySelector('[data-quotation-form]');
 if (form) {
+    const customerSelect = form.querySelector('[data-customer-select]');
+    const applyContact = (picker, { name, address }) => {
+        const key = picker.dataset.shipperPicker !== undefined ? 'shipper' : 'consignee';
+        form.querySelector('[data-' + key + '-name]').value = name ?? '';
+        form.querySelector('[data-' + key + '-address]').value = address ?? '';
+    };
+    const populatePick = async () => {
+        const id = customerSelect?.value;
+        const banks = { '[data-shipper-picker]': 'shipper', '[data-consignee-picker]': 'consignee' };
+        for (const [selector, type] of Object.entries(banks)) {
+            const picker = form.querySelector(selector);
+            if (!picker) continue;
+            picker.innerHTML = '<option value="">Isi manual atau pilih kontak</option>';
+            if (!id) continue;
+            try {
+                const response = await fetch('/api/customer-contacts/' + id, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!response.ok) continue;
+                const contacts = await response.json();
+                contacts.filter(c => c.type === type && c.is_active !== false).forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.id;
+                    option.textContent = c.name + (c.company ? ' · ' + c.company : '');
+                    option.dataset.name = c.name ?? '';
+                    option.dataset.address = c.address ?? '';
+                    picker.appendChild(option);
+                });
+            } catch { /* abaikan; kontak tetap bisa diisi manual */ }
+        }
+        if (id) {
+            const paymentTerms = customerSelect.options[customerSelect.selectedIndex]?.dataset?.paymentTerms ?? '';
+            if (paymentTerms) {
+                const paymentSelect = form.querySelector('#payment_terms');
+                if (paymentSelect && !paymentSelect.value) paymentSelect.value = paymentTerms;
+            }
+        }
+    };
+    customerSelect?.addEventListener('change', populatePick);
+    form.addEventListener('change', event => {
+        const picker = event.target.closest('[data-shipper-picker], [data-consignee-picker]');
+        if (!picker) return;
+        const option = picker.options[picker.selectedIndex];
+        applyContact(picker, { name: option?.dataset?.name, address: option?.dataset?.address });
+    });
+    populatePick();
     const container = form.querySelector('[data-items]');
     const template = form.querySelector('[data-item-template]');
     const addButton = form.querySelector('[data-add-item]');

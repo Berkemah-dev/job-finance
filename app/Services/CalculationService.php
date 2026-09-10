@@ -115,6 +115,32 @@ class CalculationService
         ];
     }
 
+    /**
+     * Estimasi biaya LCL basis volume (W/M): tagihan = maksimum total m³ vs tonase (1.000 kg),
+     * dikalikan tarif per m³. Tarif kosong memakai default dari config operations.lcl.default_rate.
+     */
+    public function lcl(array $packages, string|float|int|null $ratePerCbm = null): array
+    {
+        $totals = $this->packageTotals($packages);
+        $rate = Money::decimal((float) ($ratePerCbm ?? config('operations.lcl.default_rate')));
+        $cbmBasis = (float) $totals['total_cbm'];
+        $weightBasis = (float) $totals['total_gross_weight'] / 1000;
+        $chargeableBasis = max($cbmBasis, $weightBasis);
+        $cost = $rate->multipliedBy((string) round($chargeableBasis, 4))->toScale(2, RoundingMode::HALF_UP);
+
+        return [
+            'rows' => $totals['rows'],
+            'package_count' => $totals['package_count'],
+            'total_gross_weight' => $totals['total_gross_weight'],
+            'total_volume_weight' => $totals['total_volume_weight'],
+            'total_cbm' => $totals['total_cbm'],
+            'chargeable_basis' => round($chargeableBasis, 4),
+            'basis_note' => count($packages) ? ($cbmBasis >= $weightBasis ? 'm³' : 'tonase') : null,
+            'rate_per_cbm' => Money::checked($rate),
+            'total_cost' => Money::checked($cost),
+        ];
+    }
+
     private function assertDimensions(float|int ...$values): void
     {
         foreach ($values as $value) {

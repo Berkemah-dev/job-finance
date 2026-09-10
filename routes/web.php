@@ -3,8 +3,11 @@
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\ClosingController;
+use App\Http\Controllers\CustomerContactController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerDocumentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\InvoiceController;
@@ -75,8 +78,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/dokumen-job/{quotation}/tanda-terima/pdf', [OperationalDocumentController::class, 'tandaTerimaPdf'])->middleware('can:jobs.view')->name('documents.tanda-terima.pdf');
     Route::get('/api/dokumen-job/{quotation}/sk-do/pdf', [OperationalDocumentController::class, 'skDoPdf'])->middleware('can:jobs.view')->name('documents.sk-do.pdf');
     Route::get('/api/pricing/suggest-trucking', [PricingSuggestionController::class, 'suggestTrucking'])->name('pricing.suggest-trucking');
+    Route::get('/kalkulator', [CalculatorController::class, 'index'])->name('calculators.index');
+    Route::get('/kalkulator/volume-weight', [CalculatorController::class, 'volumeWeight'])->name('calculators.volume-weight');
+    Route::get('/kalkulator/lcl', [CalculatorController::class, 'lcl'])->name('calculators.lcl');
+    Route::get('/kalkulator/pajak', [CalculatorController::class, 'tax'])->name('calculators.tax');
+    Route::get('/api/calculators/packages', [CalculatorController::class, 'packages'])->name('calculators.api.packages');
+    Route::get('/api/calculators/lcl', [CalculatorController::class, 'lclApi'])->name('calculators.api.lcl');
+    Route::get('/api/calculators/tax', [CalculatorController::class, 'taxApi'])->name('calculators.api.tax');
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
     Route::post('/quotations/{quotation}/submit', [QuotationController::class, 'submit'])->middleware('can:quotations.manage')->name('quotations.submit');
+    Route::post('/quotations/{quotation}/duplicate', [QuotationController::class, 'duplicate'])->middleware('can:quotations.manage')->name('quotations.duplicate');
     foreach (['approve', 'reject', 'revise'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.approve')->name('quotations.'.$action);
     }
@@ -102,8 +113,33 @@ Route::middleware('auth')->group(function () {
         Route::resource('jobs.costs', JobCostController::class);
         Route::post('/jobs/{job}/costs/{cost}/finalize', [JobCostController::class, 'finalize'])->name('jobs.costs.finalize');
     });
-    Route::resource('customers', CustomerController::class)->except('show')->middleware('can:customers.manage');
-    Route::resource('vendors', VendorController::class)->except('show')->middleware('can:vendors.manage');
+    Route::get('/customers', [CustomerController::class, 'index'])->middleware('can:customers.view')->name('customers.index');
+    Route::get('/customers/create', [CustomerController::class, 'create'])->middleware('can:customers.manage')->name('customers.create');
+    Route::post('/customers', [CustomerController::class, 'store'])->middleware('can:customers.manage')->name('customers.store');
+    Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('can:customers.view')->name('customers.show');
+    Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->middleware('can:customers.manage')->name('customers.edit');
+    Route::put('/customers/{customer}', [CustomerController::class, 'update'])->middleware('can:customers.manage')->name('customers.update');
+    Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->middleware('can:customers.manage')->name('customers.destroy');
+    Route::post('/customers/{customer}/restore', [CustomerController::class, 'restore'])->middleware('can:customers.manage')->name('customers.restore');
+    Route::get('/customers/{customer}/documents/{document}/download', [CustomerDocumentController::class, 'download'])->middleware('can:customers.view')->name('customers.documents.download');
+    Route::delete('/customers/{customer}/documents/{document}', [CustomerDocumentController::class, 'destroy'])->middleware('can:customers.manage')->name('customers.documents.destroy');
+    Route::get('/customer-contacts', [CustomerContactController::class, 'index'])->middleware('can:customers.view')->name('customer-contacts.index');
+    Route::get('/customer-contacts/create', [CustomerContactController::class, 'create'])->middleware('can:customers.manage')->name('customer-contacts.create');
+    Route::post('/customer-contacts', [CustomerContactController::class, 'store'])->middleware('can:customers.manage')->name('customer-contacts.store');
+    Route::get('/customer-contacts/{customerContact}', [CustomerContactController::class, 'show'])->middleware('can:customers.view')->name('customer-contacts.show');
+    Route::get('/customer-contacts/{customerContact}/edit', [CustomerContactController::class, 'edit'])->middleware('can:customers.manage')->name('customer-contacts.edit');
+    Route::put('/customer-contacts/{customerContact}', [CustomerContactController::class, 'update'])->middleware('can:customers.manage')->name('customer-contacts.update');
+    Route::delete('/customer-contacts/{customerContact}', [CustomerContactController::class, 'destroy'])->middleware('can:customers.manage')->name('customer-contacts.destroy');
+    Route::get('/api/customer-contacts/{customer}', [CustomerContactController::class, 'forCustomer'])->middleware('can:customers.view')->name('api.customer-contacts');
+    Route::get('/vendors', [VendorController::class, 'index'])->middleware('can:vendors.manage')->name('vendors.index');
+    Route::get('/vendors/create', [VendorController::class, 'create'])->middleware('can:vendors.manage')->name('vendors.create');
+    Route::post('/vendors', [VendorController::class, 'store'])->middleware('can:vendors.manage')->name('vendors.store');
+    Route::get('/vendors/{vendor}', [VendorController::class, 'show'])->middleware('can:vendors.manage')->name('vendors.show');
+    Route::get('/vendors/{vendor}/edit', [VendorController::class, 'edit'])->middleware('can:vendors.manage')->name('vendors.edit');
+    Route::put('/vendors/{vendor}', [VendorController::class, 'update'])->middleware('can:vendors.manage')->name('vendors.update');
+    Route::post('/vendors/{vendor}/toggle', [VendorController::class, 'toggle'])->middleware('can:vendors.manage')->name('vendors.toggle');
+    Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->middleware('can:vendors.manage')->name('vendors.destroy');
+    Route::post('/vendors/{vendor}/restore', [VendorController::class, 'restore'])->middleware('can:vendors.manage')->name('vendors.restore');
     Route::middleware('can:pricing.view')->prefix('pricing')->name('pricing.')->group(function () {
         Route::get('/weekly', [WeeklyPricingController::class, 'index'])->name('weekly.index');
         Route::get('/trucking', [TruckingPriceController::class, 'index'])->name('trucking.index');
