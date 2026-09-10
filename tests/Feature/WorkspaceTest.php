@@ -71,6 +71,10 @@ class WorkspaceTest extends TestCase
             $this->actingAs(User::where('email', $role.'@jobfinance.test')->firstOrFail())->get('/activity')->assertForbidden();
         }
         $this->actingAs(User::where('email', 'finance@jobfinance.test')->firstOrFail())->get('/activity')->assertOk();
+        $financeManager = User::where('email', 'finance-manager@jobfinance.test')->firstOrFail();
+        $this->actingAs($financeManager)->get('/users')->assertOk()->assertSee('Pengguna terdaftar');
+        $this->assertTrue(Gate::forUser($financeManager)->allows('viewAny', User::class));
+        $this->get('/users/create')->assertForbidden();
         $admin = User::where('email', 'admin@jobfinance.test')->firstOrFail();
         $this->actingAs($admin)->get('/users')->assertOk()->assertSee('Pengguna terdaftar');
         $this->get('/activity')->assertOk();

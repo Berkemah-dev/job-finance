@@ -13,5 +13,13 @@
 @if($aged['invoices'] > 0)
 <div class="cost-progress"><span>Umur piutang — <strong>@foreach(['current'=>'Saat ini','aging_1_30'=>'1-30','aging_31_60'=>'31-60','aging_61_90'=>'61-90','aging_90_plus'=>'>90'] as $key=>$label)@if(! \App\Support\Money::decimal($aged[$key])->isZero())<strong>{{ $label }} hari: Rp {{ \App\Support\Money::format($aged[$key]) }}</strong> @endif @endforeach</strong></span></div>
 @endif
+@can('email.manage')
+<div class="cost-summary-body"><p class="panel-note">Kirim statement ini ke email customer (termasuk kontak shipper / consignee). Satu alamat per baris.</p>
+<form method="POST" action="{{ route('reports.soa.email',$customer) }}">@csrf<input type="hidden" name="from" value="{{ $from->toDateString() }}"><input type="hidden" name="to" value="{{ $to->toDateString() }}">
+<textarea name="emails" rows="4" maxlength="2000" placeholder="email@customer.com">{{ $customer->email }}{{ $customer->contacts->pluck('email')->filter()->unique()->map(fn ($email) => '
+'.$email)->join('') }}</textarea>
+@error('emails')<div class="info-note">{{ $message }}</div>@enderror
+<div class="action-group"><button class="button button-primary">Kirim lewat email</button></div></form></div>
+@endcan
 <div class="table-scroll"><table><thead><tr><th>Tanggal</th><th>Nomor</th><th>Keterangan</th><th class="money">Debet</th><th class="money">Kredit</th><th class="money">Saldo</th></tr></thead><tbody>@forelse($statement['rows'] as $row)<tr><td>{{ $row['date']->format('d/m/Y') }}</td><td>{{ $row['number'] }}</td><td>@if($row['type']==='payment')<span class="status-badge status-partially_paid">Pembayaran</span> @endif{{ $row['description'] }}</td><td class="money">@if(\App\Support\Money::decimal($row['debit'])->isPositive())Rp {{ \App\Support\Money::format($row['debit']) }}@endif</td><td class="money">@if(\App\Support\Money::decimal($row['credit'])->isPositive())Rp {{ \App\Support\Money::format($row['credit']) }}@endif</td><td class="money"><strong>Rp {{ \App\Support\Money::format($row['balance']) }}</strong></td></tr>@empty<tr><td colspan="6"><div class="empty-state"><h3>Tidak ada transaksi pada periode ini</h3><p>Perlebar rentang tanggal untuk melihat invoice dan pembayaran.</p></div></td></tr>@endforelse</tbody></table></div></section>
 @endsection

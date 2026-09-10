@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ReimbursementRequest;
+use App\Models\Job;
 use App\Models\Reimbursement;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Services\ReimbursementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ReimbursementController extends Controller
@@ -15,7 +18,7 @@ class ReimbursementController extends Controller
     public function index(Request $request)
     {
         Gate::authorize('reimbursements.manage');
-        $query = Reimbursement::query()->with('employee')->latest('id');
+        $query = Reimbursement::query()->with(['employee', 'job', 'vendor'])->latest('id');
         $status = $request->string('status')->toString();
         $category = $request->string('category')->toString();
         $search = mb_substr($request->string('search')->toString(), 0, 60);
@@ -43,7 +46,13 @@ class ReimbursementController extends Controller
     {
         Gate::authorize('reimbursements.manage');
 
-        return view('reimbursements.form', ['employees' => User::query()->where('name', '<>', '')->orderBy('name')->get(['id', 'name'])]);
+        $openJobs = Job::query()->whereNull('closed_at')->whereNull('cancelled_at')->orderByDesc('id')->get(['id', 'number', 'subject']);
+
+        return view('reimbursements.form', [
+            'employees' => User::query()->where('name', '<>', '')->orderBy('name')->get(['id', 'name']),
+            'jobs' => $openJobs,
+            'vendors' => Vendor::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function store(ReimbursementRequest $request, ReimbursementService $service)
@@ -57,7 +66,7 @@ class ReimbursementController extends Controller
     {
         Gate::authorize('reimbursements.manage');
 
-        return view('reimbursements.show', ['reimbursement' => $reimbursement->load(['employee', 'createdBy', 'reviewedBy', 'fundingAccount', 'journals'])]);
+        return view('reimbursements.show', ['reimbursement' => $reimbursement->load(['employee', 'job', 'vendor', 'createdBy', 'reviewedBy', 'fundingAccount', 'journals'])]);
     }
 
     public function approve(Request $request, Reimbursement $reimbursement, ReimbursementService $service)
@@ -85,6 +94,14 @@ class ReimbursementController extends Controller
         ]);
 
         return $this->respond($service->pay($reimbursement, $data, $request->user()), 'Reimbursement '.$reimbursement->number.' dibayar. Jurnal tercatat seimbang.');
+    }
+
+    public function downloadAttachment(Reimbursement $reimbursement)
+    {
+        Gate::authorize('reimbursements.manage');
+        abort_unless($reimbursement->attachment_path && Storage::disk('local')->exists($reimbursement->attachment_path), 404);
+
+        return Storage::disk('local')->download($reimbursement->attachment_path, $reimbursement->attachment_name);
     }
 
     private function validTransition(Request $request): array

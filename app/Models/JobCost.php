@@ -11,7 +11,7 @@ class JobCost extends Model
 {
     use HasFactory,SoftDeletes;
 
-    protected $fillable = ['description', 'type', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'payee', 'reference', 'notes'];
+    protected $fillable = ['description', 'type', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'payee', 'reference', 'notes', 'quotation_id', 'quotation_item_id'];
 
     protected function casts(): array
     {
@@ -26,6 +26,16 @@ class JobCost extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function quotation(): BelongsTo
+    {
+        return $this->belongsTo(Quotation::class);
+    }
+
+    public function quotationItem(): BelongsTo
+    {
+        return $this->belongsTo(QuotationItem::class);
     }
 
     public function finalizer(): BelongsTo

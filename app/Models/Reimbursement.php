@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Reimbursement extends Model
 {
     protected $fillable = [
-        'number', 'employee_id', 'category', 'reimbursement_date', 'description', 'notes', 'amount',
+        'number', 'employee_id', 'job_id', 'vendor_id', 'category', 'reimbursement_date', 'description', 'notes', 'amount',
+        'currency', 'exchange_rate', 'attachment_name', 'attachment_path',
         'status', 'payment_reference', 'paid_date', 'funding_account_id', 'created_by',
         'reviewed_by', 'reviewed_at', 'paid_at', 'lock_version',
     ];
@@ -22,8 +23,20 @@ class Reimbursement extends Model
             'reviewed_at' => 'datetime',
             'paid_at' => 'datetime',
             'amount' => 'decimal:2',
+            'currency' => 'string',
+            'exchange_rate' => 'decimal:2',
             'lock_version' => 'integer',
         ];
+    }
+
+    public function job(): BelongsTo
+    {
+        return $this->belongsTo(Job::class, 'job_id');
+    }
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id');
     }
 
     public function employee(): BelongsTo

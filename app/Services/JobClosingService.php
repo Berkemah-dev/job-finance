@@ -51,6 +51,12 @@ class JobClosingService
                 throw ValidationException::withMessages(['job' => 'Mata uang quotation tidak valid untuk invoice.']);
             }
             $rate = Money::decimal((string) ($job->quotation_snapshot['exchange_rate'] ?? '1'));
+            if (! empty($data['exchange_rate_override'])) {
+                if ($currency === 'IDR' && ! Money::decimal($data['exchange_rate_override'])->isEqualTo(1)) {
+                    throw ValidationException::withMessages(['exchange_rate_override' => 'Override kurs hanya berlaku untuk invoice valas; invoice Rupiah memakai kurs 1.']);
+                }
+                $rate = Money::decimal($data['exchange_rate_override']);
+            }
             if ($rate->isZero()) {
                 throw ValidationException::withMessages(['job' => 'Kurs quotation nol sehingga invoice tidak dapat dibuat.']);
             }

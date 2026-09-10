@@ -2,6 +2,7 @@
 
 return [
     'job_statuses' => ['draft' => 'Draft', 'open' => 'Open', 'closed' => 'Closed', 'cancelled' => 'Dibatalkan'],
+    'shipment_statuses' => ['booked' => 'Booked', 'in_progress' => 'In Progress', 'departed' => 'Departed', 'arrived' => 'Arrived', 'spjm' => 'SPJM', 'sppb' => 'SPPB', 'do_process' => 'DO Process', 'completed' => 'Completed'],
     'cost_statuses' => ['draft' => 'Draft', 'final' => 'Final'],
     'service_types' => ['land' => 'Darat', 'sea' => 'Laut', 'air' => 'Udara', 'multimodal' => 'Multimoda', 'other' => 'Lainnya'],
     'vendor_types' => ['shipping_line' => 'Shipping Lines', 'trucking' => 'Vendor Trucking', 'international_agent' => 'International Agent', 'national_agent' => 'National Agent'],

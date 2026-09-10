@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\Job;
 use App\Models\Journal;
 use App\Models\Reimbursement;
 use App\Models\User;
+use App\Models\Vendor;
+use App\Models\WeeklyPricing;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ReimbursementTest extends TestCase
@@ -64,16 +69,79 @@ class ReimbursementTest extends TestCase
         $this->get('/reimbursements/'.$reimbursement->id)->assertOk()->assertSee($journal->number)->assertSee('Dibayar');
     }
 
+    public function test_foreign_reimbursement_locks_currency_rate_and_books_idr_journal(): void
+    {
+        Storage::fake('local');
+        $job = Job::factory()->create();
+        $vendor = Vendor::factory()->create();
+        $attachment = UploadedFile::fake()->image('bukti.jpg', 200, 200);
+
+        $this->post('/reimbursements', [...$this->base(), 'job_id' => $job->id, 'vendor_id' => $vendor->id, 'currency' => 'USD', 'exchange_rate' => '16000', 'amount' => '100.00', 'attachment' => $attachment])
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $reimbursement = Reimbursement::firstOrFail();
+        $this->assertSame('USD', $reimbursement->currency);
+        $this->assertSame('16000.00', $reimbursement->exchange_rate);
+        $this->assertSame($job->id, $reimbursement->job_id);
+        $this->assertSame($vendor->id, $reimbursement->vendor_id);
+        $this->assertSame('bukti.jpg', $reimbursement->attachment_name);
+        Storage::disk('local')->assertExists($reimbursement->attachment_path);
+        $this->get('/reimbursements/'.$reimbursement->id)->assertOk()->assertSee($job->number)->assertSee($vendor->name)->assertSee('USD')->assertSee('Unduh bukti.jpg');
+        $this->get('/reimbursements/'.$reimbursement->id.'/attachment')->assertOk()->assertHeader('content-disposition', 'attachment; filename=bukti.jpg');
+
+        $this->post('/reimbursements/'.$reimbursement->id.'/approve', ['lock_version' => 0])->assertSessionHasNoErrors();
+        $this->post('/reimbursements/'.$reimbursement->id.'/pay', ['lock_version' => 1, 'paid_date' => today()->toDateString(), 'funding_account' => 'bank'])->assertSessionHasNoErrors();
+
+        $journal = Journal::where('type', 'reimbursement')->firstOrFail();
+        $this->assertEquals(1600000, $journal->entries->sum(fn ($e) => (float) $e->debit));
+        $this->assertEquals(1600000, $journal->entries->sum(fn ($e) => (float) $e->credit));
+    }
+
+    public function test_foreign_reimbursement_defaults_rate_from_active_weekly_pricing(): void
+    {
+        WeeklyPricing::factory()->create(['week' => now()->format('o-W'), 'currency' => 'USD', 'exchange_rate' => 15250, 'is_active' => true]);
+
+        $this->post('/reimbursements', [...$this->base(), 'currency' => 'USD', 'exchange_rate' => '', 'amount' => '100.00'])
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('15250.00', Reimbursement::firstOrFail()->exchange_rate);
+    }
+
+    public function test_foreign_reimbursement_without_rate_and_no_weekly_is_rejected(): void
+    {
+        $this->post('/reimbursements', [...$this->base(), 'currency' => 'USD', 'exchange_rate' => '', 'amount' => '100.00'])
+            ->assertSessionHasErrors('exchange_rate');
+        $this->assertDatabaseCount('reimbursements', 0);
+    }
+
+    public function test_idr_reimbursement_force_rate_one_even_if_override_submitted(): void
+    {
+        $this->post('/reimbursements', [...$this->base(), 'currency' => 'IDR', 'exchange_rate' => '16000', 'amount' => '50000'])
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('1.00', Reimbursement::firstOrFail()->exchange_rate);
+    }
+
     public function test_validation_rejects_invalid_requests(): void
     {
-        $base = ['employee_id' => $this->employee->id, 'category' => 'transport', 'reimbursement_date' => today()->toDateString(), 'description' => 'Bensin mobil', 'amount' => '150000'];
+        $base = $this->base();
         $this->post('/reimbursements', [...$base, 'amount' => '0'])->assertSessionHasErrors('amount');
         $this->post('/reimbursements', [...$base, 'amount' => 'abc'])->assertSessionHasErrors('amount');
         $this->post('/reimbursements', [...$base, 'category' => 'box'])->assertSessionHasErrors('category');
         $this->post('/reimbursements', [...$base, 'reimbursement_date' => today()->addDays(2)->toDateString()])->assertSessionHasErrors('reimbursement_date');
         $this->post('/reimbursements', [...$base, 'employee_id' => 999999])->assertSessionHasErrors('employee_id');
         $this->post('/reimbursements', [...$base, 'description' => 'x'])->assertSessionHasErrors('description');
+        $this->post('/reimbursements', [...$base, 'job_id' => 999999])->assertSessionHasErrors('job_id');
+        $this->post('/reimbursements', [...$base, 'vendor_id' => 999999])->assertSessionHasErrors('vendor_id');
+        $this->post('/reimbursements', [...$base, 'currency' => 'EUR'])->assertSessionHasErrors('currency');
+        $this->post('/reimbursements', [...$base, 'exchange_rate' => '0'])->assertSessionHasErrors('exchange_rate');
+        $this->post('/reimbursements', [...$base, 'attachment' => UploadedFile::fake()->create('barang.txt', 10)])->assertSessionHasErrors('attachment');
         $this->assertDatabaseCount('reimbursements', 0);
+    }
+
+    private function base(): array
+    {
+        return ['employee_id' => $this->employee->id, 'category' => 'transport', 'reimbursement_date' => today()->toDateString(), 'description' => 'Bensin mobil', 'amount' => '150000'];
     }
 
     public function test_transitions_guard_status_version_and_roles(): void

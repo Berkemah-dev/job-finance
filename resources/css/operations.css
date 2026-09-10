@@ -2,7 +2,11 @@
 .status-final,
 .status-paid,
 .status-active,
-.status-approved {
+.status-approved,
+.status-arrived,
+.status-spjm,
+.status-sppb,
+.status-completed {
     background: #e0f6ec;
     color: #22865f;
 }
@@ -15,12 +19,19 @@
     background: #fef2f2;
     color: #235ab8;
 }
-.status-partially_paid {
+.status-partially_paid,
+.status-departed,
+.status-do_process {
     background: #fff3d6;
     color: #9a6611;
 }
 .status-pending,
-.status-revision {
+.status-revision,
+.status-draft,
+.status-submitted,
+.status-converted,
+.status-booked,
+.status-in_progress {
     background: #eef2fb;
     color: #5b5fc7;
 }

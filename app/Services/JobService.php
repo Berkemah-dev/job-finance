@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Job;
 use App\Models\JobCost;
+use App\Models\QuotationItem;
 use App\Models\User;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
@@ -81,6 +82,32 @@ class JobService
         }, 3);
     }
 
+    public function updateShipmentStatus(array $data, Job $job, User $actor): Job
+    {
+        return DB::transaction(function () use ($data, $job, $actor) {
+            $job = Job::lockForUpdate()->findOrFail($job->id);
+            Gate::forUser($actor)->authorize('update', $job);
+            $this->master->checkVersion($job, $data);
+            if ($job->status !== 'open') {
+                throw ValidationException::withMessages(['shipment_status' => 'Status pengiriman hanya dapat diubah untuk job berstatus Open.']);
+            }
+            if (! is_string($data['shipment_status'] ?? null) || ! array_key_exists($data['shipment_status'], config('operations.shipment_statuses'))) {
+                throw ValidationException::withMessages(['shipment_status' => 'Status pengiriman tidak valid.']);
+            }
+            $from = $job->shipment_status;
+            $job->shipment_status = $data['shipment_status'];
+            $job->shipment_status_by = $actor->id;
+            $job->shipment_status_at = now();
+            $job->shipmentStatusHistory()->create(['from_status' => $from, 'to_status' => $job->shipment_status, 'note' => $data['reason'] ?? null, 'user_id' => $actor->id, 'created_at' => now()]);
+            $job->updated_by = $actor->id;
+            $job->lock_version++;
+            $job->save();
+            $this->master->log($actor, 'job.shipment_status', $job->number.' → '.config('operations.shipment_statuses.'.$job->shipment_status), ['module' => 'job', 'record_id' => $job->id, 'before' => $from, 'after' => $job->shipment_status]);
+
+            return $job;
+        }, 3);
+    }
+
     private function seedQuotationCharges(Job $job, User $actor): void
     {
         $snapshot = $job->quotation_snapshot;
@@ -89,7 +116,11 @@ class JobService
             return;
         }
         $created = [];
-        foreach ($items as $item) {
+        $sources = $job->quotation_id
+            ? QuotationItem::where('quotation_id', $job->quotation_id)->orderBy('position')->orderBy('id')->get()
+            : collect();
+        foreach ($items as $index => $item) {
+            $source = $sources[$index] ?? null;
             $currency = (string) ($item['currency'] ?? 'IDR');
             $rate = Money::decimal($currency === 'IDR' ? '1' : (string) ($item['exchange_rate'] ?? $snapshot['exchange_rate'] ?? '1'));
             if ($rate->isZero()) {
@@ -100,6 +131,8 @@ class JobService
             $quantity = Money::decimal((string) $item['quantity']);
             $cost = new JobCost;
             $cost->job_id = $job->id;
+            $cost->quotation_id = $job->quotation_id ?? ($source->quotation_id ?? null);
+            $cost->quotation_item_id = $source->id ?? null;
             $cost->number = $this->numbers->next('cst');
             $cost->description = (string) $item['description'];
             $cost->type = (string) $item['type'];
@@ -117,7 +150,7 @@ class JobService
             $cost->lock_version = 0;
             $cost->save();
             $created[] = $cost->number;
-            $this->master->log($actor, 'job_cost.created', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => null, 'after' => $cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price'])]);
+            $this->master->log($actor, 'job_cost.created', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => null, 'after' => array_merge($cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price']), ['quotation_id' => $cost->quotation_id, 'quotation_item_id' => $cost->quotation_item_id])]);
         }
         if (count($created) > 0) {
             $this->master->log($actor, 'job.costs.seeded', 'Salinan biaya quotation '.$snapshot['number'].' ● '.implode(', ', $created), ['module' => 'job', 'record_id' => $job->id]);
