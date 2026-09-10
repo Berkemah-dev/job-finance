@@ -20,9 +20,16 @@ class OperationalDocumentController extends Controller
         $customerId = $request->integer('customer_id') ?: null;
         $periodFrom = (string) $request->input('period_from', '');
         $periodTo = (string) $request->input('period_to', '');
+        $myJobs = $request->boolean('my_jobs');
         $perPage = min(max($request->integer('per_page', 10), 5), 50);
 
         $documents = Quotation::with(['customer', 'job.invoice', 'job.closingSnapshot'])
+            ->when($myJobs, function ($query) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('created_by', $request->user()->id)
+                      ->orWhereHas('job', fn ($jobQ) => $jobQ->where('cs_id', $request->user()->id)->orWhere('sales_id', $request->user()->id));
+                });
+            })
             ->when($search, fn ($query) => $query->where(fn ($query) => $query
                 ->where('number', 'like', '%'.$search.'%')
                 ->orWhere('subject', 'like', '%'.$search.'%')
@@ -42,16 +49,20 @@ class OperationalDocumentController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
+        $baseJobQuery = Job::query()->when($myJobs, fn ($q) => $q->where(fn ($wq) => $wq->where('cs_id', $request->user()->id)->orWhere('sales_id', $request->user()->id)));
+        $baseQuoteQuery = Quotation::query()->when($myJobs, fn ($q) => $q->where('created_by', $request->user()->id));
+
         $summary = [
-            'total' => Quotation::count(),
-            'draft' => Quotation::where('status', QuotationStatus::Draft)->count(),
-            'approval' => Quotation::where('status', QuotationStatus::Submitted)->count(),
-            'running' => Job::where('status', 'open')->count(),
-            'done' => Job::where('status', 'closed')->count(),
+            'total' => (clone $baseQuoteQuery)->count(),
+            'draft' => (clone $baseQuoteQuery)->where('status', QuotationStatus::Draft)->count(),
+            'approval' => (clone $baseQuoteQuery)->where('status', QuotationStatus::Submitted)->count(),
+            'approved' => (clone $baseQuoteQuery)->where('status', QuotationStatus::Approved)->whereDoesntHave('job')->count(),
+            'running' => (clone $baseJobQuery)->where('status', 'open')->count(),
+            'done' => (clone $baseJobQuery)->where('status', 'closed')->count(),
         ];
         $customers = Customer::orderBy('name')->get(['id', 'name', 'code']);
 
-        return view('documents.index', compact('documents', 'summary', 'customers', 'search', 'perPage'));
+        return view('documents.index', compact('documents', 'summary', 'customers', 'search', 'perPage', 'myJobs'));
     }
 
     public function show(Quotation $quotation)
@@ -90,7 +101,7 @@ class OperationalDocumentController extends Controller
         $filename = $quotation->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF quotation '.$quotation->number, ['module' => 'document', 'record_id' => $quotation->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : $pdf->stream($filename);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }
 
     public function jobPdf(Request $request, Quotation $quotation, MasterDataService $master)
@@ -101,6 +112,39 @@ class OperationalDocumentController extends Controller
         $filename = $quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF job order '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : $pdf->stream($filename);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function suratJalanPdf(Request $request, Quotation $quotation, MasterDataService $master)
+    {
+        $quotation->load(['job.customer']);
+        abort_unless($quotation->job, 404);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.surat-jalan', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
+        $filename = 'Surat_Jalan_'.$quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Surat Jalan '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function tandaTerimaPdf(Request $request, Quotation $quotation, MasterDataService $master)
+    {
+        $quotation->load(['job.customer']);
+        abort_unless($quotation->job, 404);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.tanda-terima', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
+        $filename = 'Tanda_Terima_'.$quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function skDoPdf(Request $request, Quotation $quotation, MasterDataService $master)
+    {
+        $quotation->load(['job.customer']);
+        abort_unless($quotation->job, 404);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.sk-do', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
+        $filename = 'SK_DO_'.$quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK DO '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }
 }

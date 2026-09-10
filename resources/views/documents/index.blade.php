@@ -26,6 +26,7 @@ $quickFilters = [
     <article class="document-stat"><span>Total Job</span><strong>{{ number_format($summary['total']) }}</strong></article>
     <article class="document-stat"><span>Draft</span><strong>{{ number_format($summary['draft']) }}</strong></article>
     <article class="document-stat"><span>Menunggu Persetujuan</span><strong>{{ number_format($summary['approval']) }}</strong></article>
+    <article class="document-stat"><span>Approved (Siap JO)</span><strong>{{ number_format($summary['approved']) }}</strong></article>
     <article class="document-stat"><span>Aktif / Berjalan</span><strong>{{ number_format($summary['running']) }}</strong></article>
     <article class="document-stat"><span>Selesai</span><strong>{{ number_format($summary['done']) }}</strong></article>
 </section>
@@ -64,6 +65,7 @@ $quickFilters = [
                 <option value="{{ $rows }}" @selected($perPage === $rows)>{{ $rows }} baris</option>
                 @endforeach
             </select>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap"><input type="checkbox" name="my_jobs" value="1" @checked($myJobs)> Hanya Job Saya (CS/Sales)</label>
             <button class="button button-primary">Terapkan</button>
             <a class="button button-secondary" href="{{ route('documents.index') }}">Reset Filter</a>
         </div>

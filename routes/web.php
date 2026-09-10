@@ -6,9 +6,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClosingController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\JobCostController;
+use App\Http\Controllers\JobDocumentController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\OperationalDocumentController;
 use App\Http\Controllers\PaymentController;
@@ -65,6 +67,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dokumen-job/{quotation}/job-order/preview', [OperationalDocumentController::class, 'jobPreview'])->middleware('can:jobs.view')->name('documents.job.preview');
     Route::get('/api/dokumen-job/{quotation}/quotation/pdf', [OperationalDocumentController::class, 'quotationPdf'])->middleware('can:jobs.view')->name('documents.quotation.pdf');
     Route::get('/api/dokumen-job/{quotation}/job-order/pdf', [OperationalDocumentController::class, 'jobPdf'])->middleware('can:jobs.view')->name('documents.job.pdf');
+    Route::get('/api/dokumen-job/{quotation}/surat-jalan/pdf', [OperationalDocumentController::class, 'suratJalanPdf'])->middleware('can:jobs.view')->name('documents.surat-jalan.pdf');
+    Route::get('/api/dokumen-job/{quotation}/tanda-terima/pdf', [OperationalDocumentController::class, 'tandaTerimaPdf'])->middleware('can:jobs.view')->name('documents.tanda-terima.pdf');
+    Route::get('/api/dokumen-job/{quotation}/sk-do/pdf', [OperationalDocumentController::class, 'skDoPdf'])->middleware('can:jobs.view')->name('documents.sk-do.pdf');
     Route::get('/api/pricing/suggest-trucking', [PricingSuggestionController::class, 'suggestTrucking'])->name('pricing.suggest-trucking');
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
     foreach (['submit', 'approve', 'reject', 'revise', 'convert'] as $action) {
@@ -75,6 +80,13 @@ Route::middleware('auth')->group(function () {
     foreach (['open', 'cancel'] as $action) {
         Route::post('/jobs/{job}/'.$action, [JobController::class, $action])->middleware('can:jobs.manage')->name('jobs.'.$action);
     }
+    Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.view')->name('jobs.confirm-do');
+    // Job Documents
+    Route::post('/jobs/{job}/documents', [JobDocumentController::class, 'store'])->middleware('can:jobs.view')->name('jobs.documents.store');
+    Route::get('/jobs/{job}/documents/{document}/download', [JobDocumentController::class, 'download'])->middleware('can:jobs.view')->name('jobs.documents.download');
+    Route::delete('/jobs/{job}/documents/{document}', [JobDocumentController::class, 'destroy'])->middleware('can:jobs.manage')->name('jobs.documents.destroy');
+    // Document Type Master
+    Route::resource('document-types', DocumentTypeController::class)->except('show')->middleware('can:jobs.manage');
     Route::get('/costs', [JobCostController::class, 'overview'])->middleware('can:costs.manage')->name('costs.overview');
     Route::middleware('can:costs.manage')->scopeBindings()->group(function () {
         Route::resource('jobs.costs', JobCostController::class);
