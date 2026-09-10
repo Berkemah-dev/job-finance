@@ -243,14 +243,148 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 14px 20px;
-    background: #ffffff;
-    border-bottom: 1px solid #eef2f7;
+    padding: 12px 20px;
+    background: #fbfcfe;
+    border-bottom: 1px solid #edf2f7;
     flex-wrap: wrap;
+}
+
+.coa-tree-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.coa-count-text {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.coa-count-text strong {
+    color: #1e293b;
+    font-weight: 600;
 }
 
 .coa-quick-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
 }
+
+.coa-quick-actions .button {
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.coa-quick-actions .button .icon {
+    width: 13px;
+    height: 13px;
+}
+
+/* Toggle Expand / Collapse Button */
+.coa-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    margin-right: 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.coa-toggle-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+
+.coa-toggle-spacer {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.coa-chevron-icon {
+    width: 14px;
+    height: 14px;
+    color: #475569;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When collapsed, rotate chevron right */
+.coa-row.is-collapsed .coa-chevron-icon {
+    transform: rotate(-90deg);
+}
+
+/* Folder Icon States */
+.coa-icon-folder-open {
+    display: none;
+}
+
+.coa-row:not(.is-collapsed).coa-row-has-children .coa-icon-folder-open {
+    display: inline-flex;
+}
+
+.coa-row:not(.is-collapsed).coa-row-has-children .coa-icon-folder {
+    display: none;
+}
+
+.coa-node-has-children .coa-folder-icon {
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.coa-node-has-children .coa-folder-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Interactive label */
+.coa-label-interactive {
+    cursor: pointer;
+    transition: color 0.12s ease;
+}
+
+.coa-label-interactive:hover {
+    color: #2563eb !important;
+}
+
+/* Sub-accounts badge */
+.coa-children-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 500;
+    margin-left: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    transition: all 0.15s ease;
+}
+
+.coa-row.is-collapsed .coa-children-badge {
+    background: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
+    font-weight: 600;
+}
+
+/* Hidden Rows when parent is collapsed */
+.coa-row-hidden {
+    display: none !important;
+}
+

@@ -3,6 +3,7 @@ import './job-cost';
 import './quotation';
 import './journal';
 import './customer';
+import './coa';
 document.addEventListener('submit', (event) => {
     const message = event.target.dataset.confirm;
     if (message && !window.confirm(message)) event.preventDefault();

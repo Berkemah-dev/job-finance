@@ -99,13 +99,16 @@ class MasterDataTest extends TestCase
     {
         $this->login('admin');
 
-        // 1. Verifikasi halaman Data COA menampilkan struktur akun RADIX
+        // 1. Verifikasi halaman Data COA menampilkan struktur akun RADIX dan tombol buka/tutup
         $response = $this->get('/accounts');
         $response->assertOk()
             ->assertSee('Data COA')
             ->assertSee('Asset Lancar')
             ->assertSee('PETTY CASH (-)')
-            ->assertSee('Biaya Operasional');
+            ->assertSee('Biaya Operasional')
+            ->assertSee('Buka Semua')
+            ->assertSee('Tutup Semua')
+            ->assertSee('data-coa-toggle', false);
 
         // 2. Verifikasi form create dengan parent_id
         $bank = ChartOfAccount::where('code', '11120')->firstOrFail();
