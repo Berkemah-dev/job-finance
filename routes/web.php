@@ -31,8 +31,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/closing', [ClosingController::class, 'index'])->middleware('can:jobs.close')->name('closing.index');
     Route::get('/closing/{job}', [ClosingController::class, 'create'])->middleware('can:jobs.close')->name('closing.create');
     Route::post('/closing/{job}', [ClosingController::class, 'store'])->middleware('can:jobs.close')->name('closing.store');
+    Route::get('/invoices/coretax', [InvoiceController::class, 'coretaxIndex'])->middleware('can:invoices.manage')->name('invoices.coretax.index');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'show'])->middleware('can:invoices.manage');
     Route::get('/invoices/{invoice}/coretax', [InvoiceController::class, 'coretax'])->middleware('can:invoices.manage')->name('invoices.coretax');
+    Route::get('/invoices/{invoice}/coretax/preview', [InvoiceController::class, 'coretaxPreview'])->middleware('can:invoices.manage')->name('invoices.coretax.preview');
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('can:payments.manage')->name('payments.index');
     Route::get('/invoices/{invoice}/payments/create', [PaymentController::class, 'create'])->middleware('can:payments.manage')->name('payments.create');
     Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->middleware('can:payments.manage')->name('payments.store');
@@ -41,6 +43,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/reimbursements/create', [ReimbursementController::class, 'create'])->name('reimbursements.create');
         Route::post('/reimbursements', [ReimbursementController::class, 'store'])->name('reimbursements.store');
         Route::get('/reimbursements/{reimbursement}', [ReimbursementController::class, 'show'])->name('reimbursements.show');
+        Route::get('/reimbursements/{reimbursement}/attachment', [ReimbursementController::class, 'downloadAttachment'])->name('reimbursements.attachment');
         Route::post('/reimbursements/{reimbursement}/approve', [ReimbursementController::class, 'approve'])->name('reimbursements.approve');
         Route::post('/reimbursements/{reimbursement}/reject', [ReimbursementController::class, 'reject'])->name('reimbursements.reject');
         Route::post('/reimbursements/{reimbursement}/pay', [ReimbursementController::class, 'pay'])->name('reimbursements.pay');
@@ -57,6 +60,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/profit-bulanan', [ReportController::class, 'profitMonthly'])->name('profit-monthly');
         Route::get('/statement-of-account', [StatementOfAccountController::class, 'index'])->name('soa');
         Route::get('/statement-of-account/{customer}', [StatementOfAccountController::class, 'show'])->name('soa.customer');
+        Route::post('/statement-of-account/{customer}/email', [StatementOfAccountController::class, 'email'])->middleware('can:email.manage')->name('soa.email');
     });
     Route::redirect('/documents', '/dokumen-job');
     Route::get('/dokumen-job', [OperationalDocumentController::class, 'index'])->middleware('can:jobs.view')->name('documents.index');
@@ -67,14 +71,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/dokumen-job/{quotation}/job-order/pdf', [OperationalDocumentController::class, 'jobPdf'])->middleware('can:jobs.view')->name('documents.job.pdf');
     Route::get('/api/pricing/suggest-trucking', [PricingSuggestionController::class, 'suggestTrucking'])->name('pricing.suggest-trucking');
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
-    foreach (['submit', 'approve', 'reject', 'revise', 'convert'] as $action) {
-        Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.manage')->name('quotations.'.$action);
+    Route::post('/quotations/{quotation}/submit', [QuotationController::class, 'submit'])->middleware('can:quotations.manage')->name('quotations.submit');
+    foreach (['approve', 'reject', 'revise'] as $action) {
+        Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.approve')->name('quotations.'.$action);
     }
+    Route::post('/quotations/{quotation}/convert', [QuotationController::class, 'convert'])->middleware(['can:quotations.manage', 'can:jobs.manage'])->name('quotations.convert');
     Route::resource('jobs', JobController::class)->only(['index', 'show'])->middleware('can:jobs.view');
     Route::resource('jobs', JobController::class)->only(['edit', 'update'])->middleware('can:jobs.manage');
+    Route::get('/job-orders', [JobController::class, 'index'])->middleware('can:jobs.view')->name('job-orders.index');
+    Route::get('/job-orders/{job}', [JobController::class, 'show'])->middleware('can:jobs.view')->name('job-orders.show');
+    Route::get('/job-orders/{job}/edit', [JobController::class, 'edit'])->middleware('can:jobs.manage')->name('job-orders.edit');
     foreach (['open', 'cancel'] as $action) {
         Route::post('/jobs/{job}/'.$action, [JobController::class, $action])->middleware('can:jobs.manage')->name('jobs.'.$action);
     }
+    Route::post('/jobs/{job}/shipment-status', [JobController::class, 'shipmentStatus'])->middleware('can:jobs.manage')->name('jobs.shipment-status');
     Route::get('/costs', [JobCostController::class, 'overview'])->middleware('can:costs.manage')->name('costs.overview');
     Route::middleware('can:costs.manage')->scopeBindings()->group(function () {
         Route::resource('jobs.costs', JobCostController::class);

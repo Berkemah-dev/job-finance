@@ -7,7 +7,7 @@
 @can('costs.manage')<a class="button button-primary" href="{{ route('jobs.costs.index',$job) }}"><x-icon name="wallet"/>Lihat biaya aktual</a>@endcan
 @can('jobs.close')@if($job->status==='open')<a class="button button-primary" href="{{ route('closing.create',$job) }}">Closing job</a>@endif @endcan
 @can('invoices.manage')@if($job->invoice)<a class="button button-primary" href="{{ route('invoices.show',$job->invoice) }}">Lihat invoice</a>@endif @endcan</div>
-<section class="panel"><div class="panel-heading"><h2>Informasi pekerjaan</h2><span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span></div>
+<section class="panel"><div class="panel-heading"><h2>Informasi pekerjaan</h2><span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span>@if($job->shipment_status)<span class="status-badge status-{{ $job->shipment_status }}">{{ config('operations.shipment_statuses.'.$job->shipment_status) ?? $job->shipment_status }}</span>@endif</div>
 <dl class="detail-grid"><div><dt>Customer</dt><dd>{{ $job->quotation_snapshot['customer']['name'] }}</dd></div><div><dt>Quotation asal</dt><dd>@can('quotations.manage')<a class="text-link" href="{{ route('quotations.show',$job->quotation) }}">{{ $job->quotation_snapshot['number'] }}</a>@else{{ $job->quotation_snapshot['number'] }}@endcan</dd></div><div><dt>Tanggal job</dt><dd>{{ $job->job_date->format('d/m/Y') }}@if($job->expected_completion_date)<br><small>Target selesai: {{ $job->expected_completion_date->format('d/m/Y') }}</small>@endif</dd></div>
 <div><dt>Jenis layanan</dt><dd>{{ config('operations.service_types.'.$job->service_type) ?? '—' }}</dd></div><div><dt>Pengirim</dt><dd>{{ $job->shipper_name ?? '—' }}@if($job->shipper_address)<br><small>{{ $job->shipper_address }}</small>@endif</dd></div><div><dt>Penerima</dt><dd>{{ $job->consignee_name ?? '—' }}@if($job->consignee_address)<br><small>{{ $job->consignee_address }}</small>@endif</dd></div>
 <div><dt>Rute</dt><dd>@if($job->pol || $job->pod){{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}@else{{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}@endif</dd></div><div><dt>ETD / ETA</dt><dd>{{ $job->etd?->format('d/m/Y') ?? '—' }} → {{ $job->eta?->format('d/m/Y') ?? '—' }}</dd></div>
@@ -19,6 +19,20 @@
 @if($job->operational_notes)<div class="detail-notes"><strong>Catatan operasional</strong><br>{{ $job->operational_notes }}</div>@endif
 @if($job->cancellation_reason)<div class="detail-notes"><strong>Alasan pembatalan</strong><br>{{ $job->cancellation_reason }}<br>{{ $job->cancelled_at?->format('d/m/Y H:i') }}</div>@endif
 </section>
+@if($job->status === 'open' || $job->shipment_status)
+<div class="section-heading"><h2>Status pengiriman</h2><span class="subtle">Booked · In Progress · Departed · Arrived · SPJM · SPPB · DO Process · Completed</span></div>
+<section class="panel">
+@if($job->status === 'open' && auth()->user()->can('update', $job))
+<form class="transition-form" method="POST" action="{{ route('jobs.shipment-status',$job) }}" >@csrf<input type="hidden" name="lock_version" value="{{ $job->lock_version }}"><label for="shipment_status">Status pengiriman</label><select name="shipment_status" id="shipment_status">@foreach(config('operations.shipment_statuses') as $value=>$label)<option value="{{ $value }}" @selected($job->shipment_status===$value)>{{ $label }}</option>@endforeach</select><p class="form-help">Ubah status untuk memantau progres shipment di daftar job dan dashboard.</p><button class="button button-secondary">Simpan status pengiriman</button></form>
+@else
+<div class="cost-summary-body"><div class="summary-box"><div class="summary-row"><span>Status pengiriman</span><strong>{{ config('operations.shipment_statuses.'.$job->shipment_status) ?? '—' }}</strong></div>@if($job->shipment_status_at)<div class="summary-row"><span>Terakhir diperbarui</span><strong>{{ $job->shipment_status_at->format('d/m/Y H:i') }}</strong></div>@endif</div></div>
+@endif
+@if($job->shipmentStatusHistory->isNotEmpty())
+<div class="panel-heading"><h2>Timeline pengiriman</h2></div>
+<ol class="approval-timeline">@foreach($job->shipmentStatusHistory as $event)<li><span></span><div><strong>@if($event->from_status){{ config('operations.shipment_statuses.'.$event->from_status) ?? $event->from_status }} → {{ config('operations.shipment_statuses.'.$event->to_status) ?? $event->to_status }}@else{{ config('operations.shipment_statuses.'.$event->to_status) ?? $event->to_status }}@endif</strong><p>{{ $event->user?->name ?? 'System' }} · {{ $event->created_at->format('d/m/Y H:i') }}@if($event->note)<br>{{ $event->note }}@endif</p></div></li>@endforeach</ol>
+@endif
+</section>
+@endif
 <div class="section-heading"><h2>Estimasi penawaran</h2><span class="subtle">Snapshot quotation · Bukan biaya aktual</span></div>
 @can('financial.view')
 <section class="panel"><div class="table-scroll"><table class="quote-detail-table"><thead><tr><th>Uraian</th><th>Jenis</th><th>Jumlah</th><th class="money">Estimasi modal</th><th class="money">Estimasi tagihan</th></tr></thead><tbody>@foreach($job->quotation_snapshot['items'] as $item)<tr><td>{{ $item['description'] }}</td><td>{{ ucfirst($item['type']) }}</td><td>{{ \App\Support\Money::format($item['quantity']) }} {{ $item['unit'] }}</td><td class="money">{{ \App\Support\Money::format($item['total_cost']) }}</td><td class="money">{{ \App\Support\Money::format($item['total_price']) }}</td></tr>@endforeach</tbody></table></div><div class="summary-box"><div class="summary-row"><span>Estimasi profit</span><strong>Rp {{ \App\Support\Money::format($job->quotation_snapshot['totals']['profit']) }}</strong></div><div class="summary-row summary-total"><span>Total sebelum pajak</span><strong>Rp {{ \App\Support\Money::format($job->quotation_snapshot['totals']['subtotal']) }}</strong></div></div></section>

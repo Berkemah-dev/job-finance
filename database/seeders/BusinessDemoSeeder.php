@@ -30,17 +30,20 @@ class BusinessDemoSeeder extends Seeder
                 ['description' => 'Dokumen dan reimbursement', 'type' => 'temporary', 'unit' => 'Paket', 'quantity' => '1', 'unit_cost' => '5000000', 'unit_price' => '5000000'],
                 ['description' => 'Jasa trucking', 'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '3000000', 'unit_price' => '4500000'],
             ]], $sales);
-            app(QuotationService::class)->transition($quotation, 'submit', ['lock_version' => 0], $sales);
-            app(QuotationService::class)->transition($quotation, 'approve', ['lock_version' => 1], $salesManager);
-            $job = app(QuotationService::class)->convert($quotation, ['lock_version' => 2], $salesManager);
-            app(JobService::class)->transition($job, 'open', ['lock_version' => 0], $operation);
+            app(QuotationService::class)->transition($quotation, 'submit', ['lock_version' => $quotation->fresh()->lock_version], $sales);
+            app(QuotationService::class)->transition($quotation, 'approve', ['lock_version' => $quotation->fresh()->lock_version], $salesManager);
+            $job = app(QuotationService::class)->convert($quotation, ['lock_version' => $quotation->fresh()->lock_version], $salesManager);
+            app(JobService::class)->transition($job, 'open', ['lock_version' => $job->fresh()->lock_version], $operation);
             $costService = app(JobCostService::class);
-            $temporary = $costService->save($job, null, ['job_version' => 1, 'description' => 'Dokumen dan reimbursement', 'type' => 'temporary', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Paket', 'unit_cost' => '5000000', 'unit_price' => '5000000'], $finance);
-            $provision = $costService->save($job, null, ['job_version' => 2, 'description' => 'Jasa trucking', 'type' => 'provision', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Layanan', 'unit_cost' => '3000000', 'unit_price' => '4500000'], $finance);
-            $costService->finalize($job, $temporary, ['job_version' => 3, 'lock_version' => 0], $finance);
-            $costService->finalize($job, $provision, ['job_version' => 4, 'lock_version' => 0], $finance);
-            $invoice = app(JobClosingService::class)->close($job, ['lock_version' => 5, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '0'], $finance);
-            app(PaymentService::class)->create($invoice, ['lock_version' => 0, 'payment_date' => today()->toDateString(), 'amount' => '4000000', 'deposit_account' => 'bank', 'method' => 'transfer', 'reference' => 'DEMO-PAYMENT'], $finance);
+            $costService->save($job, null, ['job_version' => $job->fresh()->lock_version, 'description' => 'Dokumen dan reimbursement', 'type' => 'temporary', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Paket', 'unit_cost' => '5000000', 'unit_price' => '5000000'], $finance);
+            $costService->save($job, null, ['job_version' => $job->fresh()->lock_version, 'description' => 'Jasa trucking', 'type' => 'provision', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Layanan', 'unit_cost' => '3000000', 'unit_price' => '4500000'], $finance);
+
+            foreach ($job->fresh()->costs()->where('status', '!=', 'final')->orderBy('id')->get() as $cost) {
+                $costService->finalize($job, $cost, ['job_version' => $job->fresh()->lock_version, 'lock_version' => $cost->lock_version], $finance);
+            }
+
+            $invoice = app(JobClosingService::class)->close($job, ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '0'], $finance);
+            app(PaymentService::class)->create($invoice, ['lock_version' => $invoice->fresh()->lock_version, 'payment_date' => today()->toDateString(), 'amount' => '4000000', 'deposit_account' => 'bank', 'method' => 'transfer', 'reference' => 'DEMO-PAYMENT'], $finance);
         }, 3);
     }
 }

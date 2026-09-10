@@ -54,7 +54,15 @@ class QuotationController extends Controller
     {
         Gate::authorize('view', $quotation);
 
-        return view('quotations.show', ['quotation' => $quotation->load(['items', 'customer', 'job', 'creator', 'approver', 'revisedBy', 'statusHistory.user'])]);
+        $quotation->load(['items', 'customer', 'job', 'creator', 'approver', 'revisedBy', 'statusHistory.user']);
+
+        if (! Gate::allows('financial.view')) {
+            foreach ($quotation->items as $item) {
+                $item->unit_cost = null;
+            }
+        }
+
+        return view('quotations.show', ['quotation' => $quotation]);
     }
 
     public function edit(Quotation $quotation)

@@ -46,7 +46,7 @@ return [
         'finance-manager' => ['label' => 'Finance Manager', 'permissions' => [
             'dashboard.view', 'customers.view', 'jobs.view', 'costs.manage', 'jobs.close',
             'invoices.manage', 'payments.manage', 'journals.manage', 'reimbursements.manage', 'reports.view',
-            'financial.view', 'pricing.view', 'email.manage', 'activity.view',
+            'financial.view', 'pricing.view', 'email.manage', 'activity.view', 'users.view',
         ]],
         'sales-manager' => ['label' => 'Sales Manager', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.manage',

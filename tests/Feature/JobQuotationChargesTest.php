@@ -78,6 +78,11 @@ class JobQuotationChargesTest extends TestCase
         $this->assertSame('5000000.00', $doc->total_cost);
         $this->assertSame($job->job_date->toDateString(), $doc->cost_date->toDateString());
         $this->assertStringContainsString($job->quotation_snapshot['number'], (string) $doc->notes);
+        $this->assertSame($job->quotation_id, $doc->quotation_id);
+        $this->assertInstanceOf(Quotation::class, $doc->quotation);
+        $items = $job->quotation->items()->orderBy('position')->get();
+        $this->assertSame($items[0]->id, $doc->quotation_item_id);
+        $this->assertSame($items[0]->description, $doc->quotationItem->description);
         $sea = $rows->firstWhere('type', 'provision');
         $this->assertSame('2.00', $sea->quantity);
         $this->assertSame('3000000.00', $sea->unit_cost);
@@ -92,6 +97,8 @@ class JobQuotationChargesTest extends TestCase
 
         $this->actingAs($this->finance);
         $this->get('/jobs/'.$job->id)->assertOk()->assertSee('Dokumen')->assertSee('Ongkir laut');
+        $this->get('/jobs/'.$job->id.'/costs')->assertOk()->assertSee('bersumber dari quotation');
+        $this->get('/jobs/'.$job->id.'/costs/'.$doc->id)->assertOk()->assertSee('Referensi quotation')->assertSee($doc->quotation->number)->assertSee('Item ke-1');
     }
 
     public function test_open_converted_job_seeds_foreign_charges_at_quote_rate(): void

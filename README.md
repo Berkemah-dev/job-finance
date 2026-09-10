@@ -4,14 +4,14 @@ JobFinance adalah aplikasi demo Job Costing, Billing, dan Accounting untuk perus
 
 ## Modul
 
-- Authentication dan RBAC untuk Super Admin, Operational, Finance, dan Management
+- Authentication dan RBAC untuk 8 role (Super Admin s/d Management)
+- Dashboard operasional dan keuangan terpisah per role
 - Customer, COA, serta mapping akun jurnal
-- Quotation, Job Order, dan biaya Temporary/Provision
-- Closing, snapshot historis, invoice, pembayaran, serta kurs mata uang asing
-- Statement of Account, Reimbursement, dan biaya otomatis dari quotation
-- Jurnal otomatis, penyesuaian, dan reversal
-- Buku Besar, Neraca Saldo, Neraca, Laba Rugi, Arus Kas, Profit per Job, dan Profit Bulanan
-- Ekspor faktur PPN ke XML Coretax
+- Quotation, Job Order, biaya Temporary/Provision (dengan referensi quotation), dan status pengiriman
+- Closing, snapshot historis, invoice, pembayaran, kurs valas + override kurs, dan kurs terkunci
+- Statement of Account (aging, filter belum lunas, pengiriman email), Reimbursement (job/vendor/currency/lampiran)
+- Jurnal otomatis, penyesuaian, reversal, dan Buku Besar
+- Ekspor faktur PPN ke XML Coretax (pilih faktur, pratinjau, unduh)
 - Dashboard, Activity Log, dan administrasi pengguna
 
 ## Instalasi lokal
@@ -31,11 +31,15 @@ Sesuaikan koneksi MySQL pada `.env` sebelum migration. Seeder lokal membuat role
 | Role | Email | Cakupan |
 | --- | --- | --- |
 | Super Admin | `admin@jobfinance.test` | Semua modul dan administrasi |
+| Sales Manager | `sales.manager@jobfinance.test` | Quotation (approve), job, pricing |
+| Sales | `sales@jobfinance.test` | Quotation, job order |
 | Operational | `operational@jobfinance.test` | Customer, quotation, dan Job Order |
-| Finance | `finance@jobfinance.test` | Biaya, closing, invoice, jurnal, dan laporan |
+| Customer Service | `cs@jobfinance.test` | Job order miliknya, status pengiriman, dokumen |
+| Finance | `finance@jobfinance.test` | Biaya, closing, invoice, jurnal, reimbursement, dan laporan |
+| Finance Manager | `finance.manager@jobfinance.test` | Seluruh hak Finance ditambah daftar pengguna (users.view) |
 | Management | `management@jobfinance.test` | Dashboard dan laporan baca saja |
 
-Password akun demo lokal: `JobFinance!2026`.
+Password akun demo lokal: `JobFinance!2026`. Cakupan lengkap di [docs/RBAC_MATRIX.md](docs/RBAC_MATRIX.md).
 
 ## Verifikasi
 
@@ -46,7 +50,7 @@ php artisan view:cache
 npm run build
 ```
 
-Feature test memakai SQLite in-memory sehingga tidak mengubah database MySQL kerja. Dokumentasi teknis tersedia di [`docs`](docs/IMPLEMENTATION.md).
+Feature test memakai SQLite in-memory sehingga tidak mengubah database MySQL kerja. Dokumentasi teknis tersedia di [`docs`](docs/IMPLEMENTATION.md); laporan proyek di [`docs/PROJECT_REPORT.md`](docs/PROJECT_REPORT.md).
 
 ## Aturan akuntansi utama
 

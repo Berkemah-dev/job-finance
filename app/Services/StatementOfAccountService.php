@@ -11,7 +11,7 @@ class StatementOfAccountService
 {
     private const AGING_BUCKETS = ['current', 'aging_1_30', 'aging_31_60', 'aging_61_90', 'aging_90_plus'];
 
-    public function summary(?string $search = null): array
+    public function summary(?string $search = null, bool $unpaidOnly = false): array
     {
         $invoices = Invoice::orderBy('invoice_date')->get(['customer_id', 'number', 'invoice_date', 'due_date', 'status', 'total', 'paid_amount', 'balance']);
         $grand = $this->emptyTotals();
@@ -34,6 +34,9 @@ class StatementOfAccountService
                     $days = (int) today()->startOfDay()->diffInDays(Carbon::parse($invoice->due_date)->startOfDay(), false);
                     $totals[$this->bucket($days)] = $totals[$this->bucket($days)]->plus(Money::decimal($invoice->balance));
                 }
+            }
+            if ($unpaidOnly && Money::decimal($totals['balance'])->isZero()) {
+                continue;
             }
             foreach (self::AGING_BUCKETS + ['invoices'] as $key) {
                 $this->addTo($grand, $totals, $key);

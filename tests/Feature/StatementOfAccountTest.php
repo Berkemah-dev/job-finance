@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\QuotationStatus;
+use App\Mail\StatementOfAccountMail;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Job;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\StatementOfAccountService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class StatementOfAccountTest extends TestCase
@@ -83,6 +85,52 @@ class StatementOfAccountTest extends TestCase
         $invoice = $this->invoice(today()->subDays(20)->toDateString(), today()->subDays(18)->toDateString());
         $this->pay($invoice, today()->subDays(15)->toDateString(), '9500000');
         $this->get('/reports/statement-of-account')->assertOk()->assertSee('CUS-SOA')->assertSee('0,00')->assertSee('Lunas');
+    }
+
+    public function test_unpaid_only_filter_hides_settled_customers(): void
+    {
+        $this->invoice(today()->subDays(4)->toDateString(), today()->addDays(26)->toDateString());
+
+        $other = Customer::factory()->create(['code' => 'CUS-SOA2', 'name' => 'PT Pelunasan Cepat', 'created_by' => $this->finance->id, 'updated_by' => $this->finance->id]);
+        $quotation = Quotation::factory()->create(['customer_id' => $other->id, 'status' => QuotationStatus::Converted]);
+        $job = Job::factory()->create(['quotation_id' => $quotation->id, 'customer_id' => $other->id, 'status' => 'open', 'job_date' => today()->subDays(20)->toDateString()]);
+        JobCost::factory()->create(['job_id' => $job->id, 'status' => 'final', 'type' => 'provision', 'description' => 'Trucking', 'quantity' => '1.00', 'unit_cost' => '1000000.00', 'unit_price' => '2000000.00', 'total_cost' => '1000000.00', 'total_price' => '2000000.00', 'finalized_by' => $this->finance->id, 'finalized_at' => now()]);
+        $this->post('/closing/'.$job->id, ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->subDays(20)->toDateString(), 'due_date' => today()->subDays(18)->toDateString(), 'funding_account' => 'bank', 'tax' => '0'])->assertSessionHasNoErrors()->assertRedirect();
+        $settled = Invoice::firstWhere('job_id', $job->id);
+        $this->post('/invoices/'.$settled->id.'/payments', ['lock_version' => $settled->lock_version, 'payment_date' => today()->subDays(15)->toDateString(), 'amount' => '2000000', 'deposit_account' => 'bank', 'method' => 'transfer', 'reference' => 'TRX-LUNAS'])->assertSessionHasNoErrors();
+
+        $this->get('/reports/statement-of-account')->assertOk()->assertSee('PT Statement Client')->assertSee('PT Pelunasan Cepat')->assertSee('Lunas');
+        $this->get('/reports/statement-of-account?unpaid=1')->assertOk()->assertSee('PT Statement Client')->assertDontSee('PT Pelunasan Cepat');
+
+        $paid = $this->service()->summary(null, true);
+        $this->assertCount(1, $paid['customers']);
+        $this->assertSame($this->customer->id, $paid['customers'][0]['customer']->id);
+    }
+
+    public function test_email_sends_soa_to_selected_recipients_and_requires_permissions(): void
+    {
+        Mail::fake();
+        $this->customer->contacts()->create(['type' => 'shipper', 'name' => 'Pengirim', 'company' => 'PT Kirim', 'email' => 'shipper@client.test']);
+        $this->invoice(today()->subDays(3)->toDateString(), today()->addDays(27)->toDateString());
+
+        $this->post('/reports/statement-of-account/'.$this->customer->id.'/email', ['emails' => 'ops@client.test, shipper@client.test'])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        Mail::assertSent(StatementOfAccountMail::class, fn (StatementOfAccountMail $mail) => $mail->hasTo('ops@client.test') && $mail->hasTo('shipper@client.test'));
+
+        $this->post('/reports/statement-of-account/'.$this->customer->id.'/email', ['emails' => ' '])->assertSessionHasErrors('emails');
+        $this->post('/reports/statement-of-account/'.$this->customer->id.'/email', ['emails' => 'bukan-email'])->assertSessionHasErrors('emails');
+        Mail::assertSent(StatementOfAccountMail::class, 1);
+
+        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
+        $this->post('/reports/statement-of-account/'.$this->customer->id.'/email', ['emails' => 'ops@client.test'])->assertForbidden();
+
+        $this->actingAs(User::where('email', 'management@jobfinance.test')->firstOrFail());
+        $this->post('/reports/statement-of-account/'.$this->customer->id.'/email', ['emails' => 'ops@client.test'])->assertForbidden();
+    }
+
+    private function service(): StatementOfAccountService
+    {
+        return app(StatementOfAccountService::class);
     }
 
     public function test_non_finance_roles_cannot_open_statement(): void

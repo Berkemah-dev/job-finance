@@ -14,7 +14,7 @@ class CoretaxService
 {
     public function __construct(private MasterDataService $master) {}
 
-    public function generate(Invoice $invoice, User $actor): string
+    public function generate(Invoice $invoice, User $actor, bool $log = true): string
     {
         if (Money::decimal($invoice->tax)->isZero()) {
             throw ValidationException::withMessages(['invoice' => 'Invoice tidak memiliki PPN sehingga tidak dapat diekspor ke Coretax.']);
@@ -77,7 +77,9 @@ class CoretaxService
         $this->leaf($doc, $summary, 'ExchangeRate', $invoice->exchange_rate);
         $this->leaf($doc, $summary, 'GrandTotal', Money::format($invoice->total));
 
-        $this->master->log($actor, 'invoice.coretax.exported', 'Ekspor XML Coretax '.$invoice->number, ['module' => 'invoice', 'record_id' => $invoice->id, 'after' => ['dpp' => Money::format($invoice->subtotal), 'ppn' => Money::format($invoice->tax), 'currency' => $invoice->currency]]);
+        if ($log) {
+            $this->master->log($actor, 'invoice.coretax.exported', 'Ekspor XML Coretax '.$invoice->number, ['module' => 'invoice', 'record_id' => $invoice->id, 'after' => ['dpp' => Money::format($invoice->subtotal), 'ppn' => Money::format($invoice->tax), 'currency' => $invoice->currency]]);
+        }
 
         return $doc->saveXML();
     }

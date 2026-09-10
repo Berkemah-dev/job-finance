@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\Job;
 use App\Models\Journal;
@@ -112,6 +113,42 @@ class ExchangeRateInvoiceTest extends TestCase
         $job->quotation_snapshot = $snapshot;
         $job->save();
         $this->post('/closing/'.$job->id, ['lock_version' => $job->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '1100000'])->assertSessionHasErrors('job');
+        $this->assertSame('open', $job->fresh()->status);
+        $this->assertNull($job->fresh()->invoice);
+    }
+
+    public function test_closing_accepts_exchange_rate_override_for_foreign_currency(): void
+    {
+        $job = $this->convertedJob('USD', '15850');
+        $this->post('/closing/'.$job->id, ['lock_version' => $job->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '1100000', 'exchange_rate_override' => '16000'])->assertSessionHasNoErrors()->assertRedirect();
+        $invoice = $job->fresh()->invoice;
+
+        $this->assertSame('USD', $invoice->currency);
+        $this->assertSame('16000.00', $invoice->exchange_rate);
+        $this->assertSame('16000.00', $invoice->snapshot->exchange_rate);
+        $this->assertSame('10600000.00', $invoice->total);
+        $this->assertSame('593.75', (string) $invoice->inInvoiceCurrency('subtotal'));
+        $this->assertSame('68.75', (string) $invoice->inInvoiceCurrency('tax'));
+        $this->assertSame('662.50', (string) $invoice->inInvoiceCurrency('total'));
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job.closed', 'record_id' => $invoice->snapshot->id]);
+        $log = ActivityLog::where('action', 'job.closed')->where('record_id', $invoice->snapshot->id)->firstOrFail();
+        $this->assertStringContainsString('"exchange_rate":"16000.00"', json_encode((array) $log->after));
+        $this->assertStringContainsString('"currency":"USD"', json_encode((array) $log->after));
+    }
+
+    public function test_closing_rejects_override_on_idr_invoice(): void
+    {
+        $job = $this->convertedJob('IDR', '1');
+        $this->post('/closing/'.$job->id, ['lock_version' => $job->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '0', 'exchange_rate_override' => '16000'])->assertSessionHasErrors('exchange_rate_override');
+        $this->assertSame('open', $job->fresh()->status);
+        $this->assertNull($job->fresh()->invoice);
+    }
+
+    public function test_closing_rejects_zero_or_invalid_override(): void
+    {
+        $job = $this->convertedJob('USD', '15850');
+        $this->post('/closing/'.$job->id, ['lock_version' => $job->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '1100000', 'exchange_rate_override' => '0'])->assertSessionHasErrors('exchange_rate_override');
+        $this->post('/closing/'.$job->id, ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '1100000', 'exchange_rate_override' => 'abc'])->assertSessionHasErrors('exchange_rate_override');
         $this->assertSame('open', $job->fresh()->status);
         $this->assertNull($job->fresh()->invoice);
     }

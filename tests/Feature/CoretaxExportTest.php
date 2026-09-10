@@ -42,6 +42,7 @@ class CoretaxExportTest extends TestCase
 
     private function closedInvoice(string $tax): Invoice
     {
+        $this->actingAs($this->sales);
         $this->post('/quotations', ['customer_id' => $this->customer->id, 'subject' => 'Pengiriman laut', 'quotation_date' => '2026-09-08', 'valid_until' => '2026-10-08',
             'service_type' => 'sea', 'origin' => 'Jakarta', 'destination' => 'Surabaya', 'currency' => 'IDR', 'exchange_rate' => '1', 'payment_terms' => 'net_30',
             'shipper_name' => 'PT Sumber Makmur', 'shipper_address' => 'Jl. Raya Cakung 10, Jakarta', 'consignee_name' => 'PT Tujuan Jaya', 'consignee_address' => 'Jl. Tanjung Perak 20, Surabaya',
@@ -55,7 +56,7 @@ class CoretaxExportTest extends TestCase
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
         $this->actingAs($this->operator);
-        $job = Job::firstOrFail();
+        $job = Job::latest('id')->firstOrFail();
         $this->post('/jobs/'.$job->id.'/open', ['lock_version' => 0])->assertSessionHasNoErrors();
         $this->actingAs($this->finance);
         foreach ($job->costs()->get() as $cost) {
@@ -99,6 +100,30 @@ class CoretaxExportTest extends TestCase
         $this->get('/invoices/'.$invoice->id)->assertOk()->assertDontSee('Ekspor XML Coretax');
         $this->get('/invoices/'.$invoice->id.'/coretax')->assertSessionHasErrors('invoice');
         $this->assertDatabaseMissing('activity_logs', ['action' => 'invoice.coretax.exported']);
+    }
+
+    public function test_select_preview_page_lists_eligible_invoices_and_preview_does_not_log(): void
+    {
+        $withTax = $this->closedInvoice('1100000');
+        $this->closedInvoice('0');
+
+        $this->get('/invoices/coretax')->assertOk()->assertSee($withTax->number)->assertSee('Pratinjau')->assertSee('Unduh XML');
+        $this->get('/invoices/coretax?search='.$withTax->number)->assertOk()->assertSee($withTax->number);
+        $this->get('/invoices/coretax?status=paid')->assertOk()->assertDontSee($withTax->number);
+
+        $preview = $this->get('/invoices/'.$withTax->id.'/coretax/preview');
+        $preview->assertOk();
+        $this->assertStringContainsString('text/plain', $preview->headers->get('Content-Type'));
+        $this->assertStringContainsString('<CoretaxImport', $preview->getContent());
+        $this->assertDatabaseMissing('activity_logs', ['action' => 'invoice.coretax.exported']);
+    }
+
+    public function test_select_preview_routes_respect_finance_only_permission(): void
+    {
+        $invoice = $this->closedInvoice('1100000');
+        $this->actingAs($this->management);
+        $this->get('/invoices/coretax')->assertForbidden();
+        $this->get('/invoices/'.$invoice->id.'/coretax/preview')->assertForbidden();
     }
 
     public function test_non_finance_roles_cannot_export_coretax_xml(): void
