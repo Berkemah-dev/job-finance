@@ -26,6 +26,6 @@ class ClosingController extends Controller
     {
         $invoice = $service->close($job, $request->validated(), $request->user());
 
-        return redirect()->route('invoices.show', $invoice)->with('success','Job ditutup. Invoice dan jurnal seimbang berhasil dibuat.');
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Job ditutup. Invoice dan jurnal seimbang berhasil dibuat.');
     }
 }

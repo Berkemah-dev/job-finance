@@ -63,6 +63,6 @@ class AccountController extends Controller
     {
         $service->mappings($request->validated('mappings'), $request->user());
 
-        return redirect()->route('accounts.mappings')->with('success','Mapping akun berhasil disimpan.');
+        return redirect()->route('accounts.mappings')->with('success', 'Mapping akun berhasil disimpan.');
     }
 }

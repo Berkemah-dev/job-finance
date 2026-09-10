@@ -66,10 +66,14 @@ $events = collect([
     </article>
     <article class="panel"><div class="panel-heading"><h2>Financial Summary</h2></div>
         <div class="summary-box document-summary">
+            @if(auth()->user()->can('financial.view'))
             <div class="summary-row"><span>Quotation Value</span><strong>Rp {{ \App\Support\Money::format($quotation->subtotal) }}</strong></div>
-            <div class="summary-row"><span>Discount</span><strong>Rp 0,00</strong></div>
-            <div class="summary-row"><span>Tax</span><strong>Rp 0,00</strong></div>
-            <div class="summary-row summary-total"><span>Grand Total</span><strong>Rp {{ \App\Support\Money::format($quotation->subtotal) }}</strong></div>
+            <div class="summary-row"><span>Discount</span><strong>− Rp {{ \App\Support\Money::format($quotation->discount) }}</strong></div>
+            <div class="summary-row"><span>Tax ({{ \App\Support\Money::format($quotation->tax_rate) }}%)</span><strong>Rp {{ \App\Support\Money::format($quotation->tax_amount) }}</strong></div>
+            <div class="summary-row summary-total"><span>Grand Total</span><strong>Rp {{ \App\Support\Money::format($quotation->grand_total) }}</strong></div>
+            @else
+            <div class="summary-row summary-total"><span>Grand Total</span><strong>Rp {{ \App\Support\Money::format($quotation->grand_total) }}</strong></div>
+            @endif
         </div>
     </article>
 </section>
@@ -77,7 +81,7 @@ $events = collect([
 <section class="panel"><div class="panel-heading"><h2>Quotation {{ $quotation->number }}</h2><div class="action-group"><a class="text-link" href="{{ route('documents.quotation.preview',$quotation) }}">Preview PDF</a><a class="text-link" href="{{ route('documents.quotation.pdf',['quotation'=>$quotation,'mode'=>'download']) }}">Download PDF</a></div></div>
     <dl class="detail-grid"><div><dt>Date</dt><dd>{{ $quotation->quotation_date->format('d/m/Y') }}</dd></div><div><dt>Valid Until</dt><dd>{{ $quotation->valid_until->format('d/m/Y') }}</dd></div><div><dt>Customer</dt><dd>{{ $quotation->customer_snapshot['name'] }}</dd></div></dl>
     <div class="table-scroll"><table class="quote-detail-table"><thead><tr><th>No</th><th>Description</th><th>Qty</th><th>Unit</th><th class="money">Unit Price</th><th class="money">Amount</th></tr></thead><tbody>@foreach($quotation->items as $item)<tr><td>{{ $loop->iteration }}</td><td>{{ $item->description }}</td><td>{{ \App\Support\Money::format($item->quantity) }}</td><td>{{ $item->unit }}</td><td class="money">Rp {{ \App\Support\Money::format($item->unit_price) }}</td><td class="money">Rp {{ \App\Support\Money::format($item->total_price) }}</td></tr>@endforeach</tbody></table></div>
-    <div class="summary-box"><div class="summary-row"><span>Subtotal</span><strong>Rp {{ \App\Support\Money::format($quotation->subtotal) }}</strong></div><div class="summary-row"><span>Discount</span><strong>Rp 0,00</strong></div><div class="summary-row"><span>Tax</span><strong>Rp 0,00</strong></div><div class="summary-row summary-total"><span>Grand Total</span><strong>Rp {{ \App\Support\Money::format($quotation->subtotal) }}</strong></div></div>
+    <div class="summary-box"><div class="summary-row"><span>Subtotal</span><strong>Rp {{ \App\Support\Money::format($quotation->subtotal) }}</strong></div><div class="summary-row"><span>Discount</span><strong>− Rp {{ \App\Support\Money::format($quotation->discount) }}</strong></div><div class="summary-row"><span>Tax</span><strong>Rp {{ \App\Support\Money::format($quotation->tax_amount) }}</strong></div><div class="summary-row summary-total"><span>Grand Total</span><strong>Rp {{ \App\Support\Money::format($quotation->grand_total) }}</strong></div></div>
     <div class="quote-actions">@can('submit',$quotation)<form method="POST" action="{{ route('quotations.submit',$quotation) }}">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Submit Approval</button></form>@endcan @can('update',$quotation)<a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">Edit</a>@endcan @can('convert',$quotation)<form method="POST" action="{{ route('quotations.convert',$quotation) }}">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Create Job Order</button></form>@endcan</div>
 </section>
 @elseif($tab === 'job')

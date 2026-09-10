@@ -6,6 +6,7 @@ use App\Models\ChartOfAccount;
 use App\Models\JobClosingSnapshot;
 use App\Models\JournalEntry;
 use App\Support\Money;
+use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -77,6 +78,31 @@ class FinancialReportService
     public function profitPerJob(string $from, string $to): Collection
     {
         return JobClosingSnapshot::with('job')->whereDate('closing_date', '>=', $from)->whereDate('closing_date', '<=', $to)->orderByDesc('closing_date')->get();
+    }
+
+    public function monthlyProfit(int $year): array
+    {
+        $months = collect(range(1, 12))->mapWithKeys(fn (int $m) => [$m => ['jobs' => 0, 'temporary' => Money::decimal(0), 'cost' => Money::decimal(0), 'revenue' => Money::decimal(0), 'profit' => Money::decimal(0)]]);
+        JobClosingSnapshot::whereYear('closing_date', $year)->get()->each(function ($snapshot) use ($months) {
+            $row = $months[$snapshot->closing_date->month];
+            $row['jobs']++;
+            $row['temporary'] = $row['temporary']->plus($snapshot->total_temporary);
+            $row['cost'] = $row['cost']->plus($snapshot->total_provision_cost);
+            $row['revenue'] = $row['revenue']->plus($snapshot->total_provision_sell);
+            $row['profit'] = $row['profit']->plus($snapshot->profit);
+            $months[$snapshot->closing_date->month] = $row;
+        });
+        $rows = $months->values()->map(fn ($row, $i) => ['month' => $i + 1, 'jobs' => $row['jobs'],
+            'temporary' => (string) $row['temporary'], 'cost' => (string) $row['cost'], 'revenue' => (string) $row['revenue'],
+            'profit' => (string) $row['profit'], 'margin' => $row['revenue']->isZero() ? '0.00' : (string) $row['profit']->multipliedBy('100')->dividedBy($row['revenue'], 2, RoundingMode::HalfUp)]);
+        $totals = [];
+        foreach (['temporary', 'cost', 'revenue', 'profit'] as $key) {
+            $totals[$key] = (string) collect($rows)->reduce(fn ($sum, $row) => $sum->plus(Money::decimal($row[$key])), Money::decimal(0));
+        }
+        $totals['jobs'] = collect($rows)->sum('jobs');
+        $totals['margin'] = Money::decimal($totals['revenue'])->isZero() ? '0.00' : (string) Money::decimal($totals['profit'])->multipliedBy('100')->dividedBy(Money::decimal($totals['revenue']), 2, RoundingMode::HalfUp);
+
+        return ['rows' => $rows, 'totals' => $totals];
     }
 
     private function accountBalances(string $to): Collection

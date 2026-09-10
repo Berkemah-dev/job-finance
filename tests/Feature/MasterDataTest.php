@@ -92,6 +92,6 @@ class MasterDataTest extends TestCase
         }
         $this->login();
         $this->post('/accounts', ['code' => '11', 'name' => 'Invalid', 'type' => 'whatever'])->assertSessionHasErrors('type');
-        $this->put('/accounts/mappings',['mappings' => []])->assertSessionHasErrors();
+        $this->put('/accounts/mappings', ['mappings' => []])->assertSessionHasErrors();
     }
 }

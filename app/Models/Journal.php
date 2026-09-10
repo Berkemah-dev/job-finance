@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Journal extends Model
 {
@@ -32,5 +33,10 @@ class Journal extends Model
     public function reversal(): HasOne
     {
         return $this->hasOne(self::class, 'reversal_of_id');
+    }
+
+    public function source(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

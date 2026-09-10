@@ -25,7 +25,7 @@ class QuotationPolicy
 
     public function update(User $user, Quotation $quotation): bool
     {
-        return $this->viewAny($user) && $quotation->status === QuotationStatus::Draft;
+        return $this->viewAny($user) && in_array($quotation->status, [QuotationStatus::Draft, QuotationStatus::Revision], true);
     }
 
     public function submit(User $user, Quotation $quotation): bool
@@ -39,6 +39,11 @@ class QuotationPolicy
     }
 
     public function reject(User $user, Quotation $quotation): bool
+    {
+        return $this->approve($user, $quotation);
+    }
+
+    public function revise(User $user, Quotation $quotation): bool
     {
         return $this->approve($user, $quotation);
     }

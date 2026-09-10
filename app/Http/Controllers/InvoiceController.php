@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Services\CoretaxService;
 use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
@@ -17,5 +18,12 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice)
     {
         return view('invoices.show', ['invoice' => $invoice->load(['items', 'payments.account', 'job', 'snapshot'])]);
+    }
+
+    public function coretax(Invoice $invoice, CoretaxService $service)
+    {
+        $xml = $service->generate($invoice, request()->user());
+
+        return response($xml, 200, ['Content-Type' => 'application/xml', 'Content-Disposition' => 'attachment; filename=faktur-'.$invoice->number.'.xml']);
     }
 }
