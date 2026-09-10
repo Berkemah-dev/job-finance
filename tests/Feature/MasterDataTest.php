@@ -94,4 +94,47 @@ class MasterDataTest extends TestCase
         $this->post('/accounts', ['code' => '11', 'name' => 'Invalid', 'type' => 'whatever'])->assertSessionHasErrors('type');
         $this->put('/accounts/mappings',['mappings' => []])->assertSessionHasErrors();
     }
+
+    public function test_coa_hierarchy_tree_view_and_subaccount_management(): void
+    {
+        $this->login('admin');
+
+        // 1. Verifikasi halaman Data COA menampilkan struktur akun RADIX
+        $response = $this->get('/accounts');
+        $response->assertOk()
+            ->assertSee('Data COA')
+            ->assertSee('Asset Lancar')
+            ->assertSee('PETTY CASH (-)')
+            ->assertSee('Biaya Operasional');
+
+        // 2. Verifikasi form create dengan parent_id
+        $bank = ChartOfAccount::where('code', '11120')->firstOrFail();
+        $this->get('/accounts/create?parent_id='.$bank->id)
+            ->assertOk()
+            ->assertSee('Tambah Sub Akun')
+            ->assertSee('Bank');
+
+        // 3. Tambah sub-akun baru di bawah Bank (level 3 -> 4)
+        $this->post('/accounts', [
+            'code' => '11129',
+            'name' => 'Bank Danamon IDR',
+            'type' => 'asset',
+            'parent_id' => $bank->id,
+        ])->assertSessionHasNoErrors()->assertRedirect('/accounts');
+
+        $subAccount = ChartOfAccount::where('code', '11129')->firstOrFail();
+        $this->assertSame($bank->id, $subAccount->parent_id);
+        $this->assertEquals(4, $subAccount->level);
+        $this->assertSame('asset', $subAccount->type);
+
+        // 4. Mencegah penghapusan akun induk yang memiliki sub-akun
+        $this->delete('/accounts/'.$bank->id, ['lock_version' => $bank->lock_version])
+            ->assertSessionHasErrors('account');
+
+        // 5. Menghapus sub-akun yang tidak memiliki turunan berhasil
+        $this->delete('/accounts/'.$subAccount->id, ['lock_version' => 0])
+            ->assertSessionHasNoErrors();
+        $this->assertSoftDeleted($subAccount);
+    }
 }
+

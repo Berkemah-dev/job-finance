@@ -46,6 +46,16 @@ class MasterDataService
                 }
             }
             $model->fill($data);
+            if ($model instanceof ChartOfAccount) {
+                if (array_key_exists('parent_id', $data) && ! empty($data['parent_id'])) {
+                    $parent = ChartOfAccount::find($data['parent_id']);
+                    if ($parent) {
+                        $model->level = $parent->level + 1;
+                    }
+                } elseif ($new && empty($data['parent_id'])) {
+                    $model->level = 1;
+                }
+            }
             if ($new) {
                 $model->created_by = $actor->id;
             }
@@ -64,8 +74,13 @@ class MasterDataService
             Gate::forUser($actor)->authorize($this->permissionFor($model));
             $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
             $this->checkVersion($model, $data);
-            if ($model instanceof ChartOfAccount && $model->mappings()->exists()) {
-                throw ValidationException::withMessages(['account' => 'Akun masih digunakan pada mapping. Pilih akun pengganti sebelum mengarsipkan.']);
+            if ($model instanceof ChartOfAccount) {
+                if ($model->mappings()->exists()) {
+                    throw ValidationException::withMessages(['account' => 'Akun masih digunakan pada mapping. Pilih akun pengganti sebelum mengarsipkan.']);
+                }
+                if ($model->children()->exists()) {
+                    throw ValidationException::withMessages(['account' => 'Akun tidak dapat diarsipkan karena masih memiliki sub-akun. Hapus atau pindahkan sub-akun terlebih dahulu.']);
+                }
             }
             $model->updated_by = $actor->id;
             $model->lock_version++;

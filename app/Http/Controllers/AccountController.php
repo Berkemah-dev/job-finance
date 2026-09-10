@@ -9,23 +9,78 @@ use App\Models\AccountMapping;
 use App\Models\ChartOfAccount;
 use App\Services\MasterDataService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class AccountController extends Controller
 {
     public function index(Request $request)
     {
         $search = mb_substr($request->string('search')->toString(), 0, 100);
-        $accounts = ChartOfAccount::query()->when($request->input('archived') === '1', fn ($q) => $q->onlyTrashed())
-            ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%')))
-            ->when(array_key_exists((string) $request->input('type'), config('accounting.types')), fn ($q) => $q->where('type', $request->input('type')))
-            ->orderBy('code')->paginate(15)->withQueryString();
+        $type = $request->input('type');
+        $archived = $request->input('archived') === '1';
 
-        return view('accounts.index', compact('accounts', 'search'));
+        $query = ChartOfAccount::query()
+            ->withCount('children')
+            ->when($archived, fn ($q) => $q->onlyTrashed())
+            ->when(array_key_exists((string) $type, config('accounting.types')), fn ($q) => $q->where('type', $type))
+            ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%')));
+
+        if ($search || $type || $archived) {
+            $accounts = $query->orderBy('code')->paginate(50)->withQueryString();
+            $isTree = false;
+        } else {
+            $allAccounts = ChartOfAccount::withCount('children')->orderBy('code')->get();
+            $accounts = $this->buildTreeList($allAccounts);
+            $isTree = true;
+        }
+
+        return view('accounts.index', compact('accounts', 'search', 'isTree'));
     }
 
-    public function create()
+    private function buildTreeList(Collection $all): Collection
     {
-        return view('accounts.form', ['account' => new ChartOfAccount]);
+        $grouped = $all->groupBy(fn ($a) => (string) ($a->parent_id ?? 'root'));
+        $result = collect();
+
+        $traverse = function ($parentId, $currentLevel) use (&$traverse, $grouped, &$result) {
+            $children = $grouped->get((string) $parentId, collect());
+            foreach ($children as $child) {
+                $child->tree_level = $currentLevel;
+                $result->push($child);
+                $traverse($child->id, $currentLevel + 1);
+            }
+        };
+
+        // Root accounts have parent_id null
+        $traverse('root', 1);
+
+        // Append any accounts whose parent wasn't found in tree
+        $pushedIds = $result->pluck('id')->all();
+        $orphans = $all->reject(fn ($a) => in_array($a->id, $pushedIds));
+        foreach ($orphans as $orphan) {
+            $orphan->tree_level = $orphan->level ?? 1;
+            $result->push($orphan);
+        }
+
+        return $result;
+    }
+
+    public function create(Request $request)
+    {
+        $account = new ChartOfAccount;
+        $parent = null;
+
+        if ($request->filled('parent_id')) {
+            $parent = ChartOfAccount::find($request->input('parent_id'));
+            if ($parent) {
+                $account->parent_id = $parent->id;
+                $account->type = $parent->type;
+            }
+        }
+
+        $parents = ChartOfAccount::orderBy('code')->get();
+
+        return view('accounts.form', compact('account', 'parent', 'parents'));
     }
 
     public function store(AccountRequest $request, MasterDataService $service)
@@ -37,7 +92,10 @@ class AccountController extends Controller
 
     public function edit(ChartOfAccount $account)
     {
-        return view('accounts.form', compact('account'));
+        $parent = $account->parent;
+        $parents = ChartOfAccount::where('id', '!=', $account->id)->orderBy('code')->get();
+
+        return view('accounts.form', compact('account', 'parent', 'parents'));
     }
 
     public function update(AccountRequest $request, ChartOfAccount $account, MasterDataService $service)
@@ -56,13 +114,16 @@ class AccountController extends Controller
 
     public function mappings()
     {
-        return view('accounts.mappings', ['accounts' => ChartOfAccount::orderBy('code')->get(), 'mappings' => AccountMapping::pluck('chart_of_account_id', 'key')]);
+        return view('accounts.mappings', [
+            'accounts' => ChartOfAccount::orderBy('code')->get(),
+            'mappings' => AccountMapping::pluck('chart_of_account_id', 'key'),
+        ]);
     }
 
     public function updateMappings(MappingRequest $request, MasterDataService $service)
     {
         $service->mappings($request->validated('mappings'), $request->user());
 
-        return redirect()->route('accounts.mappings')->with('success','Mapping akun berhasil disimpan.');
+        return redirect()->route('accounts.mappings')->with('success', 'Mapping akun berhasil disimpan.');
     }
 }

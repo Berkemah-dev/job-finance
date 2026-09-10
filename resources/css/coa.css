@@ -1,0 +1,256 @@
+/* COA Hierarchy Tree View Styles matching RADIX SYSTEM */
+
+.coa-panel {
+    border: 1px solid #e1e7f1;
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(38, 62, 101, 0.04);
+}
+
+.coa-header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.coa-header-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.coa-header-title .icon {
+    width: 24px;
+    height: 24px;
+    color: #334155;
+}
+
+.coa-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.coa-tree-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.coa-tree-table thead th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 16px;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.coa-tree-table th.col-actions,
+.coa-tree-table td.col-actions {
+    width: 76px;
+    text-align: center;
+    padding: 8px 10px;
+    border-left: 1px solid #f1f5f9;
+}
+
+.coa-tree-table tbody tr {
+    border-bottom: 1px solid #edf2f7;
+    transition: background-color 0.12s ease;
+}
+
+.coa-tree-table tbody tr:hover {
+    background-color: #f8faff;
+}
+
+.coa-row-root {
+    background-color: #fcfdfe;
+}
+
+.coa-row-root:hover {
+    background-color: #f5f8fc;
+}
+
+.coa-cell-name {
+    padding: 9px 16px;
+    vertical-align: middle;
+}
+
+.coa-node {
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+}
+
+.coa-indent-guide {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.coa-line-spacer {
+    display: inline-block;
+    width: 32px;
+    height: 28px;
+    position: relative;
+}
+
+.coa-line-connector {
+    display: inline-block;
+    width: 32px;
+    height: 28px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.coa-line-connector::before {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 12px;
+    width: 1px;
+    height: 28px;
+    border-left: 1.5px solid #cbd5e1;
+}
+
+.coa-line-connector::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 12px;
+    width: 18px;
+    height: 1px;
+    border-top: 1.5px solid #cbd5e1;
+}
+
+.coa-line-spacer.has-vertical::before {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 12px;
+    width: 1px;
+    height: 100%;
+    border-left: 1.5px solid #e2e8f0;
+}
+
+.coa-folder-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.coa-folder-icon .icon {
+    width: 17px;
+    height: 17px;
+}
+
+.coa-label {
+    display: inline-block;
+    line-height: 1.4;
+}
+
+.coa-root-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.2px;
+}
+
+.coa-level-2-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.coa-level-3-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.coa-level-4-label {
+    font-size: 12px;
+    font-weight: 400;
+    color: #475569;
+}
+
+.coa-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 5px;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.coa-action-button:hover {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+    color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+}
+
+.coa-action-button .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.coa-btn-del {
+    color: #64748b;
+}
+
+.coa-btn-del:hover {
+    background-color: #fef2f2;
+    border-color: #ef4444;
+    color: #dc2626;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
+}
+
+.coa-bottom-add-row td {
+    background-color: #fafbfd;
+    padding: 10px 16px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.coa-type-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    margin-left: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.coa-filter-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: #ffffff;
+    border-bottom: 1px solid #eef2f7;
+    flex-wrap: wrap;
+}
+
+.coa-quick-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
