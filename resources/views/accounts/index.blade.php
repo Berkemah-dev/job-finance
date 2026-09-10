@@ -38,6 +38,22 @@
         @endif
     </form>
 
+    @if($isTree)
+        <div class="coa-filter-strip">
+            <div class="coa-tree-info">
+                <span class="coa-count-text">Menampilkan <strong>{{ count($accounts) }}</strong> akun dalam struktur hirarki</span>
+            </div>
+            <div class="coa-quick-actions">
+                <button type="button" class="button button-secondary button-sm" id="coa-expand-all" title="Buka seluruh sub akun">
+                    <x-icon name="chevron-down"/> Buka Semua
+                </button>
+                <button type="button" class="button button-secondary button-sm" id="coa-collapse-all" title="Tutup seluruh sub akun">
+                    <x-icon name="chevron-right"/> Tutup Semua
+                </button>
+            </div>
+        </div>
+    @endif
+
     <div class="coa-table-wrapper">
         <table class="coa-tree-table">
             <thead>
@@ -55,9 +71,13 @@
                         $isRoot = $level === 1;
                         $hasChildren = ($account->children_count ?? 0) > 0;
                     @endphp
-                    <tr class="{{ $isRoot ? 'coa-row-root' : '' }}">
+                    <tr class="{{ $isRoot ? 'coa-row-root' : '' }} {{ $hasChildren ? 'coa-row-has-children' : '' }} coa-row"
+                        data-coa-id="{{ $account->id }}"
+                        data-coa-parent-id="{{ $account->parent_id ?? '' }}"
+                        data-coa-level="{{ $level }}"
+                        data-coa-has-children="{{ $hasChildren ? '1' : '0' }}">
                         <td class="coa-cell-name">
-                            <div class="coa-node">
+                            <div class="coa-node {{ $hasChildren ? 'coa-node-has-children' : '' }}">
                                 @if($level > 1)
                                     <span class="coa-indent-guide" aria-hidden="true">
                                         @for($i = 2; $i < $level; $i++)
@@ -67,17 +87,36 @@
                                     </span>
                                 @endif
 
+                                @if($hasChildren)
+                                    <button type="button"
+                                            class="coa-toggle-btn"
+                                            data-coa-toggle
+                                            aria-expanded="true"
+                                            aria-label="Buka atau tutup sub akun {{ $account->code }}"
+                                            title="Buka / Tutup sub akun">
+                                        <x-icon name="chevron-down" class="coa-chevron-icon"/>
+                                    </button>
+                                @else
+                                    <span class="coa-toggle-spacer" aria-hidden="true"></span>
+                                @endif
+
                                 <span class="coa-folder-icon" aria-hidden="true">
-                                    <x-icon name="folder"/>
+                                    <x-icon name="folder" class="coa-icon-folder"/>
+                                    <x-icon name="folder-open" class="coa-icon-folder-open"/>
                                 </span>
 
-                                <span class="coa-label {{ $isRoot ? 'coa-root-label' : 'coa-level-'.$level.'-label' }}">
+                                <span class="coa-label {{ $hasChildren ? 'coa-label-interactive' : '' }} {{ $isRoot ? 'coa-root-label' : 'coa-level-'.$level.'-label' }}"
+                                      title="{{ $hasChildren ? 'Klik untuk buka/tutup sub-akun' : '' }}">
                                     @if($isRoot)
                                         <strong>{{ $account->code }} - {{ $account->name }}</strong>
                                     @else
                                         {{ $account->code }} - {{ $account->name }}
                                     @endif
                                 </span>
+
+                                @if($hasChildren)
+                                    <span class="coa-children-badge" title="{{ $account->children_count }} sub akun">{{ $account->children_count }} sub</span>
+                                @endif
 
                                 @if(!$isTree)
                                     <span class="coa-type-badge">{{ config('accounting.types.'.$account->type) }}</span>
