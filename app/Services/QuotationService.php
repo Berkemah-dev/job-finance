@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class QuotationService
 {
-    public function __construct(private DocumentNumberService $numbers, private MasterDataService $master, private PricingService $pricing) {}
+    public function __construct(private DocumentNumberService $numbers, private MasterDataService $master, private PricingService $pricing, private CalculationService $calculation) {}
 
     public function save(?Quotation $quotation, array $data, User $actor): Quotation
     {
@@ -36,9 +36,12 @@ class QuotationService
             }
             $customer = $this->activeCustomer($data['customer_id']);
             $calculated = $this->calculate($data['items'], $data['quotation_date'] ?? now());
-            $quotation->fill(Arr::only($data, ['customer_id', 'subject', 'quotation_date', 'valid_until', 'notes']));
+            $data['currency'] = $data['currency'] ?? 'IDR';
+            $data['exchange_rate'] = $data['exchange_rate'] ?? 1;
+            $quotation->fill(Arr::only($data, ['customer_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate']));
             $quotation->customer_snapshot = $customer->only(['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number']);
             $quotation->forceFill($calculated['totals']);
+            $this->applyTaxAndGrandTotal($quotation);
             $quotation->updated_by = $actor->id;
             $quotation->lock_version = $new ? 0 : $quotation->lock_version + 1;
             $quotation->save();
@@ -50,15 +53,29 @@ class QuotationService
         }, 3);
     }
 
+    /**
+     * Pajak & diskon dihitung dari nilai dasar (temporary + provision sell) memakai kalkulator pajak bersama.
+     */
+    private function applyTaxAndGrandTotal(Quotation $quotation): void
+    {
+        $discount = Money::decimal($quotation->discount ?? 0);
+        $base = Money::decimal($quotation->subtotal)->minus($discount);
+        $rate = (float) ($quotation->tax_rate ?? 0);
+        $quotation->discount = Money::checked($discount);
+        $quotation->tax_amount = $rate > 0 ? $this->calculation->tax($base, $rate)['tax'] : Money::decimal('0');
+        $quotation->grand_total = Money::checked($base->plus(Money::decimal($quotation->tax_amount)));
+    }
+
     public function transition(Quotation $quotation, string $action, array $data, User $actor): Quotation
     {
         return DB::transaction(function () use ($quotation, $action, $data, $actor) {
             $quotation = Quotation::lockForUpdate()->findOrFail($quotation->id);
             Gate::forUser($actor)->authorize($action, $quotation);
             $this->master->checkVersion($quotation, $data);
-            if ($action !== 'reject') {
+            if ($action !== 'reject' && $action !== 'revise') {
                 $this->activeCustomer($quotation->customer_id);
             }
+            $from = $quotation->status;
             if ($action === 'submit') {
                 if (! $quotation->items()->exists()) {
                     throw ValidationException::withMessages(['items' => 'Quotation harus memiliki item.']);
@@ -78,12 +95,21 @@ class QuotationService
                 $quotation->rejected_by = $actor->id;
                 $quotation->rejected_at = now();
                 $quotation->rejection_reason = $data['reason'];
+            } elseif ($action === 'revise') {
+                if (trim($data['reason'] ?? '') === '') {
+                    throw ValidationException::withMessages(['reason' => 'Catatan revisi wajib diisi.']);
+                }
+                $quotation->status = QuotationStatus::Revision;
+                $quotation->revised_by = $actor->id;
+                $quotation->revised_at = now();
+                $quotation->revision_reason = $data['reason'];
             } else {
                 throw new \InvalidArgumentException('Unknown transition');
             }
             $quotation->updated_by = $actor->id;
             $quotation->lock_version++;
             $quotation->save();
+            $quotation->statusHistory()->create(['from_status' => $from?->value, 'to_status' => $quotation->status->value, 'note' => $data['reason'] ?? null, 'user_id' => $actor->id, 'created_at' => now()]);
             $this->master->log($actor, 'quotation.'.$action, $quotation->number.' → '.$quotation->status->label());
 
             return $quotation;
@@ -104,17 +130,28 @@ class QuotationService
             $snapshot = [
                 'number' => $quotation->number, 'customer' => $quotation->customer_snapshot, 'subject' => $quotation->subject,
                 'quotation_date' => $quotation->quotation_date->format('Y-m-d'), 'valid_until' => $quotation->valid_until->format('Y-m-d'), 'notes' => $quotation->notes,
-                'totals' => $quotation->only(['total_temporary', 'total_provision_cost', 'total_provision_sell', 'subtotal', 'profit', 'margin']),
-                'items' => $quotation->items->map(fn ($item) => $item->only(['description', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price']))->all(),
+                'service_type' => $quotation->service_type, 'origin' => $quotation->origin, 'destination' => $quotation->destination,
+                'currency' => $quotation->currency, 'exchange_rate' => $quotation->exchange_rate, 'payment_terms' => $quotation->payment_terms,
+                'shipper' => ['name' => $quotation->shipper_name, 'address' => $quotation->shipper_address],
+                'consignee' => ['name' => $quotation->consignee_name, 'address' => $quotation->consignee_address],
+                'totals' => $quotation->only(['total_temporary', 'total_provision_cost', 'total_provision_sell', 'subtotal', 'discount', 'tax_rate', 'tax_amount', 'grand_total', 'profit', 'margin']),
+                'items' => $quotation->items->map(fn ($item) => $item->only(['description', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate']))->all(),
             ];
             $job = Job::create(['number' => $this->numbers->next('job'), 'quotation_id' => $quotation->id, 'customer_id' => $quotation->customer_id,
-                'subject' => $quotation->subject, 'status' => 'draft', 'job_date' => now()->toDateString(), 'quotation_snapshot' => $snapshot, 'created_by' => $actor->id, 'updated_by' => $actor->id]);
+                'subject' => $quotation->subject, 'status' => 'draft', 'job_date' => now()->toDateString(), 'quotation_snapshot' => $snapshot,
+                'service_type' => $quotation->service_type, 'origin' => $quotation->origin, 'destination' => $quotation->destination,
+                'shipper_name' => $quotation->shipper_name, 'shipper_address' => $quotation->shipper_address,
+                'consignee_name' => $quotation->consignee_name, 'consignee_address' => $quotation->consignee_address,
+                'created_by' => $actor->id, 'updated_by' => $actor->id]);
+            $job->statusHistory()->create(['from_status' => null, 'to_status' => 'draft', 'note' => 'Job dibuat dari quotation '.$quotation->number, 'user_id' => $actor->id, 'created_at' => now()]);
+            $from = $quotation->status;
             $quotation->status = QuotationStatus::Converted;
             $quotation->converted_by = $actor->id;
             $quotation->converted_at = now();
             $quotation->updated_by = $actor->id;
             $quotation->lock_version++;
             $quotation->save();
+            $quotation->statusHistory()->create(['from_status' => $from?->value, 'to_status' => $quotation->status->value, 'note' => null, 'user_id' => $actor->id, 'created_at' => now()]);
             $this->master->log($actor, 'quotation.converted', $quotation->number.' → '.$job->number);
 
             return $job;

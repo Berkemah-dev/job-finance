@@ -7,9 +7,11 @@ JobFinance adalah aplikasi demo Job Costing, Billing, dan Accounting untuk perus
 - Authentication dan RBAC untuk Super Admin, Operational, Finance, dan Management
 - Customer, COA, serta mapping akun jurnal
 - Quotation, Job Order, dan biaya Temporary/Provision
-- Closing, snapshot historis, invoice, serta pembayaran
+- Closing, snapshot historis, invoice, pembayaran, serta kurs mata uang asing
+- Statement of Account, Reimbursement, dan biaya otomatis dari quotation
 - Jurnal otomatis, penyesuaian, dan reversal
-- Buku Besar, Neraca Saldo, Neraca, Laba Rugi, Arus Kas, dan Profit per Job
+- Buku Besar, Neraca Saldo, Neraca, Laba Rugi, Arus Kas, Profit per Job, dan Profit Bulanan
+- Ekspor faktur PPN ke XML Coretax
 - Dashboard, Activity Log, dan administrasi pengguna
 
 ## Instalasi lokal

@@ -13,13 +13,14 @@ class Quotation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['customer_id', 'subject', 'quotation_date', 'valid_until', 'notes'];
+    protected $fillable = ['customer_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate'];
 
     protected function casts(): array
     {
         return ['status' => QuotationStatus::class, 'customer_snapshot' => 'array', 'quotation_date' => 'date', 'valid_until' => 'date',
-            'submitted_at' => 'datetime', 'approved_at' => 'datetime', 'rejected_at' => 'datetime', 'converted_at' => 'datetime',
-            'total_temporary' => 'decimal:2', 'total_provision_cost' => 'decimal:2', 'total_provision_sell' => 'decimal:2', 'subtotal' => 'decimal:2', 'profit' => 'decimal:2', 'margin' => 'decimal:2'];
+            'submitted_at' => 'datetime', 'approved_at' => 'datetime', 'rejected_at' => 'datetime', 'converted_at' => 'datetime', 'revised_at' => 'datetime',
+            'total_temporary' => 'decimal:2', 'total_provision_cost' => 'decimal:2', 'total_provision_sell' => 'decimal:2', 'subtotal' => 'decimal:2', 'profit' => 'decimal:2', 'margin' => 'decimal:2',
+            'discount' => 'decimal:2', 'tax_rate' => 'decimal:2', 'tax_amount' => 'decimal:2', 'grand_total' => 'decimal:2', 'exchange_rate' => 'decimal:2'];
     }
 
     public function customer(): BelongsTo
@@ -45,5 +46,15 @@ class Quotation extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function revisedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'revised_by');
+    }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(QuotationStatusHistory::class)->orderBy('id');
     }
 }

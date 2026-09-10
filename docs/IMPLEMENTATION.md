@@ -1,6 +1,6 @@
 # JobFinance — Tahap 1 dan 2
 
-Seluruh Tahap 1–10 selesai. Hardening, factory, seeder demo, administrasi pengguna, dan QA akhir didokumentasikan di [STAGE_10.md](STAGE_10.md). Laporan tahap 8–9 tersedia di [STAGE_8_9.md](STAGE_8_9.md).
+Seluruh Tahap 1–10 selesai. Hardening, factory, seeder demo, administrasi pengguna, dan QA akhir didokumentasikan di [STAGE_10.md](STAGE_10.md). Laporan tahap 8–9 tersedia di [STAGE_8_9.md](STAGE_8_9.md). Laporan tahap 11 (Statement of Account, Reimbursement, kurs invoice, profit bulanan, Coretax) tersedia di [STAGE_11.md](STAGE_11.md).
 
 Catatan ini mendokumentasikan fondasi awal. Implementasi terbaru Tahap 3–4, perubahan migration Job Order, aturan quotation, dan hasil QA tersedia di [STAGE_3_4.md](STAGE_3_4.md).
 

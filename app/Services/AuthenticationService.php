@@ -14,11 +14,12 @@ class AuthenticationService
 {
     public function login(LoginRequest $request): void
     {
-        $key = Str::lower($request->string('email')->toString()).'|'.$request->ip();
+        $email = Str::lower(trim($request->string('email')->toString()));
+        $key = $email.'|'.$request->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages(['email' => 'Terlalu banyak percobaan. Coba lagi dalam '.RateLimiter::availableIn($key).' detik.']);
         }
-        if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        if (! Auth::attempt(['email' => $email, 'password' => $request->string('password')->toString()], $request->boolean('remember'))) {
             RateLimiter::hit($key, 60);
             throw ValidationException::withMessages(['email' => 'Email atau kata sandi tidak sesuai.']);
         }

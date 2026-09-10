@@ -59,4 +59,11 @@ class ReportController extends Controller
 
         return view('reports.profit-per-job', ['rows' => $service->profitPerJob($from, $to), 'from' => $from, 'to' => $to]);
     }
+
+    public function profitMonthly(ReportFilterRequest $request, FinancialReportService $service)
+    {
+        $year = max(2000, min(2100, (int) $request->input('year', today()->year)));
+
+        return view('reports.profit-monthly', $service->monthlyProfit($year) + compact('year'));
+    }
 }

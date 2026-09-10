@@ -6,6 +6,7 @@ use App\Enums\QuotationStatus;
 use App\Models\Customer;
 use App\Models\Job;
 use App\Models\Quotation;
+use App\Services\MasterDataService;
 use Illuminate\Http\Request;
 
 class OperationalDocumentController extends Controller
@@ -82,21 +83,23 @@ class OperationalDocumentController extends Controller
         ]);
     }
 
-    public function quotationPdf(Request $request, Quotation $quotation)
+    public function quotationPdf(Request $request, Quotation $quotation, MasterDataService $master)
     {
         $quotation->load(['items', 'customer', 'creator', 'approver']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
         $filename = $quotation->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF quotation '.$quotation->number, ['module' => 'document', 'record_id' => $quotation->id]);
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : $pdf->stream($filename);
     }
 
-    public function jobPdf(Request $request, Quotation $quotation)
+    public function jobPdf(Request $request, Quotation $quotation, MasterDataService $master)
     {
         $quotation->load(['job.customer', 'job.quotation']);
         abort_unless($quotation->job, 404);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.job-order', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
         $filename = $quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF job order '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : $pdf->stream($filename);
     }

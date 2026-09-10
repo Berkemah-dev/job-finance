@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#0f1f3d">
     <title>@yield('title', 'Dashboard') · JobFinance</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -10,7 +10,7 @@
 <a class="skip-link" href="#main">Lewati ke konten</a>
 <button class="sidebar-backdrop" data-menu-close aria-label="Tutup navigasi" tabindex="-1"></button>
 <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
-    <a href="{{ route('dashboard') }}" class="brand brand-logo"><img src="{{ asset('images/logo-rdx-350x250.png') }}" alt="JobFinance Logo" class="brand-img"></a>
+    <a href="{{ route('dashboard') }}" class="brand brand-logo"><img src="{{ asset('images/logo.png') }}" alt="JobFinance Logo" class="brand-img"></a>
     <nav>
         <p class="nav-heading">WORKSPACE</p>
         <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><x-icon/>Dashboard</a>
@@ -18,10 +18,10 @@
         $groups = [
             'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer'],['vendors.manage','users','Vendor']],
             'PRICING' => [['pricing.view','chart','Weekly Pricing','pricing.weekly.index'],['pricing.view','briefcase','Trucking Price List','pricing.trucking.index']],
-            'OPERASIONAL' => [['jobs.view','file','Dokumen Job','documents.index']],
-            'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index']],
+            'OPERASIONAL' => [['jobs.view','briefcase','Job Order','jobs.index'],['jobs.view','file','Dokumen Job','documents.index']],
+            'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index'],['reimbursements.manage','wallet','Reimbursement','reimbursements.index']],
             'AKUNTANSI' => [['coa.manage','file','Chart of Accounts','accounts.index'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
-            'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job']],
+            'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job'],['reports.view','calendar','Profit Bulanan','reports.profit-monthly'],['reports.view','wallet','Statement of Account','reports.soa']],
         ];
         @endphp
         @foreach($groups as $heading => $items)
@@ -31,9 +31,9 @@
                 @php [$permission, $icon, $label] = $item; @endphp
                 @can($permission)
                 @php
-                $destination = $item[3] ?? ['customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index'][$permission] ?? null;
+                $destination = $item[3] ?? ['customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
                 $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
-                $active = $destination === 'documents.index' ? request()->routeIs('documents.*','quotations.*','jobs.*') && ! $isCostPage : (str_starts_with((string)$destination,'reports.') ? request()->routeIs($destination) : ($permission === 'costs.manage' ? $isCostPage : ($destination && request()->routeIs(explode('.',$destination)[0].'.*') && !($permission === 'jobs.view' && $isCostPage))));
+                $active = $destination === 'documents.index' ? request()->routeIs('documents.*','quotations.*','jobs.*') && ! $isCostPage : (str_starts_with((string)$destination,'reports.') ? request()->routeIs($destination, $destination.'.*') : ($permission === 'costs.manage' ? $isCostPage : ($destination && request()->routeIs(explode('.',$destination)[0].'.*') && !($permission === 'jobs.view' && $isCostPage))));
                 @endphp
                 @if($destination)
                 <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
