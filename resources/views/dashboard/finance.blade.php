@@ -1,28 +1,20 @@
 @extends('layouts.app')
 @section('title', 'Dashboard Finance')
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">WORKSPACE FINANCE</p>
-        <h1>Dashboard Finance</h1>
-        <p>Prioritaskan invoice jatuh tempo, tagihan belum lunas, dan kurs aktif hari ini.</p>
-    </div>
-    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-</div>
-
-@include('dashboard.partials.charts')
-
 <x-menu-banner
     tag="WORKSPACE FINANCE"
-    :title="'Halo, ' . auth()->user()->name . '!'"
-    description="Kelola keuangan dengan rapi. Kenali biaya, tagihan, dan profit setiap job."
+    title="Keuangan lebih terkontrol."
+    description="Prioritaskan invoice jatuh tempo, tagihan belum lunas, dan kurs aktif hari ini."
     action-url="{{ route('invoices.index') }}"
     action-label="Buka Invoice"
     action-icon="arrow"
     icon="briefcase"
     art-title="Keuangan terkontrol,"
     art-subtitle="lebih terukur."
+    :show-date="true"
 />
+
+@include('dashboard.partials.charts')
 
 <div class="stats-grid">
     <article class="stat-card">

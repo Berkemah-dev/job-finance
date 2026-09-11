@@ -1,28 +1,20 @@
 @extends('layouts.app')
 @section('title', 'Dashboard Sales')
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">WORKSPACE SALES</p>
-        <h1>Dashboard Sales</h1>
-        <p>Buat penawaran harga, pantau status persetujuan, dan gunakan kurs mingguan terbaru.</p>
-    </div>
-    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-</div>
-
-@include('dashboard.partials.charts')
-
 <x-menu-banner
     tag="WORKSPACE SALES"
-    :title="'Halo, ' . auth()->user()->name . '!'"
-    description="Buat penawaran harga cepat, pantau approval, dan follow-up prospek customer."
+    title="Quotation lebih cepat."
+    description="Buat penawaran, pantau status quote, dan gunakan kurs terbaru."
     action-url="{{ route('quotations.create') }}"
     action-label="Buat Quotation"
     action-icon="arrow"
     icon="file"
     art-title="Peluang bisnis,"
     art-subtitle="jadi transaksi."
+    :show-date="true"
 />
+
+@include('dashboard.partials.charts')
 
 <div class="stats-grid">
     <article class="stat-card"><span>Quotation Draft</span><strong class="stat-number">{{ $widgets['quotes']['draft'] ?? 0 }}</strong><p>Belum diajukan.</p></article>

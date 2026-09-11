@@ -1,27 +1,17 @@
 @extends('layouts.app')
 @section('title', 'Dashboard Customer Service')
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">WORKSPACE CUSTOMER SERVICE</p>
-        <h1>Dashboard Customer Service</h1>
-        <p>Ikuti estimasi keberangkatan dan kedatangan kargo untuk memberikan informasi akurat kepada pelanggan.</p>
-    </div>
-    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-</div>
-
-@include('dashboard.partials.charts')
-
 <x-menu-banner
     tag="WORKSPACE CUSTOMER SERVICE"
-    :title="'Halo, ' . auth()->user()->name . '!'"
-    description="Ikuti estimasi kedatangan kargo dan hubungi customer sebelum barang tiba."
+    title="Siap menyambut kedatangan."
+    description="Ikuti ETA kargo dan hubungi customer sebelum barang tiba."
     action-url="{{ route('jobs.index') }}"
     action-label="Monitoring Kargo"
     action-icon="arrow"
     icon="calendar"
     art-title="Kepuasan customer,"
     art-subtitle="prioritas utama."
+    :show-date="true"
 />
 
 <div class="metric-grid">
