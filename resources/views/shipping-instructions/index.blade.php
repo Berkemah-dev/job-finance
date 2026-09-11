@@ -2,22 +2,27 @@
 @section('title', 'Shipping Instruction')
 @section('content')
 
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
-        <h1>Shipping Instruction</h1>
-        <p>Instruksi pengapalan resmi kepada Shipping Lines / Carrier untuk penerbitan Bill of Lading (B/L).</p>
-    </div>
-    <div class="action-group">
-        <a class="button button-primary" href="{{ route('shipping-instructions.create') }}">+ Buat Shipping Instruction</a>
-    </div>
-</div>
+<x-menu-banner
+    tag="OPERASIONAL"
+    title="Shipping Instruction (SI)"
+    description="Instruksi pengapalan resmi kepada Shipping Lines / Carrier untuk penerbitan Bill of Lading (B/L)."
+    :action-url="route('shipping-instructions.create')"
+    action-label="+ Buat Shipping Instruction"
+    action-icon="plus"
+    icon="file"
+    art-title="Instruksi kapal,"
+    art-subtitle="terbit cepat."
+/>
 
 <section class="panel">
     <form class="filter-bar" method="GET">
         <input name="search" value="{{ $search }}" placeholder="Cari nomor SI, carrier, shipper, consignee, kapal, atau Job No" aria-label="Cari Shipping Instruction">
-        <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal">
-        <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal">
+        <div class="date-filter-group">
+            <x-icon name="calendar"/>
+            <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal" title="Dari tanggal">
+            <span class="date-sep">→</span>
+            <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal" title="Sampai tanggal">
+        </div>
         <select name="status" aria-label="Status">
             <option value="">Semua status</option>
             <option value="submitted" @selected($status === 'submitted')>Submitted</option>

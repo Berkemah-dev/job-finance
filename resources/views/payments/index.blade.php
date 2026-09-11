@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Pembayaran')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">PENERIMAAN KAS</p><h1>Pembayaran</h1><p>Pilih invoice untuk mencatat pembayaran dan memperbarui piutang.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="PENERIMAAN KAS"
     title="Pembayaran & Pelunasan Piutang"

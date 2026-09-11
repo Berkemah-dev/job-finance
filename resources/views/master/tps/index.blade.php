@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Master TPS')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">MASTER DATA</p><h1>Master TPS</h1><p>Kelola Tempat Penimbunan Sementara (TPS) udara dan laut.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="MASTER DATA"
     title="Master TPS Air & Sea"

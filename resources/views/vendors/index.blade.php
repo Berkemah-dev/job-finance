@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Vendor')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">SALES & CUSTOMER</p><h1>Vendor</h1><p>Kelola Shipping Lines, Vendor Trucking, dan agent pendukung.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="SALES & CUSTOMER"
     title="Master Data Vendor"

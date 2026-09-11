@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Closing Job')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KEUANGAN & CLOSING</p><h1>Closing Job</h1><p>Finalisasi biaya, tagihan, dan pencatatan akuntansi.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="KEUANGAN & CLOSING"
     title="Closing Pekerjaan"

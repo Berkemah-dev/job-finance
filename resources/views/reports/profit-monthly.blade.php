@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Profit Bulanan')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">ANALISIS PROFITABILITAS</p><h1>Profit Bulanan</h1><p>Rekap profit dari nilai closing historis per bulan.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="ANALISIS PROFITABILITAS"
     title="Rekap Profit Bulanan"

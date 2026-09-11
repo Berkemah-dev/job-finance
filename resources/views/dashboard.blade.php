@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Dashboard')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">RINGKASAN WORKSPACE</p><h1>Dashboard</h1><p>Pantau pekerjaan dan keuangan dalam satu tempat.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="WORKSPACE JOBFINANCE"
     :title="'Halo, ' . auth()->user()->name . '!'"

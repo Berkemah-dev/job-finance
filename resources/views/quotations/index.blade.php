@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Quotation')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">SALES & CUSTOMER</p><h1>Quotation</h1><p>Susun penawaran, pantau persetujuan, dan mulai pekerjaan.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="SALES & CUSTOMER"
     title="Quotation & Penawaran"
@@ -15,8 +14,12 @@
 />
 <section class="panel"><form class="filter-bar" method="GET">
 <input name="search" value="{{ $search }}" placeholder="Cari nomor, judul, atau customer" aria-label="Cari quotation">
-<input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal">
-<input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal">
+<div class="date-filter-group">
+    <x-icon name="calendar"/>
+    <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal" title="Dari tanggal">
+    <span class="date-sep">→</span>
+    <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal" title="Sampai tanggal">
+</div>
 <select name="customer_id" aria-label="Customer"><option value="">Semua customer</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" @selected($customerId===$customer->id)>{{ $customer->name }}</option>@endforeach</select>
 <select name="sales_id" aria-label="Sales"><option value="">Semua sales</option>@foreach($sales as $user)<option value="{{ $user->id }}" @selected($salesId===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>

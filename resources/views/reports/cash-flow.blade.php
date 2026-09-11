@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Arus Kas')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">LAPORAN KEUANGAN</p><h1>Arus Kas</h1><p>Penerimaan dan pengeluaran Kas/Bank berdasarkan jurnal.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="LAPORAN KEUANGAN"
     title="Laporan Arus Kas (Cash Flow)"
@@ -10,4 +9,4 @@
     art-title="Likuiditas kas,"
     art-subtitle="terjaga optimal."
 />
-<form class="filter-bar" method="GET"><input type="date" name="from" value="{{ $from }}"><span>sampai</span><input type="date" name="to" value="{{ $to }}"><button class="button button-secondary">Terapkan</button></form><section class="panel report-list"><div><span>Penerimaan customer</span><strong>Rp {{ \App\Support\Money::format($customer_payment) }}</strong></div><div><span>Pengeluaran temporary/provision</span><strong>Rp {{ \App\Support\Money::format($job_cost_capitalization) }}</strong></div><div><span>Penyesuaian Kas/Bank</span><strong>Rp {{ \App\Support\Money::format($adjustment) }}</strong></div><div><span>Transaksi lain</span><strong>Rp {{ \App\Support\Money::format($other) }}</strong></div><div class="report-total"><span>Arus kas bersih</span><strong>Rp {{ \App\Support\Money::format($net) }}</strong></div></section>@endsection
+<form class="filter-bar" method="GET"><div class="date-filter-group"><x-icon name="calendar"/><input type="date" name="from" value="{{ $from }}" aria-label="Dari tanggal" title="Dari tanggal"><span class="date-sep">→</span><input type="date" name="to" value="{{ $to }}" aria-label="Sampai tanggal" title="Sampai tanggal"></div><button class="button button-secondary">Terapkan</button></form><section class="panel report-list"><div><span>Penerimaan customer</span><strong>Rp {{ \App\Support\Money::format($customer_payment) }}</strong></div><div><span>Pengeluaran temporary/provision</span><strong>Rp {{ \App\Support\Money::format($job_cost_capitalization) }}</strong></div><div><span>Penyesuaian Kas/Bank</span><strong>Rp {{ \App\Support\Money::format($adjustment) }}</strong></div><div><span>Transaksi lain</span><strong>Rp {{ \App\Support\Money::format($other) }}</strong></div><div class="report-total"><span>Arus kas bersih</span><strong>Rp {{ \App\Support\Money::format($net) }}</strong></div></section>@endsection

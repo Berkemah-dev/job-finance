@@ -11,15 +11,6 @@ $quickFilters = [
     'done' => 'Selesai',
 ];
 @endphp
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">OPERASIONAL</p>
-        <h1>Dokumen Job</h1>
-        <p>Kelola Quotation dan Job Order dalam satu alur pekerjaan.</p>
-    </div>
-    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-</div>
-
 <x-menu-banner
     tag="OPERASIONAL"
     title="Pusat Dokumen Operasional"
@@ -68,8 +59,12 @@ $quickFilters = [
                 <option value="{{ $value }}" @selected(request('job_status') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
-            <input type="date" name="period_from" value="{{ request('period_from') }}" aria-label="Periode mulai">
-            <input type="date" name="period_to" value="{{ request('period_to') }}" aria-label="Periode sampai">
+            <div class="date-filter-group">
+                <x-icon name="calendar"/>
+                <input type="date" name="period_from" value="{{ request('period_from') }}" aria-label="Periode mulai" title="Periode mulai">
+                <span class="date-sep">→</span>
+                <input type="date" name="period_to" value="{{ request('period_to') }}" aria-label="Periode sampai" title="Periode sampai">
+            </div>
             <select name="per_page" aria-label="Rows per page">
                 @foreach([10, 15, 25, 50] as $rows)
                 <option value="{{ $rows }}" @selected($perPage === $rows)>{{ $rows }} baris</option>

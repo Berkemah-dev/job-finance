@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Biaya Job')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KEUANGAN & HPP</p><h1>Biaya Job</h1><p>Pilih pekerjaan untuk mencatat dan memeriksa biaya aktual.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="KEUANGAN & HPP"
     title="Biaya Job & Modal Operasional"

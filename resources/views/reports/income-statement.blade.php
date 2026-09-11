@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Laba Rugi')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">LAPORAN KEUANGAN</p><h1>Laba Rugi</h1><p>Pendapatan, HPP, dan laba selama periode.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="LAPORAN KEUANGAN"
     title="Laporan Laba Rugi (Income Statement)"
@@ -10,4 +9,4 @@
     art-title="Kinerja laba,"
     art-subtitle="tumbuh positif."
 />
-<form class="filter-bar" method="GET"><input type="date" name="from" value="{{ $from }}"><span>sampai</span><input type="date" name="to" value="{{ $to }}"><button class="button button-secondary">Terapkan</button></form><section class="panel report-list"><div><span>Pendapatan jasa</span><strong>Rp {{ \App\Support\Money::format($revenue) }}</strong></div><div><span>HPP job</span><strong>(Rp {{ \App\Support\Money::format($cogs) }})</strong></div><div class="report-subtotal"><span>Laba kotor</span><strong>Rp {{ \App\Support\Money::format($gross) }}</strong></div><div><span>Beban operasional</span><strong>(Rp {{ \App\Support\Money::format($expense) }})</strong></div><div class="report-total"><span>Laba bersih</span><strong>Rp {{ \App\Support\Money::format($net) }}</strong></div></section>@endsection
+<form class="filter-bar" method="GET"><div class="date-filter-group"><x-icon name="calendar"/><input type="date" name="from" value="{{ $from }}" aria-label="Dari tanggal" title="Dari tanggal"><span class="date-sep">→</span><input type="date" name="to" value="{{ $to }}" aria-label="Sampai tanggal" title="Sampai tanggal"></div><button class="button button-secondary">Terapkan</button></form><section class="panel report-list"><div><span>Pendapatan jasa</span><strong>Rp {{ \App\Support\Money::format($revenue) }}</strong></div><div><span>HPP job</span><strong>(Rp {{ \App\Support\Money::format($cogs) }})</strong></div><div class="report-subtotal"><span>Laba kotor</span><strong>Rp {{ \App\Support\Money::format($gross) }}</strong></div><div><span>Beban operasional</span><strong>(Rp {{ \App\Support\Money::format($expense) }})</strong></div><div class="report-total"><span>Laba bersih</span><strong>Rp {{ \App\Support\Money::format($net) }}</strong></div></section>@endsection

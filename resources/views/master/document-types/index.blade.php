@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Master Tipe Dokumen')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">MASTER DATA</p><h1>Tipe Dokumen</h1><p>Kelola jenis dokumen yang digunakan dalam operasional dan keuangan.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="MASTER DATA"
     title="Master Tipe Dokumen"

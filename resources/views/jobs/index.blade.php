@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Job Order')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL</p><h1>Job Order</h1><p>Pantau status pengiriman, transportasi, dan penanggung jawab setiap pekerjaan.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="OPERASIONAL"
     title="Job Order Operasional"
@@ -15,8 +14,12 @@
 />
 <section class="panel"><form class="filter-bar" method="GET">
 <input name="search" value="{{ $search }}" placeholder="Cari nomor, nama pekerjaan, atau customer" aria-label="Cari job">
-<input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal">
-<input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal">
+<div class="date-filter-group">
+    <x-icon name="calendar"/>
+    <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal" title="Dari tanggal">
+    <span class="date-sep">→</span>
+    <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal" title="Sampai tanggal">
+</div>
 <select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
 <select name="sales_id" aria-label="Sales"><option value="">Semua sales</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($salesId===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="cs_id" aria-label="Customer service"><option value="">Semua CS</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($csId===$user->id)>{{ $user->name }}</option>@endforeach</select>

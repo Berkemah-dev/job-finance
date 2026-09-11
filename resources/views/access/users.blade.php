@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Pengguna & Akses')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">ADMINISTRASI SISTEM</p><h1>Pengguna & Akses</h1><p>Daftar pengguna dan pembagian akses workspace.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="ADMINISTRASI SISTEM"
     title="Pengguna & Hak Akses"

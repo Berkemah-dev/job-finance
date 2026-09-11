@@ -1,18 +1,6 @@
 @extends('layouts.app')
 @section('title','Invoice')
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">KEUANGAN & PENAGIHAN</p>
-        <h1>Invoice</h1>
-        <p>Pantau tagihan dan pembayaran customer.</p>
-    </div>
-    <div class="action-group">
-        <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-        <a class="button button-secondary" href="{{ route('invoices.coretax.index') }}">Ekspor Coretax</a>
-    </div>
-</div>
-
 <x-menu-banner
     tag="KEUANGAN & PENAGIHAN"
     title="Invoice & Tagihan Customer"

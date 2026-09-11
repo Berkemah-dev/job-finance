@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Log Aktivitas')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">AUDIT & KEAMANAN</p><h1>Log Aktivitas</h1><p>Riwayat akses dan aktivitas penting di workspace.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="AUDIT & KEAMANAN"
     title="Log Aktivitas Sistem"
@@ -11,8 +10,12 @@
     art-subtitle="terekam detail."
 />
 <section class="panel"><form method="GET" class="filter-bar">
-<input name="date_from" type="date" value="{{ $filters['date_from'] }}" aria-label="Dari tanggal">
-<input name="date_to" type="date" value="{{ $filters['date_to'] }}" aria-label="Sampai tanggal">
+<div class="date-filter-group">
+    <x-icon name="calendar"/>
+    <input name="date_from" type="date" value="{{ $filters['date_from'] }}" aria-label="Dari tanggal" title="Dari tanggal">
+    <span class="date-sep">→</span>
+    <input name="date_to" type="date" value="{{ $filters['date_to'] }}" aria-label="Sampai tanggal" title="Sampai tanggal">
+</div>
 <select name="user_id" aria-label="Pengguna"><option value="">Semua pengguna</option>@foreach($users as $user)<option value="{{ $user->id }}" @selected($filters['user_id']===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="role_id" aria-label="Role"><option value="">Semua role</option>@foreach($roles as $role)<option value="{{ $role->id }}" @selected($filters['role_id']===$role->id)>{{ $role->label }}</option>@endforeach</select>
 <select name="module" aria-label="Modul"><option value="">Semua modul</option>@foreach($modules as $module)<option value="{{ $module }}" @selected($filters['module']===$module)>{{ $module }}</option>@endforeach</select>

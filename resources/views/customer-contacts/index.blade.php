@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Consignee & Shipper')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">SALES & CUSTOMER</p><h1>Consignee &amp; Shipper</h1><p>Master kontak tujuan dan pengirim untuk quotation &amp; dokumen.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="SALES & CUSTOMER"
     title="Kontak Shipper & Consignee"

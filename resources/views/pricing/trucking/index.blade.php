@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Trucking Price List')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">PRICING & LOGISTIK</p><h1>Trucking Price List</h1><p>Cari harga trucking berdasarkan rute, tipe kontainer, dan vendor armada.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="PRICING & LOGISTIK"
     title="Trucking Price List"

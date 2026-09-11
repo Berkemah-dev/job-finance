@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Weekly Pricing')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">PRICING & VALUTA</p><h1>Weekly Pricing</h1><p>Kurs mingguan dan berlaku. Dipakai sebagai default quotation / invoice.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="PRICING & VALUTA"
     title="Weekly Pricing & Kurs"

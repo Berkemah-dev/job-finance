@@ -1,27 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Master Data')
 @section('content')
-<div class="page-heading">
-    <div>
-        <div class="coa-header-title">
-            <x-icon name="database"/>
-            <h1>Master Data</h1>
-        </div>
-        <p>Kelola data master (COA, Port, Jenis Biaya, Satuan) untuk sistem operasional.</p>
-    </div>
-    <div class="action-group">
-        <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-        @if(($tab ?? 'coa') === 'coa')
-        <a class="button button-secondary" href="{{ route('accounts.mappings') }}">
-            <x-icon name="file"/> Mapping Akun
-        </a>
-        <a class="button button-primary" href="{{ route('accounts.create') }}">
-            <x-icon name="plus"/> Tambah Akun
-        </a>
-        @endif
-    </div>
-</div>
-
 <x-menu-banner
     tag="AKUNTANSI"
     title="Master Data & Chart of Accounts"
