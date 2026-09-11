@@ -131,7 +131,10 @@ class ReimbursementService
         if ($weekly !== null) {
             return Money::decimal((string) $weekly->exchange_rate);
         }
-        throw ValidationException::withMessages(['exchange_rate' => 'Kurs '.$currency.' belum dikonfigurasi. Isi kurs manual atau tetapkan kurs mingguan aktif.']);
+        throw ValidationException::withMessages([
+            'currency' => 'Kurs '.$currency.' belum dikonfigurasi. Isi kurs manual atau tetapkan kurs mingguan aktif.',
+            'exchange_rate' => 'Kurs '.$currency.' belum dikonfigurasi. Isi kurs manual atau tetapkan kurs mingguan aktif.',
+        ]);
     }
 
     private function storeAttachment(?UploadedFile $file): ?array

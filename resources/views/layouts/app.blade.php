@@ -12,23 +12,33 @@
 <a class="skip-link" href="#main">Lewati ke konten</a>
 <button class="sidebar-backdrop" data-menu-close aria-label="Tutup navigasi" tabindex="-1"></button>
 <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
-    <a href="{{ route('dashboard') }}" class="brand brand-logo"><img src="{{ asset('images/logo.png') }}" alt="JobFinance Logo" class="brand-img"></a>
+    <a href="{{ route('dashboard.finance') }}" class="brand brand-logo"><img src="{{ asset('images/logo.png') }}" alt="JobFinance Logo" class="brand-img"></a>
     <nav>
         <p class="nav-heading">WORKSPACE</p>
         @php
         $dashboardLinks = [
-            'super-admin' => [['dashboard.finance','Dashboard Finance'],['dashboard.finance-manager','Dashboard Finance Manager'],['dashboard.sales-manager','Dashboard Sales Manager'],['dashboard.sales','Dashboard Sales'],['dashboard.operational','Dashboard Operational'],['dashboard.customer-service','Dashboard Customer Service']],
-            'finance' => [['dashboard.finance','Dashboard Finance']],
-            'finance-manager' => [['dashboard.finance-manager','Dashboard Finance Manager']],
-            'sales-manager' => [['dashboard.sales-manager','Dashboard Sales Manager']],
-            'sales' => [['dashboard.sales','Dashboard Sales']],
-            'operational' => [['dashboard.operational','Dashboard Operational']],
-            'customer-service' => [['dashboard.customer-service','Dashboard Customer Service']],
+            'super-admin' => [
+                ['dashboard.finance', 'Dashboard Finance'],
+                ['dashboard.finance-manager', 'Dashboard Finance Manager'],
+                ['dashboard.sales-manager', 'Dashboard Sales Manager'],
+                ['dashboard.sales', 'Dashboard Sales'],
+                ['dashboard.operational', 'Dashboard Operational'],
+                ['dashboard.customer-service', 'Dashboard Customer Service']
+            ],
+            'finance' => [['dashboard.finance', 'Dashboard Finance']],
+            'finance-manager' => [['dashboard.finance-manager', 'Dashboard Finance Manager']],
+            'sales-manager' => [['dashboard.sales-manager', 'Dashboard Sales Manager']],
+            'sales' => [['dashboard.sales', 'Dashboard Sales']],
+            'operational' => [['dashboard.operational', 'Dashboard Operational']],
+            'customer-service' => [['dashboard.customer-service', 'Dashboard Customer Service']],
         ];
         $currentRole = auth()->user()->role?->name ?? '';
         @endphp
-        @foreach($dashboardLinks[$currentRole] ?? [] as [$dashboardRoute, $dashboardLabel])
-        <a class="nav-item {{ request()->routeIs($dashboardRoute) ? 'active' : '' }}" href="{{ route($dashboardRoute) }}"><x-icon name="grid"/><span>{{ $dashboardLabel }}</span></a>
+        @foreach($dashboardLinks[$currentRole] ?? [['dashboard.finance', 'Dashboard Finance']] as [$dashboardRoute, $dashboardLabel])
+        @php
+            $isActive = request()->routeIs($dashboardRoute) || (request()->routeIs('dashboard') && ($currentRole === 'super-admin' ? $dashboardRoute === 'dashboard.finance' : str_ends_with($dashboardRoute, $currentRole)));
+        @endphp
+        <a class="nav-item {{ $isActive ? 'active' : '' }}" href="{{ route($dashboardRoute) }}"><x-icon name="grid"/><span>{{ $dashboardLabel }}</span></a>
         @endforeach
         @php
         $groups = [

@@ -5,6 +5,8 @@ return [
     'shipment_statuses' => ['booked' => 'Booked', 'in_progress' => 'In Progress', 'departed' => 'Departed', 'arrived' => 'Arrived', 'spjm' => 'SPJM', 'sppb' => 'SPPB', 'do_process' => 'DO Process', 'completed' => 'Completed'],
     'cost_statuses' => ['draft' => 'Draft', 'final' => 'Final'],
     'service_types' => [
+        'sea' => 'Laut (Sea)',
+        'air' => 'Udara (Air)',
         'imp_sea' => 'Import Sea',
         'exp_sea' => 'Export Sea',
         'imp_air' => 'Import Air',

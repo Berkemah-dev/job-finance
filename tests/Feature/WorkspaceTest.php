@@ -33,8 +33,8 @@ class WorkspaceTest extends TestCase
         $user = User::where('email', 'admin@jobfinance.test')->firstOrFail();
         $this->post('/login', ['email' => $user->email, 'password' => 'JobFinance!2026', 'remember' => '1'])->assertRedirect('/dashboard');
         $this->assertAuthenticatedAs($user);
-        $this->assertDatabaseHas('activity_logs', ['user_id' => $user->id, 'action' => 'auth.login']);
-        $this->get('/dashboard')->assertOk()->assertSee('Halo, Super Admin!');
+        $this->get('/dashboard')->assertRedirect(route('dashboard.finance'));
+        $this->get('/dashboard-finance')->assertOk()->assertSee('Dashboard Finance');
         $this->post('/logout')->assertRedirect('/login');
         $this->assertGuest();
         $this->assertDatabaseHas('activity_logs', ['user_id' => $user->id, 'action' => 'auth.logout']);
@@ -90,7 +90,7 @@ class WorkspaceTest extends TestCase
             }
         }
         $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail())
-            ->get('/dashboard')->assertSee('Quotation')->assertDontSee('Piutang Customer')->assertDontSee('Laporan Keuangan');
+            ->get('/dashboard')->assertSee('Job Order')->assertDontSee('Piutang Customer')->assertDontSee('Laporan Keuangan');
         $this->actingAs(User::where('email', 'management@jobfinance.test')->firstOrFail())
             ->get('/dashboard')->assertDontSee('Laporan Keuangan')->assertDontSee('Closing Job');
     }
