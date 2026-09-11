@@ -8,6 +8,9 @@ use App\Http\Requests\VersionRequest;
 use App\Models\AccountMapping;
 use App\Models\ChartOfAccount;
 use App\Services\MasterDataService;
+use App\Models\Port;
+use App\Models\ChargeType;
+use App\Models\ContainerUnit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -15,7 +18,34 @@ class AccountController extends Controller
 {
     public function index(Request $request)
     {
+        $tab = $request->query('tab', 'coa');
         $search = mb_substr($request->string('search')->toString(), 0, 100);
+
+        if ($tab === 'port') {
+            $status = $request->get('status', 'all');
+            $ports = \App\Models\Port::when($search, fn($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%'))
+                ->when($status === 'active', fn($q) => $q->where('is_active', true))
+                ->when($status === 'inactive', fn($q) => $q->where('is_active', false))
+                ->orderBy('name')->paginate(25)->withQueryString();
+            return view('accounts.index', compact('tab', 'ports', 'search', 'status'));
+        }
+
+        if ($tab === 'charge') {
+            $status = $request->get('status', 'all');
+            $charges = \App\Models\ChargeType::when($search, fn($q) => $q->where('name', 'like', '%'.$search.'%'))
+                ->when($status === 'active', fn($q) => $q->where('is_active', true))
+                ->when($status === 'inactive', fn($q) => $q->where('is_active', false))
+                ->orderBy('name')->paginate(25)->withQueryString();
+            return view('accounts.index', compact('tab', 'charges', 'search', 'status'));
+        }
+
+        if ($tab === 'unit') {
+            $units = \App\Models\ContainerUnit::when($search, fn($q) => $q->where('name', 'like', '%'.$search.'%'))
+                ->orderBy('name')->paginate(25)->withQueryString();
+            return view('accounts.index', compact('tab', 'units', 'search'));
+        }
+
+        // Default COA
         $type = $request->input('type');
         $archived = $request->input('archived') === '1';
 
@@ -34,7 +64,7 @@ class AccountController extends Controller
             $isTree = true;
         }
 
-        return view('accounts.index', compact('accounts', 'search', 'isTree'));
+        return view('accounts.index', compact('tab', 'accounts', 'search', 'isTree'));
     }
 
     private function buildTreeList(Collection $all): Collection

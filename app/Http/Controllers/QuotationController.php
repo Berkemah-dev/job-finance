@@ -6,8 +6,10 @@ use App\Enums\QuotationStatus;
 use App\Http\Requests\QuotationRequest;
 use App\Http\Requests\VersionRequest;
 use App\Models\Customer;
+use App\Models\Port;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\MasterDataService;
 use App\Services\QuotationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -40,7 +42,12 @@ class QuotationController extends Controller
 
     public function create()
     {
-        return view('quotations.form', ['quotation' => new Quotation, 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']), 'sales' => $this->salesUsers()]);
+        return view('quotations.form', [
+            'quotation' => new Quotation,
+            'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
+            'sales' => $this->salesUsers(),
+            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
+        ]);
     }
 
     public function store(QuotationRequest $request, QuotationService $service)
@@ -69,7 +76,12 @@ class QuotationController extends Controller
     {
         Gate::authorize('update', $quotation);
 
-        return view('quotations.form', ['quotation' => $quotation->load('items'), 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']), 'sales' => $this->salesUsers()]);
+        return view('quotations.form', [
+            'quotation' => $quotation->load('items'),
+            'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
+            'sales' => $this->salesUsers(),
+            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
+        ]);
     }
 
     public function update(QuotationRequest $request, Quotation $quotation, QuotationService $service)
@@ -111,6 +123,32 @@ class QuotationController extends Controller
         $service->transition($quotation, $action, $request->validated(), $request->user());
 
         return redirect()->route('quotations.show', $quotation)->with('success', 'Status quotation berhasil diperbarui.');
+    }
+
+    public function preview(Quotation $quotation)
+    {
+        Gate::authorize('view', $quotation);
+
+        return view('documents.pdf-preview', [
+            'title'       => 'Quotation '.$quotation->number,
+            'backUrl'     => route('quotations.show', $quotation),
+            'pdfUrl'      => route('quotations.pdf', ['quotation' => $quotation, 'mode' => 'inline']),
+            'downloadUrl' => route('quotations.pdf', ['quotation' => $quotation, 'mode' => 'download']),
+        ]);
+    }
+
+    public function pdf(Request $request, Quotation $quotation, MasterDataService $master)
+    {
+        Gate::authorize('view', $quotation);
+
+        $quotation->load(['items', 'customer', 'creator', 'approver', 'sales']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
+        $filename = $quotation->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF quotation '.$quotation->number, ['module' => 'quotation', 'record_id' => $quotation->id]);
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }
 
     private function salesUsers()
