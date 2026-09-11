@@ -18,7 +18,7 @@ class StatementOfAccountService
 
         $customers = [];
         foreach ($invoices->groupBy('customer_id') as $customerId => $rows) {
-            $customer = Customer::whereKey($customerId)->first();
+            $customer = Customer::withTrashed()->whereKey($customerId)->first();
             if (! $customer) {
                 continue;
             }

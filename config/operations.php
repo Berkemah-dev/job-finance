@@ -38,7 +38,7 @@ return [
     'customer_documents' => ['mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'extensions' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'max_kb' => 5120],
     // Nilai bawaan kalkulator LCL (boleh kosong; rate ditentukan pemakai bila belum terisi).
     'lcl' => ['default_rate' => null],
-    'container_types' => ['20ft' => '20 FT', '40ft' => '40 FT', 'lcl' => 'LCL'],
+    'container_types' => ['20ft' => '20 FT', '40ft' => '40 FT', '40hc' => '40 HC', 'lcl' => 'LCL'],
     'currencies' => ['IDR' => 'IDR (Rupiah Indonesia)', 'USD' => 'USD (US Dollar)'],
     'pricing_sources' => ['manual' => 'Manual', 'trucking' => 'Tarif Trucking'],
 ];

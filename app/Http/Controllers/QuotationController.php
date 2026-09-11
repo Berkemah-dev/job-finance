@@ -72,6 +72,17 @@ class QuotationController extends Controller
         return view('quotations.show', ['quotation' => $quotation]);
     }
 
+    public function print(Quotation $quotation)
+    {
+        Gate::authorize('view', $quotation);
+
+        $quotation->load(['items', 'customer', 'creator']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('quotations.pdf', ['quotation' => $quotation]);
+        
+        return $pdf->download('Quotation_'.$quotation->number.'.pdf');
+    }
+
     public function edit(Quotation $quotation)
     {
         Gate::authorize('update', $quotation);

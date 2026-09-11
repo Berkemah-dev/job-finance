@@ -7,8 +7,8 @@ if (container) {
     const index = () => container.querySelectorAll(rowSelector).length;
 
     const refreshRemoveButtons = () => {
-        container.querySelectorAll('[data-contacts-remove]').forEach((button, i) => {
-            button.style.display = i === 0 ? 'none' : '';
+        container.querySelectorAll('[data-contacts-remove]').forEach((button) => {
+            button.style.display = '';
         });
     };
 

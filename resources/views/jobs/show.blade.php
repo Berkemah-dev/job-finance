@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title','Detail Job Order ' . $job->number)
 @section('content')
+<<<<<<< HEAD
 
 @php
     $quotation = $job->quotation;
@@ -60,14 +61,14 @@
         @endif
     @endcan
     @if($job->status==='open' && !$job->do_confirmed_at)
-        @can('update',$job)
+        @can('jobs.confirm-do')
             <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?">
                 @csrf
                 <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">DO Selesai</button>
             </form>
         @endcan
     @elseif($job->do_confirmed_at)
-        <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y') }})</span>
+        <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
     @endif
 </div>
 

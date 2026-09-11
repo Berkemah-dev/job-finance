@@ -22,9 +22,19 @@ class Job extends Model
         return $this->hasMany(JobStatusHistory::class);
     }
 
+    /**
+     * Alias untuk statusHistory() — riwayat status pengiriman.
+     * Status shipment ditulis ke job_status_history (satu tabel gabungan).
+     * Tabel job_shipment_statuses sudah dihapus karena dead code.
+     */
     public function shipmentStatusHistory(): HasMany
     {
         return $this->hasMany(JobStatusHistory::class);
+    }
+
+    public function doConfirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'do_confirmed_by');
     }
 
     public function documents(): HasMany
@@ -56,7 +66,7 @@ class Job extends Model
 
     protected function casts(): array
     {
-        return ['quotation_snapshot' => 'array', 'job_date' => 'date', 'expected_completion_date' => 'date', 'etd' => 'date', 'eta' => 'date', 'gross_weight' => 'decimal:2', 'volume' => 'decimal:2', 'opened_at' => 'datetime', 'cancelled_at' => 'datetime', 'closed_at' => 'datetime', 'shipment_status_at' => 'datetime'];
+        return ['quotation_snapshot' => 'array', 'job_date' => 'date', 'expected_completion_date' => 'date', 'etd' => 'date', 'eta' => 'date', 'gross_weight' => 'decimal:2', 'volume' => 'decimal:2', 'opened_at' => 'datetime', 'cancelled_at' => 'datetime', 'closed_at' => 'datetime', 'shipment_status_at' => 'datetime', 'do_confirmed_at' => 'datetime'];
     }
 
     public function sales(): BelongsTo

@@ -70,4 +70,20 @@ class InvoiceController extends Controller
             ? $pdf->download($filename)
             : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }
+
+    public function updateDelivery(Request $request, Invoice $invoice)
+    {
+        $validated = $request->validate([
+            'delivery_status'  => ['required', 'in:not_sent,sent,received'],
+            'sent_at'          => ['nullable', 'date'],
+            'received_at'      => ['nullable', 'date'],
+            'tracking_number'  => ['nullable', 'string', 'max:100'],
+            'delivery_notes'   => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $validated['sent_by'] = $request->user()->id;
+        $invoice->update($validated);
+
+        return back()->with('success', 'Status pengiriman invoice berhasil diperbarui.');
+    }
 }
