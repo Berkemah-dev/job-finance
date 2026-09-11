@@ -154,7 +154,7 @@ if (form) {
             setSource(row, row.querySelector('[data-pricing-source]').value);
             const cost = row.querySelector('[data-unit-cost]');
             const price = row.querySelector('[data-unit-price]');
-            const temporary = row.querySelector('[data-cost-type]').value === 'temporary';
+            const temporary = false;
             price.readOnly = temporary;
             if (temporary) price.value = cost.value;
             const quantity = cents(row.querySelector('[data-quantity]').value);
