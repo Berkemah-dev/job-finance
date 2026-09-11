@@ -2,22 +2,27 @@
 @section('title', 'Booking Confirmation')
 @section('content')
 
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
-        <h1>Booking Confirmation</h1>
-        <p>Konfirmasi alokasi ruang muatan (space booking) pengapalan untuk customer dan shipper.</p>
-    </div>
-    <div class="action-group">
-        <a class="button button-primary" href="{{ route('booking-confirmations.create') }}">+ Buat Booking Confirmation</a>
-    </div>
-</div>
+<x-menu-banner
+    tag="OPERASIONAL"
+    title="Booking Confirmation (BC)"
+    description="Konfirmasi alokasi ruang muatan (space booking) pengapalan untuk customer dan shipper."
+    :action-url="route('booking-confirmations.create')"
+    action-label="+ Buat Booking Confirmation"
+    action-icon="plus"
+    icon="file"
+    art-title="Alokasi space,"
+    art-subtitle="terkonfirmasi."
+/>
 
 <section class="panel">
     <form class="filter-bar" method="GET">
         <input name="search" value="{{ $search }}" placeholder="Cari nomor BC, customer, shipper, vessel, atau Job No" aria-label="Cari Booking Confirmation">
-        <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal">
-        <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal">
+        <div class="date-filter-group">
+            <x-icon name="calendar"/>
+            <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal" title="Dari tanggal">
+            <span class="date-sep">→</span>
+            <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal" title="Sampai tanggal">
+        </div>
         <select name="status" aria-label="Status">
             <option value="">Semua status</option>
             <option value="confirmed" @selected($status === 'confirmed')>Confirmed</option>
@@ -81,10 +86,10 @@
                             </span>
                         </td>
                         <td>
-                            <div class="action-group">
-                                <a class="text-link" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
-                                <a class="text-link" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">PDF</a>
-                                <a class="text-link" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
+                            <div class="table-actions">
+                                <a class="btn-action btn-action-primary" href="{{ route('booking-confirmations.show', $bc) }}" title="Detail Booking Confirmation" data-tooltip="Detail" aria-label="Detail Booking Confirmation"><x-icon name="eye"/></a>
+                                <a class="btn-action btn-action-purple" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank" title="Cetak PDF BC" data-tooltip="PDF" aria-label="Cetak PDF BC"><x-icon name="printer"/></a>
+                                <a class="btn-action" href="{{ route('booking-confirmations.edit', $bc) }}" title="Edit Booking Confirmation" data-tooltip="Edit" aria-label="Edit Booking Confirmation"><x-icon name="edit"/></a>
                             </div>
                         </td>
                     </tr>

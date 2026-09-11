@@ -1,18 +1,6 @@
 @extends('layouts.app')
 @section('title','Invoice')
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">KEUANGAN & PENAGIHAN</p>
-        <h1>Invoice</h1>
-        <p>Pantau tagihan dan pembayaran customer.</p>
-    </div>
-    <div class="action-group">
-        <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-        <a class="button button-secondary" href="{{ route('invoices.coretax.index') }}">Ekspor Coretax</a>
-    </div>
-</div>
-
 <x-menu-banner
     tag="KEUANGAN & PENAGIHAN"
     title="Invoice & Tagihan Customer"
@@ -77,9 +65,12 @@
                             @endif
                         </td>
                         <td>
-                            <div class="action-group">
-                                <a class="text-link" href="{{ route('invoices.show',$invoice) }}">Detail</a>
-                                <a class="text-link" href="{{ route('invoices.preview',$invoice) }}" target="_blank">PDF</a>
+                            <div class="table-actions">
+                                <a class="btn-action btn-action-primary" href="{{ route('invoices.show', $invoice) }}" title="Detail Invoice" data-tooltip="Detail" aria-label="Detail Invoice"><x-icon name="eye"/></a>
+                                <a class="btn-action btn-action-purple" href="{{ route('invoices.preview', $invoice) }}" target="_blank" title="Cetak PDF Invoice" data-tooltip="PDF" aria-label="Cetak PDF Invoice"><x-icon name="printer"/></a>
+                                @if($invoice->balance > 0)
+                                <a class="btn-action btn-action-success" href="{{ route('payments.create', $invoice) }}" title="Catat Pembayaran" data-tooltip="Bayar" aria-label="Catat Pembayaran"><x-icon name="wallet"/></a>
+                                @endif
                             </div>
                         </td>
                     </tr>

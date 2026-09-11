@@ -47,7 +47,7 @@
     </article>
 </div>
 
-@if(isset($widgets['overdueReceivables']) && ($widgets['overdueReceivables']['count'] > 0 || $widgets['journalsThisMonth'] > 0))
+@if(isset($widgets['overdueReceivables']) && ($widgets['overdueReceivables']['count'] > 0 || ($widgets['journalsThisMonth'] ?? 0) > 0))
 <div class="stats-grid" style="margin-top:20px">
     <article class="stat-card"><div class="stat-top"><span>Piutang jatuh tempo</span><span class="stat-icon amber"><x-icon name="wallet"/></span></div><strong class="stat-number"><small>Rp</small> {{ \App\Support\Money::format($widgets['overdueReceivables']['amount']) }}</strong><p>{{ $widgets['overdueReceivables']['count'] }} invoice melewati jatuh tempo</p></article>
     <article class="stat-card"><div class="stat-top"><span>Jurnal bulan ini</span><span class="stat-icon green"><x-icon name="chart"/></span></div><strong class="stat-number">{{ $widgets['journalsThisMonth'] ?? 0 }}</strong><p>Jurnal ter-posting bulan ini</p></article>

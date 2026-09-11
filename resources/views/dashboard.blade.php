@@ -1,31 +1,19 @@
 @extends('layouts.app')
 @section('title', $roleTitle ?? 'Dashboard')
 @section('content')
-
 @if(auth()->user()->role?->name === 'super-admin')
 <div class="panel" style="margin-bottom:22px;border:1px solid #dce4f0;background:#fff;padding:12px 18px;border-radius:12px">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <span style="font-size:10px;font-weight:600;letter-spacing:1px;color:#8090a6;text-transform:uppercase">Lihat Dashboard Role:</span>
-        <a class="badge-pill" href="{{ route('dashboard.finance') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ $role === 'finance' ? '#0f1f3d' : '#f1f5fa' }};color:{{ $role === 'finance' ? '#fff' : '#475569' }}">Finance</a>
-        <a class="badge-pill" href="{{ route('dashboard.finance-manager') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ $role === 'finance-manager' ? '#0f1f3d' : '#f1f5fa' }};color:{{ $role === 'finance-manager' ? '#fff' : '#475569' }}">Finance Manager</a>
-        <a class="badge-pill" href="{{ route('dashboard.sales-manager') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ $role === 'sales-manager' ? '#0f1f3d' : '#f1f5fa' }};color:{{ $role === 'sales-manager' ? '#fff' : '#475569' }}">Sales Manager</a>
-        <a class="badge-pill" href="{{ route('dashboard.sales') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ $role === 'sales' ? '#0f1f3d' : '#f1f5fa' }};color:{{ $role === 'sales' ? '#fff' : '#475569' }}">Sales</a>
-        <a class="badge-pill" href="{{ route('dashboard.operational') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ $role === 'operational' ? '#0f1f3d' : '#f1f5fa' }};color:{{ $role === 'operational' ? '#fff' : '#475569' }}">Operational</a>
-        <a class="badge-pill" href="{{ route('dashboard.customer-service') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ $role === 'customer-service' ? '#0f1f3d' : '#f1f5fa' }};color:{{ $role === 'customer-service' ? '#fff' : '#475569' }}">Customer Service</a>
+        <a class="badge-pill" href="{{ route('dashboard.finance') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ ($role ?? '') === 'finance' ? '#0f1f3d' : '#f1f5fa' }};color:{{ ($role ?? '') === 'finance' ? '#fff' : '#475569' }}">Finance</a>
+        <a class="badge-pill" href="{{ route('dashboard.finance-manager') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ ($role ?? '') === 'finance-manager' ? '#0f1f3d' : '#f1f5fa' }};color:{{ ($role ?? '') === 'finance-manager' ? '#fff' : '#475569' }}">Finance Manager</a>
+        <a class="badge-pill" href="{{ route('dashboard.sales-manager') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ ($role ?? '') === 'sales-manager' ? '#0f1f3d' : '#f1f5fa' }};color:{{ ($role ?? '') === 'sales-manager' ? '#fff' : '#475569' }}">Sales Manager</a>
+        <a class="badge-pill" href="{{ route('dashboard.sales') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ ($role ?? '') === 'sales' ? '#0f1f3d' : '#f1f5fa' }};color:{{ ($role ?? '') === 'sales' ? '#fff' : '#475569' }}">Sales</a>
+        <a class="badge-pill" href="{{ route('dashboard.operational') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ ($role ?? '') === 'operational' ? '#0f1f3d' : '#f1f5fa' }};color:{{ ($role ?? '') === 'operational' ? '#fff' : '#475569' }}">Operational</a>
+        <a class="badge-pill" href="{{ route('dashboard.customer-service') }}" style="text-decoration:none;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;background:{{ ($role ?? '') === 'customer-service' ? '#0f1f3d' : '#f1f5fa' }};color:{{ ($role ?? '') === 'customer-service' ? '#fff' : '#475569' }}">Customer Service</a>
     </div>
 </div>
 @endif
-
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">{{ $dashboardMeta['eyebrow'] ?? 'RINGKASAN WORKSPACE' }}</p>
-        <h1>{{ $roleTitle ?? 'Dashboard' }}</h1>
-        <p>{{ $roleDescription ?? 'Pantau pekerjaan dan performa operasional dalam satu tempat.' }}</p>
-    </div>
-    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
-</div>
-
-@include('dashboard.partials.charts')
 
 <x-menu-banner
     :tag="strtoupper($roleTitle ?? 'WORKSPACE')"
@@ -404,6 +392,7 @@
     <article class="stat-card"><div class="stat-top"><span>Aktivitas 7 hari</span><span class="stat-icon blue"><x-icon name="file"/></span></div><strong class="stat-number">{{ $widgets['admin']['activity7d'] }}</strong><p>Aktivitas tercatat pada audit log</p></article>
 </div>
 @endif
+
 
 <p class="demo-note">Ringkasan dashboard menampilkan informasi sesuai role dan tanggung jawab pengguna.</p>
 @endsection

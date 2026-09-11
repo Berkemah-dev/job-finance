@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Kalkulator')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KALKULATOR LOGISTIK</p><h1>Kalkulator</h1><p>Hitung volume weight, biaya LCL, dan pajak sebelum membuat quotation.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="KALKULATOR LOGISTIK"
     title="Kalkulator Muatan & Biaya"

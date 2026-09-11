@@ -12,6 +12,8 @@ $paths = [
 'arrow' => 'M5 12h14 M13 6l6 6-6 6',
 'logout' => 'M9 5H3v14h6 M9 12h12 M17 8l4 4-4 4',
 'menu' => 'M4 6h16 M4 12h16 M4 18h16',
+'menu-fold' => 'M4 6h16 M4 12h10 M4 18h16 M18 15l-3-3 3-3',
+'menu-unfold' => 'M4 6h16 M4 12h10 M4 18h16 M15 9l3 3-3 3',
 'lock' => 'M5 10h14v11H5z M8 10V6a4 4 0 0 1 8 0v4',
 'eye' => 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12 M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
 'calendar' => 'M3 5h18v16H3z M7 3v4 M17 3v4 M3 10h18',
@@ -26,7 +28,18 @@ $paths = [
 'chevron-down' => 'M6 9l6 6 6-6',
 'folder-open' => 'M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z M3 11h18',
 'calculator' => 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 7h8 M8 11h.01 M12 11h.01 M16 11h.01 M8 15h.01 M12 15h.01 M16 15h.01 M8 18h.01 M12 18h.01 M16 18h.01',
+'printer' => 'M6 9V2h12v7 M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2 M6 14h12v8H6z',
+'download' => 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3',
+'external-link' => 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3',
+'power' => 'M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10',
+'dollar-sign' => 'M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+'credit-card' => 'M1 4h22v16H1z M1 10h22',
+'check-circle' => 'M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3',
+'file-text' => 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8',
+'clipboard-check' => 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z M9 14l2 2 4-4',
+'refresh' => 'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
 'database' => 'M12 2C6.48 2 2 4.02 2 6.5v11C2 19.98 6.48 22 12 22s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2z M2 12c0 2.48 4.48 4.5 10 4.5s10-2.02 10-4.5 M2 6.5C2 8.98 6.48 11 12 11s10-2.02 10-4.5',
+'bell' => 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0',
 ];
 @endphp
 <svg {{ $attributes->class(['icon']) }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $paths[$name] ?? $paths['grid'] }}"/></svg>

@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Profit Bulanan')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">ANALISIS PROFITABILITAS</p><h1>Profit Bulanan</h1><p>Rekap profit dari nilai closing historis per bulan.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="ANALISIS PROFITABILITAS"
     title="Rekap Profit Bulanan"
@@ -10,4 +9,60 @@
     art-title="Pertumbuhan bulanan,"
     art-subtitle="konsisten."
 />
-<form class="filter-bar" method="GET">@php $months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; @endphp<select name="year">@foreach(range(today()->year - 3, today()->year + 1) as $y)<option value="{{ $y }}" @selected($y === $year)>{{ $y }}</option>@endforeach</select><button class="button button-secondary">Terapkan</button></form><section class="panel"><div class="table-scroll"><table><thead><tr><th>Bulan</th><th class="money">Job</th><th class="money">Temporary</th><th class="money">Modal</th><th class="money">Nilai jual</th><th class="money">Profit</th><th class="money">Margin</th></tr></thead><tbody>@foreach($rows as $row)<tr><td>{{ $months[$row['month'] - 1] }} {{ $year }}</td><td class="money">{{ $row['jobs'] }}</td><td class="money">{{ \App\Support\Money::format($row['temporary']) }}</td><td class="money">{{ \App\Support\Money::format($row['cost']) }}</td><td class="money">{{ \App\Support\Money::format($row['revenue']) }}</td><td class="money">{{ \App\Support\Money::format($row['profit']) }}</td><td class="money">{{ \App\Support\Money::format($row['margin']) }}%</td></tr>@endforeach</tbody><tfoot><tr class="summary-total"><td>Total {{ $year }}</td><td class="money">{{ $totals['jobs'] }}</td><td class="money">{{ \App\Support\Money::format($totals['temporary']) }}</td><td class="money">{{ \App\Support\Money::format($totals['cost']) }}</td><td class="money">{{ \App\Support\Money::format($totals['revenue']) }}</td><td class="money">{{ \App\Support\Money::format($totals['profit']) }}</td><td class="money">{{ \App\Support\Money::format($totals['margin']) }}%</td></tr></tfoot></table></div></section>@endsection
+
+<section class="panel">
+    @php
+        $months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    @endphp
+    <form class="filter-bar" method="GET">
+        <div style="min-width: 140px;">
+            <select name="year" data-custom-select aria-label="Pilih Tahun">
+                @foreach(range(today()->year - 3, today()->year + 1) as $y)
+                    <option value="{{ $y }}" @selected($y === $year)>Tahun {{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button class="button button-primary">Terapkan</button>
+    </form>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bulan</th>
+                    <th class="money">Job</th>
+                    <th class="money">Temporary</th>
+                    <th class="money">Modal</th>
+                    <th class="money">Nilai jual</th>
+                    <th class="money">Profit</th>
+                    <th class="money">Margin</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($rows as $row)
+                    <tr>
+                        <td><strong>{{ $months[$row['month'] - 1] }} {{ $year }}</strong></td>
+                        <td class="money">{{ $row['jobs'] }}</td>
+                        <td class="money">{{ \App\Support\Money::format($row['temporary']) }}</td>
+                        <td class="money">{{ \App\Support\Money::format($row['cost']) }}</td>
+                        <td class="money">{{ \App\Support\Money::format($row['revenue']) }}</td>
+                        <td class="money" style="font-weight: 600; color: {{ (float)$row['profit'] >= 0 ? '#16a34a' : '#dc2626' }};">{{ \App\Support\Money::format($row['profit']) }}</td>
+                        <td class="money">{{ \App\Support\Money::format($row['margin']) }}%</td>
+                    </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="summary-total">
+                    <td>Total {{ $year }}</td>
+                    <td class="money">{{ $totals['jobs'] }}</td>
+                    <td class="money">{{ \App\Support\Money::format($totals['temporary']) }}</td>
+                    <td class="money">{{ \App\Support\Money::format($totals['cost']) }}</td>
+                    <td class="money">{{ \App\Support\Money::format($totals['revenue']) }}</td>
+                    <td class="money" style="color: {{ (float)$totals['profit'] >= 0 ? '#16a34a' : '#dc2626' }};">{{ \App\Support\Money::format($totals['profit']) }}</td>
+                    <td class="money">{{ \App\Support\Money::format($totals['margin']) }}%</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</section>
+@endsection

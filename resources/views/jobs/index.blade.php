@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title','Job Order')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL</p><h1>Job Order</h1><p>Pantau status pengiriman, transportasi, dan penanggung jawab setiap pekerjaan.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
 <x-menu-banner
     tag="OPERASIONAL"
     title="Job Order Operasional"
@@ -15,8 +14,12 @@
 />
 <section class="panel"><form class="filter-bar" method="GET">
 <input name="search" value="{{ $search }}" placeholder="Cari nomor, nama pekerjaan, atau customer" aria-label="Cari job">
-<input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal">
-<input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal">
+<div class="date-filter-group">
+    <x-icon name="calendar"/>
+    <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal" title="Dari tanggal">
+    <span class="date-sep">→</span>
+    <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal" title="Sampai tanggal">
+</div>
 <select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
 <select name="sales_id" aria-label="Sales"><option value="">Semua sales</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($salesId===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="cs_id" aria-label="Customer service"><option value="">Semua CS</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($csId===$user->id)>{{ $user->name }}</option>@endforeach</select>
@@ -28,12 +31,12 @@
 <table>
 <thead>
     <tr>
-        <th>No. Job</th>
-        <th>Customer (Remark Quote)</th>
+        <th>No. Job / Tanggal</th>
+        <th>Customer / Pekerjaan</th>
         <th>No. BL / AWB</th>
-        <th>Service</th>
-        <th>No. Quote & Sales</th>
-        <th>Created By (CS)</th>
+        <th>Layanan</th>
+        <th>Rute & Jadwal</th>
+        <th>Sales & CS</th>
         <th>Status</th>
         <th>Aksi</th>
     </tr>
@@ -44,10 +47,13 @@
         <td>
             <strong>{{ $job->number }}</strong>
             <br><small class="muted-cell">{{ $job->job_date?->format('d/m/Y') }}</small>
+            @if($job->quotation)
+                <br><small class="muted-cell">Quote: {{ $job->quotation->number }}</small>
+            @endif
         </td>
         <td>
             <strong>{{ $job->quotation_snapshot['customer']['name'] ?? $job->customer?->name ?? '—' }}</strong>
-            <br><small class="muted-cell">{{ Str::limit($job->subject ?: ($job->quotation?->remarks ?? '—'), 50) }}</small>
+            <br><small class="muted-cell">{{ Str::limit($job->subject ?: ($job->quotation?->remarks ?? '—'), 45) }}</small>
         </td>
         <td>
             @if($job->bl_number)
@@ -66,16 +72,21 @@
             </span>
         </td>
         <td>
-            @if($job->quotation)
-                <strong>{{ $job->quotation->number }}</strong>
-                <br><small class="muted-cell">Sales: {{ $job->sales?->name ?? '—' }}</small>
-            @else
+            @if($job->pol || $job->pod)
+                <div>{{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}</div>
+            @elseif($job->origin || $job->destination)
+                <div>{{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}</div>
+            @endif
+            @if($job->etd || $job->eta)
+                <small class="muted-cell">ETD: {{ $job->etd?->format('d/m/Y') ?? '—' }} | ETA: {{ $job->eta?->format('d/m/Y') ?? '—' }}</small>
+            @endif
+            @if(!$job->pol && !$job->pod && !$job->origin && !$job->destination && !$job->etd && !$job->eta)
                 <span class="muted-cell">—</span>
-                <br><small class="muted-cell">Sales: {{ $job->sales?->name ?? '—' }}</small>
             @endif
         </td>
         <td>
-            {{ $job->cs?->name ?? ($job->creator?->name ?? '—') }}
+            <strong>{{ $job->sales?->name ?? '—' }}</strong>
+            <br><small class="muted-cell">CS: {{ $job->cs?->name ?? ($job->creator?->name ?? '—') }}</small>
         </td>
         <td>
             <span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span>
@@ -84,11 +95,11 @@
             @endif
         </td>
         <td>
-            <div class="action-group">
-                <a class="text-link" href="{{ route('jobs.show',$job) }}">Detail</a>
-                <a class="text-link" href="{{ route('jobs.preview',$job) }}" target="_blank">PDF</a>
+            <div class="table-actions">
+                <a class="btn-action btn-action-primary" href="{{ route('jobs.show',$job) }}" title="Detail Job" data-tooltip="Detail" aria-label="Detail Job"><x-icon name="eye"/></a>
+                <a class="btn-action btn-action-purple" href="{{ route('jobs.preview',$job) }}" target="_blank" title="Cetak PDF Job" data-tooltip="PDF" aria-label="Cetak PDF Job"><x-icon name="printer"/></a>
                 @can('update',$job)
-                    <a class="text-link" href="{{ route('jobs.edit',$job) }}">Edit</a>
+                    <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>
                 @endcan
             </div>
         </td>

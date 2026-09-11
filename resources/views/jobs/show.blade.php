@@ -7,8 +7,8 @@
     $customerName = $job->customer?->name ?? $job->quotation_snapshot['customer']['name'] ?? '—';
     $marketingName = $job->sales?->name ?? $quotation?->sales?->name ?? '—';
     $serviceType = strtoupper(config('operations.service_types.'.$job->service_type) ?? ($job->service_type ?? '—'));
-    $loadingPort = strtoupper($job->pol ?? $job->origin ?? $quotation?->origin ?? '—');
-    $dischargePort = strtoupper($job->pod ?? $job->destination ?? $quotation?->destination ?? '—');
+    $loadingPort = $job->pol ?? $job->origin ?? $quotation?->origin ?? '—';
+    $dischargePort = $job->pod ?? $job->destination ?? $quotation?->destination ?? '—';
     $etdDate = $job->etd ? $job->etd->format('d-m-Y') : '—';
     $etaDate = $job->eta ? $job->eta->format('d-m-Y') : '—';
     $noAju = $job->booking_reference ?? '—';
@@ -27,7 +27,7 @@
     <div>
         <p class="eyebrow">OPERASIONAL / JOB ORDER</p>
         <h1>{{ $job->number }}</h1>
-        <p>{{ $job->subject }} · Customer: <strong>{{ $customerName }}</strong>@if($job->pol && $job->pod) · {{ $job->pol }} → {{ $job->pod }}@elseif($job->origin && $job->destination) · {{ $job->origin }} → {{ $job->destination }}@endif</p>
+        <p>{{ $job->subject }} · Customer: <strong>{{ $customerName }}</strong>@if($job->pol || $job->pod) · {{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}@elseif($job->origin || $job->destination) · {{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}@endif</p>
     </div>
     <a class="text-link" href="{{ route('jobs.index') }}">← Kembali ke daftar</a>
 </div>
@@ -217,7 +217,7 @@
 </section>
 <div class="section-heading"><h2>Dokumen Pengiriman</h2><span class="subtle">File BL, AWB, SI, dll</span></div>
 <section class="panel">
-<div class="table-scroll"><table><thead><tr><th>Tipe Dokumen</th><th>Nama File</th><th>Ukuran</th><th>Waktu Upload</th><th>Aksi</th></tr></thead><tbody>@forelse($job->documents as $doc)<tr><td><span class="badge-pill">{{ $doc->documentType->code }}</span><br><small>{{ $doc->documentType->name }}</small></td><td><strong>{{ $doc->original_name }}</strong><br><small>Oleh: {{ $doc->uploader?->name ?? 'Sistem' }}</small>@if($doc->notes)<p class="form-help" style="margin-top:4px">{{ $doc->notes }}</p>@endif</td><td>{{ $doc->file_size_formatted }}</td><td>{{ $doc->created_at->format('d/m/Y H:i') }}</td><td><div class="action-group"><a class="text-link" href="{{ route('jobs.documents.download', [$job, $doc]) }}" target="_blank">Download</a>@can('update',$job)<form method="POST" action="{{ route('jobs.documents.destroy', [$job, $doc]) }}" data-confirm="Hapus dokumen ini?">@csrf @method('DELETE')<button class="text-link" style="color:#ef4444">Hapus</button></form>@endcan</div></td></tr>@empty<tr><td colspan="5"><div class="empty-state"><x-icon name="file"/><h3>Belum ada dokumen yang diupload</h3><p>Upload dokumen pengiriman terkait pekerjaan ini.</p></div></td></tr>@endforelse</tbody></table></div>
+<div class="table-scroll"><table><thead><tr><th>Tipe Dokumen</th><th>Nama File</th><th>Ukuran</th><th>Waktu Upload</th><th>Aksi</th></tr></thead><tbody>@forelse($job->documents as $doc)<tr><td><span class="badge-pill">{{ $doc->documentType->code }}</span><br><small>{{ $doc->documentType->name }}</small></td><td><strong>{{ $doc->original_name }}</strong><br><small>Oleh: {{ $doc->uploader?->name ?? 'Sistem' }}</small>@if($doc->notes)<p class="form-help" style="margin-top:4px">{{ $doc->notes }}</p>@endif</td><td>{{ $doc->file_size_formatted }}</td><td>{{ $doc->created_at->format('d/m/Y H:i') }}</td><td><div class="table-actions"><a class="btn-action btn-action-primary" href="{{ route('jobs.documents.download', [$job, $doc]) }}" target="_blank" title="Download Dokumen" data-tooltip="Download" aria-label="Download Dokumen"><x-icon name="download"/></a>@can('update',$job)<form method="POST" action="{{ route('jobs.documents.destroy', [$job, $doc]) }}" data-confirm="Hapus dokumen ini?">@csrf @method('DELETE')<button class="btn-action btn-action-danger" title="Hapus Dokumen" data-tooltip="Hapus" aria-label="Hapus Dokumen"><x-icon name="trash"/></button></form>@endcan</div></td></tr>@empty<tr><td colspan="5"><div class="empty-state"><x-icon name="file"/><h3>Belum ada dokumen yang diupload</h3><p>Upload dokumen pengiriman terkait pekerjaan ini.</p></div></td></tr>@endforelse</tbody></table></div>
 @can('update',$job)
 <form class="data-form" style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data">@csrf
 <div class="form-grid">

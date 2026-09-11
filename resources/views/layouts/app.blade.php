@@ -6,6 +6,7 @@
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
     <title>@yield('title', 'Dashboard') · JobFinance</title>
+    <script>try{if(window.innerWidth>900&&localStorage.getItem('jobfinance_sidebar_collapsed')==='1'){document.documentElement.classList.add('sidebar-collapsed');}}catch(e){}</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
@@ -13,7 +14,8 @@
 <button class="sidebar-backdrop" data-menu-close aria-label="Tutup navigasi" tabindex="-1"></button>
 <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
     <a href="{{ route('dashboard.finance') }}" class="brand brand-logo"><img src="{{ asset('images/logo.png') }}" alt="JobFinance Logo" class="brand-img"></a>
-    <nav>
+    <nav id="sidebar-nav">
+        <script>try{var s=sessionStorage.getItem('jobfinance_sidebar_scroll');if(s){var n=document.getElementById('sidebar-nav');if(n)n.scrollTop=parseInt(s,10);}}catch(e){}</script>
         <p class="nav-heading">WORKSPACE</p>
         @php
         $dashboardLinks = [
@@ -38,7 +40,7 @@
         @php
             $isActive = request()->routeIs($dashboardRoute) || (request()->routeIs('dashboard') && ($currentRole === 'super-admin' ? $dashboardRoute === 'dashboard.finance' : str_ends_with($dashboardRoute, $currentRole)));
         @endphp
-        <a class="nav-item {{ $isActive ? 'active' : '' }}" href="{{ route($dashboardRoute) }}"><x-icon name="grid"/><span>{{ $dashboardLabel }}</span></a>
+        <a class="nav-item {{ $isActive ? 'active' : '' }}" href="{{ route($dashboardRoute) }}" title="{{ $dashboardLabel }}"><x-icon name="grid"/><span>{{ $dashboardLabel }}</span></a>
         @endforeach
         @php
         $groups = [
@@ -78,9 +80,9 @@
                 }
                 @endphp
                 @if($destination)
-                <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
+                <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
                 @else
-                <span class="nav-item upcoming" aria-disabled="true"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
+                <span class="nav-item upcoming" aria-disabled="true" title="{{ $label }} (Segera)"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
                 @endif
                 @endcan
             @endforeach
@@ -88,18 +90,21 @@
         @endforeach
         @can('users.view')
         <p class="nav-heading">ADMINISTRASI</p>
-        <a class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}"><x-icon name="users"/>Pengguna & Akses</a>
+        <a class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}" title="Pengguna & Akses"><x-icon name="users"/><span>Pengguna & Akses</span></a>
         @endcan
         @can('activity.view')
-        <a class="nav-item {{ request()->routeIs('activity.*') ? 'active' : '' }}" href="{{ route('activity.index') }}"><x-icon name="clock"/>Log Aktivitas</a>
+        <a class="nav-item {{ request()->routeIs('activity.*') ? 'active' : '' }}" href="{{ route('activity.index') }}" title="Log Aktivitas"><x-icon name="clock"/><span>Log Aktivitas</span></a>
         @endcan
     </nav>
     <div class="sidebar-footer"><span class="status-dot"></span>JobFinance <span>Demo v0.1</span></div>
 </aside>
 <div class="workspace">
     <header class="topbar">
-        <div class="topbar-left"><button class="icon-button menu-button" data-menu-toggle aria-label="Buka navigasi" aria-controls="sidebar" aria-expanded="false"><x-icon name="menu"/></button><span class="breadcrumb">Workspace <span>/</span> <strong>@yield('title', 'Dashboard')</strong></span></div>
-        <a class="notification-button" href="{{ route('notifications.index') }}" title="Notifikasi" aria-label="Notifikasi"><x-icon name="bell"/></a><details class="account-menu"><summary class="account"><span class="avatar">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span><span class="account-name">{{ auth()->user()->name }}<small>{{ auth()->user()->role?->label ?? 'Tanpa role' }}</small></span><x-icon name="chevron-down"/></summary><div class="account-dropdown"><div class="account-dropdown-head"><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->email }}</small></div><a href="{{ route('profile.show') }}"><x-icon name="users"/>Profil Saya</a><a href="{{ route('profile.show') }}#security"><x-icon name="lock"/>Keamanan & Password</a><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit"><x-icon name="logout"/>Keluar</button></form></div></details>
+        <div class="topbar-left"><button class="icon-button menu-button" data-menu-toggle aria-label="Buka / Tutup Navigasi" title="Buka / Tutup Navigasi" aria-controls="sidebar" aria-expanded="false"><span class="icon-nav-open" title="Buka Navigasi"><x-icon name="menu-unfold"/></span><span class="icon-nav-close" title="Tutup Navigasi"><x-icon name="menu-fold"/></span></button><span class="breadcrumb">Workspace <span>/</span> <strong>@yield('title', 'Dashboard')</strong></span></div>
+        <div class="topbar-right">
+            <a class="notification-button" href="{{ route('notifications.index') }}" title="Notifikasi" aria-label="Notifikasi"><x-icon name="bell"/></a>
+            <details class="account-menu"><summary class="account"><span class="avatar">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span><span class="account-name">{{ auth()->user()->name }}<small>{{ auth()->user()->role?->label ?? 'Tanpa role' }}</small></span><x-icon name="chevron-down"/></summary><div class="account-dropdown"><div class="account-dropdown-head"><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->email }}</small></div><a href="{{ route('profile.show') }}"><x-icon name="users"/>Profil Saya</a><a href="{{ route('profile.show') }}#security"><x-icon name="lock"/>Keamanan & Password</a><form method="POST" action="{{ route('logout') }}">@csrf<button type="submit"><x-icon name="logout"/>Keluar</button></form></div></details>
+        </div>
     </header>
     <main id="main" tabindex="-1">
         @if(session('success'))<div class="flash-success" role="status">{{ session('success') }}</div>@endif
