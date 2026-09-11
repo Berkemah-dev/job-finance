@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ReportFilterRequest;
 use App\Mail\StatementOfAccountMail;
 use App\Models\Customer;
+use App\Models\SoaEmailLog;
 use App\Services\StatementOfAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
@@ -23,8 +25,13 @@ class StatementOfAccountController extends Controller
         return view('reports.soa.index', ['result' => $this->service->summary($search, $unpaid), 'search' => $search, 'unpaid' => $unpaid]);
     }
 
+<<<<<<< HEAD
     public function show(int $soaCustomer, ReportFilterRequest $request)
+=======
+    public function show(string $customerId, ReportFilterRequest $request)
+>>>>>>> 367a9ee93734e3a97628530a24dddb5e9c488978
     {
+        $customer = Customer::withTrashed()->findOrFail($customerId);
         $from = $request->date('from') ?? today()->startOfMonth();
         $to = $request->date('to') ?? today();
         $customer = Customer::withTrashed()->findOrFail($soaCustomer);
@@ -46,7 +53,32 @@ class StatementOfAccountController extends Controller
 
         $from = $request->date('from') ?? today()->startOfMonth();
         $to = $request->date('to') ?? today();
-        Mail::to($emails)->send(new StatementOfAccountMail($customer->load('contacts'), $this->service->statement($customer, $from, $to), $from, $to));
+
+        $status = 'sent';
+        $errorMessage = null;
+        try {
+            Mail::to($emails)->send(new StatementOfAccountMail($customer->load('contacts'), $this->service->statement($customer, $from, $to), $from, $to));
+        } catch (\Throwable $e) {
+            $status = 'failed';
+            $errorMessage = $e->getMessage();
+            Log::error('SOA email failed', ['customer_id' => $customer->id, 'error' => $e->getMessage()]);
+        }
+
+        SoaEmailLog::create([
+            'customer_id'  => $customer->id,
+            'recipients'   => $emails,
+            'subject'      => 'Statement of Account — '.$customer->name.' ('.$from->format('d/m/Y').' – '.$to->format('d/m/Y').')',
+            'period_from'  => $from,
+            'period_to'    => $to,
+            'status'       => $status,
+            'error_message'=> $errorMessage,
+            'sent_by'      => $request->user()->id,
+            'sent_at'      => now(),
+        ]);
+
+        if ($status === 'failed') {
+            return back()->withErrors(['email' => 'Email gagal dikirim: '.$errorMessage]);
+        }
 
         return back()->with('success', 'SOA '.$customer->name.' dikirim ke '.implode(', ', $emails).'.');
     }

@@ -22,6 +22,11 @@ class Job extends Model
         return $this->hasMany(JobStatusHistory::class);
     }
 
+    /**
+     * Alias untuk statusHistory() — riwayat status pengiriman.
+     * Status shipment ditulis ke job_status_history (satu tabel gabungan).
+     * Tabel job_shipment_statuses sudah dihapus karena dead code.
+     */
     public function shipmentStatusHistory(): HasMany
     {
         return $this->hasMany(JobStatusHistory::class);

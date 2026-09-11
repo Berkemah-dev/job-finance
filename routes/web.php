@@ -22,6 +22,7 @@ use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ReimbursementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StatementOfAccountController;
+use App\Http\Controllers\TpsController;
 use App\Http\Controllers\TruckingPriceController;
 use App\Http\Controllers\TpsController;
 use App\Http\Controllers\VendorController;
@@ -168,4 +169,33 @@ Route::middleware('auth')->group(function () {
     Route::get('/users/{user}/edit', [AccessController::class, 'editUser'])->middleware('can:users.manage')->name('users.edit');
     Route::put('/users/{user}', [AccessController::class, 'updateUser'])->middleware('can:users.manage')->name('users.update');
     Route::get('/activity', [AccessController::class, 'activity'])->middleware('can:activity.view')->name('activity.index');
+
+    // Master TPS Air/Sea
+    Route::middleware('can:jobs.manage')->prefix('tps')->name('tps.')->group(function () {
+        Route::get('/', [TpsController::class, 'index'])->name('index');
+        Route::get('/create', [TpsController::class, 'create'])->name('create');
+        Route::post('/', [TpsController::class, 'store'])->name('store');
+        Route::get('/{tps}/edit', [TpsController::class, 'edit'])->name('edit');
+        Route::put('/{tps}', [TpsController::class, 'update'])->name('update');
+        Route::post('/{tps}/toggle', [TpsController::class, 'toggle'])->name('toggle');
+        Route::delete('/{tps}', [TpsController::class, 'destroy'])->name('destroy');
+    });
+
+    // Invoice PDF
+    Route::get('/api/invoices/{invoice}/pdf', [OperationalDocumentController::class, 'invoicePdf'])
+        ->middleware('can:invoices.manage')->name('invoices.pdf');
+
+    // DNP & SK Pabean PDF
+    Route::get('/api/dokumen-job/{quotation}/dnp/pdf', [OperationalDocumentController::class, 'dnpPdf'])
+        ->middleware('can:jobs.view')->name('documents.dnp.pdf');
+    Route::get('/api/dokumen-job/{quotation}/sk-pabean/pdf', [OperationalDocumentController::class, 'skPabeaPdf'])
+        ->middleware('can:jobs.view')->name('documents.sk-pabean.pdf');
+
+    // Invoice delivery status update
+    Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])
+        ->middleware('can:invoices.manage')->name('invoices.delivery');
+
+    // SOA PDF download
+    Route::get('/api/reports/soa/{customer}/pdf', [OperationalDocumentController::class, 'soaPdf'])
+        ->middleware('can:reports.view')->name('reports.soa.pdf');
 });

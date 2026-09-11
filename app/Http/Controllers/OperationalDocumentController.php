@@ -147,4 +147,50 @@ class OperationalDocumentController extends Controller
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }
+
+    public function dnpPdf(Request $request, Quotation $quotation, MasterDataService $master)
+    {
+        $quotation->load(['job.customer']);
+        abort_unless($quotation->job, 404);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.dnp', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
+        $filename = 'DNP_'.$quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF DNP '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function skPabeaPdf(Request $request, Quotation $quotation, MasterDataService $master)
+    {
+        $quotation->load(['job.customer']);
+        abort_unless($quotation->job, 404);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.sk-pabean', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
+        $filename = 'SK_Pabean_'.$quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK Pabean '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function invoicePdf(Request $request, \App\Models\Invoice $invoice, MasterDataService $master)
+    {
+        $invoice->load(['items', 'job.customer', 'job.quotation']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.invoice', ['invoice' => $invoice])->setPaper('a4');
+        $filename = 'Invoice_'.$invoice->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Invoice '.$invoice->number, ['module' => 'document', 'record_id' => $invoice->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function soaPdf(Request $request, string $customerId, MasterDataService $master)
+    {
+        $customer = \App\Models\Customer::withTrashed()->findOrFail($customerId);
+        $service = app(\App\Services\StatementOfAccountService::class);
+        $from = $request->date('from') ?? today()->startOfMonth();
+        $to = $request->date('to') ?? today();
+        $statement = $service->statement($customer, $from, $to);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.soa', ['customer' => $customer, 'statement' => $statement, 'from' => $from, 'to' => $to])->setPaper('a4');
+        $filename = 'SOA_'.$customer->code.'_'.$from->format('Ymd').'-'.$to->format('Ymd').'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF SOA '.$customer->name, ['module' => 'document', 'record_id' => $customer->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
 }

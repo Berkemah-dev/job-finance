@@ -108,6 +108,7 @@ class JobService
         }, 3);
     }
 
+<<<<<<< HEAD
     public function confirmDo(Job $job, User $actor): Job
     {
         return DB::transaction(function () use ($job, $actor) {
@@ -118,13 +119,30 @@ class JobService
             }
             if ($job->do_confirmed_at) {
                 throw ValidationException::withMessages(['do' => 'DO job ini sudah dikonfirmasi selesai sebelumnya.']);
+=======
+    public function confirmDo(Job $job, array $data, User $actor): Job
+    {
+        return DB::transaction(function () use ($job, $data, $actor) {
+            $job = Job::lockForUpdate()->findOrFail($job->id);
+            Gate::forUser($actor)->authorize('update', $job);
+            $this->master->checkVersion($job, $data);
+            if ($job->status !== 'open') {
+                throw ValidationException::withMessages(['do' => 'DO hanya dapat dikonfirmasi untuk job berstatus Open.']);
+            }
+            if ($job->do_confirmed_at) {
+                throw ValidationException::withMessages(['do' => 'DO sudah pernah dikonfirmasi sebelumnya.']);
+>>>>>>> 367a9ee93734e3a97628530a24dddb5e9c488978
             }
             $job->do_confirmed_at = now();
             $job->do_confirmed_by = $actor->id;
             $job->updated_by = $actor->id;
             $job->lock_version++;
             $job->save();
+<<<<<<< HEAD
             $this->master->log($actor, 'job.do_confirmed', 'Konfirmasi DO selesai untuk '.$job->number, ['module' => 'job', 'record_id' => $job->id, 'after' => $job->do_confirmed_at->toDateTimeString()]);
+=======
+            $this->master->log($actor, 'job.do_confirmed', 'DO Selesai dikonfirmasi untuk '.$job->number, ['module' => 'job', 'record_id' => $job->id]);
+>>>>>>> 367a9ee93734e3a97628530a24dddb5e9c488978
 
             return $job;
         }, 3);
