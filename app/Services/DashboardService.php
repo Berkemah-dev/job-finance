@@ -57,12 +57,19 @@ class DashboardService
 
         $role = (string) ($user->role?->name ?? '');
         $weeklyPricing = WeeklyPricing::where('is_active', true)->orderByDesc('effective_date')->first();
+        $invoiceAging = [
+            'current' => Invoice::where('balance', '>', 0)->whereDate('due_date', '>=', today())->count(),
+            'overdue_1_30' => Invoice::where('balance', '>', 0)->whereBetween('due_date', [today()->subDays(30), today()->subDay()])->count(),
+            'overdue_30_plus' => Invoice::where('balance', '>', 0)->where('due_date', '<', today()->subDays(30))->count(),
+        ];
+        $openJobs = Job::where('status', 'open')->count();
+        $jobsWithDraftCosts = Job::where('status', 'open')->whereHas('costs', fn ($q) => $q->where('status', '!=', 'final'))->count();
         return ['role' => $role, 'temporaryBalance' => (string) $temporary, 'provisionBalance' => (string) $provision, 'openJobs' => (int) ($counts['open'] ?? 0), 'closedJobs' => (int) ($counts['closed'] ?? 0),
             'receivableBalance' => (string) $receivable, 'revenueBalance' => (string) $revenue, 'cogsBalance' => (string) $cogs, 'profitBalance' => (string) $profit,
             'monthlyPerformance' => $monthly->map(fn ($row) => ['label' => $row['label'], 'revenue' => (string) $row['revenue'], 'profit' => (string) $row['profit']])->values(),
             'unpaidInvoices' => Gate::forUser($user)->allows('financial.view') ? Invoice::where('balance', '>', 0)->orderBy('due_date')->limit(5)->get() : collect(),
             'draftJobs' => (int) ($counts['draft'] ?? 0), 'recentJobs' => Job::latest('id')->limit(5)->get(),
-            'weeklyPricing' => $weeklyPricing, 'unfinishedJobs' => Job::where('status', 'open')->whereHas('costs', fn ($q) => $q->where('status', '!=', 'final'))->latest('id')->limit(8)->get(),
+            'weeklyPricing' => $weeklyPricing, 'invoiceAging' => $invoiceAging, 'costProgress' => ['open' => $openJobs, 'draft' => $jobsWithDraftCosts, 'final' => max(0, $openJobs - $jobsWithDraftCosts)], 'unfinishedJobs' => Job::where('status', 'open')->whereHas('costs', fn ($q) => $q->where('status', '!=', 'final'))->latest('id')->limit(8)->get(),
             'arrivalSoon' => Job::where('status', 'open')->whereNotNull('eta')->whereBetween('eta', [today(), today()->addDays(14)])->orderBy('eta')->limit(8)->get(), 'widgets' => $this->widgets($user)];
     }
 
