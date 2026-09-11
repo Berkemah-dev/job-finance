@@ -10,9 +10,7 @@ class DashboardController extends Controller
 {
     public function __invoke(DashboardService $service, Request $request): View
     {
-        $user = $request->user();
-        $role = (string) ($user->role?->name ?? '');
-        return $this->render($role, $service, $user);
+        return view('dashboard', $service->summary($request->user()));
     }
 
     public function role(string $role, DashboardService $service, Request $request): View
