@@ -4,6 +4,7 @@
 @import './operations.css';
 @import './reports.css';
 @import './coa.css';
+@import './dashboard-charts.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';

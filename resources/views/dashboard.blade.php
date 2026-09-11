@@ -14,6 +14,7 @@
     </div>
 </div>
 @endif
+
 <x-menu-banner
     :tag="strtoupper($roleTitle ?? 'WORKSPACE')"
     :title="'Halo, ' . auth()->user()->name . '!'"

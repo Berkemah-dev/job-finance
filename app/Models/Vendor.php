@@ -11,7 +11,22 @@ class Vendor extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['code', 'name', 'type', 'email', 'phone', 'address', 'country', 'tax_number', 'pic', 'notes', 'is_active'];
+    protected $fillable = [
+        'code',
+        'name',
+        'type',
+        'email',
+        'phone',
+        'address',
+        'country',
+        'tax_number',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
+        'pic',
+        'notes',
+        'is_active',
+    ];
 
     protected function casts(): array
     {

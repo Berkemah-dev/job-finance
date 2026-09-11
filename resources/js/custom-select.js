@@ -1,4 +1,3 @@
-// Custom Select Dropdown - Always opens downwards, clean searchable UI & accessible
 export function initCustomSelects() {
     const selects = document.querySelectorAll('select[data-custom-select], .data-form select:not([data-native-select]), .filter-bar select:not([data-native-select])');
 

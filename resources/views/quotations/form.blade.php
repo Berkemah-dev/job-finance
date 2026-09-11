@@ -24,8 +24,40 @@
 
 <div class="field"><label for="commodity">Commodity</label><input id="commodity" name="commodity" value="{{ old('commodity',$quotation->commodity) }}" maxlength="160" placeholder="cth: General Cargo / Spare Parts"></div>
 
-<div class="field"><label for="origin">Port of Loading (POL)</label><input id="origin" name="origin" list="ports-list" value="{{ old('origin',$quotation->origin) }}" maxlength="120" placeholder="Ketik nama atau kode port..."><datalist id="ports-list">@foreach($ports ?? [] as $port)<option value="{{ $port->name }} ({{ $port->code }})">{{ $port->name }} ({{ $port->code }})</option>@endforeach</datalist></div>
-<div class="field"><label for="destination">Port of Discharge (POD)</label><input id="destination" name="destination" list="ports-list" value="{{ old('destination',$quotation->destination) }}" maxlength="120" placeholder="Ketik nama atau kode port..."></div>
+<div class="field">
+    <label for="origin">Port of Loading (POL)</label>
+    <input id="origin" name="origin" list="pol-ports-list" value="{{ old('origin',$quotation->origin) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
+    <datalist id="pol-ports-list">
+        @foreach($ports ?? [] as $port)
+            <option value="{{ $port->name }} ({{ $port->code }})">{{ $port->code }} - {{ $port->name }}</option>
+            <option value="{{ $port->name }}">{{ $port->name }}</option>
+        @endforeach
+        <option value="TANJUNG PRIOK, JAKARTA (IDTPP)">IDTPP - TANJUNG PRIOK, JAKARTA</option>
+        <option value="TANJUNG PERAK, SURABAYA (IDTPS)">IDTPS - TANJUNG PERAK, SURABAYA</option>
+        <option value="BELAWAN, MEDAN (IDBLW)">IDBLW - BELAWAN, MEDAN</option>
+        <option value="SHANGHAI, CHINA (CNSHG)">CNSHG - SHANGHAI, CHINA</option>
+        <option value="SINGAPORE (SGSIN)">SGSIN - SINGAPORE</option>
+        <option value="PORT KLANG, MALAYSIA (MYPKG)">MYPKG - PORT KLANG, MALAYSIA</option>
+        <option value="SOEKARNO HATTA AIRPORT (CGK)">CGK - SOEKARNO HATTA AIRPORT</option>
+    </datalist>
+</div>
+<div class="field">
+    <label for="destination">Port of Discharge (POD)</label>
+    <input id="destination" name="destination" list="pod-ports-list" value="{{ old('destination',$quotation->destination) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
+    <datalist id="pod-ports-list">
+        @foreach($ports ?? [] as $port)
+            <option value="{{ $port->name }} ({{ $port->code }})">{{ $port->code }} - {{ $port->name }}</option>
+            <option value="{{ $port->name }}">{{ $port->name }}</option>
+        @endforeach
+        <option value="TANJUNG PRIOK, JAKARTA (IDTPP)">IDTPP - TANJUNG PRIOK, JAKARTA</option>
+        <option value="TANJUNG PERAK, SURABAYA (IDTPS)">IDTPS - TANJUNG PERAK, SURABAYA</option>
+        <option value="BELAWAN, MEDAN (IDBLW)">IDBLW - BELAWAN, MEDAN</option>
+        <option value="SHANGHAI, CHINA (CNSHG)">CNSHG - SHANGHAI, CHINA</option>
+        <option value="SINGAPORE (SGSIN)">SGSIN - SINGAPORE</option>
+        <option value="PORT KLANG, MALAYSIA (MYPKG)">MYPKG - PORT KLANG, MALAYSIA</option>
+        <option value="SOEKARNO HATTA AIRPORT (CGK)">CGK - SOEKARNO HATTA AIRPORT</option>
+    </datalist>
+</div>
 
 <div class="field"><label for="currency">Mata uang</label><select id="currency" name="currency">@foreach(config('operations.currencies') as $key=>$label)<option value="{{ $key }}" @selected(old('currency',$quotation->currency ?? 'IDR')===$key)>{{ $label }}</option>@endforeach</select></div>
 <div class="field"><label for="exchange_rate">Kurs</label><input id="exchange_rate" name="exchange_rate" type="number" min="0.01" step="0.01" value="{{ old('exchange_rate',$quotation->exchange_rate ?? 1) }}" max="999999999.99"></div>
@@ -75,12 +107,136 @@
 </div>
 </div>
 </details>
-<div class="section-heading"><h2>Detail penawaran</h2><span class="subtle">Maksimal 100 item · nilai dalam IDR · kurs memakai weekly pricing</span></div>
-<div data-items>@php $rows=old('items',$quotation->exists?$quotation->items->toArray():[[]]); @endphp @foreach($rows as $index=>$item) @include('quotations.item',compact('index','item')) @endforeach</div>
-<template data-item-template>@include('quotations.item',['index'=>'__INDEX__','item'=>[]])</template>
-<button class="button button-secondary" type="button" data-add-item>+ Simpan item & tambah item berikutnya</button>
-<div class="summary-box" aria-live="polite"><div class="summary-row"><span>Total sementara</span><strong data-preview-total>Rp 0,00</strong></div><div class="summary-row"><span>Estimasi profit</span><strong data-preview-profit>Rp 0,00</strong></div><p class="form-help">Pajak, diskon, dan grand total dihitung saat disimpan.</p></div>
-<div class="field"><label for="notes">Catatan / ketentuan penawaran</label><textarea name="notes" id="notes" rows="3" maxlength="5000">{{ old('notes',$quotation->notes) }}</textarea></div><div class="form-actions"><a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a><button class="button button-primary" @disabled($customers->isEmpty())>Simpan draft</button></div></form></section>
+
+{{-- KOTAK INPUT SATU ITEM BIAYA --}}
+<div class="panel" id="single-item-input-panel" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 18px 20px; margin-top: 25px; margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+        <div>
+            <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1e3a8a;">➕ Input Item Biaya Penawaran</h3>
+            <span class="subtle" style="font-size: 11.5px;">Isi detail biaya di bawah, lalu klik <strong>"+ Tambah Item ke Daftar"</strong> untuk memasukkannya ke tabel.</span>
+        </div>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns: 2.2fr 2fr 1.2fr 1fr 1.5fr 1.5fr; gap: 12px; align-items: flex-start;">
+        <div class="field">
+            <label for="input_item_desc">Uraian Biaya <span class="required">*</span></label>
+            <input id="input_item_desc" list="charge-types-list" placeholder="Ketik huruf depan / pilih biaya..." autocomplete="off" style="width: 100%;">
+            <datalist id="charge-types-list">
+                @foreach($charges ?? [] as $charge)
+                    <option value="{{ $charge->name }}">{{ $charge->name }}</option>
+                @endforeach
+            </datalist>
+            <div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 10px; color: #64748b;">Cepat:</span>
+                <button type="button" class="btn-quick-charge" data-charge="TRUCKING" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">TRUCKING</button>
+                <button type="button" class="btn-quick-charge" data-charge="OCEAN FREIGHT" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">OCEAN FREIGHT</button>
+                <button type="button" class="btn-quick-charge" data-charge="THC" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">THC</button>
+                <button type="button" class="btn-quick-charge" data-charge="CUSTOMS CLEARANCE SPPB" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">CUSTOMS CLEARANCE</button>
+                <button type="button" class="btn-quick-charge" data-charge="DO CHARGES" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">DO</button>
+            </div>
+        </div>
+        <div class="field">
+            <label for="input_item_note">Catatan / Note Biaya</label>
+            <input id="input_item_note" type="text" placeholder="cth: Per 20ft / Exclude PPN / Free Time" maxlength="255">
+        </div>
+        <div class="field">
+            <label for="input_item_unit">Satuan <span class="required">*</span></label>
+            <input id="input_item_unit" list="unit-types-list" value="Shipment" placeholder="Pilih/ketik satuan" autocomplete="off" style="width: 100%;">
+            <datalist id="unit-types-list">
+                @foreach($units ?? [] as $unit)
+                    <option value="{{ $unit->name }}">{{ $unit->name }}</option>
+                @endforeach
+                <option value="Shipment">Shipment</option>
+                <option value="Container">Container</option>
+                <option value="20GP">20GP</option>
+                <option value="40GP">40GP</option>
+                <option value="40HQ">40HQ</option>
+                <option value="Cbm">Cbm</option>
+                <option value="KG">KG</option>
+                <option value="Doc">Doc</option>
+                <option value="Trip">Trip</option>
+            </datalist>
+        </div>
+        <div class="field">
+            <label for="input_item_qty">Jumlah (Qty) <span class="required">*</span></label>
+            <input id="input_item_qty" type="number" min="0.01" step="0.01" value="1">
+        </div>
+        <div class="field">
+            <label for="input_item_cost">Modal / Unit (IDR)</label>
+            <input id="input_item_cost" type="number" min="0" step="100" value="0">
+        </div>
+        <div class="field">
+            <label for="input_item_price">Harga Jual / Unit (IDR) <span class="required">*</span></label>
+            <input id="input_item_price" type="number" min="0" step="100" value="0">
+        </div>
+    </div>
+
+    <div style="margin-top: 14px; text-align: right;">
+        <button type="button" class="button button-primary" id="btn_submit_single_item" style="padding: 8px 24px; font-weight: 600;">
+            ➕ Tambah Item ke Daftar
+        </button>
+    </div>
+</div>
+
+{{-- DAFTAR ITEM PENAWARAN (TABEL SUBMITTED ITEMS) --}}
+<div class="section-heading" style="margin-top: 25px; margin-bottom: 10px;">
+    <h2>📋 Daftar Item Penawaran</h2>
+    <span class="subtle" id="items_count_display">0 item</span>
+</div>
+
+<div class="table-scroll" style="margin-bottom: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0;">
+                <th style="width: 40px; text-align: center; padding: 10px 8px;">#</th>
+                <th style="padding: 10px 12px;">Uraian Biaya & Catatan</th>
+                <th style="width: 110px; padding: 10px 8px;">Satuan</th>
+                <th style="width: 80px; text-align: right; padding: 10px 8px;">Qty</th>
+                <th style="width: 130px; text-align: right; padding: 10px 8px;">Modal / Unit</th>
+                <th style="width: 130px; text-align: right; padding: 10px 8px;">Jual / Unit</th>
+                <th style="width: 140px; text-align: right; padding: 10px 12px;">Subtotal Jual</th>
+                <th style="width: 110px; text-align: center; padding: 10px 8px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="quotation_items_tbody">
+            <!-- Dynamic item rows will be rendered here by JS -->
+        </tbody>
+    </table>
+</div>
+
+<div class="summary-box" aria-live="polite">
+    <div class="summary-row"><span>Total Penawaran (Jual)</span><strong data-preview-total>Rp 0,00</strong></div>
+    <div class="summary-row"><span>Estimasi Profit</span><strong data-preview-profit style="color:#16a34a;">Rp 0,00</strong></div>
+    <p class="form-help">Pajak, diskon, dan grand total dihitung saat disimpan.</p>
+</div>
+
+<div class="field"><label for="notes">Catatan / ketentuan penawaran</label><textarea name="notes" id="notes" rows="3" maxlength="5000">{{ old('notes',$quotation->notes) }}</textarea></div>
+<div class="form-actions"><a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a><button class="button button-primary" id="btn_save_quotation" @disabled($customers->isEmpty())>Simpan draft</button></div>
+</form></section>
+
+@php
+    $initialItems = old('items');
+    if ($initialItems === null && $quotation->exists) {
+        $initialItems = $quotation->items->map(fn($item) => [
+            'description' => $item->description,
+            'note' => $item->note ?? '',
+            'unit' => $item->unit,
+            'quantity' => $item->quantity,
+            'unit_cost' => $item->unit_cost ?? 0,
+            'unit_price' => $item->unit_price,
+            'type' => $item->type->value ?? 'provision',
+            'pricing_source' => $item->pricing_source ?? 'manual',
+            'pricing_id' => $item->pricing_id ?? '',
+            'currency' => $item->currency ?? 'IDR',
+            'exchange_rate' => $item->exchange_rate ?? '1.00',
+            'pricing_snapshot' => $item->pricing_snapshot ?? null,
+        ])->toArray();
+    }
+@endphp
+<script id="initial-items-data" type="application/json">
+{!! json_encode($initialItems ?? []) !!}
+</script>
+
 <script>
 (function () {
     const panel = document.querySelector('[data-lcl-panel]');
@@ -88,7 +244,6 @@
     const rows = panel.querySelector('#lcl-inline-rows');
     const status = panel.querySelector('[data-lcl-status]');
     const addItemBtn = panel.querySelector('[data-lcl-add-item]');
-    const form = document.querySelector('[data-quotation-form]');
     let lastCost = null;
     const refreshRemoves = () => {
         const n = rows.querySelectorAll('.lcl-inline-row').length;
@@ -129,18 +284,17 @@
     });
     addItemBtn.addEventListener('click', () => {
         if (lastCost === null) return;
-        form.querySelector('[data-add-item]').click();
-        const row = form.querySelector('[data-items]').lastElementChild;
-        const desc = row.querySelector('input[name$="[description]"]');
-        if (desc) desc.value = 'Estimasi biaya LCL (W/M)';
-        const unit = row.querySelector('input[name$="[unit]"]');
-        if (unit) unit.value = 'Shipment';
-        const qty = row.querySelector('input[name$="[quantity]"]');
-        if (qty) qty.value = '1';
-        const price = row.querySelector('input[name$="[unit_price]"]');
-        if (price) price.value = lastCost;
-        row.dispatchEvent(new Event('input', { bubbles: true }));
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof window.addQuotationItem === 'function') {
+            window.addQuotationItem({
+                description: 'Estimasi biaya LCL (W/M)',
+                note: 'Kalkulasi LCL',
+                unit: 'Shipment',
+                quantity: '1',
+                unit_cost: lastCost,
+                unit_price: lastCost,
+                type: 'provision'
+            });
+        }
         panel.open = false;
     });
     refreshRemoves();
@@ -171,7 +325,6 @@
 
     vwPanel.querySelector('[data-vw-add]').addEventListener('click', () => {
         const clone = rows.querySelector('.vw-inline-row').cloneNode(true);
-        // Also clear out the input values on clone except Qty
         clone.querySelectorAll('input').forEach(inp => {
             if(!inp.classList.contains('v-qty')) inp.value = '';
         });

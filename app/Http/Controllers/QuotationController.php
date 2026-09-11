@@ -48,7 +48,9 @@ class QuotationController extends Controller
             'quotation' => new Quotation,
             'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
             'sales' => $this->salesUsers(),
-            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']), 'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']), 'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
+            'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
+            'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
+            'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
         ]);
     }
 
@@ -93,7 +95,9 @@ class QuotationController extends Controller
             'quotation' => $quotation->load('items'),
             'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
             'sales' => $this->salesUsers(),
-            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']), 'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']), 'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
+            'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
+            'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
+            'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
         ]);
     }
 

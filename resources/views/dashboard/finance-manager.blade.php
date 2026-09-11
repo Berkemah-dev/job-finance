@@ -1,14 +1,28 @@
 @extends('layouts.app')
 @section('title', 'Dashboard Finance Manager')
 @section('content')
-<div class="role-hero">
+<div class="page-heading">
     <div>
-        <span class="eyebrow" style="color:#b9c9e6">WORKSPACE FINANCE MANAGER</span>
-        <h2>Profit terlihat jelas.</h2>
-        <p>Bandingkan pendapatan dan profit dari job yang sudah closing.</p>
+        <p class="eyebrow">WORKSPACE FINANCE MANAGER</p>
+        <h1>Dashboard Finance Manager</h1>
+        <p>Bandingkan pendapatan dan profit dari seluruh pekerjaan yang sudah closing.</p>
     </div>
-    <a class="button button-white" href="{{ route('reports.profit-per-job') }}">Lihat Analisis <x-icon name="arrow"/></a>
+    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
 </div>
+
+@include('dashboard.partials.charts')
+
+<x-menu-banner
+    tag="WORKSPACE FINANCE MANAGER"
+    :title="'Halo, ' . auth()->user()->name . '!'"
+    description="Analisis profitabilitas pekerjaan dan margin closing secara berkala."
+    action-url="{{ route('reports.profit-per-job') }}"
+    action-label="Lihat Analisis Profit"
+    action-icon="arrow"
+    icon="chart"
+    art-title="Profitabilitas bisnis,"
+    art-subtitle="terpantau presisi."
+/>
 
 <div class="stats-grid">
     <article class="stat-card"><span>Profit Job</span><strong class="stat-number"><small>Rp</small> {{ \App\Support\Money::format($profitBalance) }}</strong><p>Total profit dari job closing.</p></article>

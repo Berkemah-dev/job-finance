@@ -29,6 +29,7 @@ class TruckingPriceRequest extends FormRequest
             'container_type' => ['required', Rule::in(array_keys(config('operations.container_types')))],
             'vendor_id' => ['nullable', 'exists:vendors,id'],
             'price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
+            'selling_price' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
             'currency' => ['required', Rule::in(array_keys(config('operations.currencies')))],
             'effective_date' => ['required', 'date'],
             'effective_until' => ['nullable', 'date', 'after_or_equal:effective_date'],

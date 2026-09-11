@@ -116,7 +116,7 @@ class DashboardWidgetsTest extends TestCase
     {
         $this->actingAs($this->management)->get('/dashboard')
             ->assertOk()
-            ->assertSee('Keuangan lebih terkontrol')
+            ->assertSee('Keuangan terkontrol')
             ->assertDontSee('Pipeline quotation')
             ->assertDontSee('Pengiriman berjalan')
             ->assertDontSee('Quotation saya');

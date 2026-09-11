@@ -24,6 +24,8 @@ class CustomerRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40', 'regex:/^[0-9+\-\s()]+$/'],
             'address' => ['nullable', 'string', 'max:2000'],
+            'authorizer_name' => ['nullable', 'string', 'max:255'],
+            'authorizer_title' => ['nullable', 'string', 'max:255'],
             'tax_number' => ['nullable', 'string', 'max:40', 'regex:/^[0-9]{15,16}$/'],
             'default_payment_terms' => ['nullable', 'string', 'max:60', Rule::in($paymentTerms)],
             'npwp_file' => ['nullable', 'file', 'mimes:'.implode(',', config('operations.customer_documents.mimes')), 'max:'.config('operations.customer_documents.max_kb')],
@@ -44,6 +46,16 @@ class CustomerRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['name' => 'nama customer', 'contact_name' => 'nama kontak', 'address' => 'alamat', 'tax_number' => 'NPWP', 'phone' => 'telepon', 'default_payment_terms' => 'syarat pembayaran', 'lock_version' => 'versi data'];
+        return [
+            'name' => 'nama customer',
+            'contact_name' => 'nama kontak',
+            'address' => 'alamat',
+            'authorizer_name' => 'nama pemberi kuasa',
+            'authorizer_title' => 'jabatan pemberi kuasa',
+            'tax_number' => 'NPWP',
+            'phone' => 'telepon',
+            'default_payment_terms' => 'syarat pembayaran',
+            'lock_version' => 'versi data',
+        ];
     }
 }

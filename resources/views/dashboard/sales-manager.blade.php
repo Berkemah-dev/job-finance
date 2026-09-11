@@ -1,14 +1,28 @@
 @extends('layouts.app')
 @section('title', 'Dashboard Sales Manager')
 @section('content')
-<div class="role-hero">
+<div class="page-heading">
     <div>
-        <span class="eyebrow" style="color:#b9c9e6">WORKSPACE SALES MANAGER</span>
-        <h2>Persetujuan & Performa Sales.</h2>
-        <p>Review draft quote dari tim sales dan pantau pergerakan penawaran.</p>
+        <p class="eyebrow">WORKSPACE SALES MANAGER</p>
+        <h1>Dashboard Sales Manager</h1>
+        <p>Review draft penawaran harga dari tim sales dan pantau pergerakan pipeline penjualan.</p>
     </div>
-    <a class="button button-white" href="{{ route('quotations.create') }}">Buat Quotation <x-icon name="arrow"/></a>
+    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
 </div>
+
+@include('dashboard.partials.charts')
+
+<x-menu-banner
+    tag="WORKSPACE SALES MANAGER"
+    :title="'Halo, ' . auth()->user()->name . '!'"
+    description="Pantau konversi quotation menjadi job order dan tingkatkan performa tim sales."
+    action-url="{{ route('quotations.index') }}"
+    action-label="Kelola Pipeline"
+    action-icon="arrow"
+    icon="file"
+    art-title="Target penjualan,"
+    art-subtitle="tercapai maksimal."
+/>
 
 <div class="stats-grid">
     <article class="stat-card"><span>Menunggu Persetujuan</span><strong class="stat-number">{{ isset($widgets['submittedQuotes']) ? $widgets['submittedQuotes']->count() : 0 }}</strong><p>Draft quote perlu diapprove.</p></article>
