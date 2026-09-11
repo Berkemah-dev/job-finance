@@ -200,6 +200,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('accounts', AccountController::class)->except('show')->middleware('can:coa.manage');
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
+    Route::get('/dashboard-finance', [DashboardController::class, 'role'])->defaults('role', 'finance')->middleware('can:dashboard.view')->name('dashboard.finance');
+    Route::get('/dashboard-financemanager', [DashboardController::class, 'role'])->defaults('role', 'finance-manager')->middleware('can:dashboard.view')->name('dashboard.finance-manager');
+    Route::get('/dashboard-salesmanager', [DashboardController::class, 'role'])->defaults('role', 'sales-manager')->middleware('can:dashboard.view')->name('dashboard.sales-manager');
+    Route::get('/dashboard-sales', [DashboardController::class, 'role'])->defaults('role', 'sales')->middleware('can:dashboard.view')->name('dashboard.sales');
+    Route::get('/dashboard-operational', [DashboardController::class, 'role'])->defaults('role', 'operational')->middleware('can:dashboard.view')->name('dashboard.operational');
+    Route::get('/dashboard-customer-service', [DashboardController::class, 'role'])->defaults('role', 'customer-service')->middleware('can:dashboard.view')->name('dashboard.customer-service');
     Route::get('/users', [AccessController::class, 'users'])->middleware('can:users.view')->name('users.index');
     Route::get('/users/create', [AccessController::class, 'createUser'])->middleware('can:users.manage')->name('users.create');
     Route::post('/users', [AccessController::class, 'storeUser'])->middleware('can:users.manage')->name('users.store');

@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title', 'Dashboard Sales')
+@section('content')
+<div class="page-heading"><div><p class="eyebrow">WORKSPACE SALES</p><h1>Dashboard Sales</h1><p>Buat quotation dan pantau persetujuannya.</p></div><a class="button button-primary" href="{{ route('quotations.create') }}">Buat Quotation</a></div>
+<div class="stats-grid"><article class="stat-card"><span>Quotation Draft</span><strong class="stat-number">{{ $widgets['quotes']['draft'] ?? 0 }}</strong><p>Belum disetujui.</p></article><article class="stat-card"><span>Menunggu Persetujuan</span><strong class="stat-number">{{ ($widgets['quotes']['submitted'] ?? 0) + ($widgets['quotes']['revision'] ?? 0) }}</strong><p>Perlu ditindaklanjuti.</p></article><article class="stat-card"><span>Kurs Mingguan</span><strong class="stat-number">{{ $weeklyPricing?->currency ?? '—' }}</strong><p>{{ $weeklyPricing ? \App\Support\Money::format($weeklyPricing->exchange_rate) : 'Belum tersedia' }}</p></article></div>
+<section class="panel"><div class="panel-heading"><h2>Quotation saya</h2><a class="text-link" href="{{ route('quotations.index') }}">Lihat semua</a></div><div class="table-scroll"><table><thead><tr><th>Nomor</th><th>Customer</th><th>Status</th></tr></thead><tbody>@forelse($widgets['myQuotes'] ?? [] as $quote)<tr><td>{{ $quote->number }}</td><td>{{ $quote->customer_snapshot['name'] ?? '—' }}</td><td>{{ $quote->status->label() }}</td></tr>@empty<tr><td colspan="3">Belum ada quotation.</td></tr>@endforelse</tbody></table></div></section>
+@endsection
