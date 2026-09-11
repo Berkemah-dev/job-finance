@@ -18,12 +18,14 @@
 
 <div class="page-heading">
     <div>
-        <p class="eyebrow">RINGKASAN WORKSPACE</p>
+        <p class="eyebrow">{{ $dashboardMeta['eyebrow'] ?? 'RINGKASAN WORKSPACE' }}</p>
         <h1>{{ $roleTitle ?? 'Dashboard' }}</h1>
         <p>{{ $roleDescription ?? 'Pantau pekerjaan dan performa operasional dalam satu tempat.' }}</p>
     </div>
     <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
 </div>
+
+@include('dashboard.partials.charts')
 
 <x-menu-banner
     :tag="strtoupper($roleTitle ?? 'WORKSPACE')"

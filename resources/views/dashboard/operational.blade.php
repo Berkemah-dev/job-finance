@@ -1,14 +1,28 @@
 @extends('layouts.app')
 @section('title', 'Dashboard Operational')
 @section('content')
-<div class="role-hero">
+<div class="page-heading">
     <div>
-        <span class="eyebrow" style="color:#b9c9e6">WORKSPACE OPERATIONAL</span>
-        <h2>Job siap diselesaikan.</h2>
-        <p>Pastikan biaya setiap job sudah lengkap dan final sebelum closing.</p>
+        <p class="eyebrow">WORKSPACE OPERASIONAL</p>
+        <h1>Dashboard Operational</h1>
+        <p>Pantau progres pekerjaan operasional dan kelengkapan biaya temporary/provision setiap job.</p>
     </div>
-    <span class="status-chip">{{ $unfinishedJobs->count() }} perlu dicek</span>
+    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
 </div>
+
+@include('dashboard.partials.charts')
+
+<x-menu-banner
+    tag="WORKSPACE OPERASIONAL"
+    :title="'Halo, ' . auth()->user()->name . '!'"
+    description="Pastikan seluruh biaya temporary dan provision telah final sebelum closing job."
+    action-url="{{ route('jobs.index') }}"
+    action-label="Buka Job Order"
+    action-icon="arrow"
+    icon="briefcase"
+    art-title="Operasional tertib,"
+    art-subtitle="eksekusi tepat waktu."
+/>
 
 <div class="metric-grid">
     <article class="metric-card"><div class="metric-label"><span>Job Open</span><x-icon name="briefcase"/></div><strong class="metric-value">{{ $costProgress['open'] }}</strong><span class="metric-caption">Sedang berjalan</span></article>

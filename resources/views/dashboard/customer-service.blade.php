@@ -1,14 +1,28 @@
 @extends('layouts.app')
 @section('title', 'Dashboard Customer Service')
 @section('content')
-<div class="role-hero">
+<div class="page-heading">
     <div>
-        <span class="eyebrow" style="color:#b9c9e6">WORKSPACE CUSTOMER SERVICE</span>
-        <h2>Siap menyambut kedatangan.</h2>
-        <p>Ikuti ETA kargo dan hubungi customer sebelum barang tiba.</p>
+        <p class="eyebrow">WORKSPACE CUSTOMER SERVICE</p>
+        <h1>Dashboard Customer Service</h1>
+        <p>Ikuti estimasi keberangkatan dan kedatangan kargo untuk memberikan informasi akurat kepada pelanggan.</p>
     </div>
-    <span class="status-chip">{{ $arrivalSoon->count() }} mendekat</span>
+    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
 </div>
+
+@include('dashboard.partials.charts')
+
+<x-menu-banner
+    tag="WORKSPACE CUSTOMER SERVICE"
+    :title="'Halo, ' . auth()->user()->name . '!'"
+    description="Ikuti estimasi kedatangan kargo dan hubungi customer sebelum barang tiba."
+    action-url="{{ route('jobs.index') }}"
+    action-label="Monitoring Kargo"
+    action-icon="arrow"
+    icon="calendar"
+    art-title="Kepuasan customer,"
+    art-subtitle="prioritas utama."
+/>
 
 <div class="metric-grid">
     <article class="metric-card"><div class="metric-label"><span>ETA 7 Hari</span><x-icon name="calendar"/></div><strong class="metric-value">{{ $arrivalSoon->where('eta','<=',today()->addDays(7))->count() }}</strong><span class="metric-caption">Perlu dikonfirmasi segera</span></article>
