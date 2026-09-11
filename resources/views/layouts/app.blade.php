@@ -43,9 +43,9 @@
         @php
         $groups = [
             'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer'],['customers.view','clock','Kontak & PIC','customer-contacts.index'],['vendors.manage','users','Vendor']],
-            'PRICING' => [['pricing.view','chart','Weekly Pricing','pricing.weekly.index'],['pricing.view','briefcase','Trucking Price List','pricing.trucking.index']],
+            'PRICING' => [['pricing.view','chart','Pricing Mingguan','pricing.weekly.index'],['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']],
             'KALKULATOR' => [['dashboard.view','calculator','Kalkulator','calculators.index']],
-            'OPERASIONAL' => [['jobs.view','check','Booking Confirmation','booking-confirmations.index'],['jobs.view','briefcase','Job Order','jobs.index'],['jobs.view','file','Shipping Instruction','shipping-instructions.index'],['jobs.view','file','Dokumen Job','documents.index'],['jobs.manage','file','Tipe Dokumen','document-types.index'],['tps.manage','briefcase','Master TPS','tps.index']],
+            'OPERASIONAL' => [['jobs.view','check','Booking Confirmation','booking-confirmations.index'],['jobs.view','briefcase','Job Order','jobs.index'],['jobs.view','file','Shipping Instruction','shipping-instructions.index'],['jobs.view','file','Dokumen Job','documents.index'],['jobs.manage','file','Tipe Dokumen','document-types.index'],['tps.manage','briefcase','Master TPS Air & Sea','tps.index']],
             'MASTER DATA' => [['jobs.manage','database','Data Port','ports.index'],['jobs.manage','wallet','Data Cost','charge-types.index'],['jobs.manage','briefcase','Data Unit','container-units.index']],
             'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index'],['reimbursements.manage','wallet','Reimbursement','reimbursements.index']],
             'AKUNTANSI' => [['coa.manage','database','Data COA','accounts.index'],['coa.manage','file','Mapping Akun','accounts.mappings'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],

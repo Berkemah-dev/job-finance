@@ -381,6 +381,48 @@
     </div>
 </section>
 
+{{-- STATUS PENGIRIMAN INVOICE ASLI (FISIK) --}}
+<div class="section-heading" style="margin-top: 24px;">
+    <h2>📦 Status Pengiriman Invoice Fisik</h2>
+    <span class="subtle">Update status pengiriman dokumen invoice asli ke customer</span>
+</div>
+<section class="panel" style="margin-bottom: 24px;">
+    <div style="padding: 24px;">
+        <form method="POST" action="{{ route('invoices.delivery', $invoice) }}">
+            @csrf
+            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div class="field">
+                    <label for="delivery_status">Status Pengiriman <span class="required">*</span></label>
+                    <select id="delivery_status" name="delivery_status" required>
+                        <option value="not_sent" @selected(old('delivery_status', $invoice->delivery_status ?? 'not_sent') === 'not_sent')>Belum Dikirim</option>
+                        <option value="sent" @selected(old('delivery_status', $invoice->delivery_status) === 'sent')>Terkirim ke Ekspedisi / Kurir</option>
+                        <option value="received" @selected(old('delivery_status', $invoice->delivery_status) === 'received')>Diterima Customer</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="sent_at">Tanggal Dikirim</label>
+                    <input id="sent_at" name="sent_at" type="date" value="{{ old('sent_at', $invoice->sent_at?->format('Y-m-d')) }}">
+                </div>
+                <div class="field">
+                    <label for="received_at">Tanggal Diterima</label>
+                    <input id="received_at" name="received_at" type="date" value="{{ old('received_at', $invoice->received_at?->format('Y-m-d')) }}">
+                </div>
+                <div class="field">
+                    <label for="tracking_number">No. Resi / Kurir</label>
+                    <input id="tracking_number" name="tracking_number" type="text" value="{{ old('tracking_number', $invoice->tracking_number) }}" placeholder="cth: JNE-882910 / Kurir Internal">
+                </div>
+                <div class="field span-2">
+                    <label for="delivery_notes">Catatan Pengiriman</label>
+                    <textarea id="delivery_notes" name="delivery_notes" rows="2" placeholder="Catatan penerima atau ekspedisi...">{{ old('delivery_notes', $invoice->delivery_notes) }}</textarea>
+                </div>
+            </div>
+            <div style="margin-top: 16px; text-align: right;">
+                <button type="submit" class="button button-primary">Simpan Status Pengiriman</button>
+            </div>
+        </form>
+    </div>
+</section>
+
 {{-- RIWAYAT PEMBAYARAN --}}
 <div class="section-heading">
     <h2>Riwayat Pembayaran Masuk</h2>
