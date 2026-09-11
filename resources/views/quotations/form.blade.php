@@ -62,6 +62,8 @@
 <div class="field"><label for="currency">Mata uang</label><select id="currency" name="currency">@foreach(config('operations.currencies') as $key=>$label)<option value="{{ $key }}" @selected(old('currency',$quotation->currency ?? 'IDR')===$key)>{{ $label }}</option>@endforeach</select></div>
 <div class="field"><label for="exchange_rate">Kurs</label><input id="exchange_rate" name="exchange_rate" type="number" min="0.01" step="0.01" value="{{ old('exchange_rate',$quotation->exchange_rate ?? 1) }}" max="999999999.99"></div>
 
+<div class="field" style="grid-column: 1 / -1;"><label for="notes">Catatan / Remarks Khusus (Opsional)</label><textarea id="notes" name="notes" rows="2" placeholder="Masukkan catatan tambahan jika ada (akan dicetak di bagian REMARKS)...">{{ old('notes', $quotation->notes) }}</textarea><small class="subtle" style="font-size:12px;color:#64748b;">Jika dikosongkan, bagian REMARKS tidak akan dicetak pada dokumen penawaran.</small></div>
+
 </div>
 <style>
     details.lcl-panel summary::marker { display: none; content: ""; }

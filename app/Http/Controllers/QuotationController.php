@@ -149,7 +149,7 @@ class QuotationController extends Controller
         return view('documents.pdf-preview', [
             'title'       => 'Quotation '.$quotation->number,
             'backUrl'     => route('quotations.show', $quotation),
-            'pdfUrl'      => route('quotations.pdf', ['quotation' => $quotation, 'mode' => 'inline']),
+            'pdfUrl'      => route('quotations.pdf', ['quotation' => $quotation, 'mode' => 'inline', 't' => time()]),
             'downloadUrl' => route('quotations.pdf', ['quotation' => $quotation, 'mode' => 'download']),
         ]);
     }
@@ -165,7 +165,12 @@ class QuotationController extends Controller
 
         return $request->query('mode') === 'download'
             ? $pdf->download($filename)
-            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+            : response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+            ]);
     }
 
     private function salesUsers()

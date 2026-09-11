@@ -77,7 +77,7 @@ class OperationalDocumentController extends Controller
         return view('documents.pdf-preview', [
             'title' => 'Quotation '.$quotation->number,
             'backUrl' => route('documents.show', $quotation),
-            'pdfUrl' => route('documents.quotation.pdf', ['quotation' => $quotation, 'mode' => 'inline']),
+            'pdfUrl' => route('documents.quotation.pdf', ['quotation' => $quotation, 'mode' => 'inline', 't' => time()]),
             'downloadUrl' => route('documents.quotation.pdf', ['quotation' => $quotation, 'mode' => 'download']),
         ]);
     }
@@ -101,7 +101,14 @@ class OperationalDocumentController extends Controller
         $filename = $quotation->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF quotation '.$quotation->number, ['module' => 'document', 'record_id' => $quotation->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+            ]);
     }
 
     public function jobPdf(Request $request, Quotation $quotation, MasterDataService $master)
