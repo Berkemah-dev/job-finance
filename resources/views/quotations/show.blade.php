@@ -31,6 +31,7 @@
 <div class="quote-actions">
 @can('update',$quotation)<a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">Edit draft</a>@endcan
 <form method="POST" action="{{ route('quotations.duplicate',$quotation) }}" data-confirm="Buat salinan draft baru dari quotation ini?">@csrf<button class="button button-secondary">Duplikat draft</button></form>
+<a class="button button-secondary" href="{{ route('quotations.print', $quotation) }}" target="_blank">Cetak PDF</a>
 @can('submit',$quotation)<form method="POST" action="{{ route('quotations.submit',$quotation) }}" data-confirm="Ajukan quotation ini? Draft tidak dapat diedit setelah diajukan.">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Ajukan quotation</button></form>@endcan
 @can('approve',$quotation)<form method="POST" action="{{ route('quotations.approve',$quotation) }}" data-confirm="Setujui quotation ini?">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Setujui quotation</button></form>@endcan
 @can('convert',$quotation)<form method="POST" action="{{ route('quotations.convert',$quotation) }}" data-confirm="Buat Job Order Draft dari quotation ini? Konversi hanya dapat dilakukan satu kali.">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Konversi ke Job Order <x-icon name="arrow"/></button></form>@endcan

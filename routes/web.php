@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/calculators/lcl', [CalculatorController::class, 'lclApi'])->name('calculators.api.lcl');
     Route::get('/api/calculators/tax', [CalculatorController::class, 'taxApi'])->name('calculators.api.tax');
     Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
+    Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])->name('quotations.print');
     Route::post('/quotations/{quotation}/submit', [QuotationController::class, 'submit'])->middleware('can:quotations.manage')->name('quotations.submit');
     Route::post('/quotations/{quotation}/duplicate', [QuotationController::class, 'duplicate'])->middleware('can:quotations.manage')->name('quotations.duplicate');
     foreach (['approve', 'reject', 'revise'] as $action) {

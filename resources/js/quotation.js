@@ -6,6 +6,34 @@ if (form) {
         form.querySelector('[data-' + key + '-name]').value = name ?? '';
         form.querySelector('[data-' + key + '-address]').value = address ?? '';
     };
+    // Sinkron: update payment terms langsung saat customer berubah
+    const syncPaymentTerms = () => {
+        const id = customerSelect?.value;
+        const paymentSelect = form.querySelector('#payment_terms');
+        if (!paymentSelect) return;
+
+        if (!id) {
+            paymentSelect.value = '';
+            return;
+        }
+        
+        let paymentTerms = '';
+        try {
+            const mapStr = form.getAttribute('data-payment-terms-map') || '{}';
+            const map = JSON.parse(mapStr);
+            paymentTerms = map[id] || '';
+        } catch (e) {
+            paymentTerms = customerSelect.options[customerSelect.selectedIndex]?.dataset?.paymentTerms || '';
+        }
+        
+        if (!paymentTerms) {
+            paymentTerms = customerSelect.options[customerSelect.selectedIndex]?.dataset?.paymentTerms || '';
+        }
+        
+        console.log('Syncing payment terms:', { id, paymentTerms });
+        paymentSelect.value = paymentTerms || '';
+    };
+    // Async: populate kontak shipper/consignee (tidak memblokir payment terms)
     const populatePick = async () => {
         const id = customerSelect?.value;
         const banks = { '[data-shipper-picker]': 'shipper', '[data-consignee-picker]': 'consignee' };
@@ -28,21 +56,18 @@ if (form) {
                 });
             } catch { /* abaikan; kontak tetap bisa diisi manual */ }
         }
-        if (id) {
-            const paymentTerms = customerSelect.options[customerSelect.selectedIndex]?.dataset?.paymentTerms ?? '';
-            if (paymentTerms) {
-                const paymentSelect = form.querySelector('#payment_terms');
-                if (paymentSelect && !paymentSelect.value) paymentSelect.value = paymentTerms;
-            }
-        }
     };
-    customerSelect?.addEventListener('change', populatePick);
+    customerSelect?.addEventListener('change', () => {
+        syncPaymentTerms(); // sinkron: langsung
+        populatePick();     // async: fetch kontak
+    });
     form.addEventListener('change', event => {
         const picker = event.target.closest('[data-shipper-picker], [data-consignee-picker]');
         if (!picker) return;
         const option = picker.options[picker.selectedIndex];
         applyContact(picker, { name: option?.dataset?.name, address: option?.dataset?.address });
     });
+    syncPaymentTerms(); // jalankan saat page load (jika ada customer pre-selected)
     populatePick();
     const container = form.querySelector('[data-items]');
     const template = form.querySelector('[data-item-template]');

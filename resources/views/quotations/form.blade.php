@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-heading"><div><p class="eyebrow">OPERASIONAL</p><h1>{{ $quotation->exists?'Edit quotation':'Buat quotation' }}</h1><p>Simpan penawaran sebagai Draft sebelum diajukan.</p></div><a class="text-link" href="{{ $quotation->exists?route('quotations.show',$quotation):route('quotations.index') }}">Kembali</a></div>
 @if($customers->isEmpty())<div class="info-note">Belum ada customer aktif. <a class="text-link" href="{{ route('customers.create') }}">Tambahkan customer terlebih dahulu.</a></div>@endif
-<section class="panel"><form class="data-form" data-quotation-form data-pricing-endpoint="{{ route('pricing.suggest-trucking') }}" method="POST" action="{{ $quotation->exists?route('quotations.update',$quotation):route('quotations.store') }}">@csrf @if($quotation->exists) @method('PUT') @endif<input type="hidden" name="lock_version" value="{{ old('lock_version',$quotation->lock_version ?? 0) }}">
+<section class="panel"><form class="data-form" data-quotation-form data-pricing-endpoint="{{ route('pricing.suggest-trucking') }}" data-payment-terms-map="{{ json_encode($customers->pluck('default_payment_terms', 'id')) }}" method="POST" action="{{ $quotation->exists?route('quotations.update',$quotation):route('quotations.store') }}">@csrf @if($quotation->exists) @method('PUT') @endif<input type="hidden" name="lock_version" value="{{ old('lock_version',$quotation->lock_version ?? 0) }}">
 @if($quotation->exists && $quotation->status->value === 'revision')<div class="info-note"><strong>Quotation sedang direvisi.</strong> Perbaiki sesuai catatan revisi lalu ajukan ulang. @if($quotation->revision_reason)Catatan: {{ $quotation->revision_reason }}.@endif</div>@endif
 <div class="form-grid"><div class="field"><label for="customer_id">Customer <span class="required">*</span></label><select name="customer_id" id="customer_id" data-customer-select required><option value="">Pilih customer</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" data-payment-terms="{{ $customer->default_payment_terms }}" @selected((string)old('customer_id',$quotation->customer_id)===(string)$customer->id)>{{ $customer->code }} — {{ $customer->name }}</option>@endforeach</select></div><div class="field"><label for="subject">Judul penawaran <span class="required">*</span></label><input id="subject" name="subject" value="{{ old('subject',$quotation->subject) }}" required maxlength="255" placeholder="Contoh: Pengiriman Jakarta – Surabaya"></div>
 @can('users.view')<div class="field"><label for="sales_id">Sales PIC</label><select id="sales_id" name="sales_id"><option value="">—</option>@foreach($sales as $salesUser)<option value="{{ $salesUser->id }}" @selected((string)old('sales_id',$quotation->sales_id)===(string)$salesUser->id)>{{ $salesUser->name }}</option>@endforeach</select></div>@endcan
@@ -16,9 +16,14 @@
 <div class="field span-2"><label for="shipper_address">Alamat shipper</label><textarea id="shipper_address" name="shipper_address" rows="2" maxlength="5000" data-shipper-address>{{ old('shipper_address',$quotation->shipper_address) }}</textarea></div><div class="field span-2"><label for="consignee_address">Alamat consignee</label><textarea id="consignee_address" name="consignee_address" rows="2" maxlength="5000" data-consignee-address>{{ old('consignee_address',$quotation->consignee_address) }}</textarea></div>
 <div class="field"><label for="tax_rate">Pajak (%)</label><input id="tax_rate" name="tax_rate" type="number" min="0" max="100" step="0.01" value="{{ old('tax_rate',$quotation->tax_rate ?? 0) }}"></div><div class="field"><label for="discount">Diskon (IDR)</label><input id="discount" name="discount" type="number" min="0" max="999999999.99" step="0.01" value="{{ old('discount',$quotation->discount ?? 0) }}"></div>
 </div>
-<details class="lcl-panel" data-lcl-panel>
-<summary><x-icon name="calculator"/><strong>Estimator biaya LCL</strong><span class="subtle">Hitung lalu skor sebagai item quotation.</span></summary>
-<div class="lcl-body">
+<style>
+    details.lcl-panel summary::marker { display: none; content: ""; }
+    details.lcl-panel summary::-webkit-details-marker { display: none; }
+</style>
+
+<details class="lcl-panel" data-lcl-panel style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 25px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+<summary style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; margin: 0; cursor: pointer; list-style: none; display: flex; align-items: center;"><x-icon name="calculator" style="margin-right: 8px;"/><strong>Estimator biaya LCL</strong><span class="subtle" style="margin-left: 10px;">Hitung lalu skor sebagai item quotation.</span></summary>
+<div class="lcl-body" style="padding: 16px;">
 @php $lclDefaultRate = config('operations.lcl.default_rate'); @endphp
 <div class="field"><label for="lcl-rate">Tarif per m³ (IDR)</label><input id="lcl-rate" type="text" inputmode="decimal" placeholder="{{ $lclDefaultRate ? 'Kosongkan = pakai default '.number_format((float) $lclDefaultRate, 0, ',', '.') : 'Kosongkan = pakai default' }}"></div>
 <div id="lcl-inline-rows">
@@ -26,6 +31,33 @@
 </div>
 <div class="lcl-actions"><button class="button button-secondary" type="button" data-lcl-add>+ Baris</button><button class="button button-primary" type="button" data-lcl-calc>Hitung biaya</button><button class="button button-primary" type="button" data-lcl-add-item hidden>Tambahkan sebagai item</button></div>
 <p class="lcl-status" data-lcl-status></p>
+</div>
+</details>
+
+<details class="lcl-panel" data-vw-panel style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 30px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+<summary style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; margin: 0; cursor: pointer; list-style: none; display: flex; align-items: center;"><x-icon name="calculator" style="margin-right: 8px;"/><strong>Estimator Volume Weight & CBM</strong><span class="subtle" style="margin-left: 10px;">Simulasikan dimensi untuk menentukan chargeable weight atau total kubikasi.</span></summary>
+<div class="item-editor" style="margin-top: 10px;">
+<div id="vw-inline-rows">
+<div class="vw-inline-row item-fields">
+    <div class="field" style="max-width: 100px;"><label>Qty</label><input class="v-qty" type="number" min="1" value="1"></div>
+    <div class="field"><label>P (cm)</label><input class="v-length" type="number" min="0" step="0.01" value="100"></div>
+    <div class="field"><label>L (cm)</label><input class="v-width" type="number" min="0" step="0.01" value="80"></div>
+    <div class="field"><label>T (cm)</label><input class="v-height" type="number" min="0" step="0.01" value="60"></div>
+    <div class="field"><label>Berat Kotor (Kg)</label><input class="v-gross" type="number" min="0" step="0.01" value="40"></div>
+    <div class="field"><label>&nbsp;</label><button class="button button-danger v-remove" type="button" hidden>Hapus</button></div>
+</div>
+</div>
+<div class="item-fields" style="align-items: flex-end;">
+    <div class="field">
+        <button class="button button-secondary" type="button" data-vw-add>+ Tambah dimensi</button>
+        <button class="button button-primary" type="button" data-vw-calc>Hitung Volume / CBM</button>
+    </div>
+</div>
+<div data-vw-status hidden style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 30px;">
+    <div><span class="subtle" style="display: block; margin-bottom: 5px;">Volume Weight</span><strong style="font-size: 1.1rem;"><span data-v-vw></span></strong></div>
+    <div><span class="subtle" style="display: block; margin-bottom: 5px;">Total CBM</span><strong style="font-size: 1.1rem;"><span data-v-cbm></span></strong></div>
+    <div><span class="subtle" style="display: block; margin-bottom: 5px;">Chargeable Weight</span><strong style="font-size: 1.1rem;"><span data-v-cw></span></strong></div>
+</div>
 </div>
 </details>
 <div class="section-heading"><h2>Detail penawaran</h2><span class="subtle">Maksimal 100 item · nilai dalam IDR · kurs memakai weekly pricing</span></div>
@@ -96,6 +128,66 @@
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         panel.open = false;
     });
+    refreshRemoves();
+})();
+
+(function () {
+    const vwPanel = document.querySelector('[data-vw-panel]');
+    if (!vwPanel) return;
+    const rows = vwPanel.querySelector('#vw-inline-rows');
+    const status = vwPanel.querySelector('[data-vw-status]');
+    
+    const refreshRemoves = () => {
+        const n = rows.querySelectorAll('.vw-inline-row').length;
+        rows.querySelectorAll('.vw-inline-row').forEach(row => row.querySelector('.v-remove').hidden = n === 1);
+    };
+
+    const params = () => {
+        const q = new URLSearchParams();
+        rows.querySelectorAll('.vw-inline-row').forEach((row, i) => {
+            q.set('packages[' + i + '][qty]', row.querySelector('.v-qty').value);
+            q.set('packages[' + i + '][length]', row.querySelector('.v-length').value);
+            q.set('packages[' + i + '][width]', row.querySelector('.v-width').value);
+            q.set('packages[' + i + '][height]', row.querySelector('.v-height').value);
+            q.set('packages[' + i + '][gross_weight]', row.querySelector('.v-gross').value);
+        });
+        return q;
+    };
+
+    vwPanel.querySelector('[data-vw-add]').addEventListener('click', () => {
+        const clone = rows.querySelector('.vw-inline-row').cloneNode(true);
+        // Also clear out the input values on clone except Qty
+        clone.querySelectorAll('input').forEach(inp => {
+            if(!inp.classList.contains('v-qty')) inp.value = '';
+        });
+        rows.appendChild(clone);
+        refreshRemoves();
+    });
+
+    rows.addEventListener('click', e => {
+        if (!e.target.classList.contains('v-remove')) return;
+        e.target.closest('.vw-inline-row').remove();
+        refreshRemoves();
+    });
+
+    vwPanel.querySelector('[data-vw-calc]').addEventListener('click', async () => {
+        const response = await fetch('/api/calculators/packages?' + params(), { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+        const data = await response.json();
+        
+        status.hidden = false;
+        
+        if (!response.ok) { 
+            status.querySelector('[data-v-vw]').textContent = 'Error input';
+            status.querySelector('[data-v-cbm]').textContent = 'Error input';
+            status.querySelector('[data-v-cw]').textContent = 'Error input';
+            return; 
+        }
+
+        status.querySelector('[data-v-vw]').textContent = Number(data.total_volume_weight).toLocaleString('id-ID') + ' kg';
+        status.querySelector('[data-v-cbm]').textContent = Number(data.total_cbm).toLocaleString('id-ID', { maximumFractionDigits: 4 }) + ' m³';
+        status.querySelector('[data-v-cw]').textContent = Number(data.total_chargeable_weight).toLocaleString('id-ID') + ' kg';
+    });
+
     refreshRemoves();
 })();
 </script>

@@ -32,9 +32,21 @@
                 @php [$permission, $icon, $label] = $item; @endphp
                 @can($permission)
                 @php
-                $destination = $item[3] ?? ['customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
+                $destination = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
                 $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
-                $active = $destination === 'documents.index' ? request()->routeIs('documents.*','quotations.*','jobs.*') && ! $isCostPage : (str_starts_with((string)$destination,'reports.') ? request()->routeIs($destination, $destination.'.*') : ($permission === 'costs.manage' ? $isCostPage : ($destination && request()->routeIs(explode('.',$destination)[0].'.*') && !($permission === 'jobs.view' && $isCostPage))));
+                $active = false;
+                if ($destination) {
+                    if ($destination === 'documents.index') {
+                        $active = request()->routeIs('documents.*','quotations.*','jobs.*') && !$isCostPage;
+                    } elseif (str_starts_with((string)$destination, 'reports.')) {
+                        $active = request()->routeIs($destination, $destination.'.*');
+                    } elseif ($permission === 'costs.manage') {
+                        $active = $isCostPage;
+                    } else {
+                        $prefix = str_contains((string)$destination, '.') ? substr($destination, 0, strrpos($destination, '.')) : $destination;
+                        $active = request()->routeIs($prefix . '.*') && !($permission === 'jobs.view' && $isCostPage);
+                    }
+                }
                 @endphp
                 @if($destination)
                 <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
