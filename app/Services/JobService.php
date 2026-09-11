@@ -108,6 +108,29 @@ class JobService
         }, 3);
     }
 
+    public function confirmDo(Job $job, array $data, User $actor): Job
+    {
+        return DB::transaction(function () use ($job, $data, $actor) {
+            $job = Job::lockForUpdate()->findOrFail($job->id);
+            Gate::forUser($actor)->authorize('update', $job);
+            $this->master->checkVersion($job, $data);
+            if ($job->status !== 'open') {
+                throw ValidationException::withMessages(['do' => 'DO hanya dapat dikonfirmasi untuk job berstatus Open.']);
+            }
+            if ($job->do_confirmed_at) {
+                throw ValidationException::withMessages(['do' => 'DO sudah pernah dikonfirmasi sebelumnya.']);
+            }
+            $job->do_confirmed_at = now();
+            $job->do_confirmed_by = $actor->id;
+            $job->updated_by = $actor->id;
+            $job->lock_version++;
+            $job->save();
+            $this->master->log($actor, 'job.do_confirmed', 'DO Selesai dikonfirmasi untuk '.$job->number, ['module' => 'job', 'record_id' => $job->id]);
+
+            return $job;
+        }, 3);
+    }
+
     private function seedQuotationCharges(Job $job, User $actor): void
     {
         $snapshot = $job->quotation_snapshot;

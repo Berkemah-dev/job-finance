@@ -24,8 +24,6 @@ return [
         'email.manage',
         'users.view',
         'users.manage',
-        'roles.manage',
-        'settings.manage',
         'activity.view',
     ],
     'reimbursement_categories' => [
