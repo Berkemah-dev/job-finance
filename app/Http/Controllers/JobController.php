@@ -97,4 +97,11 @@ class JobController extends Controller
 
         return redirect()->route('jobs.show', $job)->with('success', 'Status pengiriman berhasil diperbarui.');
     }
+
+    public function confirmDo(Job $job, JobService $service)
+    {
+        $service->confirmDo($job, request()->user());
+
+        return redirect()->route('jobs.show', $job)->with('success', 'DO Selesai dikonfirmasi.');
+    }
 }

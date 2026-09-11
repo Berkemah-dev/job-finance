@@ -23,6 +23,7 @@ use App\Http\Controllers\ReimbursementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StatementOfAccountController;
 use App\Http\Controllers\TruckingPriceController;
+use App\Http\Controllers\TpsController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\WeeklyPricingController;
 use Illuminate\Support\Facades\Route;
@@ -64,10 +65,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/profit-per-job', [ReportController::class, 'profitPerJob'])->name('profit-per-job');
         Route::get('/profit-bulanan', [ReportController::class, 'profitMonthly'])->name('profit-monthly');
         Route::get('/statement-of-account', [StatementOfAccountController::class, 'index'])->name('soa');
-        Route::get('/statement-of-account/{customer}', [StatementOfAccountController::class, 'show'])->name('soa.customer');
-        Route::post('/statement-of-account/{customer}/email', [StatementOfAccountController::class, 'email'])->middleware('can:email.manage')->name('soa.email');
+        Route::get('/statement-of-account/{soaCustomer}', [StatementOfAccountController::class, 'show'])->name('soa.customer');
+        Route::post('/statement-of-account/{soaCustomer}/email', [StatementOfAccountController::class, 'email'])->middleware('can:email.manage')->name('soa.email');
     });
-    Route::redirect('/documents', '/dokumen-job');
     Route::get('/dokumen-job', [OperationalDocumentController::class, 'index'])->middleware('can:jobs.view')->name('documents.index');
     Route::get('/dokumen-job/{quotation}', [OperationalDocumentController::class, 'show'])->middleware('can:jobs.view')->name('documents.show');
     Route::get('/dokumen-job/{quotation}/quotation/preview', [OperationalDocumentController::class, 'quotationPreview'])->middleware('can:jobs.view')->name('documents.quotation.preview');
@@ -95,19 +95,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/quotations/{quotation}/convert', [QuotationController::class, 'convert'])->middleware(['can:quotations.manage', 'can:jobs.manage'])->name('quotations.convert');
     Route::resource('jobs', JobController::class)->only(['index', 'show'])->middleware('can:jobs.view');
     Route::resource('jobs', JobController::class)->only(['edit', 'update'])->middleware('can:jobs.manage');
-    Route::get('/job-orders', [JobController::class, 'index'])->middleware('can:jobs.view')->name('job-orders.index');
-    Route::get('/job-orders/{job}', [JobController::class, 'show'])->middleware('can:jobs.view')->name('job-orders.show');
-    Route::get('/job-orders/{job}/edit', [JobController::class, 'edit'])->middleware('can:jobs.manage')->name('job-orders.edit');
     foreach (['open', 'cancel'] as $action) {
         Route::post('/jobs/{job}/'.$action, [JobController::class, $action])->middleware('can:jobs.manage')->name('jobs.'.$action);
     }
-    Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.view')->name('jobs.confirm-do');
+    Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.confirm-do')->name('jobs.confirm-do');
     // Job Documents
     Route::post('/jobs/{job}/documents', [JobDocumentController::class, 'store'])->middleware('can:jobs.view')->name('jobs.documents.store');
     Route::get('/jobs/{job}/documents/{document}/download', [JobDocumentController::class, 'download'])->middleware('can:jobs.view')->name('jobs.documents.download');
     Route::delete('/jobs/{job}/documents/{document}', [JobDocumentController::class, 'destroy'])->middleware('can:jobs.manage')->name('jobs.documents.destroy');
     // Document Type Master
     Route::resource('document-types', DocumentTypeController::class)->except('show')->middleware('can:jobs.manage');
+    Route::resource('tps', TpsController::class)->except('show')->parameters(['tps' => 'tps'])->middleware('can:tps.manage');
     Route::post('/jobs/{job}/shipment-status', [JobController::class, 'shipmentStatus'])->middleware('can:jobs.manage')->name('jobs.shipment-status');
     Route::get('/costs', [JobCostController::class, 'overview'])->middleware('can:costs.manage')->name('costs.overview');
     Route::middleware('can:costs.manage')->scopeBindings()->group(function () {

@@ -142,4 +142,21 @@ class StatementOfAccountTest extends TestCase
         $this->actingAs(User::where('email', 'management@jobfinance.test')->firstOrFail());
         $this->get('/reports/statement-of-account')->assertForbidden();
     }
+
+    public function test_archived_customer_statement_still_opens_for_historical_accounting(): void
+    {
+        $invoice = $this->invoice(today()->subDays(5)->toDateString(), today()->addDays(25)->toDateString());
+        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
+        $this->delete('/customers/'.$this->customer->id, ['lock_version' => (int) $this->customer->lock_version])->assertSessionHasNoErrors();
+        $this->assertSoftDeleted($this->customer);
+
+        $this->actingAs($this->finance);
+        $this->get('/reports/statement-of-account/'.$this->customer->id)
+            ->assertOk()
+            ->assertSee('PT Statement Client');
+        $this->get('/reports/statement-of-account')->assertOk()->assertSee('PT Statement Client');
+
+        $totals = $this->service()->statement(Customer::withTrashed()->findOrFail($this->customer->id), today()->startOfMonth(), today());
+        $this->assertSame((string) $invoice->total, $totals['invoiced']);
+    }
 }
