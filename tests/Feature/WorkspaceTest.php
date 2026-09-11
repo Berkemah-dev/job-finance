@@ -90,7 +90,7 @@ class WorkspaceTest extends TestCase
             }
         }
         $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail())
-            ->get('/dashboard')->assertSee('Quotation')->assertDontSee('Piutang Customer')->assertDontSee('Laporan Keuangan');
+            ->get('/dashboard')->assertSee('Job Order')->assertDontSee('Piutang Customer')->assertDontSee('Laporan Keuangan');
         $this->actingAs(User::where('email', 'management@jobfinance.test')->firstOrFail())
             ->get('/dashboard')->assertDontSee('Laporan Keuangan')->assertDontSee('Closing Job');
     }

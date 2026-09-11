@@ -33,7 +33,8 @@
                             <span class="status-badge status-cancelled">Nonaktif</span>
                         @endif
                     </td>
-                    <td style="display:flex;gap:0.5rem;">
+                    <td style="display:flex;gap:0.75rem;align-items:center;">
+                        <a class="text-link" href="{{ route('container-units.edit', $unit) }}" id="btn-edit-unit-{{ $unit->id }}">Edit</a>
                         <form method="POST" action="{{ route('container-units.toggle',$unit) }}">
                             @csrf @method('PATCH')
                             <button class="text-link" id="btn-toggle-unit-{{ $unit->id }}">{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}</button>

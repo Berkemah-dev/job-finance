@@ -6,7 +6,7 @@
         <p class="eyebrow">MASTER DATA &rsaquo; PORT</p>
         <h1>Edit Port</h1>
     </div>
-    <a class="button button-secondary" href="{{ route('accounts.index', ['tab'=>'port']) }}">Kembali</a>
+    <a class="button button-secondary" href="{{ route('ports.index') }}">Kembali</a>
 </div>
 
 <section class="panel" style="max-width: 600px;">
