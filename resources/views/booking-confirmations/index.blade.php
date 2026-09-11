@@ -87,9 +87,9 @@
                         </td>
                         <td>
                             <div class="table-actions">
-                                <a class="btn-action btn-action-primary" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
-                                <a class="btn-action" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">PDF</a>
-                                <a class="btn-action" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
+                                <a class="btn-action btn-action-primary" href="{{ route('booking-confirmations.show', $bc) }}" title="Detail Booking Confirmation" data-tooltip="Detail" aria-label="Detail Booking Confirmation"><x-icon name="eye"/></a>
+                                <a class="btn-action btn-action-purple" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank" title="Cetak PDF BC" data-tooltip="PDF" aria-label="Cetak PDF BC"><x-icon name="printer"/></a>
+                                <a class="btn-action" href="{{ route('booking-confirmations.edit', $bc) }}" title="Edit Booking Confirmation" data-tooltip="Edit" aria-label="Edit Booking Confirmation"><x-icon name="edit"/></a>
                             </div>
                         </td>
                     </tr>

@@ -37,11 +37,11 @@
                         <div class="table-actions">
                             <form method="POST" action="{{ route('container-units.toggle',$unit) }}">
                                 @csrf @method('PATCH')
-                                <button class="btn-action {{ $unit->is_active ? '' : 'btn-action-success' }}" id="btn-toggle-unit-{{ $unit->id }}">{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}</button>
+                                <button class="btn-action {{ $unit->is_active ? 'btn-action-warning' : 'btn-action-success' }}" id="btn-toggle-unit-{{ $unit->id }}" title="{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}" data-tooltip="{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}" aria-label="{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}"><x-icon name="{{ $unit->is_active ? 'power' : 'check' }}"/></button>
                             </form>
                             <form method="POST" action="{{ route('container-units.destroy',$unit) }}" onsubmit="return confirm('Hapus satuan ini?')">
                                 @csrf @method('DELETE')
-                                <button class="btn-action btn-action-danger" id="btn-del-unit-{{ $unit->id }}">Hapus</button>
+                                <button class="btn-action btn-action-danger" id="btn-del-unit-{{ $unit->id }}" title="Hapus Satuan" data-tooltip="Hapus" aria-label="Hapus Satuan"><x-icon name="trash"/></button>
                             </form>
                         </div>
                     </td>

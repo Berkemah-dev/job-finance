@@ -42,11 +42,11 @@
                         <div class="table-actions">
                             <form method="POST" action="{{ route('charge-types.toggle',$charge) }}">
                                 @csrf @method('PATCH')
-                                <button class="btn-action {{ $charge->is_active ? '' : 'btn-action-success' }}" id="btn-toggle-charge-{{ $charge->id }}">{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}</button>
+                                <button class="btn-action {{ $charge->is_active ? 'btn-action-warning' : 'btn-action-success' }}" id="btn-toggle-charge-{{ $charge->id }}" title="{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}" data-tooltip="{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}" aria-label="{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}"><x-icon name="{{ $charge->is_active ? 'power' : 'check' }}"/></button>
                             </form>
                             <form method="POST" action="{{ route('charge-types.destroy',$charge) }}" onsubmit="return confirm('Hapus jenis biaya ini?')">
                                 @csrf @method('DELETE')
-                                <button class="btn-action btn-action-danger" id="btn-del-charge-{{ $charge->id }}">Hapus</button>
+                                <button class="btn-action btn-action-danger" id="btn-del-charge-{{ $charge->id }}" title="Hapus Jenis Biaya" data-tooltip="Hapus" aria-label="Hapus Jenis Biaya"><x-icon name="trash"/></button>
                             </form>
                         </div>
                     </td>

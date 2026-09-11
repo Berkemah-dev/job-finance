@@ -24,9 +24,9 @@
     <td>@if($tps->is_active)<span class="status-badge status-active">Aktif</span>@else<span class="status-badge status-inactive">Nonaktif</span>@endif</td>
     <td>
         <div class="table-actions">
-            <a class="btn-action" href="{{ route('tps.edit',$tps) }}">Edit</a>
-            <form method="POST" action="{{ route('tps.toggle',$tps) }}">@csrf<button class="btn-action {{ $tps->is_active ? '' : 'btn-action-success' }}">{{ $tps->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button></form>
-            <form method="POST" action="{{ route('tps.destroy',$tps) }}" data-confirm="Hapus TPS {{ $tps->code }}?">@csrf @method('DELETE')<button class="btn-action btn-action-danger">Hapus</button></form>
+            <a class="btn-action" href="{{ route('tps.edit',$tps) }}" title="Edit TPS" data-tooltip="Edit" aria-label="Edit TPS"><x-icon name="edit"/></a>
+            <form method="POST" action="{{ route('tps.toggle',$tps) }}">@csrf<button class="btn-action {{ $tps->is_active ? 'btn-action-warning' : 'btn-action-success' }}" title="{{ $tps->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" data-tooltip="{{ $tps->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" aria-label="{{ $tps->is_active ? 'Nonaktifkan' : 'Aktifkan' }}"><x-icon name="{{ $tps->is_active ? 'power' : 'check' }}"/></button></form>
+            <form method="POST" action="{{ route('tps.destroy',$tps) }}" data-confirm="Hapus TPS {{ $tps->code }}?">@csrf @method('DELETE')<button class="btn-action btn-action-danger" title="Hapus TPS" data-tooltip="Hapus" aria-label="Hapus TPS"><x-icon name="trash"/></button></form>
         </div>
     </td>
 </tr>

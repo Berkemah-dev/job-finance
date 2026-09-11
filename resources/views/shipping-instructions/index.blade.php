@@ -91,9 +91,9 @@
                         </td>
                         <td>
                             <div class="table-actions">
-                                <a class="btn-action btn-action-primary" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
-                                <a class="btn-action" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">PDF</a>
-                                <a class="btn-action" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
+                                <a class="btn-action btn-action-primary" href="{{ route('shipping-instructions.show', $si) }}" title="Detail Shipping Instruction" data-tooltip="Detail" aria-label="Detail Shipping Instruction"><x-icon name="eye"/></a>
+                                <a class="btn-action btn-action-purple" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank" title="Cetak PDF SI" data-tooltip="PDF" aria-label="Cetak PDF SI"><x-icon name="printer"/></a>
+                                <a class="btn-action" href="{{ route('shipping-instructions.edit', $si) }}" title="Edit Shipping Instruction" data-tooltip="Edit" aria-label="Edit Shipping Instruction"><x-icon name="edit"/></a>
                             </div>
                         </td>
                     </tr>

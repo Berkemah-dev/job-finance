@@ -44,11 +44,11 @@
                         <div class="table-actions">
                             <form method="POST" action="{{ route('ports.toggle',$port) }}">
                                 @csrf @method('PATCH')
-                                <button class="btn-action {{ $port->is_active ? '' : 'btn-action-success' }}" id="btn-toggle-port-{{ $port->id }}">{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}</button>
+                                <button class="btn-action {{ $port->is_active ? 'btn-action-warning' : 'btn-action-success' }}" id="btn-toggle-port-{{ $port->id }}" title="{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}" data-tooltip="{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}" aria-label="{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}"><x-icon name="{{ $port->is_active ? 'power' : 'check' }}"/></button>
                             </form>
                             <form method="POST" action="{{ route('ports.destroy',$port) }}" onsubmit="return confirm('Hapus port ini?')">
                                 @csrf @method('DELETE')
-                                <button class="btn-action btn-action-danger" id="btn-del-port-{{ $port->id }}">Hapus</button>
+                                <button class="btn-action btn-action-danger" id="btn-del-port-{{ $port->id }}" title="Hapus Port" data-tooltip="Hapus" aria-label="Hapus Port"><x-icon name="trash"/></button>
                             </form>
                         </div>
                     </td>

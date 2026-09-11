@@ -52,8 +52,11 @@
                         <td><span class="status-badge status-{{ $invoice->status }}">{{ str_replace('_',' ',ucwords($invoice->status,'_')) }}</span></td>
                         <td>
                             <div class="table-actions">
-                                <a class="btn-action btn-action-primary" href="{{ route('invoices.show',$invoice) }}">Detail</a>
-                                <a class="btn-action" href="{{ route('invoices.preview',$invoice) }}" target="_blank">PDF</a>
+                                <a class="btn-action btn-action-primary" href="{{ route('invoices.show', $invoice) }}" title="Detail Invoice" data-tooltip="Detail" aria-label="Detail Invoice"><x-icon name="eye"/></a>
+                                <a class="btn-action btn-action-purple" href="{{ route('invoices.preview', $invoice) }}" target="_blank" title="Cetak PDF Invoice" data-tooltip="PDF" aria-label="Cetak PDF Invoice"><x-icon name="printer"/></a>
+                                @if($invoice->balance > 0)
+                                <a class="btn-action btn-action-success" href="{{ route('payments.create', $invoice) }}" title="Catat Pembayaran" data-tooltip="Bayar" aria-label="Catat Pembayaran"><x-icon name="wallet"/></a>
+                                @endif
                             </div>
                         </td>
                     </tr>
