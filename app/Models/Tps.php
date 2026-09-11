@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Tps extends Model
 {
-    protected $guarded = ['id'];
+    protected $table = 'tps';
+
+    protected $fillable = ['city', 'name', 'code', 'mode', 'is_active'];
 
     protected function casts(): array
     {
