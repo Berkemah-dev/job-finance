@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QuotationItem extends Model
 {
-    protected $fillable = ['position', 'description', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'container_type', 'overweight', 'gross_weight', 'volume', 'currency', 'exchange_rate', 'pricing_source', 'pricing_id', 'pricing_snapshot'];
+    protected $fillable = ['position', 'description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'container_type', 'overweight', 'gross_weight', 'volume', 'currency', 'exchange_rate', 'pricing_source', 'pricing_id', 'pricing_snapshot'];
 
     protected function casts(): array
     {

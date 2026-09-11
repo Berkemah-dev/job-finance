@@ -52,6 +52,16 @@ class Job extends Model
         return $this->hasOne(Invoice::class);
     }
 
+    public function bookingConfirmations(): HasMany
+    {
+        return $this->hasMany(BookingConfirmation::class);
+    }
+
+    public function shippingInstructions(): HasMany
+    {
+        return $this->hasMany(ShippingInstruction::class);
+    }
+
     protected $guarded = ['id'];
 
     protected function casts(): array

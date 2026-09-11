@@ -30,15 +30,21 @@ class QuotationRequest extends FormRequest
             'currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
             'exchange_rate' => ['nullable', 'regex:/^\\d{1,9}(\\.\\d{1,2})?$/', 'min:0.01'],
             'payment_terms' => ['nullable', 'string', Rule::in(array_keys(config('operations.customer_payment_terms')))],
-            'discount' => ['nullable', 'regex:/^\\d{1,9}(\\.\\d{1,2})?$/'],
+            'terms_of_delivery' => ['nullable', 'string', 'max:50'],
+            'cargo_qty' => ['nullable', 'string', 'max:100'],
+            'weight_meas' => ['nullable', 'string', 'max:100'],
+            'commodity' => ['nullable', 'string', 'max:160'],
+            'discount' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lock_version' => [$this->isMethod('PUT') ? 'required' : 'nullable', 'integer', 'min:0'],
             'items' => ['required', 'array', 'min:1', 'max:100'], 'items.*' => ['required', 'array'],
-            'items.*.description' => ['required', 'string', 'max:255'], 'items.*.type' => ['required', Rule::enum(CostType::class)],
-            'items.*.unit' => ['required', 'string', 'max:30'], 'items.*.quantity' => ['required', 'regex:/^\\d{1,6}(\\.\\d{1,2})?$/', 'numeric', 'min:0.01'],
+            'items.*.description' => ['required', 'string', 'max:255'],
+            'items.*.note' => ['nullable', 'string', 'max:255'],
+            'items.*.type' => ['required', Rule::enum(CostType::class)],
+            'items.*.unit' => ['required', 'string', 'max:30'], 'items.*.quantity' => ['required', 'regex:/^\d{1,6}(\.\d{1,2})?$/', 'numeric', 'min:0.01'],
             'items.*.unit_cost' => $money, 'items.*.unit_price' => $money,
             'items.*.currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
-            'items.*.exchange_rate' => ['nullable', 'regex:/^\\d{1,9}(\\.\\d{1,2})?$/'],
+            'items.*.exchange_rate' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
             'items.*.container_type' => ['nullable', 'string', Rule::in(array_keys(config('operations.container_types')))],
             'items.*.overweight' => ['nullable', 'boolean'],
             'items.*.gross_weight' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
@@ -53,6 +59,17 @@ class QuotationRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['customer_id' => 'customer', 'subject' => 'judul penawaran', 'quotation_date' => 'tanggal quotation', 'valid_until' => 'berlaku sampai', 'shipper_name' => 'nama pengirim', 'shipper_address' => 'alamat pengirim', 'consignee_name' => 'nama penerima', 'consignee_address' => 'alamat penerima', 'service_type' => 'jenis layanan', 'origin' => 'asal', 'destination' => 'tujuan', 'currency' => 'mata uang', 'exchange_rate' => 'kurs', 'payment_terms' => 'ketentuan pembayaran', 'discount' => 'diskon', 'tax_rate' => 'persentase pajak', 'items' => 'detail biaya', 'items.*.description' => 'uraian item', 'items.*.type' => 'jenis biaya', 'items.*.quantity' => 'jumlah', 'items.*.unit' => 'satuan', 'items.*.unit_cost' => 'modal per unit', 'items.*.unit_price' => 'nilai jual per unit', 'items.*.currency' => 'mata uang', 'items.*.exchange_rate' => 'kurs', 'items.*.container_type' => 'jenis kontainer', 'items.*.overweight' => 'overweight', 'items.*.gross_weight' => 'berat kotor', 'items.*.volume' => 'volume', 'items.*.pricing_source' => 'sumber tarif', 'items.*.pricing_id' => 'tarif', 'items.*.port_origin' => 'pelabuhan asal', 'items.*.destination' => 'tujuan'];
+        return [
+            'customer_id' => 'customer', 'subject' => 'judul penawaran', 'quotation_date' => 'tanggal quotation', 'valid_until' => 'berlaku sampai',
+            'shipper_name' => 'nama pengirim', 'shipper_address' => 'alamat pengirim', 'consignee_name' => 'nama penerima', 'consignee_address' => 'alamat penerima',
+            'service_type' => 'jenis layanan', 'origin' => 'asal', 'destination' => 'tujuan', 'currency' => 'mata uang', 'exchange_rate' => 'kurs',
+            'payment_terms' => 'ketentuan pembayaran', 'terms_of_delivery' => 'terms of delivery', 'cargo_qty' => 'quantity', 'weight_meas' => 'weight/meas', 'commodity' => 'commodity',
+            'discount' => 'diskon', 'tax_rate' => 'persentase pajak',
+            'items' => 'detail biaya', 'items.*.description' => 'uraian item', 'items.*.note' => 'catatan item', 'items.*.type' => 'jenis biaya',
+            'items.*.quantity' => 'jumlah', 'items.*.unit' => 'satuan', 'items.*.unit_cost' => 'modal per unit', 'items.*.unit_price' => 'nilai jual per unit',
+            'items.*.currency' => 'mata uang', 'items.*.exchange_rate' => 'kurs', 'items.*.container_type' => 'jenis kontainer', 'items.*.overweight' => 'overweight',
+            'items.*.gross_weight' => 'berat kotor', 'items.*.volume' => 'volume', 'items.*.pricing_source' => 'sumber tarif', 'items.*.pricing_id' => 'tarif',
+            'items.*.port_origin' => 'pelabuhan asal', 'items.*.destination' => 'tujuan',
+        ];
     }
 }

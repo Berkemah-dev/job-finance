@@ -1,25 +1,220 @@
 @extends('layouts.app')
-@section('title','Detail Job Order')
+@section('title','Detail Job Order ' . $job->number)
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">JOB ORDER</p><h1>{{ $job->number }}</h1><p>{{ $job->subject }}</p></div><a class="text-link" href="{{ route('jobs.index') }}">Kembali ke daftar</a></div>
-<div class="quote-actions">@can('update',$job)<a class="button button-secondary" href="{{ route('jobs.edit',$job) }}">Edit operasional</a>@endcan
-@can('open',$job)<form method="POST" action="{{ route('jobs.open',$job) }}" data-confirm="Buka job ini? Finance dapat mulai mencatat biaya setelah job berstatus Open.">@csrf<input type="hidden" name="lock_version" value="{{ $job->lock_version }}"><button class="button button-primary">Buka job</button></form>@endcan
-@can('costs.manage')<a class="button button-primary" href="{{ route('jobs.costs.index',$job) }}"><x-icon name="wallet"/>Lihat biaya aktual</a>@endcan
-@can('jobs.close')@if($job->status==='open')<a class="button button-primary" href="{{ route('closing.create',$job) }}">Closing job</a>@endif @endcan
-@can('invoices.manage')@if($job->invoice)<a class="button button-primary" href="{{ route('invoices.show',$job->invoice) }}">Lihat invoice</a>@endif @endcan
-@if($job->status==='open' && !$job->do_confirmed_at)@can('jobs.confirm-do')<form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?">@csrf<button class="button button-primary" style="background:#16a34a;border-color:#16a34a">DO Selesai</button></form>@endcan @elseif($job->do_confirmed_at)<span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>@endif
+<<<<<<< HEAD
+
+@php
+    $quotation = $job->quotation;
+    $customerName = $job->customer?->name ?? $job->quotation_snapshot['customer']['name'] ?? '—';
+    $marketingName = $job->sales?->name ?? $quotation?->sales?->name ?? '—';
+    $serviceType = strtoupper(config('operations.service_types.'.$job->service_type) ?? ($job->service_type ?? '—'));
+    $loadingPort = strtoupper($job->pol ?? $job->origin ?? $quotation?->origin ?? '—');
+    $dischargePort = strtoupper($job->pod ?? $job->destination ?? $quotation?->destination ?? '—');
+    $etdDate = $job->etd ? $job->etd->format('d-m-Y') : '—';
+    $etaDate = $job->eta ? $job->eta->format('d-m-Y') : '—';
+    $noAju = $job->booking_reference ?? '—';
+    $noHbl = $job->hbl_number ?? $job->hawb_number ?? '—';
+    $noMbl = $job->bl_number ?? $job->mawb_number ?? '—';
+    $vesselName = $job->vessel_voyage ?? $job->flight_number ?? '—';
+    $quantityStr = $job->package_count ? $job->package_count . ' Box' : ($job->container_type ? '1x ' . strtoupper($job->container_type) : ($quotation?->cargo_qty ?? '—'));
+    $grossWeightStr = $job->gross_weight ? \App\Support\Money::format($job->gross_weight) . ' KGS' : ($quotation?->weight_meas ?? '—');
+    $quotationVolume = $quotation?->items?->sum(fn($i) => (float)($i->volume ?? 0));
+    $volumeStr = $job->volume ? $job->volume . ' M3' : ($quotationVolume > 0 ? $quotationVolume . ' M3' : '—');
+    $commodityStr = $job->cargo_description ?? $quotation?->commodity ?? 'General Cargo';
+    $noteContent = $job->operational_notes ?? $quotation?->notes ?? '';
+@endphp
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">OPERASIONAL / JOB ORDER</p>
+        <h1>{{ $job->number }}</h1>
+        <p>{{ $job->subject }} · Customer: <strong>{{ $customerName }}</strong></p>
+    </div>
+    <a class="text-link" href="{{ route('jobs.index') }}">← Kembali ke daftar</a>
 </div>
-<section class="panel"><div class="panel-heading"><h2>Informasi pekerjaan</h2><span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span>@if($job->shipment_status)<span class="status-badge status-{{ $job->shipment_status }}">{{ config('operations.shipment_statuses.'.$job->shipment_status) ?? $job->shipment_status }}</span>@endif</div>
-<dl class="detail-grid"><div><dt>Customer</dt><dd>{{ $job->quotation_snapshot['customer']['name'] }}</dd></div><div><dt>Quotation asal</dt><dd>@can('quotations.manage')<a class="text-link" href="{{ route('quotations.show',$job->quotation) }}">{{ $job->quotation_snapshot['number'] }}</a>@else{{ $job->quotation_snapshot['number'] }}@endcan</dd></div><div><dt>Tanggal job</dt><dd>{{ $job->job_date->format('d/m/Y') }}@if($job->expected_completion_date)<br><small>Target selesai: {{ $job->expected_completion_date->format('d/m/Y') }}</small>@endif</dd></div>
-<div><dt>Jenis layanan</dt><dd>{{ config('operations.service_types.'.$job->service_type) ?? '—' }}</dd></div><div><dt>Pengirim</dt><dd>{{ $job->shipper_name ?? '—' }}@if($job->shipper_address)<br><small>{{ $job->shipper_address }}</small>@endif</dd></div><div><dt>Penerima</dt><dd>{{ $job->consignee_name ?? '—' }}@if($job->consignee_address)<br><small>{{ $job->consignee_address }}</small>@endif</dd></div>
-<div><dt>Rute</dt><dd>@if($job->pol || $job->pod){{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}@else{{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}@endif</dd></div><div><dt>ETD / ETA</dt><dd>{{ $job->etd?->format('d/m/Y') ?? '—' }} → {{ $job->eta?->format('d/m/Y') ?? '—' }} @if($job->status==='open' && $job->etaApproaching()) <span class="status-badge" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca">Mendekati ETA</span> @endif</dd></div>
-<div><dt>Sarana pengangkut</dt><dd>@if($job->vessel_voyage)<x-icon name="briefcase"/> {{ $job->vessel_voyage }} @endif @if($job->flight_number)@if($job->vessel_voyage)<br>@endif <strong>Penerbangan:</strong> {{ $job->flight_number }}@endif @if(! $job->vessel_voyage && ! $job->flight_number)—@endif</dd></div><div><dt>Sales / CS</dt><dd>{{ $job->sales?->name ?? '—' }}{{ $job->cs ? ' / '.$job->cs->name : '' }}</dd></div>
-<div><dt>Job dibuka</dt><dd>{{ $job->opened_at?->format('d/m/Y H:i') ?? 'Belum dibuka' }}</dd></div>
-</dl>
-@if($job->bl_number || $job->hbl_number || $job->awb_number || $job->hawb_number || $job->shipment_reference || $job->booking_reference)<div class="detail-notes"><strong>Referensi dokumen</strong><br><table class="ref-table">@if($job->bl_number)<tr><th>BL</th><td>{{ $job->bl_number }}</td></tr>@endif @if($job->hbl_number)<tr><th>HBL</th><td>{{ $job->hbl_number }}</td></tr>@endif @if($job->awb_number)<tr><th>AWB</th><td>{{ $job->awb_number }}</td></tr>@endif @if($job->hawb_number)<tr><th>HAWB</th><td>{{ $job->hawb_number }}</td></tr>@endif @if($job->shipment_reference)<tr><th>Referensi</th><td>{{ $job->shipment_reference }}</td></tr>@endif @if($job->booking_reference)<tr><th>Booking</th><td>{{ $job->booking_reference }}</td></tr>@endif</table></div>@endif
-@if($job->package_count || $job->gross_weight || $job->volume || $job->container_type || $job->cargo_description)<div class="detail-notes"><strong>Muatan</strong><br>@if($job->package_count || $job->container_type)<span class="badge-pill">{{ $job->package_count ? $job->package_count.' paket' : 'Paket: —'}}@if($job->container_type) · {{ config('operations.container_types.'.$job->container_type) ?? $job->container_type }}@endif</span> @endif @if($job->gross_weight)<span class="badge-pill">Berat: {{ \App\Support\Money::format($job->gross_weight) }} kg</span>@endif @if($job->volume)<span class="badge-pill">Volume: {{ \App\Support\Money::format($job->volume) }} cbm</span>@endif @if($job->cargo_description)<br>{{ $job->cargo_description }}@endif</div>@endif
-@if($job->operational_notes)<div class="detail-notes"><strong>Catatan operasional</strong><br>{{ $job->operational_notes }}</div>@endif
-@if($job->cancellation_reason)<div class="detail-notes"><strong>Alasan pembatalan</strong><br>{{ $job->cancellation_reason }}<br>{{ $job->cancelled_at?->format('d/m/Y H:i') }}</div>@endif
+
+<div class="quote-actions" style="margin-bottom: 20px;">
+    @can('update',$job)
+        <a class="button button-secondary" href="{{ route('jobs.edit',$job) }}">Edit operasional</a>
+    @endcan
+    <a class="button button-secondary" href="{{ route('jobs.preview', $job) }}" target="_blank">🖨 Preview PDF</a>
+    <a class="button button-secondary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Booking Confirmation</a>
+    <a class="button button-secondary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Shipping Instruction</a>
+    @can('open',$job)
+        <form method="POST" action="{{ route('jobs.open',$job) }}" data-confirm="Buka job ini? Finance dapat mulai mencatat biaya setelah job berstatus Open.">
+            @csrf
+            <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
+            <button class="button button-primary">Buka job</button>
+        </form>
+    @endcan
+    @can('costs.manage')
+        <a class="button button-primary" href="{{ route('jobs.costs.index',$job) }}"><x-icon name="wallet"/>Lihat biaya aktual</a>
+    @endcan
+    @can('jobs.close')
+        @if($job->status==='open')
+            <a class="button button-primary" href="{{ route('closing.create',$job) }}">Closing job</a>
+        @endif
+    @endcan
+    @can('invoices.manage')
+        @if($job->invoice)
+            <a class="button button-primary" href="{{ route('invoices.show',$job->invoice) }}">Lihat invoice</a>
+        @endif
+    @endcan
+    @if($job->status==='open' && !$job->do_confirmed_at)
+        @can('jobs.confirm-do')
+            <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?">
+                @csrf
+                <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">DO Selesai</button>
+            </form>
+        @endcan
+    @elseif($job->do_confirmed_at)
+        <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
+    @endif
+</div>
+
+{{-- PANEL UTAMA TAMPILAN SESUAI FORMAT PERUSAHAAN (JOBORDER - CS.docx & Gambar 1) --}}
+<section class="panel" style="overflow: hidden; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 24px; border-bottom: 1px solid #000; background: #fff;">
+        <div style="flex: 1;">
+            <img src="{{ asset('images/logo.png') }}" alt="RDX Logistics" style="max-height: 55px; max-width: 220px;" onerror="this.style.display='none'">
+            <div style="margin-top: 8px;">
+                <span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span>
+                @if($job->shipment_status)
+                    <span class="status-badge status-{{ $job->shipment_status }}" style="margin-left: 6px;">{{ config('operations.shipment_statuses.'.$job->shipment_status) ?? $job->shipment_status }}</span>
+                @endif
+                @if($job->status==='open' && $job->etaApproaching())
+                    <span class="status-badge" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca; margin-left: 6px;">Mendekati ETA</span>
+                @endif
+            </div>
+        </div>
+        <div style="width: 280px;">
+            <div style="border: 1px solid #000; width: 100%; border-collapse: collapse; background: #fff;">
+                <div style="text-align: center; font-size: 15px; font-weight: 700; padding: 6px; letter-spacing: 1px; border-bottom: 1px solid #000; font-family: monospace, sans-serif;">
+                    JOB ORDER
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr>
+                        <td style="padding: 4px 8px; border-bottom: 1px solid #000; border-right: 1px solid #000; width: 38%; font-weight: 600;">JO. No</td>
+                        <td style="padding: 4px 8px; border-bottom: 1px solid #000; font-weight: 700; color: #0f172a;">{{ $job->number }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 8px; border-bottom: 1px solid #000; border-right: 1px solid #000; font-weight: 600;">Date</td>
+                        <td style="padding: 4px 8px; border-bottom: 1px solid #000; font-weight: 700;">{{ $job->job_date?->format('d-m-Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 8px; border-bottom: 1px solid #000; border-right: 1px solid #000; font-weight: 600;">Type</td>
+                        <td style="padding: 4px 8px; border-bottom: 1px solid #000; font-weight: 700;">{{ $serviceType }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 8px; border-right: 1px solid #000; font-weight: 600;">Marketing</td>
+                        <td style="padding: 4px 8px; font-weight: 700;">{{ strtoupper($marketingName) }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- DATA JOB ORDER TABLE --}}
+    <div style="padding: 24px;">
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 13px;">
+            <thead>
+                <tr>
+                    <th colspan="2" style="background-color: #e2e8f0; color: #000; font-weight: 700; text-align: left; padding: 7px 12px; border: 1px solid #000; font-size: 13.5px; letter-spacing: 0.5px;">
+                        DATA JOB ORDER
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 25%; font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Customer</td>
+                    <td style="width: 75%; font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $customerName }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Shipper</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">
+                        {{ $job->shipper_name ?? '—' }}
+                        @if($job->shipper_address)
+                            <div style="font-size: 12px; font-weight: normal; color: #64748b; margin-top: 2px;">{{ $job->shipper_address }}</div>
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Consignee</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">
+                        {{ $job->consignee_name ?? '—' }}
+                        @if($job->consignee_address)
+                            <div style="font-size: 12px; font-weight: normal; color: #64748b; margin-top: 2px;">{{ $job->consignee_address }}</div>
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Loading</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $loadingPort }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Discharge</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $dischargePort }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">ETD</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $etdDate }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">ETA</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $etaDate }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. AJU</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $noAju }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. HBL</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $noHbl }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. MBL</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $noMbl }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Vessel</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $vesselName }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Quantity</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $quantityStr }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Gross Weight</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $grossWeightStr }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Volume</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $volumeStr }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Commodity</td>
+                    <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $commodityStr }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        {{-- NOTE AREA --}}
+        <div style="margin-top: 18px;">
+            <div style="font-size: 13.5px; font-weight: 700; text-decoration: underline; color: #000; margin-bottom: 6px;">
+                NOTE :
+            </div>
+            <div style="border: 1px solid #000; min-height: 90px; padding: 12px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; background: #fff; color: #0f172a;">
+                {{ $noteContent ?: '—' }}
+            </div>
+        </div>
+
+        @if($job->cancellation_reason)
+            <div style="margin-top: 16px; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; color: #b91c1c;">
+                <strong>Alasan Pembatalan:</strong> {{ $job->cancellation_reason }}<br>
+                <small>Dibatalkan pada: {{ $job->cancelled_at?->format('d/m/Y H:i') }}</small>
+            </div>
+        @endif
+    </div>
 </section>
 <div class="section-heading"><h2>Dokumen Pengiriman</h2><span class="subtle">File BL, AWB, SI, dll</span></div>
 <section class="panel">
@@ -60,6 +255,6 @@
 <section class="panel"><div class="cost-summary-body"><div class="summary-box">@if($summary['count'] > 0)<div class="summary-row"><span>Total modal aktual (provision)</span><strong>Rp {{ \App\Support\Money::format($summary['provision_cost']) }}</strong></div><div class="summary-row"><span>Total tagihan aktual</span><strong>Rp {{ \App\Support\Money::format($summary['provision_sell']) }}</strong></div><div class="summary-row"><span>Biaya temporary</span><strong>Rp {{ \App\Support\Money::format($summary['temporary']) }}</strong></div><div class="summary-row"><span>Laba (rugi) aktual</span><strong>Rp {{ \App\Support\Money::format($summary['profit']) }}</strong></div><div class="summary-row summary-total"><span>Margin</span><strong>{{ \App\Support\Money::format($summary['margin']) }}%</strong></div>@else<div class="empty-state"><h3>Belum ada biaya Final</h3><p>Ringkasan keuangan tampil setelah Finance mencatat dan memfinalisasi biaya.</p></div>@endif</div></div></section>
 @endcan
 <div class="section-heading"><h2>Riwayat status</h2><span class="subtle">Perjalanan persetujuan dan status</span></div>
-<section class="panel"><div class="cost-summary-body"><ol class="approval-timeline">@forelse($job->statusHistory as $event)<li><span></span><div><strong>@if($event->from_status){{ config('operations.job_statuses.'.$event->from_status) ?? $event->from_status }} → {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}@elseDibuat → {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}@endif</strong><p>{{ $event->user?->name ?? 'System' }} · {{ $event->created_at->format('d/m/Y H:i') }}@if($event->note)<br>{{ $event->note }}@endif</p></div></li>@empty<li><span></span><div><strong>Tidak ada riwayat</strong><p>Riwayat akan tercatat saat job dibuat atau berubah status.</p></div></li>@endforelse</ol></div></section>
+<section class="panel"><div class="cost-summary-body"><ol class="approval-timeline">@forelse($job->statusHistory as $event)<li><span></span><div><strong>@if($event->from_status){{ config('operations.job_statuses.'.$event->from_status) ?? $event->from_status }} → {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}@else Dibuat → {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}@endif</strong><p>{{ $event->user?->name ?? 'System' }} · {{ $event->created_at->format('d/m/Y H:i') }}@if($event->note)<br>{{ $event->note }}@endif</p></div></li>@empty<li><span></span><div><strong>Tidak ada riwayat</strong><p>Riwayat akan tercatat saat job dibuat atau berubah status.</p></div></li>@endforelse</ol></div></section>
 @can('cancel',$job)<section class="panel job-cancel"><form class="transition-form" method="POST" action="{{ route('jobs.cancel',$job) }}" data-confirm="Batalkan job ini? Job hanya dapat dibatalkan jika tidak memiliki biaya aktif.">@csrf<input type="hidden" name="lock_version" value="{{ $job->lock_version }}"><label for="reason">Alasan pembatalan job</label><textarea name="reason" id="reason" rows="2" maxlength="1000" required placeholder="Jelaskan alasan pembatalan">{{ old('reason') }}</textarea><p class="form-help">Job yang masih memiliki biaya aktif tidak dapat dibatalkan.</p><button class="button button-danger">Batalkan job</button></form></section>@endcan
 @endsection
