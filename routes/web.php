@@ -21,6 +21,7 @@ use App\Http\Controllers\JobDocumentController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\OperationalDocumentController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PricingSuggestionController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ReimbursementController;
@@ -206,6 +207,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/accounts/mappings', [AccountController::class, 'updateMappings'])->middleware('can:coa.manage')->name('accounts.mappings.update');
     Route::resource('accounts', AccountController::class)->except('show')->middleware('can:coa.manage');
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
+    Route::get('/account/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/account/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/account/password', [ProfileController::class, 'password'])->name('profile.password');
     Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
     Route::get('/dashboard-finance', [DashboardController::class, 'role'])->defaults('role', 'finance')->middleware('can:dashboard.view')->name('dashboard.finance');
     Route::get('/dashboard-financemanager', [DashboardController::class, 'role'])->defaults('role', 'finance-manager')->middleware('can:dashboard.view')->name('dashboard.finance-manager');
