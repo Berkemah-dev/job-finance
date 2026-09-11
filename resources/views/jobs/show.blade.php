@@ -7,8 +7,8 @@
     $customerName = $job->customer?->name ?? $job->quotation_snapshot['customer']['name'] ?? '—';
     $marketingName = $job->sales?->name ?? $quotation?->sales?->name ?? '—';
     $serviceType = strtoupper(config('operations.service_types.'.$job->service_type) ?? ($job->service_type ?? '—'));
-    $loadingPort = strtoupper($job->pol ?? $job->origin ?? $quotation?->origin ?? '—');
-    $dischargePort = strtoupper($job->pod ?? $job->destination ?? $quotation?->destination ?? '—');
+    $loadingPort = $job->pol ?? $job->origin ?? $quotation?->origin ?? '—';
+    $dischargePort = $job->pod ?? $job->destination ?? $quotation?->destination ?? '—';
     $etdDate = $job->etd ? $job->etd->format('d-m-Y') : '—';
     $etaDate = $job->eta ? $job->eta->format('d-m-Y') : '—';
     $noAju = $job->booking_reference ?? '—';
@@ -27,7 +27,7 @@
     <div>
         <p class="eyebrow">OPERASIONAL / JOB ORDER</p>
         <h1>{{ $job->number }}</h1>
-        <p>{{ $job->subject }} · Customer: <strong>{{ $customerName }}</strong></p>
+        <p>{{ $job->subject }} ({{ ($job->pol || $job->pod) ? ($job->pol ?? '—') . ' → ' . ($job->pod ?? '—') : ($job->origin ?? '—') . ' → ' . ($job->destination ?? '—') }}) · Customer: <strong>{{ $customerName }}</strong></p>
     </div>
     <a class="text-link" href="{{ route('jobs.index') }}">← Kembali ke daftar</a>
 </div>

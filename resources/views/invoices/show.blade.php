@@ -87,6 +87,11 @@
                     <td style="padding: 2px 4px;">:</td>
                     <td>{{ $invoice->due_date->format('d-m-Y') }}</td>
                 </tr>
+                <tr>
+                    <td style="font-weight: 700; padding: 2px 6px; text-decoration: underline;">Mata uang</td>
+                    <td style="padding: 2px 4px;">:</td>
+                    <td>{{ $invoice->currency }}</td>
+                </tr>
             </table>
 
             <div style="margin-top: 10px; background: #f1f5f9; padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; text-align: right;">
@@ -313,7 +318,7 @@
                 </td>
             </tr>
             <tr>
-                <td style="padding: 4px 8px; font-weight: 700; text-transform: uppercase; color: #475569;">EXC. RATE</td>
+                <td style="padding: 4px 8px; font-weight: 700; text-transform: uppercase; color: #475569;">Kurs terhadap Rupiah (EXC. RATE)</td>
                 <td style="padding: 4px 8px; text-align: right; font-family: monospace;">
                     {{ $invoice->currency }} {{ $invoice->currency === 'IDR' ? '1.000,00' : \App\Support\Money::format($invoice->exchange_rate) }}
                 </td>

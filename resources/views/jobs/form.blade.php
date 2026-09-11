@@ -19,8 +19,8 @@
 </div>
 <div class="form-section-heading"><h2>Rute & transportasi</h2><p>Informasi perjalanan dan sarana pengangkut (Loading, Discharge, ETD, ETA, Vessel).</p></div>
 <div class="form-grid">
-<div class="field"><label for="pol">Loading / Pelabuhan Muat (POL)</label><input id="pol" name="pol" maxlength="120" value="{{ old('pol',$job->pol) }}" placeholder="Pelabuhan keberangkatan"></div>
-<div class="field"><label for="pod">Discharge / Pelabuhan Bongkar (POD)</label><input id="pod" name="pod" maxlength="120" value="{{ old('pod',$job->pod) }}" placeholder="Pelabuhan tujuan"></div>
+<div class="field"><label for="pol">Pelabuhan muat (POL) / Loading</label><input id="pol" name="pol" maxlength="120" value="{{ old('pol',$job->pol) }}" placeholder="Pelabuhan keberangkatan"></div>
+<div class="field"><label for="pod">Pelabuhan bongkar (POD) / Discharge</label><input id="pod" name="pod" maxlength="120" value="{{ old('pod',$job->pod) }}" placeholder="Pelabuhan tujuan"></div>
 <div class="field"><label for="etd">ETD (Perkiraan Berangkat)</label><input id="etd" name="etd" type="date" value="{{ old('etd',$job->etd?->format('Y-m-d')) }}"></div>
 <div class="field"><label for="eta">ETA (Perkiraan Tiba)</label><input id="eta" name="eta" type="date" value="{{ old('eta',$job->eta?->format('Y-m-d')) }}"></div>
 <div class="field"><label for="vessel_voyage">Vessel (Nama Kapal & Voyage)</label><input id="vessel_voyage" name="vessel_voyage" maxlength="120" value="{{ old('vessel_voyage',$job->vessel_voyage) }}" placeholder="contoh: KMTC JAKARTA V.2401N"></div>
@@ -30,7 +30,7 @@
 <div class="form-grid">
 <div class="field"><label for="booking_reference">No. AJU (Nomor Pengajuan Bea Cukai)</label><input id="booking_reference" name="booking_reference" maxlength="60" value="{{ old('booking_reference',$job->booking_reference) }}" placeholder="contoh: 000020-012345-20260911-001234"></div>
 <div class="field"><label for="hbl_number">No. HBL (House Bill of Lading)</label><input id="hbl_number" name="hbl_number" maxlength="60" value="{{ old('hbl_number',$job->hbl_number) }}" placeholder="Nomor HBL forwarder"></div>
-<div class="field"><label for="bl_number">No. MBL (Master Bill of Lading)</label><input id="bl_number" name="bl_number" maxlength="60" value="{{ old('bl_number',$job->bl_number) }}" placeholder="Nomor MBL dari pelayaran"></div>
+<div class="field"><label for="bl_number">Nomor BL / MBL (Master Bill of Lading)</label><input id="bl_number" name="bl_number" maxlength="60" value="{{ old('bl_number',$job->bl_number) }}" placeholder="Nomor MBL dari pelayaran"></div>
 <div class="field"><label for="awb_number">Nomor AWB</label><input id="awb_number" name="awb_number" maxlength="60" value="{{ old('awb_number',$job->awb_number) }}" placeholder="Master Air Waybill"></div>
 <div class="field"><label for="hawb_number">Nomor HAWB</label><input id="hawb_number" name="hawb_number" maxlength="60" value="{{ old('hawb_number',$job->hawb_number) }}" placeholder="House Air Waybill"></div>
 <div class="field"><label for="shipment_reference">Referensi pengiriman</label><input id="shipment_reference" name="shipment_reference" maxlength="100" value="{{ old('shipment_reference',$job->shipment_reference) }}" placeholder="Referensi internal"></div>
