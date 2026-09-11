@@ -46,8 +46,9 @@
             'PRICING' => [['pricing.view','chart','Weekly Pricing','pricing.weekly.index'],['pricing.view','briefcase','Trucking Price List','pricing.trucking.index']],
             'KALKULATOR' => [['dashboard.view','calculator','Kalkulator','calculators.index']],
             'OPERASIONAL' => [['jobs.view','check','Booking Confirmation','booking-confirmations.index'],['jobs.view','briefcase','Job Order','jobs.index'],['jobs.view','file','Shipping Instruction','shipping-instructions.index'],['jobs.view','file','Dokumen Job','documents.index'],['jobs.manage','file','Tipe Dokumen','document-types.index'],['tps.manage','briefcase','Master TPS','tps.index']],
+            'MASTER DATA' => [['jobs.manage','database','Data Port','ports.index'],['jobs.manage','wallet','Data Cost','charge-types.index'],['jobs.manage','briefcase','Data Unit','container-units.index']],
             'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index'],['reimbursements.manage','wallet','Reimbursement','reimbursements.index']],
-            'AKUNTANSI' => [['coa.manage','file','Data COA','master.coa'],['jobs.manage','file','Data Cost','master.charge'],['jobs.manage','file','Data Unit','master.units'],['jobs.manage','file','Data Port','master.ports'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
+            'AKUNTANSI' => [['coa.manage','database','Data COA','accounts.index'],['coa.manage','file','Mapping Akun','accounts.mappings'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
             'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job'],['reports.view','calendar','Profit Bulanan','reports.profit-monthly'],['reports.view','wallet','Statement of Account','reports.soa']],
         ];
         @endphp
@@ -62,8 +63,12 @@
                 $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
                 $active = false;
                 if ($destination) {
-                    if (str_starts_with((string)$destination, 'reports.') || str_starts_with((string)$destination, 'master.')) {
+                    if (str_starts_with((string)$destination, 'reports.')) {
                         $active = request()->routeIs($destination, $destination.'.*');
+                    } elseif ($destination === 'accounts.mappings') {
+                        $active = request()->routeIs('accounts.mappings');
+                    } elseif ($destination === 'accounts.index') {
+                        $active = request()->routeIs('accounts.*') && !request()->routeIs('accounts.mappings');
                     } elseif ($permission === 'costs.manage') {
                         $active = $isCostPage;
                     } else {

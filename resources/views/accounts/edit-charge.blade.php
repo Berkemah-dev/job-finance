@@ -6,7 +6,7 @@
         <p class="eyebrow">MASTER DATA &rsaquo; JENIS BIAYA</p>
         <h1>Edit Jenis Biaya</h1>
     </div>
-    <a class="button button-secondary" href="{{ route('accounts.index', ['tab'=>'charge']) }}">Kembali</a>
+    <a class="button button-secondary" href="{{ route('charge-types.index') }}">Kembali</a>
 </div>
 
 <section class="panel" style="max-width: 600px;">

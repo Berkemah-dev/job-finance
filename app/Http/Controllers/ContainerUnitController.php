@@ -46,6 +46,6 @@ class ContainerUnitController extends Controller
     public function update(\Illuminate\Http\Request $request, \App\Models\ContainerUnit $containerUnit) {
         $data = $request->validate(['name' => 'required|string|max:50|unique:container_units,name,'.$containerUnit->id]);
         $containerUnit->update(['name' => trim($data['name'])]);
-        return redirect()->route('master.units')->with('success', 'Satuan diperbarui.');
+        return redirect()->route('container-units.index')->with('success', 'Satuan diperbarui.');
     }
 }

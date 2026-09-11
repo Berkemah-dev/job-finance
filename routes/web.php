@@ -128,16 +128,19 @@ Route::middleware('auth')->group(function () {
     // Document Type Master
     Route::resource('document-types', DocumentTypeController::class)->except('show')->middleware('can:jobs.manage');
     // Master Data: Ports, ChargeTypes, ContainerUnits
+    Route::get('/ports', [PortController::class, 'index'])->middleware('can:jobs.manage')->name('ports.index');
     Route::post('/ports', [PortController::class, 'store'])->middleware('can:jobs.manage')->name('ports.store');
     Route::patch('/ports/{port}/toggle', [PortController::class, 'toggle'])->middleware('can:jobs.manage')->name('ports.toggle');
     Route::delete('/ports/{port}', [PortController::class, 'destroy'])->middleware('can:jobs.manage')->name('ports.destroy');
     Route::get('/ports/{port}/edit', [PortController::class, 'edit'])->middleware('can:jobs.manage')->name('ports.edit');
     Route::put('/ports/{port}', [PortController::class, 'update'])->middleware('can:jobs.manage')->name('ports.update');
+    Route::get('/charge-types', [ChargeTypeController::class, 'index'])->middleware('can:jobs.manage')->name('charge-types.index');
     Route::post('/charge-types', [ChargeTypeController::class, 'store'])->middleware('can:jobs.manage')->name('charge-types.store');
     Route::patch('/charge-types/{chargeType}/toggle', [ChargeTypeController::class, 'toggle'])->middleware('can:jobs.manage')->name('charge-types.toggle');
     Route::delete('/charge-types/{chargeType}', [ChargeTypeController::class, 'destroy'])->middleware('can:jobs.manage')->name('charge-types.destroy');
     Route::get('/charge-types/{chargeType}/edit', [ChargeTypeController::class, 'edit'])->middleware('can:jobs.manage')->name('charge-types.edit');
     Route::put('/charge-types/{chargeType}', [ChargeTypeController::class, 'update'])->middleware('can:jobs.manage')->name('charge-types.update');
+    Route::get('/container-units', [ContainerUnitController::class, 'index'])->middleware('can:jobs.manage')->name('container-units.index');
     Route::post('/container-units', [ContainerUnitController::class, 'store'])->middleware('can:jobs.manage')->name('container-units.store');
     Route::patch('/container-units/{containerUnit}/toggle', [ContainerUnitController::class, 'toggle'])->middleware('can:jobs.manage')->name('container-units.toggle');
     Route::delete('/container-units/{containerUnit}', [ContainerUnitController::class, 'destroy'])->middleware('can:jobs.manage')->name('container-units.destroy');

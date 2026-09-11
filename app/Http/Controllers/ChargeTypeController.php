@@ -50,6 +50,6 @@ class ChargeTypeController extends Controller
     public function update(\Illuminate\Http\Request $request, \App\Models\ChargeType $chargeType) {
         $data = $request->validate(['name' => 'required|string|max:150|unique:charge_types,name,'.$chargeType->id]);
         $chargeType->update(['name' => strtoupper(trim($data['name']))]);
-        return redirect()->route('master.charge')->with('success', 'Jenis biaya diperbarui.');
+        return redirect()->route('charge-types.index')->with('success', 'Jenis biaya diperbarui.');
     }
 }

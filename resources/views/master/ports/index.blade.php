@@ -40,7 +40,8 @@
                             <span class="status-badge status-cancelled">Nonaktif</span>
                         @endif
                     </td>
-                    <td style="display:flex;gap:0.5rem;">
+                    <td style="display:flex;gap:0.75rem;align-items:center;">
+                        <a class="text-link" href="{{ route('ports.edit', $port) }}" id="btn-edit-port-{{ $port->id }}">Edit</a>
                         <form method="POST" action="{{ route('ports.toggle',$port) }}">
                             @csrf @method('PATCH')
                             <button class="text-link" id="btn-toggle-port-{{ $port->id }}">{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}</button>

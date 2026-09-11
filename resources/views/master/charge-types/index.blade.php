@@ -38,7 +38,8 @@
                             <span class="status-badge status-cancelled">Nonaktif</span>
                         @endif
                     </td>
-                    <td style="display:flex;gap:0.5rem;">
+                    <td style="display:flex;gap:0.75rem;align-items:center;">
+                        <a class="text-link" href="{{ route('charge-types.edit', $charge) }}" id="btn-edit-charge-{{ $charge->id }}">Edit</a>
                         <form method="POST" action="{{ route('charge-types.toggle',$charge) }}">
                             @csrf @method('PATCH')
                             <button class="text-link" id="btn-toggle-charge-{{ $charge->id }}">{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}</button>
