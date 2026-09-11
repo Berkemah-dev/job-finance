@@ -342,7 +342,9 @@
     </div>
 
     @if($hasForeignCurrency)
-    <div style="padding: 12px 24px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 24px; font-size: 11px; color: #475569;">
+    <div style="padding: 12px 24px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 24px; font-size: 11px; color: #475569;">
+        <div>Mata uang: <strong>{{ $invoice->currency }}</strong></div>
+        <div>Kurs terhadap Rupiah: <strong>{{ \App\Support\Money::format($invoice->exchange_rate) }}</strong></div>
         <div>Subtotal setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('subtotal')) }}</strong></div>
         <div>Pajak setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('tax')) }}</strong></div>
         <div>Total setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('total')) }}</strong></div>
