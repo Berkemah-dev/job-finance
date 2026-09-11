@@ -274,34 +274,7 @@
     width: auto;
     margin: 0 22px 22px;
 }
-.approval-timeline {
-    list-style: none;
-    margin: 0;
-    padding: 8px 24px 24px;
-}
-.approval-timeline li {
-    display: flex;
-    gap: 14px;
-    padding: 14px 0;
-    border-bottom: 1px solid #eef2f7;
-}
-.approval-timeline li > span {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    background: #0f1f3d;
-    margin-top: 5px;
-    box-shadow: 0 0 0 5px #fee2e2;
-}
-.approval-timeline strong {
-    font-size: 12px;
-    color: #344768;
-}
-.approval-timeline p {
-    font-size: 10px;
-    color: #7d8da5;
-    margin-top: 4px;
-}
+
 .pdf-toolbar {
     position: sticky;
     top: 0;
@@ -448,7 +421,7 @@
 .approval-timeline {
     list-style: none;
     margin: 0;
-    padding: 4px 0 0;
+    padding: 8px 24px 24px 24px;
 }
 .approval-timeline li {
     display: flex;
@@ -470,12 +443,9 @@
     content: "";
     position: absolute;
     top: 22px;
-    left: 4px;
+    left: 4.5px;
     width: 2px;
-    height: 26px;
-    background: #e4ebf7;
-}
-.approval-timeline li:not(:last-child):after {
+    height: calc(100% - 14px);
     background: #dfe8f6;
 }
 .approval-timeline strong {

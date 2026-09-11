@@ -9,6 +9,7 @@ use App\Models\Job;
 use App\Models\User;
 use App\Services\JobCostService;
 use App\Services\JobService;
+use App\Services\MasterDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
@@ -105,4 +106,32 @@ class JobController extends Controller
         return redirect()->route('jobs.show', $job)->with('success', 'Status pengiriman berhasil diperbarui.');
     }
 
+    public function preview(Job $job)
+    {
+        Gate::authorize('view', $job);
+
+        return view('documents.pdf-preview', [
+            'title'       => 'Job Order ' . $job->number,
+            'backUrl'     => route('jobs.show', $job),
+            'pdfUrl'      => route('jobs.pdf', ['job' => $job, 'mode' => 'inline']),
+            'downloadUrl' => route('jobs.pdf', ['job' => $job, 'mode' => 'download']),
+        ]);
+    }
+
+    public function pdf(Request $request, Job $job, MasterDataService $master)
+    {
+        Gate::authorize('view', $job);
+
+        $job->load(['customer', 'sales', 'cs', 'quotation']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.job-order', [
+            'job'       => $job,
+            'quotation' => $job->quotation,
+        ])->setPaper('a4');
+        $filename = $job->number . '.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Job Order ' . $job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
 }

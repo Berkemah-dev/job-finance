@@ -49,6 +49,28 @@ class InvoiceController extends Controller
         return response($xml, 200, ['Content-Type' => 'text/plain; charset=utf-8', 'X-Robots-Tag' => 'noindex']);
     }
 
+    public function preview(Invoice $invoice)
+    {
+        return view('documents.pdf-preview', [
+            'title'       => 'Invoice '.$invoice->number,
+            'backUrl'     => route('invoices.show', $invoice),
+            'pdfUrl'      => route('invoices.pdf', ['invoice' => $invoice, 'mode' => 'inline']),
+            'downloadUrl' => route('invoices.pdf', ['invoice' => $invoice, 'mode' => 'download']),
+        ]);
+    }
+
+    public function pdf(Request $request, Invoice $invoice, \App\Services\MasterDataService $master)
+    {
+        $invoice->load(['items', 'job.customer', 'job.quotation', 'snapshot']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.invoice', ['invoice' => $invoice])->setPaper('a4');
+        $filename = 'Invoice_'.$invoice->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF invoice '.$invoice->number, ['module' => 'invoice', 'record_id' => $invoice->id]);
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
     public function updateDelivery(Request $request, Invoice $invoice)
     {
         $validated = $request->validate([

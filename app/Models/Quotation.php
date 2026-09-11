@@ -13,7 +13,13 @@ class Quotation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate'];
+    protected $fillable = [
+        'customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes',
+        'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address',
+        'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms',
+        'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity',
+        'discount', 'tax_rate',
+    ];
 
     protected function casts(): array
     {

@@ -42,7 +42,13 @@ class QuotationService
             if (($data['payment_terms'] ?? '') === '') {
                 $data['payment_terms'] = $customer->default_payment_terms;
             }
-            $quotation->fill(Arr::only($data, ['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate']));
+            $quotation->fill(Arr::only($data, [
+                'customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes',
+                'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address',
+                'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms',
+                'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity',
+                'discount', 'tax_rate',
+            ]));
             $quotation->customer_snapshot = $customer->only(['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number', 'default_payment_terms']);
             $quotation->forceFill($calculated['totals']);
             $this->applyTaxAndGrandTotal($quotation);
@@ -135,18 +141,46 @@ class QuotationService
                 'number' => $quotation->number, 'customer' => $quotation->customer_snapshot, 'subject' => $quotation->subject,
                 'quotation_date' => $quotation->quotation_date->format('Y-m-d'), 'valid_until' => $quotation->valid_until->format('Y-m-d'), 'notes' => $quotation->notes,
                 'service_type' => $quotation->service_type, 'origin' => $quotation->origin, 'destination' => $quotation->destination,
+                'terms_of_delivery' => $quotation->terms_of_delivery, 'cargo_qty' => $quotation->cargo_qty, 'weight_meas' => $quotation->weight_meas, 'commodity' => $quotation->commodity,
                 'currency' => $quotation->currency, 'exchange_rate' => $quotation->exchange_rate, 'payment_terms' => $quotation->payment_terms,
                 'shipper' => ['name' => $quotation->shipper_name, 'address' => $quotation->shipper_address],
                 'consignee' => ['name' => $quotation->consignee_name, 'address' => $quotation->consignee_address],
                 'totals' => $quotation->only(['total_temporary', 'total_provision_cost', 'total_provision_sell', 'subtotal', 'discount', 'tax_rate', 'tax_amount', 'grand_total', 'profit', 'margin']),
-                'items' => $quotation->items->map(fn ($item) => $item->only(['description', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot']))->all(),
+                'items' => $quotation->items->map(fn ($item) => $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot']))->all(),
             ];
-            $job = Job::create(['number' => $this->numbers->next('job'), 'quotation_id' => $quotation->id, 'customer_id' => $quotation->customer_id,
-                'subject' => $quotation->subject, 'status' => 'draft', 'job_date' => now()->toDateString(), 'quotation_snapshot' => $snapshot,
-                'service_type' => $quotation->service_type, 'origin' => $quotation->origin, 'destination' => $quotation->destination,
-                'shipper_name' => $quotation->shipper_name, 'shipper_address' => $quotation->shipper_address,
-                'consignee_name' => $quotation->consignee_name, 'consignee_address' => $quotation->consignee_address,
-                'created_by' => $actor->id, 'updated_by' => $actor->id]);
+            $firstItem = $quotation->items->first();
+            $containerType = $firstItem?->container_type;
+            $grossWeight = $firstItem?->gross_weight ?? (is_numeric($quotation->weight_meas) ? (float) $quotation->weight_meas : null);
+            $volume = $firstItem?->volume;
+            $packageCount = is_numeric($quotation->cargo_qty) ? (int) $quotation->cargo_qty : null;
+
+            $job = Job::create([
+                'number' => $this->numbers->next('job'),
+                'quotation_id' => $quotation->id,
+                'customer_id' => $quotation->customer_id,
+                'subject' => $quotation->subject,
+                'status' => 'draft',
+                'job_date' => now()->toDateString(),
+                'quotation_snapshot' => $snapshot,
+                'service_type' => $quotation->service_type,
+                'origin' => $quotation->origin,
+                'destination' => $quotation->destination,
+                'pol' => $quotation->origin,
+                'pod' => $quotation->destination,
+                'shipper_name' => $quotation->shipper_name,
+                'shipper_address' => $quotation->shipper_address,
+                'consignee_name' => $quotation->consignee_name,
+                'consignee_address' => $quotation->consignee_address,
+                'sales_id' => $quotation->sales_id,
+                'cargo_description' => $quotation->commodity,
+                'container_type' => $containerType,
+                'gross_weight' => $grossWeight,
+                'volume' => $volume,
+                'package_count' => $packageCount,
+                'operational_notes' => $quotation->notes,
+                'created_by' => $actor->id,
+                'updated_by' => $actor->id,
+            ]);
             $job->statusHistory()->create(['from_status' => null, 'to_status' => 'draft', 'note' => 'Job dibuat dari quotation '.$quotation->number, 'user_id' => $actor->id, 'created_at' => now()]);
             $from = $quotation->status;
             $quotation->status = QuotationStatus::Converted;
@@ -172,14 +206,15 @@ class QuotationService
             $copy->number = $this->numbers->next('quo');
             $copy->status = QuotationStatus::Draft;
             $copy->created_by = $actor->id;
-            $copy->fill(Arr::only($quotation->only(['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate']), ['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'discount', 'tax_rate']));
+            $fillFields = ['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity', 'discount', 'tax_rate'];
+            $copy->fill(Arr::only($quotation->only($fillFields), $fillFields));
             $copy->customer_snapshot = $quotation->customer_snapshot;
             $copy->forceFill($quotation->only(['total_temporary', 'total_provision_cost', 'total_provision_sell', 'subtotal', 'profit', 'margin']));
             $this->applyTaxAndGrandTotal($copy);
             $copy->updated_by = $actor->id;
             $copy->lock_version = 0;
             $copy->save();
-            $copy->items()->createMany($quotation->items->map(fn ($item) => $item->only(['description', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot', 'position']))->all());
+            $copy->items()->createMany($quotation->items->map(fn ($item) => $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot', 'position']))->all());
             $this->master->log($actor, 'quotation.duplicated', 'Menyalin '.$quotation->number.' → '.$copy->number, ['module' => 'quotation', 'record_id' => $quotation->id]);
 
             return $copy;
@@ -244,6 +279,7 @@ class QuotationService
             throw ValidationException::withMessages(['items.'.$index.'.container_type' => 'Jenis kontainer tidak valid.']);
         }
         $row['currency'] = $currency;
+        $row['note'] = isset($row['note']) && trim((string) $row['note']) !== '' ? (string) $row['note'] : null;
         $row['overweight'] = filter_var($row['overweight'] ?? false, FILTER_VALIDATE_BOOL);
         $row['container_type'] = $containerType;
         $row['gross_weight'] = $this->nullableNumber($row['gross_weight'] ?? null);

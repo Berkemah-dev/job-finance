@@ -15,13 +15,27 @@
     <a href="{{ route('dashboard') }}" class="brand brand-logo"><img src="{{ asset('images/logo.png') }}" alt="JobFinance Logo" class="brand-img"></a>
     <nav>
         <p class="nav-heading">WORKSPACE</p>
-        <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><x-icon/>Dashboard</a>
+        @php
+        $dashboardLinks = [
+            'super-admin' => [['dashboard.finance','Dashboard Finance'],['dashboard.finance-manager','Dashboard Finance Manager'],['dashboard.sales-manager','Dashboard Sales Manager'],['dashboard.sales','Dashboard Sales'],['dashboard.operational','Dashboard Operational'],['dashboard.customer-service','Dashboard Customer Service']],
+            'finance' => [['dashboard.finance','Dashboard Finance']],
+            'finance-manager' => [['dashboard.finance-manager','Dashboard Finance Manager']],
+            'sales-manager' => [['dashboard.sales-manager','Dashboard Sales Manager']],
+            'sales' => [['dashboard.sales','Dashboard Sales']],
+            'operational' => [['dashboard.operational','Dashboard Operational']],
+            'customer-service' => [['dashboard.customer-service','Dashboard Customer Service']],
+        ];
+        $currentRole = auth()->user()->role?->name ?? '';
+        @endphp
+        @foreach($dashboardLinks[$currentRole] ?? [] as [$dashboardRoute, $dashboardLabel])
+        <a class="nav-item {{ request()->routeIs($dashboardRoute) ? 'active' : '' }}" href="{{ route($dashboardRoute) }}"><x-icon name="grid"/><span>{{ $dashboardLabel }}</span></a>
+        @endforeach
         @php
         $groups = [
             'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer'],['customers.view','clock','Kontak & PIC','customer-contacts.index'],['vendors.manage','users','Vendor']],
             'PRICING' => [['pricing.view','chart','Weekly Pricing','pricing.weekly.index'],['pricing.view','briefcase','Trucking Price List','pricing.trucking.index']],
             'KALKULATOR' => [['dashboard.view','calculator','Kalkulator','calculators.index']],
-            'OPERASIONAL' => [['jobs.view','briefcase','Job Order','jobs.index'],['jobs.view','file','Dokumen Job','documents.index'],['jobs.manage','file','Tipe Dokumen','document-types.index'],['tps.manage','briefcase','Master TPS','tps.index']],
+            'OPERASIONAL' => [['jobs.view','check','Booking Confirmation','booking-confirmations.index'],['jobs.view','briefcase','Job Order','jobs.index'],['jobs.view','file','Shipping Instruction','shipping-instructions.index'],['jobs.view','file','Dokumen Job','documents.index'],['jobs.manage','file','Tipe Dokumen','document-types.index'],['tps.manage','briefcase','Master TPS','tps.index']],
             'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index'],['reimbursements.manage','wallet','Reimbursement','reimbursements.index']],
             'AKUNTANSI' => [['coa.manage','file','Chart of Accounts','accounts.index'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
             'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job'],['reports.view','calendar','Profit Bulanan','reports.profit-monthly'],['reports.view','wallet','Statement of Account','reports.soa']],
