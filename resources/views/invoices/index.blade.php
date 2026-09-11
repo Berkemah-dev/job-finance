@@ -44,32 +44,48 @@
                     <th>Total</th>
                     <th>Dibayar</th>
                     <th>Sisa</th>
-                    <th>Status</th>
+                    <th>Status Bayar</th>
+                    <th>Pengiriman Fisik</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($invoices as $invoice)
                     <tr>
-                        <td><strong>{{ $invoice->number }}</strong><br>{{ $invoice->invoice_date->format('d/m/Y') }}</td>
+                        <td><strong>{{ $invoice->number }}</strong><br><small class="muted-cell">{{ $invoice->invoice_date->format('d/m/Y') }}</small></td>
                         <td>{{ $invoice->customer_snapshot['name'] }}</td>
                         <td>
                             @if($invoice->currency!=='IDR')
-                                {{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('total')) }}<br>
+                                <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('total')) }}</strong><br>
                             @endif
-                            <span class="muted">Rp {{ \App\Support\Money::format($invoice->total) }}</span>
+                            <span class="muted-cell">Rp {{ \App\Support\Money::format($invoice->total) }}</span>
                         </td>
                         <td>Rp {{ \App\Support\Money::format($invoice->paid_amount) }}</td>
                         <td>Rp {{ \App\Support\Money::format($invoice->balance) }}</td>
                         <td><span class="status-badge status-{{ $invoice->status }}">{{ str_replace('_',' ',ucwords($invoice->status,'_')) }}</span></td>
                         <td>
-                            <a class="text-link" href="{{ route('invoices.show',$invoice) }}">Lihat detail</a> · 
-                            <a class="text-link" href="{{ route('invoices.preview',$invoice) }}" target="_blank">PDF</a>
+                            @php
+                                $dStatus = $invoice->delivery_status ?? 'not_sent';
+                                $dLabels = ['not_sent' => 'Belum Dikirim', 'sent' => 'Terkirim', 'received' => 'Diterima'];
+                                $dColors = ['not_sent' => '#f1f5f9; color:#64748b', 'sent' => '#e0f2fe; color:#0369a1', 'received' => '#dcfce7; color:#15803d'];
+                            @endphp
+                            <span class="status-badge" style="background: {{ $dColors[$dStatus] ?? '#f1f5f9' }};">
+                                {{ $dLabels[$dStatus] ?? ucfirst($dStatus) }}
+                            </span>
+                            @if($invoice->tracking_number)
+                                <br><small class="muted-cell">Resi: {{ $invoice->tracking_number }}</small>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <a class="text-link" href="{{ route('invoices.show',$invoice) }}">Detail</a>
+                                <a class="text-link" href="{{ route('invoices.preview',$invoice) }}" target="_blank">PDF</a>
+                            </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7">Belum ada invoice.</td>
+                        <td colspan="8">Belum ada invoice.</td>
                     </tr>
                 @endforelse
             </tbody>
