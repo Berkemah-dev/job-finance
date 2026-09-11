@@ -1,7 +1,15 @@
 @extends('layouts.app')
 @section('title','Statement of Account')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">LAPORAN</p><h1>Statement of Account</h1><p>Rekap tagihan, pembayaran, dan umur piutang per customer.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">LAPORAN PIUTANG</p><h1>Statement of Account</h1><p>Rekap tagihan, pembayaran, dan umur piutang per customer.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
+<x-menu-banner
+    tag="LAPORAN PIUTANG"
+    title="Statement of Account (SOA)"
+    description="Rekapitulasi tagihan, riwayat pembayaran, saldo terhutang, dan umur piutang per customer."
+    icon="wallet"
+    art-title="Kartu piutang,"
+    art-subtitle="lengkap & rapi."
+/>
 <section class="panel"><div class="cost-summary-body"><div class="stats-grid">
 @php $g = $result['grand']; @endphp
 <div class="stat-card"><p>Total tagihan</p><strong>Rp {{ \App\Support\Money::format($g['total']) }}</strong></div>

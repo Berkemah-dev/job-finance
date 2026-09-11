@@ -1,7 +1,18 @@
 @extends('layouts.app')
 @section('title','Reimbursement')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KEUANGAN</p><h1>Reimbursement</h1><p>Catat pengeluaran pribadi karyawan, setujui, dan bayar dengan jurnal otomatis.</p></div><a class="button button-primary" href="{{ route('reimbursements.create') }}">Buat reimbursement</a></div>
+<div class="page-heading"><div><p class="eyebrow">KEUANGAN KARYAWAN</p><h1>Reimbursement</h1><p>Catat pengeluaran pribadi karyawan, setujui, dan bayar dengan jurnal otomatis.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
+<x-menu-banner
+    tag="KEUANGAN KARYAWAN"
+    title="Klaim Reimbursement"
+    description="Kelola pengajuan klaim biaya operasional karyawan, persetujuan atasan, hingga pencairan kas."
+    :action-url="route('reimbursements.create')"
+    action-label="+ Buat Reimbursement"
+    action-icon="plus"
+    icon="wallet"
+    art-title="Klaim operasional,"
+    art-subtitle="transparan."
+/>
 <div class="document-stats">
 <div class="document-stat"><span>Menunggu</span><strong>{{ $totals['pending'] ?? 0 }}</strong></div>
 <div class="document-stat"><span>Disetujui</span><strong>{{ $totals['approved'] ?? 0 }}</strong></div>

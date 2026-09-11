@@ -1,11 +1,19 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Dashboard')
 @section('content')
 <div class="page-heading"><div><p class="eyebrow">RINGKASAN WORKSPACE</p><h1>Dashboard</h1><p>Pantau pekerjaan dan keuangan dalam satu tempat.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
-<section class="welcome-banner">
-    <div><span class="banner-tag"><span class="status-dot"></span> WORKSPACE JOBFINANCE</span><h2>Halo, {{ auth()->user()->name }}!</h2><p>Kelola pekerjaan dengan rapi.<br>Kenali biaya, tagihan, dan profit setiap job.</p><a href="#workflow" class="button button-white">Lihat alur pekerjaan <x-icon name="arrow"/></a></div>
-    <div class="banner-art" aria-hidden="true"><div class="art-orbit"></div><div class="art-card"><span class="art-icon"><x-icon name="briefcase"/></span><span>Setiap pekerjaan,<br><strong>lebih terukur.</strong></span><div class="art-bars"><i></i><i></i><i></i><i></i><i></i></div><span class="art-check"><x-icon name="check"/></span></div></div>
-</section>
+<x-menu-banner
+    tag="WORKSPACE JOBFINANCE"
+    :title="'Halo, ' . auth()->user()->name . '!'"
+    description="Kelola pekerjaan dengan rapi.
+Kenali biaya, tagihan, dan profit setiap job."
+    action-url="#workflow"
+    action-label="Lihat alur pekerjaan"
+    action-icon="arrow"
+    icon="briefcase"
+    art-title="Setiap pekerjaan,"
+    art-subtitle="lebih terukur."
+/>
 <div class="section-heading"><h2>Ringkasan pekerjaan</h2><span class="subtle">Seluruh periode</span></div>
 <div class="stats-grid">
 @foreach([['Job Open','briefcase','blue','Pekerjaan yang sedang berjalan'],['Job Closed','check','green','Pekerjaan yang telah diselesaikan']] as [$label,$icon,$color,$caption])

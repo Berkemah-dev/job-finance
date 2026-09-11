@@ -29,10 +29,10 @@
             <div class="field span-2">
                 <label for="parent_id">Akun Induk (Parent Account)</label>
                 <select id="parent_id" name="parent_id">
-                    <option value="">-- Tanpa Induk (Akun Utama / Root) --</option>
+                    <option value="">Tanpa Induk (Akun Utama / Root)</option>
                     @foreach($parents ?? [] as $p)
                         <option value="{{ $p->id }}" @selected((string)old('parent_id', $account->parent_id ?? $parent?->id) === (string)$p->id)>
-                            {{ str_repeat('— ', max(0, ($p->level ?? 1) - 1)) }}{{ $p->code }} - {{ $p->name }} ({{ config('accounting.types.'.$p->type) }})
+                            {{ $p->code }} - {{ $p->name }} ({{ config('accounting.types.'.$p->type) }})
                         </option>
                     @endforeach
                 </select>

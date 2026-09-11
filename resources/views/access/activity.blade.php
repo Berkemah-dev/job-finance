@@ -1,7 +1,15 @@
 @extends('layouts.app')
 @section('title','Log Aktivitas')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">ADMINISTRASI</p><h1>Log Aktivitas</h1><p>Riwayat akses dan aktivitas penting di workspace.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">AUDIT & KEAMANAN</p><h1>Log Aktivitas</h1><p>Riwayat akses dan aktivitas penting di workspace.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
+<x-menu-banner
+    tag="AUDIT & KEAMANAN"
+    title="Log Aktivitas Sistem"
+    description="Rekam jejak audit trail seluruh tindakan pengguna untuk menjaga transparansi dan integritas data."
+    icon="clock"
+    art-title="Audit trail,"
+    art-subtitle="terekam detail."
+/>
 <section class="panel"><form method="GET" class="filter-bar">
 <input name="date_from" type="date" value="{{ $filters['date_from'] }}" aria-label="Dari tanggal">
 <input name="date_to" type="date" value="{{ $filters['date_to'] }}" aria-label="Sampai tanggal">

@@ -91,9 +91,9 @@ class JobController extends Controller
         return redirect()->route('jobs.show', $job)->with('success', 'Job berhasil dibatalkan.');
     }
 
-    public function confirmDo(VersionRequest $request, Job $job, JobService $service)
+    public function confirmDo(Request $request, Job $job, JobService $service)
     {
-        $service->confirmDo($job, $request->validated(), $request->user());
+        $service->confirmDo($job, $request->user());
 
         return redirect()->route('jobs.show', $job)->with('success', 'DO Selesai berhasil dikonfirmasi.');
     }

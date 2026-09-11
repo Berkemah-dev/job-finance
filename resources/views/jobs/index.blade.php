@@ -1,7 +1,18 @@
 @extends('layouts.app')
 @section('title','Job Order')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL</p><h1>Job Order</h1><p>Pantau status pengiriman, transportasi, dan penanggung jawab setiap pekerjaan.</p></div>@can('quotations.manage')<a class="button button-primary" href="{{ route('quotations.index') }}">Lihat quotation</a>@endcan</div>
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL</p><h1>Job Order</h1><p>Pantau status pengiriman, transportasi, dan penanggung jawab setiap pekerjaan.</p></div><span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span></div>
+<x-menu-banner
+    tag="OPERASIONAL"
+    title="Job Order Operasional"
+    description="Pantau pergerakan pengiriman, jadwal ETD/ETA, PIC lapangan, dan status pekerjaan."
+    :action-url="auth()->user()->can('quotations.manage') ? route('quotations.index') : null"
+    action-label="Lihat Quotation"
+    action-icon="arrow"
+    icon="briefcase"
+    art-title="Setiap kontainer,"
+    art-subtitle="termonitoring."
+/>
 <section class="panel"><form class="filter-bar" method="GET">
 <input name="search" value="{{ $search }}" placeholder="Cari nomor, nama pekerjaan, atau customer" aria-label="Cari job">
 <input name="date_from" type="date" value="{{ $dateFrom }}" aria-label="Dari tanggal">

@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0f1f3d">
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
     <title>@yield('title', 'Dashboard') · JobFinance</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -36,15 +38,13 @@
                 $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
                 $active = false;
                 if ($destination) {
-                    if ($destination === 'documents.index') {
-                        $active = request()->routeIs('documents.*','quotations.*','jobs.*') && !$isCostPage;
-                    } elseif (str_starts_with((string)$destination, 'reports.')) {
+                    if (str_starts_with((string)$destination, 'reports.')) {
                         $active = request()->routeIs($destination, $destination.'.*');
                     } elseif ($permission === 'costs.manage') {
                         $active = $isCostPage;
                     } else {
                         $prefix = str_contains((string)$destination, '.') ? substr($destination, 0, strrpos($destination, '.')) : $destination;
-                        $active = request()->routeIs($prefix . '.*') && !($permission === 'jobs.view' && $isCostPage);
+                        $active = request()->routeIs($prefix . '.*') && !($destination === 'jobs.index' && $isCostPage);
                     }
                 }
                 @endphp

@@ -9,15 +9,24 @@
         </div>
         <p>Bagan Akun Standar (Chart of Accounts) dengan struktur hirarki terintegrasi.</p>
     </div>
-    <div class="action-group">
-        <a class="button button-secondary" href="{{ route('accounts.mappings') }}">
-            <x-icon name="file"/> Mapping Akun
-        </a>
-        <a class="button button-primary" href="{{ route('accounts.create') }}">
-            <x-icon name="plus"/> Tambah Akun
-        </a>
-    </div>
+    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
 </div>
+
+<x-menu-banner
+    tag="AKUNTANSI"
+    title="Chart of Accounts (Bagan Akun)"
+    description="Struktur akun buku besar standar akuntansi: Aset, Liabilitas, Ekuitas, Pendapatan, dan Beban."
+    icon="file"
+    art-title="Struktur akun,"
+    art-subtitle="standar PSAK."
+>
+    <a class="button button-white" href="{{ route('accounts.mappings') }}" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);">
+        <x-icon name="file"/> Mapping Akun
+    </a>
+    <a class="button button-white" href="{{ route('accounts.create') }}">
+        <x-icon name="plus"/> Tambah Akun
+    </a>
+</x-menu-banner>
 
 <section class="panel coa-panel">
     <form class="filter-bar" method="GET" action="{{ route('accounts.index') }}">

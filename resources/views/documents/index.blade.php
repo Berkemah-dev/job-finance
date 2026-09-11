@@ -17,10 +17,20 @@ $quickFilters = [
         <h1>Dokumen Job</h1>
         <p>Kelola Quotation dan Job Order dalam satu alur pekerjaan.</p>
     </div>
-    @can('quotations.manage')
-    <a class="button button-primary" href="{{ route('quotations.create') }}">+ Buat Dokumen Job</a>
-    @endcan
+    <span class="date-chip"><x-icon name="calendar"/>{{ now()->locale('id')->translatedFormat('d F Y') }}</span>
 </div>
+
+<x-menu-banner
+    tag="OPERASIONAL"
+    title="Pusat Dokumen Operasional"
+    description="Generate dan cetak Job Order, Surat Jalan, Tanda Terima, dan SK/DO langsung ke format PDF."
+    :action-url="auth()->user()->can('quotations.manage') ? route('quotations.create') : null"
+    action-label="+ Buat Dokumen Job"
+    action-icon="plus"
+    icon="file"
+    art-title="Dokumen logistik,"
+    art-subtitle="siap cetak."
+/>
 
 <section class="document-stats">
     <article class="document-stat"><span>Total Job</span><strong>{{ number_format($summary['total']) }}</strong></article>
