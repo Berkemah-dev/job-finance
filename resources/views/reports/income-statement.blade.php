@@ -9,4 +9,21 @@
     art-title="Kinerja laba,"
     art-subtitle="tumbuh positif."
 />
-<form class="filter-bar" method="GET"><div class="date-filter-group"><x-icon name="calendar"/><input type="date" name="from" value="{{ $from }}" aria-label="Dari tanggal" title="Dari tanggal"><span class="date-sep">→</span><input type="date" name="to" value="{{ $to }}" aria-label="Sampai tanggal" title="Sampai tanggal"></div><button class="button button-secondary">Terapkan</button></form><section class="panel report-list"><div><span>Pendapatan jasa</span><strong>Rp {{ \App\Support\Money::format($revenue) }}</strong></div><div><span>HPP job</span><strong>(Rp {{ \App\Support\Money::format($cogs) }})</strong></div><div class="report-subtotal"><span>Laba kotor</span><strong>Rp {{ \App\Support\Money::format($gross) }}</strong></div><div><span>Beban operasional</span><strong>(Rp {{ \App\Support\Money::format($expense) }})</strong></div><div class="report-total"><span>Laba bersih</span><strong>Rp {{ \App\Support\Money::format($net) }}</strong></div></section>@endsection
+
+<section class="panel report-list">
+    <form class="filter-bar" method="GET" style="padding: 16px 24px; border-bottom: 1px solid #edf1f7;">
+        <div class="date-filter-group">
+            <x-icon name="calendar"/>
+            <input type="date" name="from" value="{{ $from }}" aria-label="Dari tanggal" title="Dari tanggal">
+            <span class="date-sep">→</span>
+            <input type="date" name="to" value="{{ $to }}" aria-label="Sampai tanggal" title="Sampai tanggal">
+        </div>
+        <button class="button button-primary">Terapkan</button>
+    </form>
+    <div><span>Pendapatan jasa</span><strong>Rp {{ \App\Support\Money::format($revenue) }}</strong></div>
+    <div><span>HPP job</span><strong>(Rp {{ \App\Support\Money::format($cogs) }})</strong></div>
+    <div class="report-subtotal"><span>Laba kotor</span><strong>Rp {{ \App\Support\Money::format($gross) }}</strong></div>
+    <div><span>Beban operasional</span><strong>(Rp {{ \App\Support\Money::format($expense) }})</strong></div>
+    <div class="report-total"><span>Laba bersih</span><strong>Rp {{ \App\Support\Money::format($net) }}</strong></div>
+</section>
+@endsection

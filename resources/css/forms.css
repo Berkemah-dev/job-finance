@@ -370,7 +370,8 @@ select:focus,
 }
 .custom-select-dropdown {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 4px) !important;
+    bottom: auto !important;
     left: 0;
     right: 0;
     z-index: 1000;
@@ -382,6 +383,13 @@ select:focus,
     flex-direction: column;
     overflow: hidden;
     animation: customSelectSlideDown .15s ease-out;
+}
+.filter-bar .custom-select-wrapper {
+    flex: 1;
+    min-width: 240px;
+}
+.panel:has(.custom-select-wrapper.is-open) {
+    overflow: visible !important;
 }
 .custom-select-wrapper.is-open .custom-select-dropdown {
     display: flex;

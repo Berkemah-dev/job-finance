@@ -1,6 +1,6 @@
 // Custom Select Dropdown - Always opens downwards, clean searchable UI & accessible
 export function initCustomSelects() {
-    const selects = document.querySelectorAll('select[data-custom-select], .data-form select:not([data-native-select])');
+    const selects = document.querySelectorAll('select[data-custom-select], .data-form select:not([data-native-select]), .filter-bar select:not([data-native-select])');
 
     selects.forEach((select) => {
         if (select.dataset.customSelectInitialized) return;
@@ -144,6 +144,17 @@ export function initCustomSelects() {
             wrapper.classList.add('is-open');
             trigger.setAttribute('aria-expanded', 'true');
 
+            // Ensure parent panel and filter bar allow dropdown visibility
+            const panel = wrapper.closest('.panel');
+            if (panel) {
+                panel.style.overflow = 'visible';
+            }
+            const filterBar = wrapper.closest('.filter-bar');
+            if (filterBar) {
+                filterBar.style.position = 'relative';
+                filterBar.style.zIndex = '50';
+            }
+
             if (searchInput) {
                 searchInput.value = '';
                 filterOptions('');
@@ -160,6 +171,15 @@ export function initCustomSelects() {
         const closeDropdown = () => {
             wrapper.classList.remove('is-open');
             trigger.setAttribute('aria-expanded', 'false');
+
+            const panel = wrapper.closest('.panel');
+            if (panel && !panel.querySelector('.custom-select-wrapper.is-open')) {
+                panel.style.overflow = '';
+            }
+            const filterBar = wrapper.closest('.filter-bar');
+            if (filterBar && !filterBar.querySelector('.custom-select-wrapper.is-open')) {
+                filterBar.style.zIndex = '';
+            }
         };
 
         const toggleDropdown = () => {
