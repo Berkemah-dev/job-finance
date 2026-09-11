@@ -20,29 +20,4 @@
 
 @include('accounts.partials.coa')
 
-<style>
-    /* Pagination styling */
-    .pagination nav p {
-        color: #000000 !important;
-    }
-    
-    .pagination nav span[aria-current="page"] > span {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border-color: #000000 !important;
-        font-weight: 800 !important;
-    }
-    
-    .pagination nav a,
-    .pagination nav button,
-    .pagination nav span[aria-disabled="true"] > span {
-        background-color: #ffffff !important;
-        border-color: #000000 !important;
-        color: #000000 !important;
-    }
-    
-    .pagination nav svg {
-        color: #000000 !important;
-    }
-</style>
 @endsection
