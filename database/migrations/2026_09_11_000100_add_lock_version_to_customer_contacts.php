@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('customer_contacts', function (Blueprint $table) {
-            $table->unsignedInteger('lock_version')->default(0)->after('is_active');
-        });
+        if (!Schema::hasColumn('customer_contacts', 'lock_version')) {
+            Schema::table('customer_contacts', function (Blueprint $table) {
+                $table->unsignedInteger('lock_version')->default(0)->after('is_active');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('customer_contacts', function (Blueprint $table) {
-            $table->dropColumn('lock_version');
-        });
+        if (Schema::hasColumn('customer_contacts', 'lock_version')) {
+            Schema::table('customer_contacts', function (Blueprint $table) {
+                $table->dropColumn('lock_version');
+            });
+        }
     }
 };
