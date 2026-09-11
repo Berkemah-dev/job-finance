@@ -12,9 +12,6 @@ return [
         'dom_sea' => 'Domestic Sea',
         'dom_air' => 'Domestic Air',
         'land' => 'Darat / Trucking',
-        'sea' => 'Laut',
-        'air' => 'Udara',
-        'multimodal' => 'Multimoda',
         'other' => 'Lainnya',
     ],
     'terms_of_delivery' => [
@@ -39,6 +36,7 @@ return [
     // Nilai bawaan kalkulator LCL (boleh kosong; rate ditentukan pemakai bila belum terisi).
     'lcl' => ['default_rate' => null],
     'container_types' => ['20ft' => '20 FT', '40ft' => '40 FT', '40hc' => '40 HC', 'lcl' => 'LCL'],
-    'currencies' => ['IDR' => 'IDR (Rupiah Indonesia)', 'USD' => 'USD (US Dollar)'],
+    'currencies' => ['IDR' => 'IDR (Rupiah Indonesia)', 'EUR' => 'EUR (Euro)', 'CNY' => 'CNY (Chinese Yuan)', 'USD' => 'USD (US Dollar)', 'GBP' => 'GBP (Pound Sterling)', 'SGD' => 'SGD (Singapore Dollar)', 'MYR' => 'MYR (Malaysian Ringgit)'],
+    'cost_descriptions' => ['Ocean Freight', 'Air Freight', 'Trucking', 'Customs Clearance', 'Documentation', 'Handling', 'Warehouse', 'Delivery', 'Other'],
     'pricing_sources' => ['manual' => 'Manual', 'trucking' => 'Tarif Trucking'],
 ];
