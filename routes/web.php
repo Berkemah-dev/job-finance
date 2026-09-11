@@ -196,6 +196,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/trucking/{truckingPrice}', [TruckingPriceController::class, 'destroy'])->name('trucking.destroy');
     });
     Route::get('/accounts/mappings', [AccountController::class, 'mappings'])->middleware('can:coa.manage')->name('accounts.mappings');
+    Route::get('/master/coa', [AccountController::class, 'index'])->defaults('tab', 'coa')->middleware('can:coa.manage')->name('master.coa');
+    Route::get('/master/charge-types', [AccountController::class, 'index'])->defaults('tab', 'charge')->middleware('can:jobs.manage')->name('master.charge');
+    Route::get('/master/units', [AccountController::class, 'index'])->defaults('tab', 'unit')->middleware('can:jobs.manage')->name('master.units');
+    Route::get('/master/ports', [AccountController::class, 'index'])->defaults('tab', 'port')->middleware('can:jobs.manage')->name('master.ports');
     Route::put('/accounts/mappings', [AccountController::class, 'updateMappings'])->middleware('can:coa.manage')->name('accounts.mappings.update');
     Route::resource('accounts', AccountController::class)->except('show')->middleware('can:coa.manage');
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');

@@ -18,7 +18,7 @@ class AccountController extends Controller
 {
     public function index(Request $request)
     {
-        $tab = $request->query('tab', 'coa');
+        $tab = $request->route('tab') ?? $request->query('tab', 'coa');
         $search = mb_substr($request->string('search')->toString(), 0, 100);
 
         if ($tab === 'port') {

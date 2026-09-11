@@ -40,12 +40,14 @@
     @endif
 </x-menu-banner>
 
+@if(!request()->routeIs('master.*'))
 <div class="tabs-container" style="margin-bottom: 1.5rem; display: flex; gap: 1rem; border-bottom: 1px solid #e1e7f1;">
     <a href="{{ route('accounts.index', ['tab' => 'coa']) }}" style="padding: 0.5rem 1rem; border-bottom: 2px solid {{ ($tab ?? 'coa') === 'coa' ? '#0f1f3d' : 'transparent' }}; color: {{ ($tab ?? 'coa') === 'coa' ? '#0f1f3d' : '#64748b' }}; font-weight: {{ ($tab ?? 'coa') === 'coa' ? '600' : '400' }}; text-decoration: none;">Data COA</a>
     <a href="{{ route('accounts.index', ['tab' => 'charge']) }}" style="padding: 0.5rem 1rem; border-bottom: 2px solid {{ ($tab ?? 'coa') === 'charge' ? '#0f1f3d' : 'transparent' }}; color: {{ ($tab ?? 'coa') === 'charge' ? '#0f1f3d' : '#64748b' }}; font-weight: {{ ($tab ?? 'coa') === 'charge' ? '600' : '400' }}; text-decoration: none;">Data Cost</a>
     <a href="{{ route('accounts.index', ['tab' => 'unit']) }}" style="padding: 0.5rem 1rem; border-bottom: 2px solid {{ ($tab ?? 'coa') === 'unit' ? '#0f1f3d' : 'transparent' }}; color: {{ ($tab ?? 'coa') === 'unit' ? '#0f1f3d' : '#64748b' }}; font-weight: {{ ($tab ?? 'coa') === 'unit' ? '600' : '400' }}; text-decoration: none;">Data Unit</a>
     <a href="{{ route('accounts.index', ['tab' => 'port']) }}" style="padding: 0.5rem 1rem; border-bottom: 2px solid {{ ($tab ?? 'coa') === 'port' ? '#0f1f3d' : 'transparent' }}; color: {{ ($tab ?? 'coa') === 'port' ? '#0f1f3d' : '#64748b' }}; font-weight: {{ ($tab ?? 'coa') === 'port' ? '600' : '400' }}; text-decoration: none;">Data Port</a>
 </div>
+@endif
 
 @if(($tab ?? 'coa') === 'coa')
     @include('accounts.partials.coa')
