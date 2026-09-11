@@ -40,6 +40,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
+                            <a class="btn-action" href="{{ route('charge-types.edit', $charge) }}" id="btn-edit-charge-{{ $charge->id }}" title="Edit Jenis Biaya" data-tooltip="Edit" aria-label="Edit Jenis Biaya"><x-icon name="edit"/></a>
                             <form method="POST" action="{{ route('charge-types.toggle',$charge) }}">
                                 @csrf @method('PATCH')
                                 <button class="btn-action {{ $charge->is_active ? 'btn-action-warning' : 'btn-action-success' }}" id="btn-toggle-charge-{{ $charge->id }}" title="{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}" data-tooltip="{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}" aria-label="{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}"><x-icon name="{{ $charge->is_active ? 'power' : 'check' }}"/></button>

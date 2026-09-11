@@ -8,30 +8,44 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(DashboardService $service, Request $request): View
+    public function __invoke(DashboardService $service, Request $request): View|\Illuminate\Http\RedirectResponse
     {
-        return view('dashboard', $service->summary($request->user()));
+        $user = $request->user();
+        $role = (string) ($user->role?->name ?? 'super-admin');
+
+        if ($role === 'super-admin') {
+            return redirect()->route('dashboard.finance');
+        }
+
+        $viewName = match ($role) {
+            'finance' => 'dashboard.finance',
+            'finance-manager' => 'dashboard.finance-manager',
+            'sales-manager' => 'dashboard.sales-manager',
+            'sales' => 'dashboard.sales',
+            'operational' => 'dashboard.operational',
+            'customer-service' => 'dashboard.customer-service',
+            default => 'dashboard.finance',
+        };
+
+        return view($viewName, $service->summary($user, $role));
     }
 
     public function role(string $role, DashboardService $service, Request $request): View
     {
-        $currentRole = (string) ($request->user()->role?->name ?? '');
+        $user = $request->user();
+        $currentRole = (string) ($user->role?->name ?? '');
         abort_unless($currentRole === 'super-admin' || $currentRole === $role, 403);
 
-        return $this->render($role, $service, $request->user());
-    }
-
-    private function render(string $role, DashboardService $service, $user): View
-    {
-        $view = match ($role) {
+        $viewName = match ($role) {
             'finance' => 'dashboard.finance',
             'finance-manager' => 'dashboard.finance-manager',
-            'sales', 'sales-manager' => 'dashboard.sales',
+            'sales-manager' => 'dashboard.sales-manager',
+            'sales' => 'dashboard.sales',
             'operational' => 'dashboard.operational',
             'customer-service' => 'dashboard.customer-service',
             default => 'dashboard',
         };
 
-        return view($view, $service->summary($user));
+        return view($viewName, $service->summary($user, $role));
     }
 }

@@ -21,6 +21,8 @@ use App\Http\Controllers\JobDocumentController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\OperationalDocumentController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PricingSuggestionController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ReimbursementController;
@@ -128,16 +130,19 @@ Route::middleware('auth')->group(function () {
     // Document Type Master
     Route::resource('document-types', DocumentTypeController::class)->except('show')->middleware('can:jobs.manage');
     // Master Data: Ports, ChargeTypes, ContainerUnits
+    Route::get('/ports', [PortController::class, 'index'])->middleware('can:jobs.manage')->name('ports.index');
     Route::post('/ports', [PortController::class, 'store'])->middleware('can:jobs.manage')->name('ports.store');
     Route::patch('/ports/{port}/toggle', [PortController::class, 'toggle'])->middleware('can:jobs.manage')->name('ports.toggle');
     Route::delete('/ports/{port}', [PortController::class, 'destroy'])->middleware('can:jobs.manage')->name('ports.destroy');
     Route::get('/ports/{port}/edit', [PortController::class, 'edit'])->middleware('can:jobs.manage')->name('ports.edit');
     Route::put('/ports/{port}', [PortController::class, 'update'])->middleware('can:jobs.manage')->name('ports.update');
+    Route::get('/charge-types', [ChargeTypeController::class, 'index'])->middleware('can:jobs.manage')->name('charge-types.index');
     Route::post('/charge-types', [ChargeTypeController::class, 'store'])->middleware('can:jobs.manage')->name('charge-types.store');
     Route::patch('/charge-types/{chargeType}/toggle', [ChargeTypeController::class, 'toggle'])->middleware('can:jobs.manage')->name('charge-types.toggle');
     Route::delete('/charge-types/{chargeType}', [ChargeTypeController::class, 'destroy'])->middleware('can:jobs.manage')->name('charge-types.destroy');
     Route::get('/charge-types/{chargeType}/edit', [ChargeTypeController::class, 'edit'])->middleware('can:jobs.manage')->name('charge-types.edit');
     Route::put('/charge-types/{chargeType}', [ChargeTypeController::class, 'update'])->middleware('can:jobs.manage')->name('charge-types.update');
+    Route::get('/container-units', [ContainerUnitController::class, 'index'])->middleware('can:jobs.manage')->name('container-units.index');
     Route::post('/container-units', [ContainerUnitController::class, 'store'])->middleware('can:jobs.manage')->name('container-units.store');
     Route::patch('/container-units/{containerUnit}/toggle', [ContainerUnitController::class, 'toggle'])->middleware('can:jobs.manage')->name('container-units.toggle');
     Route::delete('/container-units/{containerUnit}', [ContainerUnitController::class, 'destroy'])->middleware('can:jobs.manage')->name('container-units.destroy');
@@ -196,9 +201,17 @@ Route::middleware('auth')->group(function () {
         Route::delete('/trucking/{truckingPrice}', [TruckingPriceController::class, 'destroy'])->name('trucking.destroy');
     });
     Route::get('/accounts/mappings', [AccountController::class, 'mappings'])->middleware('can:coa.manage')->name('accounts.mappings');
+    Route::get('/master/coa', [AccountController::class, 'index'])->defaults('tab', 'coa')->middleware('can:coa.manage')->name('master.coa');
+    Route::get('/master/charge-types', [AccountController::class, 'index'])->defaults('tab', 'charge')->middleware('can:jobs.manage')->name('master.charge');
+    Route::get('/master/units', [AccountController::class, 'index'])->defaults('tab', 'unit')->middleware('can:jobs.manage')->name('master.units');
+    Route::get('/master/ports', [AccountController::class, 'index'])->defaults('tab', 'port')->middleware('can:jobs.manage')->name('master.ports');
     Route::put('/accounts/mappings', [AccountController::class, 'updateMappings'])->middleware('can:coa.manage')->name('accounts.mappings.update');
     Route::resource('accounts', AccountController::class)->except('show')->middleware('can:coa.manage');
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
+    Route::get('/account/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/account/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/account/password', [ProfileController::class, 'password'])->name('profile.password');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
     Route::get('/dashboard-finance', [DashboardController::class, 'role'])->defaults('role', 'finance')->middleware('can:dashboard.view')->name('dashboard.finance');
     Route::get('/dashboard-financemanager', [DashboardController::class, 'role'])->defaults('role', 'finance-manager')->middleware('can:dashboard.view')->name('dashboard.finance-manager');

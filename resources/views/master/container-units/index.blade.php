@@ -35,6 +35,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
+                            <a class="btn-action" href="{{ route('container-units.edit', $unit) }}" id="btn-edit-unit-{{ $unit->id }}" title="Edit Satuan" data-tooltip="Edit" aria-label="Edit Satuan"><x-icon name="edit"/></a>
                             <form method="POST" action="{{ route('container-units.toggle',$unit) }}">
                                 @csrf @method('PATCH')
                                 <button class="btn-action {{ $unit->is_active ? 'btn-action-warning' : 'btn-action-success' }}" id="btn-toggle-unit-{{ $unit->id }}" title="{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}" data-tooltip="{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}" aria-label="{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}"><x-icon name="{{ $unit->is_active ? 'power' : 'check' }}"/></button>

@@ -30,8 +30,15 @@ class StatementOfAccountController extends Controller
         $from = $request->date('from') ?? today()->startOfMonth();
         $to = $request->date('to') ?? today();
         $customer = Customer::withTrashed()->findOrFail($soaCustomer);
+        $logs = SoaEmailLog::where('customer_id', $customer->id)->with('sender')->latest('sent_at')->take(15)->get();
 
-        return view('reports.soa.show', ['customer' => $customer->load('contacts'), 'statement' => $this->service->statement($customer, $from, $to), 'from' => $from, 'to' => $to]);
+        return view('reports.soa.show', [
+            'customer' => $customer->load('contacts'),
+            'statement' => $this->service->statement($customer, $from, $to),
+            'from' => $from,
+            'to' => $to,
+            'logs' => $logs,
+        ]);
     }
 
     public function email(int $soaCustomer, Request $request)

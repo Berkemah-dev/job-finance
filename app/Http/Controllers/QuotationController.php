@@ -6,6 +6,8 @@ use App\Enums\QuotationStatus;
 use App\Http\Requests\QuotationRequest;
 use App\Http\Requests\VersionRequest;
 use App\Models\Customer;
+use App\Models\ContainerUnit;
+use App\Models\ChargeType;
 use App\Models\Port;
 use App\Models\Quotation;
 use App\Models\User;
@@ -46,7 +48,7 @@ class QuotationController extends Controller
             'quotation' => new Quotation,
             'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
             'sales' => $this->salesUsers(),
-            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
+            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']), 'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']), 'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
         ]);
     }
 
@@ -91,7 +93,7 @@ class QuotationController extends Controller
             'quotation' => $quotation->load('items'),
             'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
             'sales' => $this->salesUsers(),
-            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
+            'ports' => Port::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']), 'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']), 'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
         ]);
     }
 

@@ -42,6 +42,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
+                            <a class="btn-action" href="{{ route('ports.edit', $port) }}" id="btn-edit-port-{{ $port->id }}" title="Edit Port" data-tooltip="Edit" aria-label="Edit Port"><x-icon name="edit"/></a>
                             <form method="POST" action="{{ route('ports.toggle',$port) }}">
                                 @csrf @method('PATCH')
                                 <button class="btn-action {{ $port->is_active ? 'btn-action-warning' : 'btn-action-success' }}" id="btn-toggle-port-{{ $port->id }}" title="{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}" data-tooltip="{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}" aria-label="{{ $port->is_active?'Nonaktifkan':'Aktifkan' }}"><x-icon name="{{ $port->is_active ? 'power' : 'check' }}"/></button>

@@ -27,7 +27,7 @@
     <div>
         <p class="eyebrow">OPERASIONAL / JOB ORDER</p>
         <h1>{{ $job->number }}</h1>
-        <p>{{ $job->subject }} ({{ ($job->pol || $job->pod) ? ($job->pol ?? '—') . ' → ' . ($job->pod ?? '—') : ($job->origin ?? '—') . ' → ' . ($job->destination ?? '—') }}) · Customer: <strong>{{ $customerName }}</strong></p>
+        <p>{{ $job->subject }} · Customer: <strong>{{ $customerName }}</strong>@if($job->pol || $job->pod) · {{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}@elseif($job->origin || $job->destination) · {{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}@endif</p>
     </div>
     <a class="text-link" href="{{ route('jobs.index') }}">← Kembali ke daftar</a>
 </div>

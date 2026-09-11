@@ -17,9 +17,31 @@ use Illuminate\Support\Facades\Gate;
 
 class DashboardService
 {
-    public function summary(?User $user = null): array
+    public function summary(?User $user = null, ?string $viewRole = null): array
     {
         $user ??= request()->user();
+        $role = $viewRole ?? (string) ($user->role?->name ?? 'super-admin');
+
+        $roleTitle = match ($role) {
+            'finance' => 'Dashboard Finance',
+            'finance-manager' => 'Dashboard Finance Manager',
+            'sales-manager' => 'Dashboard Sales Manager',
+            'sales' => 'Dashboard Sales',
+            'operational' => 'Dashboard Operational',
+            'customer-service' => 'Dashboard Customer Service',
+            default => 'Dashboard Super Admin (All View)',
+        };
+
+        $roleDescription = match ($role) {
+            'finance' => 'Informasi Invoice Due Date, Kurs Mingguan, Reimbursement, dan Piutang Customer.',
+            'finance-manager' => 'Informasi Job Profit, Pendapatan & Profit, Top Jobs, dan Kurs Mingguan.',
+            'sales-manager' => 'Persetujuan Draft Quote, Pembuatan Quotation, dan Kurs Mingguan.',
+            'sales' => 'Pembuatan Quotation, Monitoring Status Quote Saya, dan Kurs Mingguan.',
+            'operational' => 'Informasi Job yang Belum Final, Status Biaya Draft, dan Pergerakan Shipment.',
+            'customer-service' => 'Informasi Job Mendekat Tiba (ETA), Pengiriman Berjalan, dan Status DO.',
+            default => 'Pantau seluruh operasional, pipeline penjualan, dan performa keuangan dalam satu tempat.',
+        };
+
         $counts = Job::selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
         $temporary = Money::decimal(0);
         $provision = Money::decimal(0);
@@ -28,7 +50,10 @@ class DashboardService
         $cogs = Money::decimal(0);
         $profit = Money::decimal(0);
         $monthly = collect(range(5, 0))->mapWithKeys(fn ($monthsAgo) => [today()->subMonths($monthsAgo)->format('Y-m') => ['label' => today()->subMonths($monthsAgo)->locale('id')->translatedFormat('M'), 'revenue' => Money::decimal(0), 'profit' => Money::decimal(0)]]);
-        if (Gate::forUser($user)->allows('financial.view')) {
+
+        $canViewFinance = Gate::forUser($user)->allows('financial.view') || in_array($role, ['finance', 'finance-manager', 'super-admin']);
+
+        if ($canViewFinance) {
             foreach (JobCost::where('status', 'final')->whereHas('job', fn ($q) => $q->where('status', 'open'))->select(['id', 'type', 'total_cost'])->cursor() as $cost) {
                 if ($cost->type === 'temporary') {
                     $temporary = $temporary->plus($cost->total_cost);
@@ -55,8 +80,8 @@ class DashboardService
             }
         }
 
-        $role = (string) ($user->role?->name ?? '');
         $weeklyPricing = WeeklyPricing::where('is_active', true)->orderByDesc('effective_date')->first();
+        $weeklyRates = WeeklyPricing::where('is_active', true)->orderBy('currency')->get();
         $invoiceAging = [
             'current' => Invoice::where('balance', '>', 0)->whereDate('due_date', '>=', today())->count(),
             'overdue_1_30' => Invoice::where('balance', '>', 0)->whereBetween('due_date', [today()->subDays(30), today()->subDay()])->count(),
@@ -64,38 +89,65 @@ class DashboardService
         ];
         $openJobs = Job::where('status', 'open')->count();
         $jobsWithDraftCosts = Job::where('status', 'open')->whereHas('costs', fn ($q) => $q->where('status', '!=', 'final'))->count();
-        return ['role' => $role, 'temporaryBalance' => (string) $temporary, 'provisionBalance' => (string) $provision, 'openJobs' => (int) ($counts['open'] ?? 0), 'closedJobs' => (int) ($counts['closed'] ?? 0),
-            'receivableBalance' => (string) $receivable, 'revenueBalance' => (string) $revenue, 'cogsBalance' => (string) $cogs, 'profitBalance' => (string) $profit,
+
+        return [
+            'role' => $role,
+            'roleTitle' => $roleTitle,
+            'roleDescription' => $roleDescription,
+            'userRole' => (string) ($user->role?->name ?? 'super-admin'),
+            'temporaryBalance' => (string) $temporary,
+            'provisionBalance' => (string) $provision,
+            'openJobs' => (int) ($counts['open'] ?? 0),
+            'closedJobs' => (int) ($counts['closed'] ?? 0),
+            'receivableBalance' => (string) $receivable,
+            'revenueBalance' => (string) $revenue,
+            'cogsBalance' => (string) $cogs,
+            'profitBalance' => (string) $profit,
             'monthlyPerformance' => $monthly->map(fn ($row) => ['label' => $row['label'], 'revenue' => (string) $row['revenue'], 'profit' => (string) $row['profit']])->values(),
-            'unpaidInvoices' => Gate::forUser($user)->allows('financial.view') ? Invoice::where('balance', '>', 0)->orderBy('due_date')->limit(5)->get() : collect(),
-            'draftJobs' => (int) ($counts['draft'] ?? 0), 'recentJobs' => Job::latest('id')->limit(5)->get(),
-            'weeklyPricing' => $weeklyPricing, 'invoiceAging' => $invoiceAging, 'costProgress' => ['open' => $openJobs, 'draft' => $jobsWithDraftCosts, 'final' => max(0, $openJobs - $jobsWithDraftCosts)], 'unfinishedJobs' => Job::where('status', 'open')->whereHas('costs', fn ($q) => $q->where('status', '!=', 'final'))->latest('id')->limit(8)->get(),
-            'arrivalSoon' => Job::where('status', 'open')->whereNotNull('eta')->whereBetween('eta', [today(), today()->addDays(14)])->orderBy('eta')->limit(8)->get(), 'widgets' => $this->widgets($user)];
+            'unpaidInvoices' => $canViewFinance ? Invoice::where('balance', '>', 0)->orderBy('due_date')->limit(6)->get() : collect(),
+            'draftJobs' => (int) ($counts['draft'] ?? 0),
+            'recentJobs' => Job::latest('id')->limit(5)->get(),
+            'weeklyPricing' => $weeklyPricing,
+            'weeklyRates' => $weeklyRates,
+            'invoiceAging' => $invoiceAging,
+            'costProgress' => ['open' => $openJobs, 'draft' => $jobsWithDraftCosts, 'final' => max(0, $openJobs - $jobsWithDraftCosts)],
+            'unfinishedJobs' => Job::where('status', 'open')->whereHas('costs', fn ($q) => $q->where('status', '!=', 'final'))->latest('id')->limit(8)->get(),
+            'arrivalSoon' => Job::where('status', 'open')->whereNotNull('eta')->whereBetween('eta', [today(), today()->addDays(14)])->orderBy('eta')->limit(8)->get(),
+            'widgets' => $this->widgets($user, $role),
+        ];
     }
 
-    private function widgets(User $user): array
+    private function widgets(User $user, string $role): array
     {
         $out = [];
         $gate = Gate::forUser($user);
-        if ($gate->allows('quotations.manage')) {
+
+        $showSales = in_array($role, ['sales', 'sales-manager', 'super-admin']) || $gate->allows('quotations.manage');
+        if ($showSales) {
             $out['quotes'] = Quotation::selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
             $out['quotes30d'] = Quotation::where('created_at', '>=', now()->subDays(30))->count();
             $out['myQuotes'] = Quotation::where('created_by', $user->id)->latest('id')->limit(5)->get();
+            $out['submittedQuotes'] = Quotation::where('status', 'submitted')->latest('id')->limit(6)->get();
         }
-        if ($gate->allows('jobs.view')) {
+
+        $showOperations = in_array($role, ['operational', 'customer-service', 'super-admin']) || $gate->allows('jobs.view');
+        if ($showOperations) {
             $out['shipment'] = Job::where('status', 'open')->whereNotNull('shipment_status')->selectRaw('shipment_status, count(*) as total')->groupBy('shipment_status')->pluck('total', 'shipment_status');
             $out['etdSoon'] = Job::where('status', 'open')->whereNotNull('etd')->whereBetween('etd', [today(), today()->addDays(14)])->orderBy('etd')->limit(5)->get(['id', 'number', 'etd', 'subject', 'quotation_snapshot']);
             $out['etaSoon'] = Job::where('status', 'open')->whereNotNull('eta')->whereBetween('eta', [today(), today()->addDays(7)])->orderBy('eta')->limit(5)->get(['id', 'number', 'eta', 'subject', 'quotation_snapshot']);
             $out['myOpenJobs'] = Job::where('cs_id', $user->id)->where('status', 'open')->count();
         }
-        if ($gate->allows('financial.view')) {
+
+        $showFinance = in_array($role, ['finance', 'finance-manager', 'super-admin']) || $gate->allows('financial.view');
+        if ($showFinance) {
             $overdue = Invoice::where('balance', '>', 0)->where('due_date', '<', today());
             $out['overdueReceivables'] = ['count' => (clone $overdue)->count(), 'amount' => (string) (clone $overdue)->sum('balance')];
             $out['pendingReimbursements'] = Reimbursement::where('status', 'pending')->count();
             $out['journalsThisMonth'] = Journal::where('status', 'posted')->where('journal_date', '>=', today()->startOfMonth())->count();
             $out['topJobs'] = Job::has('closingSnapshot')->with('closingSnapshot')->limit(100)->get()->sortByDesc(fn ($job) => (float) $job->closingSnapshot->profit)->take(5)->values();
         }
-        if ($user->hasPermission('users.manage')) {
+
+        if ($role === 'super-admin' || $user->hasPermission('users.manage')) {
             $out['admin'] = ['users' => User::query()->count(), 'activity7d' => ActivityLog::where('created_at', '>=', now()->subDays(7))->count()];
         }
 

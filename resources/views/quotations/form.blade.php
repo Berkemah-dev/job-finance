@@ -23,25 +23,13 @@
 <div class="field"><label for="weight_meas">Weight/Meas</label><input id="weight_meas" name="weight_meas" value="{{ old('weight_meas',$quotation->weight_meas) }}" maxlength="100" placeholder="cth: 1,500 KGS / 3 CBM"></div>
 
 <div class="field"><label for="commodity">Commodity</label><input id="commodity" name="commodity" value="{{ old('commodity',$quotation->commodity) }}" maxlength="160" placeholder="cth: General Cargo / Spare Parts"></div>
-<div class="field"><label for="payment_terms">Ketentuan pembayaran</label><select id="payment_terms" name="payment_terms"><option value="">—</option>@foreach(config('operations.customer_payment_terms') as $key=>$label)<option value="{{ $key }}" @selected(old('payment_terms',$quotation->payment_terms)===$key)>{{ $label }}</option>@endforeach</select></div>
 
-<div class="field"><label for="origin">Port of Loading (Asal)</label><input id="origin" name="origin" list="ports-list" value="{{ old('origin',$quotation->origin) }}" maxlength="120" placeholder="Pilih atau ketik port asal..."><datalist id="ports-list">@foreach($ports ?? [] as $port)<option value="{{ $port->name }} ({{ $port->code }})">{{ $port->code }} - {{ $port->name }}</option>@endforeach</datalist></div>
-<div class="field"><label for="destination">Port of Discharge (Tujuan)</label><input id="destination" name="destination" list="ports-list" value="{{ old('destination',$quotation->destination) }}" maxlength="120" placeholder="Pilih atau ketik port tujuan..."></div>
+<div class="field"><label for="origin">Port of Loading (POL)</label><input id="origin" name="origin" list="ports-list" value="{{ old('origin',$quotation->origin) }}" maxlength="120" placeholder="Ketik nama atau kode port..."><datalist id="ports-list">@foreach($ports ?? [] as $port)<option value="{{ $port->name }} ({{ $port->code }})">{{ $port->name }} ({{ $port->code }})</option>@endforeach</datalist></div>
+<div class="field"><label for="destination">Port of Discharge (POD)</label><input id="destination" name="destination" list="ports-list" value="{{ old('destination',$quotation->destination) }}" maxlength="120" placeholder="Ketik nama atau kode port..."></div>
 
 <div class="field"><label for="currency">Mata uang</label><select id="currency" name="currency">@foreach(config('operations.currencies') as $key=>$label)<option value="{{ $key }}" @selected(old('currency',$quotation->currency ?? 'IDR')===$key)>{{ $label }}</option>@endforeach</select></div>
 <div class="field"><label for="exchange_rate">Kurs</label><input id="exchange_rate" name="exchange_rate" type="number" min="0.01" step="0.01" value="{{ old('exchange_rate',$quotation->exchange_rate ?? 1) }}" max="999999999.99"></div>
 
-<div class="field"><label>Shipper (pengirim)</label><select data-shipper-picker><option value="">Isi manual atau pilih kontak</option></select></div>
-<div class="field"><label>Consignee (penerima)</label><select data-consignee-picker><option value="">Isi manual atau pilih kontak</option></select></div>
-
-<div class="field"><label for="shipper_name">Nama shipper</label><input id="shipper_name" name="shipper_name" value="{{ old('shipper_name',$quotation->shipper_name) }}" maxlength="160" placeholder="Nama pengirim" data-shipper-name></div>
-<div class="field"><label for="consignee_name">Nama consignee</label><input id="consignee_name" name="consignee_name" value="{{ old('consignee_name',$quotation->consignee_name) }}" maxlength="160" placeholder="Nama penerima" data-consignee-name></div>
-
-<div class="field span-2"><label for="shipper_address">Alamat shipper</label><textarea id="shipper_address" name="shipper_address" rows="2" maxlength="5000" data-shipper-address>{{ old('shipper_address',$quotation->shipper_address) }}</textarea></div>
-<div class="field span-2"><label for="consignee_address">Alamat consignee</label><textarea id="consignee_address" name="consignee_address" rows="2" maxlength="5000" data-consignee-address>{{ old('consignee_address',$quotation->consignee_address) }}</textarea></div>
-
-<div class="field"><label for="tax_rate">Pajak (%)</label><input id="tax_rate" name="tax_rate" type="number" min="0" max="100" step="0.01" value="{{ old('tax_rate',$quotation->tax_rate ?? 0) }}"></div>
-<div class="field"><label for="discount">Diskon (IDR)</label><input id="discount" name="discount" type="number" min="0" max="999999999.99" step="0.01" value="{{ old('discount',$quotation->discount ?? 0) }}"></div>
 </div>
 <style>
     details.lcl-panel summary::marker { display: none; content: ""; }
@@ -90,7 +78,7 @@
 <div class="section-heading"><h2>Detail penawaran</h2><span class="subtle">Maksimal 100 item · nilai dalam IDR · kurs memakai weekly pricing</span></div>
 <div data-items>@php $rows=old('items',$quotation->exists?$quotation->items->toArray():[[]]); @endphp @foreach($rows as $index=>$item) @include('quotations.item',compact('index','item')) @endforeach</div>
 <template data-item-template>@include('quotations.item',['index'=>'__INDEX__','item'=>[]])</template>
-<button class="button button-secondary" type="button" data-add-item>+ Tambah item</button>
+<button class="button button-secondary" type="button" data-add-item>+ Simpan item & tambah item berikutnya</button>
 <div class="summary-box" aria-live="polite"><div class="summary-row"><span>Total sementara</span><strong data-preview-total>Rp 0,00</strong></div><div class="summary-row"><span>Estimasi profit</span><strong data-preview-profit>Rp 0,00</strong></div><p class="form-help">Pajak, diskon, dan grand total dihitung saat disimpan.</p></div>
 <div class="field"><label for="notes">Catatan / ketentuan penawaran</label><textarea name="notes" id="notes" rows="3" maxlength="5000">{{ old('notes',$quotation->notes) }}</textarea></div><div class="form-actions"><a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a><button class="button button-primary" @disabled($customers->isEmpty())>Simpan draft</button></div></form></section>
 <script>

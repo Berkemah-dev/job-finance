@@ -5,6 +5,8 @@ return [
     'shipment_statuses' => ['booked' => 'Booked', 'in_progress' => 'In Progress', 'departed' => 'Departed', 'arrived' => 'Arrived', 'spjm' => 'SPJM', 'sppb' => 'SPPB', 'do_process' => 'DO Process', 'completed' => 'Completed'],
     'cost_statuses' => ['draft' => 'Draft', 'final' => 'Final'],
     'service_types' => [
+        'sea' => 'Laut (Sea)',
+        'air' => 'Udara (Air)',
         'imp_sea' => 'Import Sea',
         'exp_sea' => 'Export Sea',
         'imp_air' => 'Import Air',
@@ -12,9 +14,6 @@ return [
         'dom_sea' => 'Domestic Sea',
         'dom_air' => 'Domestic Air',
         'land' => 'Darat / Trucking',
-        'sea' => 'Laut',
-        'air' => 'Udara',
-        'multimodal' => 'Multimoda',
         'other' => 'Lainnya',
     ],
     'terms_of_delivery' => [
@@ -39,6 +38,7 @@ return [
     // Nilai bawaan kalkulator LCL (boleh kosong; rate ditentukan pemakai bila belum terisi).
     'lcl' => ['default_rate' => null],
     'container_types' => ['20ft' => '20 FT', '40ft' => '40 FT', '40hc' => '40 HC', 'lcl' => 'LCL'],
-    'currencies' => ['IDR' => 'IDR (Rupiah Indonesia)', 'USD' => 'USD (US Dollar)'],
+    'currencies' => ['IDR' => 'IDR (Rupiah Indonesia)', 'EUR' => 'EUR (Euro)', 'CNY' => 'CNY (Chinese Yuan)', 'USD' => 'USD (US Dollar)', 'GBP' => 'GBP (Pound Sterling)', 'SGD' => 'SGD (Singapore Dollar)', 'MYR' => 'MYR (Malaysian Ringgit)'],
+    'cost_descriptions' => ['Ocean Freight', 'Air Freight', 'Trucking', 'Customs Clearance', 'Documentation', 'Handling', 'Warehouse', 'Delivery', 'Other'],
     'pricing_sources' => ['manual' => 'Manual', 'trucking' => 'Tarif Trucking'],
 ];

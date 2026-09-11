@@ -116,19 +116,19 @@ class DashboardWidgetsTest extends TestCase
     {
         $this->actingAs($this->management)->get('/dashboard')
             ->assertOk()
-            ->assertSee('Ringkasan pekerjaan')
+            ->assertSee('Keuangan lebih terkontrol')
             ->assertDontSee('Pipeline quotation')
             ->assertDontSee('Pengiriman berjalan')
-            ->assertDontSee('Jurnal bulan ini')
             ->assertDontSee('Quotation saya');
     }
 
     public function test_super_admin_admin_widgets_render(): void
     {
         $this->actingAs($this->admin)->get('/dashboard')
+            ->assertRedirect(route('dashboard.finance'));
+        $this->actingAs($this->admin)->get('/dashboard-finance')
             ->assertOk()
-            ->assertSee('Pengguna sistem')
-            ->assertSee('Aktivitas 7 hari')
+            ->assertSee('Dashboard Finance')
             ->assertSee('Jurnal bulan ini');
     }
 }

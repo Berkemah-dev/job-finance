@@ -108,14 +108,14 @@ class PricingService
      * Kurs resmi untuk mata uang pada tanggal tertentu (dari weekly pricing aktif).
      * IDR selalu 1; mata uang tanpa kurs mingguan aktif ditolak agar nilai selalu terdokumentasi.
      */
-    public function convertedRate(string $currency, string|Carbon|null $date = null): string
+    public function convertedRate(string $currency, string|Carbon|null $date = null, string $fieldKey = 'items.*.currency'): string
     {
         if ($currency === 'IDR') {
             return '1.00';
         }
         $weekly = $this->activeWeeklyRate($currency, null, $date);
         if (! $weekly) {
-            throw ValidationException::withMessages(['items.*.currency' => 'Tidak ada weekly pricing aktif untuk '.$currency.' pada tanggal tersebut.']);
+            throw ValidationException::withMessages([$fieldKey => 'Tidak ada weekly pricing aktif untuk '.$currency.' pada tanggal tersebut.']);
         }
 
         return (string) $weekly->exchange_rate;

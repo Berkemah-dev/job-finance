@@ -27,5 +27,97 @@
 <select name="shipment_status" aria-label="Status pengiriman"><option value="">Semua shipment</option>@foreach(config('operations.shipment_statuses') as $value=>$label)<option value="{{ $value }}" @selected($shipmentStatus===$value)>{{ $label }}</option>@endforeach</select>
 <button class="button button-primary">Cari</button><a class="text-link" href="{{ route('jobs.index') }}">Reset</a>
 </form>
-<div class="table-scroll"><table><thead><tr><th>Nomor Job / Tanggal</th><th>Customer / Pekerjaan</th><th>Layanan</th><th>Rute</th><th>ETD / ETA</th><th>Penanggung jawab</th><th>Shipment</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@forelse($jobs as $job)<tr><td><strong>{{ $job->number }}</strong><br><small>{{ $job->job_date->format('d/m/Y') }}</small>@if($job->quotation)<br><small class="muted-cell">Quote: {{ $job->quotation->number }}</small>@endif</td><td>{{ $job->quotation_snapshot['customer']['name'] }}<br><small>{{ Str::limit($job->subject,45) }}</small></td><td>{{ config('operations.service_types.'.$job->service_type) ?? '—' }}</td><td>@if($job->pol || $job->pod){{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}@elseif($job->origin || $job->destination){{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}@else—@endif @if($job->bl_number || $job->awb_number)<br><small class="muted-cell">{{ $job->bl_number ? 'BL '.$job->bl_number : '' }} {{ $job->awb_number ? 'AWB '.$job->awb_number : '' }}</small>@endif</td><td>@if($job->etd || $job->eta){{ $job->etd?->format('d/m/Y') ?? '—' }}<br><small>ETA {{ $job->eta?->format('d/m/Y') ?? '—' }}</small>@else—@endif</td><td>{{ $job->sales?->name ?? '—' }}@if($job->cs)<br><small>CS: {{ $job->cs->name }}</small>@endif</td><td>@if($job->shipment_status)<span class="status-badge status-{{ $job->shipment_status }}">{{ config('operations.shipment_statuses.'.$job->shipment_status) }}</span>@else—@endif</td><td><span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span></td><td><div class="table-actions"><a class="btn-action btn-action-primary" href="{{ route('jobs.show',$job) }}" title="Detail Job" data-tooltip="Detail" aria-label="Detail Job"><x-icon name="eye"/></a><a class="btn-action btn-action-purple" href="{{ route('jobs.preview',$job) }}" target="_blank" title="Cetak PDF Job" data-tooltip="PDF" aria-label="Cetak PDF Job"><x-icon name="printer"/></a>@can('update',$job)<a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>@endcan</div></td></tr>@empty<tr><td colspan="9"><div class="empty-state"><x-icon name="briefcase"/><h3>Belum ada Job Order yang sesuai</h3><p>Job tersedia setelah quotation disetujui dan dikonversi.</p></div></td></tr>@endforelse</tbody></table></div><div class="pagination">{{ $jobs->links() }}</div></section>
+<div class="table-scroll">
+<table>
+<thead>
+    <tr>
+        <th>No. Job / Tanggal</th>
+        <th>Customer / Pekerjaan</th>
+        <th>No. BL / AWB</th>
+        <th>Layanan</th>
+        <th>Rute & Jadwal</th>
+        <th>Sales & CS</th>
+        <th>Status</th>
+        <th>Aksi</th>
+    </tr>
+</thead>
+<tbody>
+@forelse($jobs as $job)
+    <tr>
+        <td>
+            <strong>{{ $job->number }}</strong>
+            <br><small class="muted-cell">{{ $job->job_date?->format('d/m/Y') }}</small>
+            @if($job->quotation)
+                <br><small class="muted-cell">Quote: {{ $job->quotation->number }}</small>
+            @endif
+        </td>
+        <td>
+            <strong>{{ $job->quotation_snapshot['customer']['name'] ?? $job->customer?->name ?? '—' }}</strong>
+            <br><small class="muted-cell">{{ Str::limit($job->subject ?: ($job->quotation?->remarks ?? '—'), 45) }}</small>
+        </td>
+        <td>
+            @if($job->bl_number)
+                <div><small class="muted-cell">BL:</small> <strong>{{ $job->bl_number }}</strong></div>
+            @endif
+            @if($job->awb_number)
+                <div><small class="muted-cell">AWB:</small> <strong>{{ $job->awb_number }}</strong></div>
+            @endif
+            @if(!$job->bl_number && !$job->awb_number)
+                <span class="muted-cell">—</span>
+            @endif
+        </td>
+        <td>
+            <span class="status-badge" style="background:#e0f2fe; color:#0369a1; font-weight:600;">
+                {{ config('operations.service_types.'.$job->service_type) ?? strtoupper($job->service_type ?? '—') }}
+            </span>
+        </td>
+        <td>
+            @if($job->pol || $job->pod)
+                <div>{{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}</div>
+            @elseif($job->origin || $job->destination)
+                <div>{{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}</div>
+            @endif
+            @if($job->etd || $job->eta)
+                <small class="muted-cell">ETD: {{ $job->etd?->format('d/m/Y') ?? '—' }} | ETA: {{ $job->eta?->format('d/m/Y') ?? '—' }}</small>
+            @endif
+            @if(!$job->pol && !$job->pod && !$job->origin && !$job->destination && !$job->etd && !$job->eta)
+                <span class="muted-cell">—</span>
+            @endif
+        </td>
+        <td>
+            <strong>{{ $job->sales?->name ?? '—' }}</strong>
+            <br><small class="muted-cell">CS: {{ $job->cs?->name ?? ($job->creator?->name ?? '—') }}</small>
+        </td>
+        <td>
+            <span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span>
+            @if($job->shipment_status)
+                <br><small style="margin-top:4px; display:inline-block;"><span class="status-badge status-{{ $job->shipment_status }}">{{ config('operations.shipment_statuses.'.$job->shipment_status) }}</span></small>
+            @endif
+        </td>
+        <td>
+            <div class="table-actions">
+                <a class="btn-action btn-action-primary" href="{{ route('jobs.show',$job) }}" title="Detail Job" data-tooltip="Detail" aria-label="Detail Job"><x-icon name="eye"/></a>
+                <a class="btn-action btn-action-purple" href="{{ route('jobs.preview',$job) }}" target="_blank" title="Cetak PDF Job" data-tooltip="PDF" aria-label="Cetak PDF Job"><x-icon name="printer"/></a>
+                @can('update',$job)
+                    <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>
+                @endcan
+            </div>
+        </td>
+    </tr>
+@empty
+    <tr>
+        <td colspan="8">
+            <div class="empty-state">
+                <x-icon name="briefcase"/>
+                <h3>Belum ada Job Order yang sesuai</h3>
+                <p>Job tersedia setelah quotation disetujui dan dikonversi.</p>
+            </div>
+        </td>
+    </tr>
+@endforelse
+</tbody>
+</table>
+</div>
+<div class="pagination">{{ $jobs->links() }}</div>
+</section>
 @endsection

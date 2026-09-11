@@ -54,6 +54,6 @@ class PortController extends Controller
     public function update(\Illuminate\Http\Request $request, \App\Models\Port $port) {
         $data = $request->validate(['name' => 'required|string|max:150', 'code' => 'required|string|max:20']);
         $port->update(['name' => strtoupper(trim($data['name'])), 'code' => strtoupper(trim($data['code']))]);
-        return redirect()->route('accounts.index', ['tab' => 'port'])->with('success', 'Port diperbarui.');
+        return redirect()->route('ports.index')->with('success', 'Port diperbarui.');
     }
 }

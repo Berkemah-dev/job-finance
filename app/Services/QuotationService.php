@@ -302,7 +302,7 @@ class QuotationService
         } else {
             $row['pricing_source'] = 'manual';
             $row['pricing_id'] = null;
-            $row['exchange_rate'] = $this->pricing->convertedRate($currency, $date);
+            $row['exchange_rate'] = $this->pricing->convertedRate($currency, $date, 'items.'.$index.'.currency');
         }
 
         return $row;

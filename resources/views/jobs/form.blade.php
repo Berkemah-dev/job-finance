@@ -18,7 +18,6 @@
 <div class="field"><label for="consignee_address">Alamat penerima</label><textarea id="consignee_address" name="consignee_address" rows="2" maxlength="5000">{{ old('consignee_address',$job->consignee_address) }}</textarea></div>
 </div>
 <div class="form-section-heading"><h2>Rute & transportasi</h2><p>Informasi perjalanan dan sarana pengangkut (Loading, Discharge, ETD, ETA, Vessel).</p></div>
-<div class="form-grid">
 <div class="field"><label for="pol">Pelabuhan muat (POL) / Loading</label><input id="pol" name="pol" maxlength="120" value="{{ old('pol',$job->pol) }}" placeholder="Pelabuhan keberangkatan"></div>
 <div class="field"><label for="pod">Pelabuhan bongkar (POD) / Discharge</label><input id="pod" name="pod" maxlength="120" value="{{ old('pod',$job->pod) }}" placeholder="Pelabuhan tujuan"></div>
 <div class="field"><label for="etd">ETD (Perkiraan Berangkat)</label><input id="etd" name="etd" type="date" value="{{ old('etd',$job->etd?->format('Y-m-d')) }}"></div>
