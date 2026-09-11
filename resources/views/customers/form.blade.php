@@ -20,11 +20,10 @@
         <div class="field"><label for="phone">Telepon</label><input id="phone" name="phone" type="text" value="{{ old('phone',$customer->phone) }}" placeholder="0812..." maxlength="40"></div>
         <div class="field"><label for="tax_number">NPWP</label><input id="tax_number" name="tax_number" type="text" value="{{ old('tax_number',$customer->tax_number) }}" placeholder="00.000.000.0-000.000 (15-16 digit)" maxlength="40" inputmode="numeric"><small class="form-help">15–16 digit angka tanpa simbol.</small></div>
         <div class="field"><x-payment-term-select name="default_payment_terms" label="Syarat pembayaran default" :value="old('default_payment_terms',$customer->default_payment_terms)"></x-payment-term-select><small class="form-help">Otomatis terisi pada quotation saat customer dipilih; dapat diubah per quotation.</small></div>
-        <div class="field span-2"><label for="address">Alamat</label><textarea id="address" name="address" rows="3" maxlength="2000">{{ old('address',$customer->address) }}</textarea></div>
     </div>
 </section>
 
-{{-- Card 2: Dokumen --}}
+{{-- Card 2: Dokumen Legalitas --}}
 <section class="panel" style="margin-bottom: 20px;">
     <div class="panel-heading" style="padding: 16px 24px; border-bottom: 1px solid #edf1f7;">
         <h2 style="font-size: 13px; font-weight: 600; color: #1e3a8a;">📎 Dokumen Legalitas</h2>
@@ -36,28 +35,50 @@
     </div>
 </section>
 
-{{-- Card 3: Shipper / Consignee --}}
+{{-- Card 3: Document Details --}}
 <section class="panel" style="margin-bottom: 20px;">
     <div class="panel-heading" style="padding: 16px 24px; border-bottom: 1px solid #edf1f7;">
-        <h2 style="font-size: 13px; font-weight: 600; color: #1e3a8a;">🚢 Shipper / Consignee</h2>
-        <span class="subtle" style="font-size: 11px;">Kelola kontak untuk BL/AWB, atau gunakan master <a class="text-link" href="{{ route('customer-contacts.index') }}">Consignee / Shipper</a>.</span>
+        <h2 style="font-size: 13px; font-weight: 600; color: #1e3a8a;">📄 DOCUMENT DETAILS</h2>
+        <span class="subtle" style="font-size: 11px;">Data resmi untuk penerbitan dokumen operasional & kepabeanan</span>
     </div>
-    <div style="padding: 24px;">
-        <div class="contacts-editor" data-customer-contacts data-prototype='@include("customers.contact-row",["contact"=>null,"i"=>"__index__"])'>
-            <div class="contacts-rows" data-contacts-rows>
-                @if(old('contacts'))
-                    @foreach(old('contacts') as $i=>$contact)@include("customers.contact-row",["contact"=>$contact,"i"=>$i])@endforeach
-                @elseif($customer->exists && $customer->contacts()->count())
-                    @foreach($customer->contacts as $i=>$contact)@include("customers.contact-row",["contact"=>$contact,"i"=>$i])@endforeach
-                @endif
-            </div>
-            <button type="button" class="button button-secondary" data-contacts-add style="margin-top: 12px;">+ Tambah shipper / consignee</button>
+    <div class="form-grid" style="padding: 24px;">
+        <div class="field span-2">
+            <label for="doc_customer_name">Nama Customer</label>
+            <input id="doc_customer_name" type="text" value="{{ old('name',$customer->name) }}" placeholder="Otomatis mengikuti nama customer di atas" readonly style="background: #f8fafc; color: #475569; font-weight: 600;">
+            <small class="form-help">Sesuai nama customer yang diinput di atas.</small>
+        </div>
+        <div class="field span-2">
+            <label for="address">ALAMAT PERUSAHAAN <span class="required">*</span></label>
+            <textarea id="address" name="address" rows="3" maxlength="2000" placeholder="Alamat lengkap resmi perusahaan...">{{ old('address',$customer->address) }}</textarea>
+            <small class="form-help">Akan muncul di Bill of Lading / AWB / SI / Booking Confirmation / SK / DNP</small>
+        </div>
+        <div class="field">
+            <label for="authorizer_name">NAMA PEMBERI KUASA</label>
+            <input id="authorizer_name" name="authorizer_name" type="text" value="{{ old('authorizer_name',$customer->authorizer_name) }}" placeholder="Nama pemberi kuasa pabean" maxlength="255">
+            <small class="form-help">Akan muncul di DNP / SK</small>
+        </div>
+        <div class="field">
+            <label for="authorizer_title">JABATAN</label>
+            <input id="authorizer_title" name="authorizer_title" type="text" value="{{ old('authorizer_title',$customer->authorizer_title) }}" placeholder="cth: Direktur / General Manager" maxlength="255">
+            <small class="form-help">Akan muncul di DNP / SK</small>
         </div>
     </div>
 </section>
 
 <div class="form-actions"><a class="button button-secondary" href="{{ $customer->exists?route('customers.show',$customer):route('customers.index') }}">Batal</a><button class="button button-primary">Simpan customer</button></div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const nameInput = document.getElementById('name');
+    const docNameInput = document.getElementById('doc_customer_name');
+    if (nameInput && docNameInput) {
+        nameInput.addEventListener('input', function () {
+            docNameInput.value = this.value;
+        });
+    }
+});
+</script>
 
 @if($customer->exists)<section class="archive-panel" style="max-width: 1100px;"><div><h3>Arsipkan customer</h3><p>Customer tidak bisa dipilih untuk transaksi baru. Histori tetap tersimpan.</p></div><form method="POST" action="{{ route('customers.destroy',$customer) }}" data-confirm="Arsipkan customer ini? Histori transaksi tetap tersimpan.">@csrf @method('DELETE')<input type="hidden" name="lock_version" value="{{ $customer->lock_version }}"><button class="button button-danger">Arsipkan</button></form></section>@endif
 @endsection

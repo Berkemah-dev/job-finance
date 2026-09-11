@@ -30,6 +30,9 @@ class VendorRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:2000'],
             'country' => ['nullable', 'string', 'max:120'],
             'tax_number' => ['nullable', 'string', 'max:40'],
+            'bank_name' => ['nullable', 'string', 'max:100'],
+            'bank_account_number' => ['nullable', 'string', 'max:100'],
+            'bank_account_name' => ['nullable', 'string', 'max:255'],
             'pic' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'categories' => ['nullable', 'array'],
@@ -41,6 +44,18 @@ class VendorRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['code' => 'kode vendor', 'name' => 'nama vendor', 'type' => 'kategori vendor', 'tax_number' => 'NPWP', 'pic' => 'PIC', 'is_active' => 'status aktif', 'categories' => 'kategori tambahan', 'lock_version' => 'versi data'];
+        return [
+            'code' => 'kode vendor',
+            'name' => 'nama vendor',
+            'type' => 'kategori vendor',
+            'tax_number' => 'NPWP / TAX ID',
+            'bank_name' => 'nama bank',
+            'bank_account_number' => 'nomor rekening',
+            'bank_account_name' => 'nama pemilik rekening',
+            'pic' => 'PIC',
+            'is_active' => 'status aktif',
+            'categories' => 'kategori tambahan',
+            'lock_version' => 'versi data',
+        ];
     }
 }

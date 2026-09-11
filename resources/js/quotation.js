@@ -3,9 +3,12 @@ if (form) {
     const customerSelect = form.querySelector('[data-customer-select]');
     const applyContact = (picker, { name, address }) => {
         const key = picker.dataset.shipperPicker !== undefined ? 'shipper' : 'consignee';
-        form.querySelector('[data-' + key + '-name]').value = name ?? '';
-        form.querySelector('[data-' + key + '-address]').value = address ?? '';
+        const nameInput = form.querySelector('[data-' + key + '-name]');
+        const addrInput = form.querySelector('[data-' + key + '-address]');
+        if (nameInput) nameInput.value = name ?? '';
+        if (addrInput) addrInput.value = address ?? '';
     };
+
     // Sinkron: update payment terms langsung saat customer berubah
     const syncPaymentTerms = () => {
         const id = customerSelect?.value;
@@ -30,10 +33,10 @@ if (form) {
             paymentTerms = customerSelect.options[customerSelect.selectedIndex]?.dataset?.paymentTerms || '';
         }
         
-        console.log('Syncing payment terms:', { id, paymentTerms });
         paymentSelect.value = paymentTerms || '';
     };
-    // Async: populate kontak shipper/consignee (tidak memblokir payment terms)
+
+    // Async: populate kontak shipper/consignee
     const populatePick = async () => {
         const id = customerSelect?.value;
         const banks = { '[data-shipper-picker]': 'shipper', '[data-consignee-picker]': 'consignee' };
@@ -57,140 +60,283 @@ if (form) {
             } catch { /* abaikan; kontak tetap bisa diisi manual */ }
         }
     };
+
     customerSelect?.addEventListener('change', () => {
-        syncPaymentTerms(); // sinkron: langsung
-        populatePick();     // async: fetch kontak
+        syncPaymentTerms();
+        populatePick();
     });
+
     form.addEventListener('change', event => {
         const picker = event.target.closest('[data-shipper-picker], [data-consignee-picker]');
         if (!picker) return;
         const option = picker.options[picker.selectedIndex];
         applyContact(picker, { name: option?.dataset?.name, address: option?.dataset?.address });
     });
-    syncPaymentTerms(); // jalankan saat page load (jika ada customer pre-selected)
+
+    syncPaymentTerms();
     populatePick();
-    const container = form.querySelector('[data-items]');
-    const template = form.querySelector('[data-item-template]');
-    const addButton = form.querySelector('[data-add-item]');
-    const endpoint = form.dataset.pricingEndpoint;
-    // Integer cents keep the preview exact, including fractional quantities.
+
+    // ==========================================
+    // SINGLE ITEM INPUT & ITEMS TABLE MANAGEMENT
+    // ==========================================
+    const tbody = document.getElementById('quotation_items_tbody');
+    const itemsCountDisplay = document.getElementById('items_count_display');
+    const previewTotal = form.querySelector('[data-preview-total]');
+    const previewProfit = form.querySelector('[data-preview-profit]');
+
+    const inputDesc = document.getElementById('input_item_desc');
+    const inputNote = document.getElementById('input_item_note');
+    const inputUnit = document.getElementById('input_item_unit');
+    const inputQty = document.getElementById('input_item_qty');
+    const inputCost = document.getElementById('input_item_cost');
+    const inputPrice = document.getElementById('input_item_price');
+    const btnSubmitItem = document.getElementById('btn_submit_single_item');
+
+    let itemsArray = [];
+
+    // Helper formatting
     const cents = value => {
-        if (!/^\d+(\.\d{0,2})?$/.test(value)) return 0n;
-        const [whole, fraction = ''] = value.split('.');
+        if (!value || isNaN(Number(value))) return 0n;
+        const str = Number(value).toFixed(2);
+        const [whole, fraction = ''] = str.split('.');
         return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
     };
-    const rupiah = value => {
+
+    const formatMoney = value => {
         const sign = value < 0n ? '-' : '';
         const absolute = value < 0n ? -value : value;
         return 'Rp ' + sign + (absolute / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + (absolute % 100n).toString().padStart(2, '0');
     };
-    const showStatus = (row, message, error = false) => {
-        const status = row.querySelector('[data-pricing-status]');
-        status.textContent = message;
-        status.classList.toggle('is-error', error);
-    };
-    const setSource = (row, source) => {
-        row.querySelector('[data-pricing-source]').value = source;
-        row.querySelector('[data-field-pricing-source]').value = source;
-        const trucking = source === 'trucking';
-        row.querySelectorAll('[data-lookup-only]').forEach(el => { el.hidden = !trucking; });
-        const cost = row.querySelector('[data-unit-cost]');
-        cost.readOnly = trucking && row.querySelector('[data-field-pricing-id]').value !== '';
-        if (!trucking) showStatus(row, '');
-    };
-    const applySuggestion = (row, data) => {
-        row.querySelector('[data-field-pricing-id]').value = data.pricing_id;
-        row.querySelector('[data-field-currency]').value = data.currency;
-        row.querySelector('[data-field-exchange-rate]').value = data.exchange_rate;
-        row.querySelector('[data-field-snapshot]').value = JSON.stringify(data.snapshot);
-        const cost = row.querySelector('[data-unit-cost]');
-        cost.value = data.unit_cost;
-        cost.readOnly = true;
-        const conversion = data.currency !== 'IDR' ? ' · dari ' + data.currency + ' @ ' + data.exchange_rate : '';
-        showStatus(row, 'Tarif ' + data.port_origin + ' → ' + data.destination + ' ' + data.container_type.toUpperCase() + (data.overweight ? ' (overweight)' : '') + ': ' + rupiah(cents(data.unit_cost)) + conversion + '. Modal terisi dari master tarif.');
-    };
-    const searchPricing = async row => {
-        const origin = row.querySelector('[data-origin]').value.trim();
-        const destination = row.querySelector('[data-destination]').value.trim();
-        const containerType = row.querySelector('[data-container]').value;
-        if (!origin || !destination || !containerType) {
-            showStatus(row, 'Lengkapi pelabuhan asal, tujuan, dan jenis kontainer.', true);
+
+    const renderTable = () => {
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (itemsArray.length === 0) {
+            const emptyTr = document.createElement('tr');
+            emptyTr.innerHTML = `<td colspan="8" style="text-align: center; color: #94a3b8; padding: 28px 16px;">Belum ada item ditambahkan. Silakan isi form di atas dan klik <strong>"+ Tambah Item ke Daftar"</strong>.</td>`;
+            tbody.appendChild(emptyTr);
+            if (itemsCountDisplay) itemsCountDisplay.textContent = '0 item';
+            if (previewTotal) previewTotal.textContent = 'Rp 0,00';
+            if (previewProfit) previewProfit.textContent = 'Rp 0,00';
             return;
         }
-        const params = new URLSearchParams({
-            port_origin: origin,
-            destination,
-            container_type: containerType,
-            overweight: row.querySelector('[data-overweight]').checked ? '1' : '0',
+
+        let grandTotal = 0n;
+        let grandProfit = 0n;
+
+        itemsArray.forEach((item, index) => {
+            const qtyCents = cents(item.quantity);
+            const costCents = cents(item.unit_cost);
+            const priceCents = cents(item.unit_price);
+
+            const costTotal = (qtyCents * costCents + 50n) / 100n;
+            const sellTotal = (qtyCents * priceCents + 50n) / 100n;
+
+            grandTotal += sellTotal;
+            grandProfit += (sellTotal - costTotal);
+
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #e2e8f0';
+            tr.innerHTML = `
+                <td style="text-align: center; padding: 10px 8px; color: #64748b; font-weight: 600;">${index + 1}</td>
+                <td style="padding: 10px 12px;">
+                    <strong style="color: #0f172a;">${escapeHtml(item.description)}</strong>
+                    ${item.note ? `<div class="muted-cell" style="font-size: 11px; color: #64748b; margin-top: 2px;">${escapeHtml(item.note)}</div>` : ''}
+                    <input type="hidden" name="items[${index}][description]" value="${escapeHtml(item.description)}">
+                    <input type="hidden" name="items[${index}][note]" value="${escapeHtml(item.note || '')}">
+                    <input type="hidden" name="items[${index}][type]" value="${escapeHtml(item.type || 'provision')}">
+                    <input type="hidden" name="items[${index}][pricing_source]" value="${escapeHtml(item.pricing_source || 'manual')}">
+                    <input type="hidden" name="items[${index}][pricing_id]" value="${escapeHtml(item.pricing_id || '')}">
+                    <input type="hidden" name="items[${index}][currency]" value="${escapeHtml(item.currency || 'IDR')}">
+                    <input type="hidden" name="items[${index}][exchange_rate]" value="${escapeHtml(item.exchange_rate || '1.00')}">
+                    <input type="hidden" name="items[${index}][pricing_snapshot]" value="${escapeHtml(typeof item.pricing_snapshot === 'object' ? JSON.stringify(item.pricing_snapshot) : (item.pricing_snapshot || ''))}">
+                </td>
+                <td style="padding: 10px 8px;">
+                    <span class="status-badge" style="background:#f1f5f9; color:#334155; font-size:11px;">${escapeHtml(item.unit || 'Shipment')}</span>
+                    <input type="hidden" name="items[${index}][unit]" value="${escapeHtml(item.unit || 'Shipment')}">
+                </td>
+                <td style="text-align: right; padding: 10px 8px; font-weight: 600;">
+                    ${Number(item.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })}
+                    <input type="hidden" name="items[${index}][quantity]" value="${item.quantity}">
+                </td>
+                <td style="text-align: right; padding: 10px 8px; color: #64748b;">
+                    ${formatMoney(costCents)}
+                    <input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost}">
+                </td>
+                <td style="text-align: right; padding: 10px 8px; font-weight: 600; color: #1e3a8a;">
+                    ${formatMoney(priceCents)}
+                    <input type="hidden" name="items[${index}][unit_price]" value="${item.unit_price}">
+                </td>
+                <td style="text-align: right; padding: 10px 12px; font-weight: 700; color: #0f172a;">
+                    ${formatMoney(sellTotal)}
+                </td>
+                <td style="text-align: center; padding: 10px 8px;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button type="button" class="button button-secondary button-sm btn-edit-item" data-index="${index}" style="padding: 3px 8px; font-size: 11px;">Edit</button>
+                        <button type="button" class="button button-danger button-sm btn-delete-item" data-index="${index}" style="padding: 3px 8px; font-size: 11px;">Hapus</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
         });
-        let response;
-        try {
-            response = await fetch(endpoint + '?' + params.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-        } catch {
-            showStatus(row, 'Gagal menghubungi server.', true);
-            return;
-        }
-        if (response.status === 403) {
-            showStatus(row, 'Tidak memiliki akses tarif.', true);
-            return;
-        }
-        const data = await response.json();
-        if (!data.found) {
-            row.querySelector('[data-field-pricing-id]').value = '';
-            row.querySelector('[data-field-snapshot]').value = '';
-            showStatus(row, 'Tarif trucking tidak ditemukan untuk rute tersebut.', true);
-            return;
-        }
-        applySuggestion(row, data);
+
+        if (itemsCountDisplay) itemsCountDisplay.textContent = itemsArray.length + ' item ditambahkan';
+        if (previewTotal) previewTotal.textContent = formatMoney(grandTotal);
+        if (previewProfit) previewProfit.textContent = formatMoney(grandProfit);
     };
-    const update = () => {
-        const rows = [...container.querySelectorAll('[data-quotation-item]')];
-        let total = 0n, profit = 0n;
-        rows.forEach((row, index) => {
-            row.querySelector('.item-title').textContent = 'Item ' + (index + 1);
-            row.querySelectorAll('[name]').forEach(input => input.name = input.name.replace(/items\[[^\]]+\]/, 'items[' + index + ']'));
-            row.querySelectorAll('[id]').forEach(input => input.id = input.id.replace(/^item-[^-]+-/, 'item-' + index + '-'));
-            row.querySelectorAll('label[for]').forEach(label => label.htmlFor = label.htmlFor.replace(/^item-[^-]+-/, 'item-' + index + '-'));
-            setSource(row, row.querySelector('[data-pricing-source]').value);
-            const cost = row.querySelector('[data-unit-cost]');
-            const price = row.querySelector('[data-unit-price]');
-            const temporary = false;
-            price.readOnly = temporary;
-            if (temporary) price.value = cost.value;
-            const quantity = cents(row.querySelector('[data-quantity]').value);
-            const costTotal = (quantity * cents(cost.value) + 50n) / 100n;
-            const sellTotal = (quantity * cents(price.value) + 50n) / 100n;
-            total += sellTotal;
-            if (!temporary) profit += sellTotal - costTotal;
-            row.querySelector('[data-remove-item]').disabled = rows.length === 1;
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Add item function
+    const addItem = (item) => {
+        itemsArray.push({
+            description: item.description || '',
+            note: item.note || '',
+            unit: item.unit || 'Shipment',
+            quantity: item.quantity || '1',
+            unit_cost: item.unit_cost || '0',
+            unit_price: item.unit_price || '0',
+            type: item.type || 'provision',
+            pricing_source: item.pricing_source || 'manual',
+            pricing_id: item.pricing_id || '',
+            currency: item.currency || 'IDR',
+            exchange_rate: item.exchange_rate || '1.00',
+            pricing_snapshot: item.pricing_snapshot || null,
         });
-        form.querySelector('[data-preview-total]').textContent = rupiah(total);
-        form.querySelector('[data-preview-profit]').textContent = rupiah(profit);
-        addButton.disabled = rows.length >= 100;
+        renderTable();
     };
-    addButton.addEventListener('click', () => {
-        if (container.children.length >= 100) return;
-        container.append(template.content.cloneNode(true));
-        const row = container.lastElementChild;
-        setSource(row, 'manual');
-        update();
-        row.querySelector('[data-quantity]').focus();
-    });
-    container.addEventListener('click', event => {
-        const target = event.target.closest('[data-pricing-search]');
-        if (target) {
-            searchPricing(target.closest('[data-quotation-item]'));
+
+    window.addQuotationItem = addItem;
+
+    // Handle submit single item button
+    btnSubmitItem?.addEventListener('click', () => {
+        const desc = inputDesc?.value?.trim();
+        const qty = parseFloat(inputQty?.value || 0);
+        const price = parseFloat(inputPrice?.value || 0);
+        const cost = parseFloat(inputCost?.value || 0);
+
+        if (!desc) {
+            alert('Pilih atau isi Uraian Biaya terlebih dahulu.');
+            inputDesc?.focus();
             return;
         }
-        if (event.target.closest('[data-remove-item]') && container.children.length > 1) {
-            event.target.closest('[data-quotation-item]').remove();
-            update();
+
+        if (isNaN(qty) || qty <= 0) {
+            alert('Jumlah (Qty) harus lebih dari 0.');
+            inputQty?.focus();
+            return;
+        }
+
+        addItem({
+            description: desc,
+            note: inputNote?.value?.trim() || '',
+            unit: inputUnit?.value || 'Shipment',
+            quantity: String(qty),
+            unit_cost: String(cost),
+            unit_price: String(price),
+            type: 'provision',
+            pricing_source: 'manual',
+            pricing_id: '',
+            pricing_snapshot: null,
+            currency: 'IDR',
+            exchange_rate: '1.00',
+        });
+
+        // Reset inputs
+        if (inputDesc) inputDesc.value = '';
+        if (inputNote) inputNote.value = '';
+        if (inputUnit) inputUnit.value = 'Shipment';
+        if (inputQty) inputQty.value = '1';
+        if (inputCost) inputCost.value = '0';
+        if (inputPrice) inputPrice.value = '0';
+        inputDesc?.focus();
+    });
+
+    // Quick charge selection chips
+    document.querySelectorAll('.btn-quick-charge').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (inputDesc) {
+                inputDesc.value = btn.dataset.charge;
+                inputPrice?.focus();
+            }
+        });
+    });
+
+    // Support Enter key on price & cost input to submit item
+    [inputPrice, inputCost, inputQty, inputNote].forEach(inp => {
+        inp?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnSubmitItem?.click();
+            }
+        });
+    });
+
+    // Handle Table Actions (Edit & Hapus)
+    tbody?.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.btn-delete-item');
+        if (deleteBtn) {
+            const index = parseInt(deleteBtn.dataset.index, 10);
+            if (!isNaN(index) && itemsArray[index]) {
+                itemsArray.splice(index, 1);
+                renderTable();
+            }
+            return;
+        }
+
+        const editBtn = e.target.closest('.btn-edit-item');
+        if (editBtn) {
+            const index = parseInt(editBtn.dataset.index, 10);
+            if (!isNaN(index) && itemsArray[index]) {
+                const item = itemsArray[index];
+                if (inputDesc) inputDesc.value = item.description || '';
+                if (inputNote) inputNote.value = item.note || '';
+                if (inputUnit) inputUnit.value = item.unit || 'Shipment';
+                if (inputQty) inputQty.value = item.quantity || '1';
+                if (inputCost) inputCost.value = item.unit_cost || '0';
+                if (inputPrice) inputPrice.value = item.unit_price || '0';
+                
+                itemsArray.splice(index, 1);
+                renderTable();
+
+                const panel = document.getElementById('single-item-input-panel');
+                panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                inputDesc?.focus();
+            }
         }
     });
-    container.addEventListener('change', event => {
-        if (event.target.matches('[data-pricing-source]')) setSource(event.target.closest('[data-quotation-item]'), event.target.value);
+
+    // Load initial items from JSON script tag
+    try {
+        const scriptTag = document.getElementById('initial-items-data');
+        if (scriptTag && scriptTag.textContent.trim()) {
+            const parsed = JSON.parse(scriptTag.textContent.trim());
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                itemsArray = parsed;
+            }
+        }
+    } catch (err) {
+        console.error('Error parsing initial items:', err);
+    }
+
+    renderTable();
+
+    // Prevent submitting without at least 1 item
+    form.addEventListener('submit', (e) => {
+        if (itemsArray.length === 0) {
+            e.preventDefault();
+            alert('Silakan tambahkan setidaknya 1 item biaya ke daftar penawaran sebelum menyimpan.');
+            inputDesc?.focus();
+        }
     });
-    container.addEventListener('input', update);
-    container.addEventListener('change', update);
-    update();
 }
+

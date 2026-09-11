@@ -11,7 +11,20 @@ class Customer extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number', 'default_payment_terms', 'npwp_file', 'nib_file'];
+    protected $fillable = [
+        'code',
+        'name',
+        'contact_name',
+        'email',
+        'phone',
+        'address',
+        'authorizer_name',
+        'authorizer_title',
+        'tax_number',
+        'default_payment_terms',
+        'npwp_file',
+        'nib_file',
+    ];
 
     public function quotations(): HasMany
     {

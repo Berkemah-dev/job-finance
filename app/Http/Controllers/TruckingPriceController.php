@@ -33,14 +33,14 @@ class TruckingPriceController extends Controller
             $query->where('is_active', false);
         }
         $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(15)->withQueryString();
-        $vendors = Vendor::orderBy('name')->get();
+        $vendors = $this->truckingVendors();
 
         return view('pricing.trucking.index', compact('items', 'vendors'));
     }
 
     public function create()
     {
-        return view('pricing.trucking.form', ['truckingPrice' => new TruckingPrice, 'vendors' => Vendor::orderBy('name')->get()]);
+        return view('pricing.trucking.form', ['truckingPrice' => new TruckingPrice, 'vendors' => $this->truckingVendors()]);
     }
 
     public function store(TruckingPriceRequest $request, PricingService $service)
@@ -52,7 +52,7 @@ class TruckingPriceController extends Controller
 
     public function edit(TruckingPrice $truckingPrice)
     {
-        return view('pricing.trucking.form', ['truckingPrice' => $truckingPrice, 'vendors' => Vendor::orderBy('name')->get()]);
+        return view('pricing.trucking.form', ['truckingPrice' => $truckingPrice, 'vendors' => $this->truckingVendors()]);
     }
 
     public function update(TruckingPriceRequest $request, TruckingPrice $truckingPrice, PricingService $service)
@@ -74,5 +74,16 @@ class TruckingPriceController extends Controller
         $service->archive($truckingPrice, $request->validated(), $request->user());
 
         return redirect()->route('pricing.trucking.index')->with('success', 'Trucking price dihapus.');
+    }
+
+    private function truckingVendors()
+    {
+        return Vendor::query()
+            ->where(function ($q) {
+                $q->where('type', 'trucking')
+                  ->orWhereHas('categories', fn ($c) => $c->where('category', 'trucking'));
+            })
+            ->orderBy('name')
+            ->get();
     }
 }

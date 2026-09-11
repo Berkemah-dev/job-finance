@@ -152,7 +152,7 @@ class PricingService
     {
         return $model instanceof WeeklyPricing
             ? ['week', 'effective_date', 'effective_until', 'currency', 'exchange_rate', 'service', 'notes', 'is_active']
-            : ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'currency', 'effective_date', 'effective_until', 'is_active'];
+            : ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'selling_price', 'currency', 'effective_date', 'effective_until', 'is_active'];
     }
 
     private function actionFor(Model $model, string $suffix): string
