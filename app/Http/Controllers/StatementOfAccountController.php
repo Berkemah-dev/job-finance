@@ -25,13 +25,8 @@ class StatementOfAccountController extends Controller
         return view('reports.soa.index', ['result' => $this->service->summary($search, $unpaid), 'search' => $search, 'unpaid' => $unpaid]);
     }
 
-<<<<<<< HEAD
     public function show(int $soaCustomer, ReportFilterRequest $request)
-=======
-    public function show(string $customerId, ReportFilterRequest $request)
->>>>>>> 367a9ee93734e3a97628530a24dddb5e9c488978
     {
-        $customer = Customer::withTrashed()->findOrFail($customerId);
         $from = $request->date('from') ?? today()->startOfMonth();
         $to = $request->date('to') ?? today();
         $customer = Customer::withTrashed()->findOrFail($soaCustomer);

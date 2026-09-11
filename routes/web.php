@@ -24,7 +24,6 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StatementOfAccountController;
 use App\Http\Controllers\TpsController;
 use App\Http\Controllers\TruckingPriceController;
-use App\Http\Controllers\TpsController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\WeeklyPricingController;
 use Illuminate\Support\Facades\Route;
