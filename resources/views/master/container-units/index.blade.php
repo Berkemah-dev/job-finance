@@ -33,15 +33,17 @@
                             <span class="status-badge status-cancelled">Nonaktif</span>
                         @endif
                     </td>
-                    <td style="display:flex;gap:0.5rem;">
-                        <form method="POST" action="{{ route('container-units.toggle',$unit) }}">
-                            @csrf @method('PATCH')
-                            <button class="text-link" id="btn-toggle-unit-{{ $unit->id }}">{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}</button>
-                        </form>
-                        <form method="POST" action="{{ route('container-units.destroy',$unit) }}" onsubmit="return confirm('Hapus satuan ini?')">
-                            @csrf @method('DELETE')
-                            <button class="text-link" style="color:var(--danger)" id="btn-del-unit-{{ $unit->id }}">Hapus</button>
-                        </form>
+                    <td>
+                        <div class="table-actions">
+                            <form method="POST" action="{{ route('container-units.toggle',$unit) }}">
+                                @csrf @method('PATCH')
+                                <button class="btn-action {{ $unit->is_active ? '' : 'btn-action-success' }}" id="btn-toggle-unit-{{ $unit->id }}">{{ $unit->is_active?'Nonaktifkan':'Aktifkan' }}</button>
+                            </form>
+                            <form method="POST" action="{{ route('container-units.destroy',$unit) }}" onsubmit="return confirm('Hapus satuan ini?')">
+                                @csrf @method('DELETE')
+                                <button class="btn-action btn-action-danger" id="btn-del-unit-{{ $unit->id }}">Hapus</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

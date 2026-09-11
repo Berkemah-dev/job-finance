@@ -23,11 +23,11 @@
     <td>@if($tps->mode==='air')<span class="badge-pill">✈ Udara</span>@else<span class="badge-pill">🚢 Laut</span>@endif</td>
     <td>@if($tps->is_active)<span class="status-badge status-active">Aktif</span>@else<span class="status-badge status-inactive">Nonaktif</span>@endif</td>
     <td>
-        <a class="text-link" href="{{ route('tps.edit',$tps) }}">Edit</a>
-        ·
-        <form method="POST" action="{{ route('tps.toggle',$tps) }}" style="display:inline">@csrf<button class="text-link">{{ $tps->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button></form>
-        ·
-        <form method="POST" action="{{ route('tps.destroy',$tps) }}" style="display:inline" data-confirm="Hapus TPS {{ $tps->code }}?">@csrf @method('DELETE')<button class="text-link" style="color:var(--color-danger)">Hapus</button></form>
+        <div class="table-actions">
+            <a class="btn-action" href="{{ route('tps.edit',$tps) }}">Edit</a>
+            <form method="POST" action="{{ route('tps.toggle',$tps) }}">@csrf<button class="btn-action {{ $tps->is_active ? '' : 'btn-action-success' }}">{{ $tps->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button></form>
+            <form method="POST" action="{{ route('tps.destroy',$tps) }}" data-confirm="Hapus TPS {{ $tps->code }}?">@csrf @method('DELETE')<button class="btn-action btn-action-danger">Hapus</button></form>
+        </div>
     </td>
 </tr>
 @empty

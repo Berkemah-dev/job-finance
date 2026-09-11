@@ -86,10 +86,10 @@
                             </span>
                         </td>
                         <td>
-                            <div class="action-group">
-                                <a class="text-link" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
-                                <a class="text-link" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">PDF</a>
-                                <a class="text-link" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
+                            <div class="table-actions">
+                                <a class="btn-action btn-action-primary" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
+                                <a class="btn-action" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">PDF</a>
+                                <a class="btn-action" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
                             </div>
                         </td>
                     </tr>

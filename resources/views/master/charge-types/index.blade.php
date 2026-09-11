@@ -38,15 +38,17 @@
                             <span class="status-badge status-cancelled">Nonaktif</span>
                         @endif
                     </td>
-                    <td style="display:flex;gap:0.5rem;">
-                        <form method="POST" action="{{ route('charge-types.toggle',$charge) }}">
-                            @csrf @method('PATCH')
-                            <button class="text-link" id="btn-toggle-charge-{{ $charge->id }}">{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}</button>
-                        </form>
-                        <form method="POST" action="{{ route('charge-types.destroy',$charge) }}" onsubmit="return confirm('Hapus jenis biaya ini?')">
-                            @csrf @method('DELETE')
-                            <button class="text-link" style="color:var(--danger)" id="btn-del-charge-{{ $charge->id }}">Hapus</button>
-                        </form>
+                    <td>
+                        <div class="table-actions">
+                            <form method="POST" action="{{ route('charge-types.toggle',$charge) }}">
+                                @csrf @method('PATCH')
+                                <button class="btn-action {{ $charge->is_active ? '' : 'btn-action-success' }}" id="btn-toggle-charge-{{ $charge->id }}">{{ $charge->is_active?'Nonaktifkan':'Aktifkan' }}</button>
+                            </form>
+                            <form method="POST" action="{{ route('charge-types.destroy',$charge) }}" onsubmit="return confirm('Hapus jenis biaya ini?')">
+                                @csrf @method('DELETE')
+                                <button class="btn-action btn-action-danger" id="btn-del-charge-{{ $charge->id }}">Hapus</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty

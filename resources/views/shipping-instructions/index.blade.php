@@ -90,10 +90,10 @@
                             </span>
                         </td>
                         <td>
-                            <div class="action-group">
-                                <a class="text-link" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
-                                <a class="text-link" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">PDF</a>
-                                <a class="text-link" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
+                            <div class="table-actions">
+                                <a class="btn-action btn-action-primary" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
+                                <a class="btn-action" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">PDF</a>
+                                <a class="btn-action" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
                             </div>
                         </td>
                     </tr>

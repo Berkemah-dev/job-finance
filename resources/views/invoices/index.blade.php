@@ -51,8 +51,10 @@
                         <td>Rp {{ \App\Support\Money::format($invoice->balance) }}</td>
                         <td><span class="status-badge status-{{ $invoice->status }}">{{ str_replace('_',' ',ucwords($invoice->status,'_')) }}</span></td>
                         <td>
-                            <a class="text-link" href="{{ route('invoices.show',$invoice) }}">Lihat detail</a> · 
-                            <a class="text-link" href="{{ route('invoices.preview',$invoice) }}" target="_blank">PDF</a>
+                            <div class="table-actions">
+                                <a class="btn-action btn-action-primary" href="{{ route('invoices.show',$invoice) }}">Detail</a>
+                                <a class="btn-action" href="{{ route('invoices.preview',$invoice) }}" target="_blank">PDF</a>
+                            </div>
                         </td>
                     </tr>
                 @empty
