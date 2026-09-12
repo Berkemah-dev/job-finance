@@ -27,6 +27,14 @@ class JobDocumentController extends Controller
             'peb_date' => ['nullable', 'date'],
         ]);
 
+        $docType = DocumentType::findOrFail($request->document_type_id);
+        $docText = strtoupper($docType->code.' '.$docType->name);
+        $kind = (string) $request->input('customs_document_kind', '');
+        $kind = $kind ?: $this->detectCustomsKind($docText);
+        if (in_array($kind, ['spjm', 'behandle', 'sppb'], true) && ! $request->user()->hasRole(['operational', 'super-admin', 'admin'])) {
+            abort(403, 'Dokumen SPJM, Behandle, dan SPPB hanya dapat diupload oleh Operational.');
+        }
+
         $file      = $request->file('file');
         $path      = $file->store('job-documents/'.$job->id, 'private');
 
@@ -43,10 +51,8 @@ class JobDocumentController extends Controller
         $this->syncCustomsDataFromUpload($request, $job);
 
         $job->load(['documents.documentType']);
-        $docType = DocumentType::find($request->document_type_id);
         $docCode = strtoupper((string) ($docType?->code ?? ''));
         $docName = strtoupper((string) ($docType?->name ?? ''));
-        $kind = (string) $request->input('customs_document_kind', '');
 
         $service = (string) ($job->service_type ?? '');
         $isExportSea = in_array($service, ['exp_sea', 'sea'], true);
@@ -117,8 +123,12 @@ class JobDocumentController extends Controller
             }
         }
 
-        if ($request->filled('customs_document_kind')) {
-            $kind = $request->string('customs_document_kind')->toString();
+        $kind = (string) $request->input('customs_document_kind', '');
+        if (! $kind) {
+            $doc = $job->documents()->with('documentType')->latest('id')->first();
+            $kind = $doc ? $this->detectCustomsKind(strtoupper($doc->documentType?->code.' '.$doc->documentType?->name)) : '';
+        }
+        if ($kind) {
             $isImport = in_array($job->service_type, ['imp_sea', 'imp_air'], true);
             $isExport = in_array($job->service_type, ['exp_sea', 'exp_air'], true);
 
@@ -159,6 +169,18 @@ class JobDocumentController extends Controller
                 'created_at' => now(),
             ]);
         }
+    }
+
+    private function detectCustomsKind(string $text): string
+    {
+        return match (true) {
+            str_contains($text, 'SPPB') => 'sppb',
+            str_contains($text, 'BEHANDLE') || str_contains($text, 'SLIM') => 'behandle',
+            str_contains($text, 'SPJM') => 'spjm',
+            str_contains($text, 'BILLING') => 'billing',
+            str_contains($text, 'PIB') => 'pib',
+            default => '',
+        };
     }
 
     private function lastSixDigits(string $value): ?string

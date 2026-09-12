@@ -572,6 +572,7 @@
         </div>
 
         @can('update',$job)
+            @php $canUploadOperationalCustoms = auth()->user()->hasRole(['operational', 'super-admin', 'admin']); @endphp
             <form class="data-form" style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="form-grid">
@@ -580,6 +581,7 @@
                         <select name="document_type_id" id="document_type_id" required>
                             <option value="">Pilih tipe dokumen</option>
                             @foreach($documentTypes as $dt)
+                                @continue(!$canUploadOperationalCustoms && preg_match('/SPJM|BEHANDLE|SLIM|SPPB/i', $dt->code.' '.$dt->name))
                                 <option value="{{ $dt->id }}">{{ $dt->code }} - {{ $dt->name }}</option>
                             @endforeach
                         </select>
