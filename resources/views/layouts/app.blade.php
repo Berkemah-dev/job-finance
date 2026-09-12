@@ -105,7 +105,6 @@
         <a class="nav-item {{ request()->routeIs('activity.*') ? 'active' : '' }}" href="{{ route('activity.index') }}" title="Log Aktivitas"><x-icon name="clock"/><span>Log Aktivitas</span></a>
         @endcan
     </nav>
-    <div class="sidebar-footer"><span class="status-dot"></span>JobFinance <span>Demo v0.1</span></div>
 </aside>
 <div class="workspace">
     <header class="topbar">
@@ -121,7 +120,6 @@
         @if($errors->any())<div class="flash-error" role="alert"><strong>Periksa kembali data Anda.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
         @yield('content')
     </main>
-    <footer class="page-footer"><span>© {{ date('Y') }} JobFinance</span><span>Setiap job, lebih terkontrol.</span></footer>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded',function(){const source=document.getElementById('port-options');if(!source)return;let options=[];try{options=JSON.parse(source.textContent||'[]');}catch(e){return;}document.querySelectorAll('[data-port-autocomplete]').forEach(input=>{const wrap=input.parentElement;wrap.classList.add('port-autocomplete-wrap');const box=document.createElement('div');box.className='port-suggestions';wrap.appendChild(box);let active=-1;const render=()=>{const term=input.value.trim().toLowerCase();box.innerHTML='';active=-1;if(!term){box.classList.remove('show');return;}const matches=options.filter(o=>(o.value+' '+o.label).toLowerCase().includes(term)).slice(0,12);matches.forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='port-suggestion';b.textContent=o.label;b.addEventListener('mousedown',e=>{e.preventDefault();input.value=o.value;box.classList.remove('show');});box.appendChild(b);});box.classList.toggle('show',matches.length>0);};input.addEventListener('input',render);input.addEventListener('keydown',e=>{const items=[...box.querySelectorAll('.port-suggestion')];if(!items.length)return;if(e.key==='ArrowDown'){e.preventDefault();active=Math.min(active+1,items.length-1);}else if(e.key==='ArrowUp'){e.preventDefault();active=Math.max(active-1,0);}else if(e.key==='Enter'&&active>=0){e.preventDefault();items[active].click();}else if(e.key==='Escape'){box.classList.remove('show');}items.forEach((item,i)=>item.classList.toggle('active',i===active));});input.addEventListener('blur',()=>setTimeout(()=>box.classList.remove('show'),150));});});
