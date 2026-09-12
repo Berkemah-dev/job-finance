@@ -36,6 +36,8 @@
     $noAju = $job->booking_reference ?? '—';
     $noNopen = $job->nopen ?? '—';
     $noNpe = $job->npe_number ?? '—';
+    $noPeb = $job->peb_number ?? '—';
+    $pebDate = $job->peb_date ? $job->peb_date->format('d/m/Y') : '—';
     $noHbl = $job->hbl_number ?? $job->hawb_number ?? '—';
     $noMbl = $job->bl_number ?? $job->mawb_number ?? '—';
     $vesselName = $job->vessel_voyage ?? $job->flight_number ?? '—';
@@ -268,14 +270,14 @@
     <section class="panel" style="padding: 24px; margin-bottom: 24px;">
         <div class="panel-heading" style="margin-bottom: 20px;">
             <h2>Dokumen Kepabeanan & Status Jalur Cukai</h2>
-            <span class="subtle">{{ $isImport ? 'Nomor Pengajuan AJU, Nopen, SPJM/SPPB' : 'Nomor Pengajuan AJU, NPE, dan status ekspor' }}</span>
+            <span class="subtle">{{ $isImport ? 'Nomor Pengajuan AJU, Nopen, SPJM/SPPB' : 'No AJU 6 digit terakhir, NOPEN PEB, tanggal PEB, dan NPE' }}</span>
         </div>
 
         {{-- GRID NOMOR PENGAJUAN & NOPEN (PERSIS GAMBAR) --}}
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
             <div>
                 <label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
-                    Nomor Pengajuan (No AJU)
+                    No AJU (6 digit terakhir)
                 </label>
                 <div style="padding: 12px 16px; border: 2px solid #f97316; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0f172a; background: #fff;">
                     {{ $noAju }}
@@ -283,12 +285,33 @@
             </div>
             <div>
                 <label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
-                    {{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'Nomor NPE' }}
+                    {{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}
                 </label>
                 <div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">
-                    {{ $isImport ? $noNopen : $noNpe }}
+                    {{ $isImport ? $noNopen : $noPeb }}
                 </div>
             </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            @if(!$isImport)
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
+                        Tanggal PEB
+                    </label>
+                    <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">
+                        {{ $pebDate }}
+                    </div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
+                        Nomor NPE
+                    </label>
+                    <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">
+                        {{ $noNpe }}
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
@@ -419,7 +442,7 @@
                                 <div class="empty-state">
                                     <x-icon name="file"/>
                                     <h3>Belum ada lampiran dokumen</h3>
-                                    <p>Unggah file Bill of Lading, Invoice CIPL, Packing List, atau dokumen pabean.</p>
+                                    <p>Unggah dokumen PDF maksimal 3 MB sesuai jenis dokumen service.</p>
                                 </div>
                             </td>
                         </tr>
@@ -442,8 +465,9 @@
                         </select>
                     </div>
                     <div class="field">
-                        <label for="file">File (PDF/Image/Excel/Word)</label>
-                        <input type="file" name="file" id="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
+                        <label for="file">File PDF <span class="required">*</span></label>
+                        <input type="file" name="file" id="file" required accept="application/pdf,.pdf">
+                        <small class="form-help">Hanya PDF, maksimal 3 MB.</small>
                     </div>
                     <div class="field span-2">
                         <label for="notes">Keterangan Tambahan</label>
@@ -471,8 +495,13 @@
                                 </select>
                             </div>
                             <div class="field">
-                                <label for="booking_reference_upload">Nomor Pengajuan (No AJU)</label>
-                                <input type="text" name="booking_reference" id="booking_reference_upload" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 000087-260904">
+                                <label for="customs_submission_number_upload">Nomor Pengajuan Penuh</label>
+                                <input type="text" name="customs_submission_number" id="customs_submission_number_upload" maxlength="100" placeholder="Paste nomor pengajuan penuh dari dokumen">
+                                <small class="form-help">Sistem otomatis mengambil 6 digit terakhir sebagai No AJU.</small>
+                            </div>
+                            <div class="field">
+                                <label for="booking_reference_upload">No AJU (6 digit terakhir)</label>
+                                <input type="text" name="booking_reference" id="booking_reference_upload" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 260200">
                             </div>
                             @if($isImport)
                                 <div class="field">
@@ -480,6 +509,14 @@
                                     <input type="text" name="nopen" id="nopen_upload" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari SPPB/SPJM">
                                 </div>
                             @else
+                                <div class="field">
+                                    <label for="peb_number_upload">NOPEN PEB</label>
+                                    <input type="text" name="peb_number" id="peb_number_upload" maxlength="60" value="{{ old('peb_number', $job->peb_number) }}" placeholder="contoh: 415575">
+                                </div>
+                                <div class="field">
+                                    <label for="peb_date_upload">Tanggal PEB</label>
+                                    <input type="date" name="peb_date" id="peb_date_upload" value="{{ old('peb_date', $job->peb_date?->format('Y-m-d')) }}">
+                                </div>
                                 <div class="field">
                                     <label for="npe_number_upload">Nomor NPE</label>
                                     <input type="text" name="npe_number" id="npe_number_upload" maxlength="60" value="{{ old('npe_number', $job->npe_number) }}" placeholder="Isi nomor NPE">
