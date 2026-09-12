@@ -11,7 +11,7 @@
     <style>
         .theme-toggle{width:40px;height:40px;border:1px solid var(--border-color,#dbe3ef);background:var(--surface,#fff);color:var(--text,#0f1f3d);border-radius:10px;padding:0;cursor:pointer;display:inline-grid;place-items:center;font-size:17px}.theme-toggle:hover{border-color:#1e3a8a}.port-autocomplete-field{border:1px solid #1e3a8a!important;box-shadow:inset 3px 0 0 #dc2626}.port-autocomplete-field:focus{border-color:#dc2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.12),inset 3px 0 0 #1e3a8a!important}.port-autocomplete-field::-webkit-calendar-picker-indicator{opacity:0;width:0;padding:0}
         .theme-toggle:hover{border-color:#1e3a8a}.theme-dark body{background:#0f172a;color:#e5e7eb}.theme-dark .workspace,.theme-dark main{background:#0f172a}.theme-dark .topbar,.theme-dark .panel,.theme-dark .card,.theme-dark .stat-card,.theme-dark .calculator-hub-card,.theme-dark .account-dropdown,.theme-dark .form-panel,.theme-dark .archive-panel{background:#172033!important;color:#e5e7eb;border-color:#334155!important}.theme-dark input,.theme-dark select,.theme-dark textarea{background:#111827!important;color:#f8fafc!important;border-color:#475569!important}.theme-dark h1,.theme-dark h2,.theme-dark h3,.theme-dark label,.theme-dark strong,.theme-dark .breadcrumb{color:#f8fafc}.theme-dark p,.theme-dark small,.theme-dark .subtle,.theme-dark .form-help{color:#aab7ca}.theme-dark table th{background:#1e293b;color:#cbd5e1}.theme-dark table td{border-color:#334155}.theme-dark .theme-toggle{background:#1e293b;color:#f8fafc;border-color:#475569}.theme-dark .page-footer{color:#94a3b8}
-        .theme-dark .sidebar{background:#172033!important;border-color:#334155!important}.theme-dark .sidebar .nav-item,.theme-dark .sidebar .nav-item span,.theme-dark .sidebar .nav-heading,.theme-dark .sidebar .sidebar-footer{color:#cbd5e1!important}.theme-dark .sidebar .nav-item.active{background:#2a2230;color:#fff!important}.theme-dark .sidebar .nav-item:hover{background:#243047;color:#fff!important}.theme-dark .text-link{color:#cbd5e1!important}
+        .theme-dark .sidebar{background:#172033!important;border-color:#334155!important}.theme-dark .sidebar .nav-item,.theme-dark .sidebar .nav-item span,.theme-dark .sidebar .nav-heading,.theme-dark .sidebar .sidebar-footer{color:#cbd5e1!important}.theme-dark .sidebar .nav-item.active{background:#2a2230;color:#fff!important}.theme-dark .sidebar .nav-item:hover{background:#243047;color:#fff!important}.theme-dark .text-link{color:#cbd5e1!important}.nav-group{margin:0 0 8px}.nav-group>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;padding-right:14px}.nav-group>summary::-webkit-details-marker{display:none}.nav-group-chevron{font-size:16px;transition:transform .2s;color:#94a3b8}.nav-group[open] .nav-group-chevron{transform:rotate(180deg)}.nav-group .nav-item{margin-top:2px}.theme-dark .nav-group>summary{color:#cbd5e1!important}
     </style>
 </head>
 <body>
@@ -61,7 +61,9 @@
         @endphp
         @foreach($groups as $heading => $items)
             @if(collect($items)->contains(fn ($item) => auth()->user()->can($item[0])))
-            <p class="nav-heading">{{ $heading }}</p>
+            @php $groupOpen = collect($items)->contains(fn ($item) => isset($item[3]) && request()->routeIs($item[3].'*')); @endphp
+            <details class="nav-group" data-nav-group {{ $groupOpen ? 'open' : '' }}>
+            <summary class="nav-heading"><span>{{ $heading }}</span><span class="nav-group-chevron">⌄</span></summary>
             @foreach($items as $item)
                 @php [$permission, $icon, $label] = $item; @endphp
                 @can($permission)
@@ -91,6 +93,7 @@
                 @endif
                 @endcan
             @endforeach
+            </details>
             @endif
         @endforeach
         @can('users.view')
