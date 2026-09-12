@@ -88,11 +88,15 @@
                 }
                 @endphp
                 @if($destination)
-                <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
                 @if($label === 'Data Document')
+                <details class="nav-subgroup" {{ request()->routeIs('document-types.index') ? 'open' : '' }}>
+                    <summary class="nav-item {{ $active ? 'active' : '' }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span><x-icon name="chevron-down" class="nav-group-chevron"/></summary>
                     @foreach(['exp_sea'=>'EXPORT SEA','exp_air'=>'EXPORT AIR','imp_sea'=>'IMPORT SEA','imp_air'=>'IMPORT AIR'] as $documentServiceCode => $documentServiceLabel)
-                    <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && request('service') === $documentServiceCode ? 'active' : '' }}" href="{{ route('document-types.index', ['service' => $documentServiceCode]) }}" title="{{ $documentServiceLabel }}"><span>{{ $documentServiceLabel }}</span></a>
+                    <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && request('service') === $documentServiceCode ? 'active' : '' }}" href="{{ route('document-types.index', ['service' => $documentServiceCode]) }}" title="{{ $documentServiceLabel }}"><x-icon name="file"/><span>{{ $documentServiceLabel }}</span></a>
                     @endforeach
+                </details>
+                @else
+                <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
                 @endif
                 @else
                 <span class="nav-item upcoming" aria-disabled="true" title="{{ $label }} (Segera)"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
