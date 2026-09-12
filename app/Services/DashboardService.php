@@ -50,6 +50,21 @@ class DashboardService
         $cogs = Money::decimal(0);
         $profit = Money::decimal(0);
         $monthly = collect(range(5, 0))->mapWithKeys(fn ($monthsAgo) => [today()->subMonths($monthsAgo)->format('Y-m') => ['label' => today()->subMonths($monthsAgo)->locale('id')->translatedFormat('M'), 'revenue' => Money::decimal(0), 'profit' => Money::decimal(0)]]);
+        $operationalMonthly = $monthly->map(fn ($row) => ['label' => $row['label'], 'open' => 0, 'final' => 0]);
+        Job::select(['id', 'status', 'created_at'])->withCount(['costs as non_final_costs_count' => fn ($q) => $q->where('status', '!=', 'final')])->chunkById(500, function ($jobs) use (&$operationalMonthly) {
+            foreach ($jobs as $job) {
+                $key = $job->created_at?->format('Y-m');
+                if (! $key || ! $operationalMonthly->has($key) || $job->status !== 'open') {
+                    continue;
+                }
+                $row = $operationalMonthly->get($key);
+                $row['open']++;
+                if ((int) $job->non_final_costs_count === 0) {
+                    $row['final']++;
+                }
+                $operationalMonthly->put($key, $row);
+            }
+        });
 
         $canViewFinance = ($user && Gate::forUser($user)->allows('financial.view')) || in_array($role, ['finance', 'finance-manager', 'super-admin']);
 
@@ -96,11 +111,14 @@ class DashboardService
             'revenue' => (float) (string) $revenue,
             'cogs' => (float) (string) $cogs,
             'profit' => (float) (string) $profit,
+            'temporary' => (float) (string) $temporary,
+            'provision' => (float) (string) $provision,
             'receivable' => (float) (string) $receivable,
             'invoiceAging' => $invoiceAging,
             'openJobs' => $openJobs,
             'closedJobs' => (int) ($counts['closed'] ?? 0),
             'costProgress' => ['open' => $openJobs, 'draft' => $jobsWithDraftCosts, 'final' => max(0, $openJobs - $jobsWithDraftCosts)],
+            'operationalMonthly' => $operationalMonthly,
             'widgets' => $widgets,
             'weeklyPricing' => $weeklyPricing,
         ]);
@@ -258,19 +276,15 @@ class DashboardService
         $revValues = $ctx['monthly']->map(fn ($m) => (float) (string) $m['revenue'])->values()->all();
         $profitValues = $ctx['monthly']->map(fn ($m) => (float) (string) $m['profit'])->values()->all();
 
-        // Baseline realistic trend if system starts fresh
-        $hasRev = array_sum($revValues) > 0;
-        $sampleRev = [28500000, 34200000, 41000000, 38500000, 46200000, 52000000];
-        $sampleProfit = [5700000, 7100000, 8900000, 8200000, 10500000, 12800000];
-        $displayRev = $hasRev ? $revValues : $sampleRev;
-        $displayProfit = $hasRev ? $profitValues : $sampleProfit;
+        $displayRev = $revValues;
+        $displayProfit = $profitValues;
 
         return match ($role) {
             'finance-manager' => [
                 'tag' => 'ANALISIS PROFITABILITAS',
                 'title' => 'Tren Finansial & Profitabilitas',
                 'subtitle' => 'Perbandingan pendapatan kotor, HPP (COGS), dan laba bersih 6 bulan terakhir',
-                'badge' => 'Profit Margin ' . ($ctx['revenue'] > 0 ? round(($ctx['profit'] / $ctx['revenue']) * 100, 1) : '24.6') . '%',
+                    'badge' => 'Profit Margin ' . ($ctx['revenue'] > 0 ? round(($ctx['profit'] / $ctx['revenue']) * 100, 1) : 0) . '%',
                 'main' => [
                     'type' => 'bar',
                     'labels' => $months,
@@ -310,16 +324,16 @@ class DashboardService
                     'subtitle' => 'Beban biaya job open & reimbursement',
                     'labels' => ['Provision Cost', 'Temporary Cost', 'Pending Reimburse'],
                     'data' => [
-                        max(1, (int) ($ctx['widgets']['pendingReimbursements'] ?? 0) * 1200000 + 15000000),
-                        max(1, (int) ($ctx['openJobs'] ?? 1) * 3500000),
-                        max(1, (int) ($ctx['widgets']['pendingReimbursements'] ?? 0) * 450000 + 1200000),
+                        (float) ($ctx['provision'] ?? 0),
+                        (float) ($ctx['temporary'] ?? 0),
+                        (float) ($ctx['widgets']['pendingReimbursements'] ?? 0),
                     ],
                     'colors' => ['#0f1f3d', '#3b82f6', '#10b981'],
                 ],
                 'stats' => [
-                    ['label' => 'Akumulasi Profit', 'val' => 'Rp ' . Money::format($ctx['profit'] > 0 ? (string) $ctx['profit'] : '53200000'), 'sub' => 'Closing historis'],
-                    ['label' => 'Rasio Margin', 'val' => ($ctx['revenue'] > 0 ? round(($ctx['profit'] / $ctx['revenue']) * 100, 1) : '24.6') . '%', 'sub' => 'Performa sehat'],
-                    ['label' => 'Job Closing', 'val' => ($ctx['closedJobs'] ?: 18) . ' Selesai', 'sub' => 'Total job closed'],
+                    ['label' => 'Akumulasi Profit', 'val' => 'Rp ' . Money::format((string) $ctx['profit']), 'sub' => 'Closing historis'],
+                    ['label' => 'Rasio Margin', 'val' => ($ctx['revenue'] > 0 ? round(($ctx['profit'] / $ctx['revenue']) * 100, 1) : 0) . '%', 'sub' => 'Performa aktual'],
+                    ['label' => 'Job Closing', 'val' => $ctx['closedJobs'] . ' Selesai', 'sub' => 'Total job closed'],
                 ],
             ],
 
@@ -327,20 +341,20 @@ class DashboardService
                 'tag' => 'PERFORMA SALES PIPELINE',
                 'title' => 'Volume Penawaran & Rasio Konversi',
                 'subtitle' => 'Tingkat konversi quotation tim menjadi Job Order aktif',
-                'badge' => 'Win Rate 68.4%',
+                'badge' => 'Win Rate aktual',
                 'main' => [
                     'type' => 'bar',
                     'labels' => $months,
                     'datasets' => [
                         [
                             'label' => 'Quotation Diajukan',
-                            'data' => [12, 16, 19, 15, 22, max(8, ($ctx['widgets']['quotes30d'] ?? 14))],
+                            'data' => array_fill(0, count($months), (int) ($ctx['widgets']['quotes30d'] ?? 0)),
                             'backgroundColor' => 'rgba(59, 130, 246, 0.75)',
                             'borderRadius' => 6,
                         ],
                         [
                             'label' => 'Dikonversi ke Job Order',
-                            'data' => [8, 11, 14, 11, 17, max(5, ($ctx['widgets']['quotes']['converted'] ?? 10))],
+                            'data' => array_fill(0, count($months), (int) ($ctx['widgets']['quotes']['converted'] ?? 0)),
                             'backgroundColor' => 'rgba(16, 185, 129, 0.85)',
                             'borderRadius' => 6,
                         ],
@@ -351,18 +365,18 @@ class DashboardService
                     'subtitle' => 'Status seluruh penawaran aktif',
                     'labels' => ['Draft', 'Diajukan', 'Disetujui', 'Dikonversi', 'Ditolak'],
                     'data' => [
-                        (int) ($ctx['widgets']['quotes']['draft'] ?? 3),
-                        (int) ($ctx['widgets']['quotes']['submitted'] ?? 4),
-                        (int) ($ctx['widgets']['quotes']['approved'] ?? 5),
-                        (int) ($ctx['widgets']['quotes']['converted'] ?? 8),
-                        (int) ($ctx['widgets']['quotes']['rejected'] ?? 2),
+                        (int) ($ctx['widgets']['quotes']['draft'] ?? 0),
+                        (int) ($ctx['widgets']['quotes']['submitted'] ?? 0),
+                        (int) ($ctx['widgets']['quotes']['approved'] ?? 0),
+                        (int) ($ctx['widgets']['quotes']['converted'] ?? 0),
+                        (int) ($ctx['widgets']['quotes']['rejected'] ?? 0),
                     ],
                     'colors' => ['#94a3b8', '#f59e0b', '#10b981', '#6366f1', '#ef4444'],
                 ],
                 'stats' => [
-                    ['label' => 'Quotes 30 Hari', 'val' => (string) ($ctx['widgets']['quotes30d'] ?? 14) . ' Penawaran', 'sub' => 'Bulan berjalan'],
-                    ['label' => 'Job Terkonversi', 'val' => (string) ($ctx['widgets']['quotes']['converted'] ?? 8) . ' Job Order', 'sub' => 'Tercapai'],
-                    ['label' => 'Conversion Rate', 'val' => '68.4%', 'sub' => 'Di atas target'],
+                    ['label' => 'Quotes 30 Hari', 'val' => (string) ($ctx['widgets']['quotes30d'] ?? 0) . ' Penawaran', 'sub' => 'Bulan berjalan'],
+                    ['label' => 'Job Terkonversi', 'val' => (string) ($ctx['widgets']['quotes']['converted'] ?? 0) . ' Job Order', 'sub' => 'Tercapai'],
+                    ['label' => 'Conversion Rate', 'val' => (($ctx['widgets']['quotes30d'] ?? 0) > 0 ? round((($ctx['widgets']['quotes']['converted'] ?? 0) / $ctx['widgets']['quotes30d']) * 100, 1) : 0) . '%', 'sub' => 'Berdasarkan data quotation'],
                 ],
             ],
 
@@ -377,7 +391,7 @@ class DashboardService
                     'datasets' => [
                         [
                             'label' => 'Quotation Saya',
-                            'data' => [4, 6, 8, 7, 9, max(3, count($ctx['widgets']['myQuotes'] ?? []))],
+                            'data' => array_fill(0, count($months), count($ctx['widgets']['myQuotes'] ?? [])),
                             'borderColor' => '#3b82f6',
                             'backgroundColor' => 'rgba(59, 130, 246, 0.12)',
                             'tension' => 0.35,
@@ -388,7 +402,7 @@ class DashboardService
                         ],
                         [
                             'label' => 'Target Sales',
-                            'data' => [5, 6, 7, 7, 8, 8],
+                            'data' => array_fill(0, count($months), 0),
                             'borderColor' => '#94a3b8',
                             'borderDash' => [5, 5],
                             'borderWidth' => 2,
@@ -402,17 +416,17 @@ class DashboardService
                     'subtitle' => 'Posisi tahapan quotation saya',
                     'labels' => ['Draft', 'Diajukan', 'Disetujui', 'Dikonversi'],
                     'data' => [
-                        max(1, (int) ($ctx['widgets']['quotes']['draft'] ?? 2)),
-                        max(1, (int) ($ctx['widgets']['quotes']['submitted'] ?? 3)),
-                        max(1, (int) ($ctx['widgets']['quotes']['approved'] ?? 2)),
-                        max(1, (int) ($ctx['widgets']['quotes']['converted'] ?? 4)),
+                        (int) ($ctx['widgets']['quotes']['draft'] ?? 0),
+                        (int) ($ctx['widgets']['quotes']['submitted'] ?? 0),
+                        (int) ($ctx['widgets']['quotes']['approved'] ?? 0),
+                        (int) ($ctx['widgets']['quotes']['converted'] ?? 0),
                     ],
                     'colors' => ['#64748b', '#f59e0b', '#10b981', '#3b82f6'],
                 ],
                 'stats' => [
-                    ['label' => 'Draft Penawaran', 'val' => (string) ($ctx['widgets']['quotes']['draft'] ?? 2) . ' Draft', 'sub' => 'Siap diajukan'],
-                    ['label' => 'Menunggu Approval', 'val' => (string) (($ctx['widgets']['quotes']['submitted'] ?? 1) + ($ctx['widgets']['quotes']['revision'] ?? 0)), 'sub' => 'Perlu follow-up'],
-                    ['label' => 'Kurs Berlaku', 'val' => ($ctx['weeklyPricing'] ? 'Rp ' . Money::format($ctx['weeklyPricing']->exchange_rate) : 'Rp 16.200'), 'sub' => 'Default pricing'],
+                    ['label' => 'Draft Penawaran', 'val' => (string) ($ctx['widgets']['quotes']['draft'] ?? 0) . ' Draft', 'sub' => 'Siap diajukan'],
+                    ['label' => 'Menunggu Approval', 'val' => (string) (($ctx['widgets']['quotes']['submitted'] ?? 0) + ($ctx['widgets']['quotes']['revision'] ?? 0)), 'sub' => 'Perlu follow-up'],
+                    ['label' => 'Kurs Berlaku', 'val' => ($ctx['weeklyPricing'] ? $ctx['weeklyPricing']->currency . ' ' . Money::format($ctx['weeklyPricing']->exchange_rate) : 'Belum tersedia'), 'sub' => 'Master kurs mingguan'],
                 ],
             ],
 
@@ -427,13 +441,13 @@ class DashboardService
                     'datasets' => [
                         [
                             'label' => 'Job Order Berjalan',
-                            'data' => [8, 12, 14, 13, 16, max(3, $ctx['openJobs'])],
+                            'data' => $ctx['operationalMonthly']->pluck('open')->values()->all(),
                             'backgroundColor' => 'rgba(15, 31, 61, 0.85)',
                             'borderRadius' => 6,
                         ],
                         [
                             'label' => 'Job Biaya Lengkap (Final)',
-                            'data' => [6, 9, 12, 10, 13, max(2, $ctx['costProgress']['final'])],
+                            'data' => $ctx['operationalMonthly']->pluck('final')->values()->all(),
                             'backgroundColor' => 'rgba(16, 185, 129, 0.85)',
                             'borderRadius' => 6,
                         ],
@@ -444,14 +458,14 @@ class DashboardService
                     'subtitle' => 'Status kelengkapan biaya aktual & temporary',
                     'labels' => ['Biaya Siap Closing', 'Biaya Masih Draft', 'Belum Ada Biaya'],
                     'data' => [
-                        max(1, $ctx['costProgress']['final']),
-                        max(1, $ctx['costProgress']['draft']),
-                        max(1, max(0, $ctx['openJobs'] - $ctx['costProgress']['final'] - $ctx['costProgress']['draft'])),
+                        $ctx['costProgress']['final'],
+                        $ctx['costProgress']['draft'],
+                        max(0, $ctx['openJobs'] - $ctx['costProgress']['final'] - $ctx['costProgress']['draft']),
                     ],
                     'colors' => ['#10b981', '#f59e0b', '#94a3b8'],
                 ],
                 'stats' => [
-                    ['label' => 'Job Sedang Berjalan', 'val' => (string) max(1, $ctx['openJobs']) . ' Job', 'sub' => 'Dalam penanganan'],
+                    ['label' => 'Job Sedang Berjalan', 'val' => (string) $ctx['openJobs'] . ' Job', 'sub' => 'Dalam penanganan'],
                     ['label' => 'Perlu Finalisasi', 'val' => (string) $ctx['costProgress']['draft'] . ' Job', 'sub' => 'Masih ada draft biaya'],
                     ['label' => 'Siap Closing', 'val' => (string) $ctx['costProgress']['final'] . ' Job', 'sub' => 'Biaya 100% final'],
                 ],
@@ -468,7 +482,7 @@ class DashboardService
                     'datasets' => [
                         [
                             'label' => 'Keberangkatan (ETD)',
-                            'data' => [5, 7, 6, 8, 9, 6],
+                            'data' => array_fill(0, 6, count($ctx['widgets']['etdSoon'] ?? [])),
                             'borderColor' => '#3b82f6',
                             'backgroundColor' => 'rgba(59, 130, 246, 0.12)',
                             'tension' => 0.35,
@@ -479,7 +493,7 @@ class DashboardService
                         ],
                         [
                             'label' => 'Kedatangan (ETA)',
-                            'data' => [4, 5, 7, 9, 7, 8],
+                            'data' => array_fill(0, 6, count($ctx['widgets']['etaSoon'] ?? [])),
                             'borderColor' => '#10b981',
                             'backgroundColor' => 'rgba(16, 185, 129, 0.12)',
                             'tension' => 0.35,
@@ -495,18 +509,18 @@ class DashboardService
                     'subtitle' => 'Status kontainer & tracking perjalanan',
                     'labels' => ['Booking Confirmed', 'Cargo Received', 'Ocean Freight', 'Customs Clearance', 'Delivered'],
                     'data' => [
-                        max(1, (int) ($ctx['widgets']['shipment']['booking_confirmed'] ?? 2)),
-                        max(1, (int) ($ctx['widgets']['shipment']['cargo_received'] ?? 3)),
-                        max(1, (int) ($ctx['widgets']['shipment']['in_transit'] ?? 4)),
-                        max(1, (int) ($ctx['widgets']['shipment']['customs'] ?? 2)),
-                        max(1, (int) ($ctx['widgets']['shipment']['delivered'] ?? 5)),
+                        (int) ($ctx['widgets']['shipment']['booking_confirmed'] ?? 0),
+                        (int) ($ctx['widgets']['shipment']['cargo_received'] ?? 0),
+                        (int) ($ctx['widgets']['shipment']['in_transit'] ?? 0),
+                        (int) ($ctx['widgets']['shipment']['customs'] ?? 0),
+                        (int) ($ctx['widgets']['shipment']['delivered'] ?? 0),
                     ],
                     'colors' => ['#3b82f6', '#0ea5e9', '#6366f1', '#f59e0b', '#10b981'],
                 ],
                 'stats' => [
-                    ['label' => 'ETA ≤ 7 Hari', 'val' => (string) count($ctx['widgets']['etaSoon'] ?? [1, 2]) . ' Kargo', 'sub' => 'Segera merapat'],
-                    ['label' => 'ETD Mendatang', 'val' => (string) count($ctx['widgets']['etdSoon'] ?? [1, 2, 3]) . ' Kapal', 'sub' => 'Dalam 14 hari'],
-                    ['label' => 'Job Ditangani CS', 'val' => (string) max(1, (int) ($ctx['widgets']['myOpenJobs'] ?? 4)) . ' Open Job', 'sub' => 'Komunikasi aktif'],
+                    ['label' => 'ETA ≤ 7 Hari', 'val' => (string) count($ctx['widgets']['etaSoon'] ?? []) . ' Kargo', 'sub' => 'Segera merapat'],
+                    ['label' => 'ETD Mendatang', 'val' => (string) count($ctx['widgets']['etdSoon'] ?? []) . ' Kapal', 'sub' => 'Dalam 14 hari'],
+                    ['label' => 'Job Ditangani CS', 'val' => (string) ($ctx['widgets']['myOpenJobs'] ?? 0) . ' Open Job', 'sub' => 'Komunikasi aktif'],
                 ],
             ],
 
@@ -548,19 +562,18 @@ class DashboardService
                     'subtitle' => 'Status invoice belum lunas customer',
                     'labels' => ['Lancar (Belum Jatuh Tempo)', 'Jatuh Tempo 1–30 Hari', 'Jatuh Tempo > 30 Hari'],
                     'data' => [
-                        max(1, $ctx['invoiceAging']['current'] ?: 4),
-                        max(1, $ctx['invoiceAging']['overdue_1_30'] ?: 2),
-                        max(1, $ctx['invoiceAging']['overdue_30_plus'] ?: 1),
+                        $ctx['invoiceAging']['current'],
+                        $ctx['invoiceAging']['overdue_1_30'],
+                        $ctx['invoiceAging']['overdue_30_plus'],
                     ],
                     'colors' => ['#10b981', '#f59e0b', '#ef4444'],
                 ],
                 'stats' => [
                     ['label' => 'Total Piutang Aktif', 'val' => 'Rp ' . Money::format($ctx['receivable'] > 0 ? (string) $ctx['receivable'] : '48500000'), 'sub' => 'Dari seluruh invoice'],
-                    ['label' => 'Invoice Unpaid', 'val' => (string) max(1, ($ctx['invoiceAging']['current'] + $ctx['invoiceAging']['overdue_1_30'] + $ctx['invoiceAging']['overdue_30_plus'])) . ' Tagihan', 'sub' => 'Perlu monitoring'],
+                    ['label' => 'Invoice Unpaid', 'val' => (string) ($ctx['invoiceAging']['current'] + $ctx['invoiceAging']['overdue_1_30'] + $ctx['invoiceAging']['overdue_30_plus']) . ' Tagihan', 'sub' => 'Perlu monitoring'],
                     ['label' => 'Rasio Tertagih', 'val' => '94.2%', 'sub' => 'Kolektibilitas lancar'],
                 ],
             ],
         };
     }
 }
-
