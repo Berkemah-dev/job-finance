@@ -130,12 +130,12 @@
 
             <div class="field">
                 <label for="pol">Port of Loading (POL)</label>
-                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $bc->pol) }}" placeholder="Ketik nama atau kode port..." autocomplete="off">
+                <select id="pol" name="pol" data-custom-select aria-label="Port of Loading (POL)"><option value="">Pilih Port of Loading (POL)</option>@foreach($ports as $p)<option value="{{ $p->name }}" @selected(old('pol', $bc->pol)===$p->name)>{{ $p->code ? $p->code.' - ' : '' }}{{ $p->name }}</option>@endforeach</select>
             </div>
 
             <div class="field">
                 <label for="pod">Port of Discharge (POD)</label>
-                <input id="pod" name="pod" list="port_list" maxlength="120" value="{{ old('pod', $bc->pod) }}" placeholder="Ketik nama atau kode port..." autocomplete="off">
+                <select id="pod" name="pod" data-custom-select aria-label="Port of Discharge (POD)"><option value="">Pilih Port of Discharge (POD)</option>@foreach($ports as $p)<option value="{{ $p->name }}" @selected(old('pod', $bc->pod)===$p->name)>{{ $p->code ? $p->code.' - ' : '' }}{{ $p->name }}</option>@endforeach</select>
             </div>
 
 
@@ -144,11 +144,6 @@
                 <input id="etd" name="etd" type="date" value="{{ old('etd', $bc->etd?->format('Y-m-d')) }}">
             </div>
 
-            <datalist id="port_list">
-                @foreach($ports as $p)
-                    <option value="{{ $p->name }}">{{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}</option>
-                @endforeach
-            </datalist>
 
             <div class="field">
                 <label for="eta">ETA (Kedatangan)</label>
