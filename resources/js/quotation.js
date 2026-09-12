@@ -79,6 +79,8 @@ if (form) {
     // ==========================================
     // SINGLE ITEM INPUT & ITEMS TABLE MANAGEMENT
     // ==========================================
+    const singleItemPanel = document.getElementById('single-item-input-panel');
+    const canManageCost = singleItemPanel?.dataset?.canManageCost === '1';
     const tbody = document.getElementById('quotation_items_tbody');
     const itemsCountDisplay = document.getElementById('items_count_display');
     const previewTotal = form.querySelector('[data-preview-total]');
@@ -88,6 +90,11 @@ if (form) {
     const inputNote = document.getElementById('input_item_note');
     const inputUnit = document.getElementById('input_item_unit');
     const inputQty = document.getElementById('input_item_qty');
+    const inputCurrency = document.getElementById('input_item_currency');
+    const inputExchangeRate = document.getElementById('input_item_exchange_rate');
+    const itemRateHint = document.getElementById('item_rate_hint');
+    const labelCostCurrency = document.getElementById('label_cost_currency');
+    const labelPriceCurrency = document.getElementById('label_price_currency');
     const inputCost = document.getElementById('input_item_cost');
     const inputPrice = document.getElementById('input_item_price');
     const btnSubmitItem = document.getElementById('btn_submit_single_item');
@@ -100,6 +107,30 @@ if (form) {
     const truckingStatus = document.getElementById('trucking_pricing_status');
     let truckingPricing = null;
     let truckingTimer = null;
+
+    const syncCurrencyInputs = () => {
+        const curr = (inputCurrency?.value || 'IDR').toUpperCase();
+        if (labelCostCurrency) labelCostCurrency.textContent = '(' + curr + ')';
+        if (labelPriceCurrency) labelPriceCurrency.textContent = '(' + curr + ')';
+        if (curr === 'IDR') {
+            if (inputExchangeRate) {
+                inputExchangeRate.value = '1';
+                inputExchangeRate.readOnly = true;
+            }
+            if (itemRateHint) itemRateHint.textContent = 'Kurs 1.00 untuk IDR';
+        } else {
+            if (inputExchangeRate) {
+                inputExchangeRate.readOnly = false;
+                if (inputExchangeRate.value === '1' || inputExchangeRate.value === '1,00' || !inputExchangeRate.value) {
+                    inputExchangeRate.value = '16.000';
+                }
+            }
+            if (itemRateHint) itemRateHint.textContent = 'Wajib isi kurs ke IDR (misal: 16.000)';
+        }
+    };
+
+    inputCurrency?.addEventListener('change', syncCurrencyInputs);
+    syncCurrencyInputs();
 
     const isTrucking = () => (inputDesc?.value || '').trim().toUpperCase() === 'TRUCKING';
     const setTruckingStatus = (message, color = '#64748b') => {
@@ -128,13 +159,21 @@ if (form) {
             const data = await response.json();
             if (!response.ok || !data.found) {
                 truckingPricing = null;
-                inputCost.value = '0'; inputPrice.value = '0';
+                if (inputCost) inputCost.value = '0';
+                inputPrice.value = '0';
                 setTruckingStatus('Tarif belum tersedia untuk rute, armada, dan kategori ini.', '#b45309');
                 return;
             }
             truckingPricing = data;
-            inputCost.value = data.unit_cost ?? 0;
+            if (inputCost) inputCost.value = data.unit_cost ?? 0;
             inputPrice.value = data.unit_price ?? 0;
+            if (inputCurrency && data.currency) {
+                inputCurrency.value = data.currency;
+                syncCurrencyInputs();
+            }
+            if (inputExchangeRate && data.exchange_rate) {
+                inputExchangeRate.value = data.exchange_rate;
+            }
             setTruckingStatus(`Tarif ditemukan: ${data.port_origin} → ${data.destination}. Modal dan harga jual sudah diisi.`, '#15803d');
         } catch (error) {
             truckingPricing = null;
@@ -156,7 +195,6 @@ if (form) {
     const parseFormattedNumber = value => {
         const raw = String(value ?? '').trim().replace(/\s/g, '');
         if (!raw) return 0;
-        // Format utama Indonesia: 1.555.000 atau 1.555.000,50.
         if (raw.includes('.') && raw.includes(',')) return Number(raw.replace(/\./g, '').replace(',', '.')) || 0;
         if (raw.match(/^\d{1,3}(\.\d{3})+$/)) return Number(raw.replace(/\./g, '')) || 0;
         if (raw.includes('.')) return Number(raw) || 0;
@@ -167,32 +205,24 @@ if (form) {
         const value = parseFormattedNumber(input.value);
         input.value = Number.isInteger(value) ? value.toLocaleString('id-ID') : value.toLocaleString('id-ID', { maximumFractionDigits: 2 });
     };
-    [inputCost, inputPrice, inputQty].forEach(input => {
+    [inputCost, inputPrice, inputQty, inputExchangeRate].forEach(input => {
         input?.addEventListener('blur', () => formatInputNumber(input));
         input?.addEventListener('focus', () => { input.value = input.value.replace(/\./g, '').replace(',', '.'); });
     });
 
-    // Helper formatting
-    const cents = value => {
-        if (!value || isNaN(Number(value))) return 0n;
-        const str = Number(value).toFixed(2);
-        const [whole, fraction = ''] = str.split('.');
-        return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
-    };
-
-    const formatMoney = value => {
-        const sign = value < 0n ? '-' : '';
-        const absolute = value < 0n ? -value : value;
-        return 'Rp ' + sign + (absolute / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + (absolute % 100n).toString().padStart(2, '0');
+    const formatMoney = num => {
+        const val = Number(num) || 0;
+        return 'Rp ' + val.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const renderTable = () => {
         if (!tbody) return;
         tbody.innerHTML = '';
+        const colspan = canManageCost ? 9 : 8;
 
         if (itemsArray.length === 0) {
             const emptyTr = document.createElement('tr');
-            emptyTr.innerHTML = `<td colspan="8" style="text-align: center; color: #94a3b8; padding: 28px 16px;">Belum ada item ditambahkan. Silakan isi form di atas dan klik <strong>"+ Tambah Item ke Daftar"</strong>.</td>`;
+            emptyTr.innerHTML = `<td colspan="${colspan}" style="text-align: center; color: #94a3b8; padding: 28px 16px;">Belum ada item ditambahkan. Silakan isi form di atas dan klik <strong>"+ Tambah Item ke Daftar"</strong>.</td>`;
             tbody.appendChild(emptyTr);
             if (itemsCountDisplay) itemsCountDisplay.textContent = '0 item';
             if (previewTotal) previewTotal.textContent = 'Rp 0,00';
@@ -200,22 +230,32 @@ if (form) {
             return;
         }
 
-        let grandTotal = 0n;
-        let grandProfit = 0n;
+        let grandTotalIdr = 0;
+        let grandProfitIdr = 0;
 
         itemsArray.forEach((item, index) => {
-            const qtyCents = cents(item.quantity);
-            const costCents = cents(item.unit_cost);
-            const priceCents = cents(item.unit_price);
+            const qty = parseFormattedNumber(item.quantity) || 1;
+            const cost = parseFormattedNumber(item.unit_cost) || 0;
+            const price = parseFormattedNumber(item.unit_price) || 0;
+            const rate = parseFormattedNumber(item.exchange_rate) || 1;
+            const curr = item.currency || 'IDR';
 
-            const costTotal = (qtyCents * costCents + 50n) / 100n;
-            const sellTotal = (qtyCents * priceCents + 50n) / 100n;
+            const costTotalIdr = qty * cost * rate;
+            const sellTotalIdr = qty * price * rate;
 
-            grandTotal += sellTotal;
-            grandProfit += (sellTotal - costTotal);
+            grandTotalIdr += sellTotalIdr;
+            grandProfitIdr += (sellTotalIdr - costTotalIdr);
 
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #e2e8f0';
+
+            const costColumnHtml = canManageCost ? `
+                <td style="text-align: right; padding: 10px 8px; color: #64748b;">
+                    ${curr !== 'IDR' ? curr + ' ' + cost.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : formatMoney(cost)}
+                    <input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost}">
+                </td>
+            ` : `<input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost || 0}">`;
+
             tr.innerHTML = `
                 <td style="text-align: center; padding: 10px 8px; color: #64748b; font-weight: 600;">${index + 1}</td>
                 <td style="padding: 10px 12px;">
@@ -226,13 +266,19 @@ if (form) {
                     <input type="hidden" name="items[${index}][type]" value="${escapeHtml(item.type || 'provision')}">
                     <input type="hidden" name="items[${index}][pricing_source]" value="${escapeHtml(item.pricing_source || 'manual')}">
                     <input type="hidden" name="items[${index}][pricing_id]" value="${escapeHtml(item.pricing_id || '')}">
-                    <input type="hidden" name="items[${index}][currency]" value="${escapeHtml(item.currency || 'IDR')}">
+                    <input type="hidden" name="items[${index}][currency]" value="${escapeHtml(curr)}">
                     <input type="hidden" name="items[${index}][exchange_rate]" value="${escapeHtml(item.exchange_rate || '1.00')}">
                     <input type="hidden" name="items[${index}][pricing_snapshot]" value="${escapeHtml(typeof item.pricing_snapshot === 'object' ? JSON.stringify(item.pricing_snapshot) : (item.pricing_snapshot || ''))}">
                     <input type="hidden" name="items[${index}][container_type]" value="${escapeHtml(item.container_type || '')}">
                     <input type="hidden" name="items[${index}][overweight]" value="${item.overweight ? '1' : '0'}">
                     <input type="hidden" name="items[${index}][port_origin]" value="${escapeHtml(item.port_origin || '')}">
                     <input type="hidden" name="items[${index}][destination]" value="${escapeHtml(item.destination || '')}">
+                </td>
+                <td style="padding: 10px 8px;">
+                    <span class="status-badge" style="background:${curr === 'IDR' ? '#f1f5f9' : '#e0e7ff'}; color:${curr === 'IDR' ? '#334155' : '#3730a3'}; font-size:11px; font-weight:700;">${curr}</span>
+                    @if(true)
+                    ${curr !== 'IDR' ? `<div style="font-size:10.5px;color:#64748b;margin-top:2px;">@ ${rate.toLocaleString('id-ID')}</div>` : ''}
+                    @endif
                 </td>
                 <td style="padding: 10px 8px;">
                     <span class="status-badge" style="background:#f1f5f9; color:#334155; font-size:11px;">${escapeHtml(item.unit || 'Shipment')}</span>
@@ -242,16 +288,13 @@ if (form) {
                     ${Number(item.quantity).toLocaleString('id-ID', { maximumFractionDigits: 2 })}
                     <input type="hidden" name="items[${index}][quantity]" value="${item.quantity}">
                 </td>
-                <td style="text-align: right; padding: 10px 8px; color: #64748b;">
-                    ${formatMoney(costCents)}
-                    <input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost}">
-                </td>
+                ${costColumnHtml}
                 <td style="text-align: right; padding: 10px 8px; font-weight: 600; color: #1e3a8a;">
-                    ${formatMoney(priceCents)}
+                    ${curr !== 'IDR' ? curr + ' ' + price.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : formatMoney(price)}
                     <input type="hidden" name="items[${index}][unit_price]" value="${item.unit_price}">
                 </td>
                 <td style="text-align: right; padding: 10px 12px; font-weight: 700; color: #0f172a;">
-                    ${formatMoney(sellTotal)}
+                    ${formatMoney(sellTotalIdr)}
                 </td>
                 <td style="text-align: center; padding: 10px 8px;">
                     <div style="display: flex; gap: 4px; justify-content: center;">
@@ -264,8 +307,8 @@ if (form) {
         });
 
         if (itemsCountDisplay) itemsCountDisplay.textContent = itemsArray.length + ' item ditambahkan';
-        if (previewTotal) previewTotal.textContent = formatMoney(grandTotal);
-        if (previewProfit) previewProfit.textContent = formatMoney(grandProfit);
+        if (previewTotal) previewTotal.textContent = formatMoney(grandTotalIdr);
+        if (previewProfit) previewProfit.textContent = canManageCost ? formatMoney(grandProfitIdr) : '—';
     };
 
     function escapeHtml(str) {
@@ -309,6 +352,8 @@ if (form) {
         const qty = parseFormattedNumber(inputQty?.value || 0);
         const price = parseFormattedNumber(inputPrice?.value || 0);
         const cost = parseFormattedNumber(inputCost?.value || 0);
+        const curr = (inputCurrency?.value || 'IDR').toUpperCase();
+        const rate = curr === 'IDR' ? 1 : (parseFormattedNumber(inputExchangeRate?.value || 0));
         const trucking = isTrucking();
 
         if (!desc) {
@@ -320,6 +365,12 @@ if (form) {
         if (isNaN(qty) || qty <= 0) {
             alert('Jumlah (Qty) harus lebih dari 0.');
             inputQty?.focus();
+            return;
+        }
+
+        if (curr !== 'IDR' && (!rate || rate <= 0)) {
+            alert('Wajib mengisi Kurs untuk mata uang ' + curr + '.');
+            inputExchangeRate?.focus();
             return;
         }
 
@@ -340,8 +391,8 @@ if (form) {
             pricing_source: trucking ? 'trucking' : 'manual',
             pricing_id: trucking ? (truckingPricing?.pricing_id || '') : '',
             pricing_snapshot: trucking ? (truckingPricing?.snapshot || truckingPricing) : null,
-            currency: trucking ? (truckingPricing?.currency || 'IDR') : 'IDR',
-            exchange_rate: trucking ? (truckingPricing?.exchange_rate || '1.00') : '1.00',
+            currency: curr,
+            exchange_rate: String(rate),
             container_type: trucking ? truckingContainer.value : '',
             overweight: trucking ? truckingOverweight.value === '1' : false,
             port_origin: trucking ? truckingOrigin.value.trim() : '',
@@ -355,6 +406,7 @@ if (form) {
         if (inputQty) inputQty.value = '1';
         if (inputCost) inputCost.value = '0';
         if (inputPrice) inputPrice.value = '0';
+        if (inputCurrency) { inputCurrency.value = 'IDR'; syncCurrencyInputs(); }
         if (truckingOrigin) truckingOrigin.value = '';
         if (truckingDestination) truckingDestination.value = '';
         truckingPricing = null;
@@ -378,7 +430,7 @@ if (form) {
     });
 
     // Support Enter key on price & cost input to submit item
-    [inputPrice, inputCost, inputQty, inputNote].forEach(inp => {
+    [inputPrice, inputCost, inputQty, inputNote, inputExchangeRate].forEach(inp => {
         inp?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -408,6 +460,11 @@ if (form) {
                 if (inputNote) inputNote.value = item.note || '';
                 if (inputUnit) inputUnit.value = item.unit || 'Shipment';
                 if (inputQty) inputQty.value = item.quantity || '1';
+                if (inputCurrency) {
+                    inputCurrency.value = item.currency || 'IDR';
+                    syncCurrencyInputs();
+                }
+                if (inputExchangeRate) inputExchangeRate.value = item.exchange_rate || '1';
                 if (inputCost) inputCost.value = item.unit_cost || '0';
                 if (inputPrice) inputPrice.value = item.unit_price || '0';
                 if (truckingOrigin) truckingOrigin.value = item.port_origin || '';

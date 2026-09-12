@@ -16,6 +16,24 @@ class QuotationRequest extends FormRequest
         return $this->route('quotation') ? $this->user()->can('update', $this->route('quotation')) : $this->user()->can('create', Quotation::class);
     }
 
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        if ($user && $user->hasRole('sales') && ! $user->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+            $this->merge(['sales_id' => $user->id]);
+        }
+
+        if ($this->has('items') && is_array($this->input('items'))) {
+            $items = $this->input('items');
+            foreach ($items as $k => $item) {
+                if (! isset($item['unit_cost']) || $item['unit_cost'] === '' || $item['unit_cost'] === null) {
+                    $items[$k]['unit_cost'] = '0';
+                }
+            }
+            $this->merge(['items' => $items]);
+        }
+    }
+
     public function rules(): array
     {
         $money = ['required', 'regex:/^\\d{1,9}(\\.\\d{1,2})?$/'];
@@ -44,7 +62,8 @@ class QuotationRequest extends FormRequest
             'items.*.note' => ['nullable', 'string', 'max:255'],
             'items.*.type' => ['required', Rule::enum(CostType::class)],
             'items.*.unit' => ['required', 'string', 'max:30'], 'items.*.quantity' => ['required', 'regex:/^\d{1,6}(\.\d{1,2})?$/', 'numeric', 'min:0.01'],
-            'items.*.unit_cost' => $money, 'items.*.unit_price' => $money,
+            'items.*.unit_cost' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+            'items.*.unit_price' => $money,
             'items.*.currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
             'items.*.exchange_rate' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
             'items.*.container_type' => ['nullable', 'string', Rule::in(array_keys(ContainerUnit::options()))],

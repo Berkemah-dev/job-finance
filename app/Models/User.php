@@ -21,6 +21,16 @@ class User extends Authenticatable
         return $this->role?->permissions->contains('name', $permission) ?? false;
     }
 
+    public function hasRole(string|array $roles): bool
+    {
+        $roleName = $this->role?->name;
+        if (! $roleName) {
+            return false;
+        }
+
+        return is_array($roles) ? in_array($roleName, $roles, true) : $roleName === $roles;
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 

@@ -135,9 +135,9 @@ class JobOrderTest extends TestCase
     public function test_index_filters_service_routing_and_assignee(): void
     {
         $jobA = $this->convertedJob();
-        $jobB = Job::factory()->create(['service_type' => 'land', 'sales_id' => $this->sales->id, 'cs_id' => $this->cs->id]);
+        $jobB = Job::factory()->create(['service_type' => 'land', 'sales_id' => $this->manager->id, 'cs_id' => $this->cs->id]);
         $this->get('/jobs?service_type=sea')->assertSee($jobA->number)->assertDontSee($jobB->number);
-        $this->get('/jobs?sales_id='.$this->sales->id)->assertSee($jobB->number)->assertDontSee($jobA->number);
+        $this->get('/jobs?sales_id='.$this->manager->id)->assertSee($jobB->number)->assertDontSee($jobA->number);
         $this->get('/jobs?cs_id='.$this->cs->id)->assertSee($jobB->number)->assertDontSee($jobA->number);
         $this->get('/jobs?date_from='.today()->toDateString())->assertSee($jobB->number);
         $this->get('/jobs')->assertSee($jobA->number)->assertSee($jobB->number);

@@ -99,15 +99,26 @@
 
 {{-- HORIZONTAL PILL TABS MENU KE KANAN (SESUAI REQUEST & SCREENSHOT CLIENT) --}}
 <nav class="job-pill-tabs-nav" style="display: flex; gap: 8px; background: #e2e8f0; padding: 6px; border-radius: 9999px; margin-bottom: 24px; overflow-x: auto;">
-    <button type="button" class="job-tab-btn active" data-tab="tab-shipping" style="padding: 10px 22px; border-radius: 9999px; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0,0,0,0.12);">1. Data Pengapalan</button>
-    <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. {{ $isImport ? 'SK DO / SK Pabean' : 'Customs & AJU' }}</button>
-    <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. {{ $isImport ? 'DNP / Surat Jalan' : ($isExportAir ? 'Dokumen (AWB)' : 'Dokumen (BL/CIPL)') }}</button>
-    <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Tanda Terima</button>
-    @if($isExportSea || $isExportAir)
-        <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Booking Confirmation</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Shipping Instruction</button>
+    <button type="button" class="job-tab-btn active" data-tab="tab-shipping" style="padding: 10px 22px; border-radius: 9999px; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0,0,0,0.12);">1. Job Order</button>
+    @if($isImport)
+        <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PIB</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Surat Kuasa</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Deklarasi Nilai Pabean</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Biaya & Profit</button>
+    @elseif($isExportSea || $isExportAir)
+        <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Biaya & Profit</button>
+    @else
+        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. Document Upload</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Biaya & Profit</button>
     @endif
-    <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. Biaya & Profit</button>
 </nav>
 
 {{-- ========================================================================= --}}
@@ -534,13 +545,116 @@
     </section>
 </div>
 
+@if($isImport)
 {{-- ========================================================================= --}}
-{{-- TAB 4: TANDA TERIMA & DELIVERY                                            --}}
+{{-- TAB: SURAT KUASA (SK DO & SK PABEAN)                                      --}}
+{{-- ========================================================================= --}}
+<div id="tab-sk" class="job-tab-content" style="display: none;">
+    <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06); margin-bottom: 24px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">📜</div>
+                <div>
+                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN SURAT KUASA</p>
+                    <h2 style="margin:0 0 4px;">Surat Kuasa Pengurusan (Import)</h2>
+                    <p style="margin:0;color:#64748b;">Surat kuasa resmi untuk pengurusan Delivery Order (DO) dan Kepabeanan (Customs).</p>
+                </div>
+            </div>
+        </div>
+        <div style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="padding: 20px; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #fff;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; display: grid; place-items: center; font-size: 18px;">📄</div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a;">Surat Kuasa DO (SK DO)</h3>
+                        <span class="subtle" style="font-size: 12px;">Untuk pengambilan DO di pelayaran / agen</span>
+                    </div>
+                </div>
+                <p style="font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
+                    Surat kuasa dari Consignee/Customer kepada PT Radix International Logistics untuk mengurus dan mengambil Delivery Order.
+                </p>
+                <div style="display: flex; gap: 8px;">
+                    <a class="button button-primary" href="{{ route('jobs.sk-do.pdf', $job) }}" target="_blank">
+                        🖨 Preview / Cetak SK DO
+                    </a>
+                </div>
+            </div>
+
+            <div style="padding: 20px; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #fff;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; display: grid; place-items: center; font-size: 18px;">📑</div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a;">Surat Kuasa Kepabeanan (SK Pabean)</h3>
+                        <span class="subtle" style="font-size: 12px;">Untuk pengurusan dokumen & fisik Bea Cukai</span>
+                    </div>
+                </div>
+                <p style="font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
+                    Surat kuasa kepabeanan untuk proses pengeluaran barang impor di kantor pelayanan Bea dan Cukai.
+                </p>
+                <div style="display: flex; gap: 8px;">
+                    <a class="button button-primary" href="{{ route('jobs.sk-pabean.pdf', $job) }}" target="_blank">
+                        🖨 Preview / Cetak SK Pabean
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+{{-- ========================================================================= --}}
+{{-- TAB: DEKLARASI NILAI PABEAN (DNP)                                         --}}
+{{-- ========================================================================= --}}
+<div id="tab-dnp" class="job-tab-content" style="display: none;">
+    <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06); margin-bottom: 24px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">📋</div>
+                <div>
+                    <p class="eyebrow" style="margin-bottom:4px;">KEPABEANAN IMPORT</p>
+                    <h2 style="margin:0 0 4px;">Deklarasi Nilai Pabean (DNP)</h2>
+                    <p style="margin:0;color:#64748b;">Dokumen deklarasi nilai pabean resmi untuk pengisian dan pendaftaran PIB.</p>
+                </div>
+            </div>
+            <a class="button button-primary" href="{{ route('jobs.dnp.pdf', $job) }}" target="_blank">🖨 Preview / Cetak DNP</a>
+        </div>
+        <div style="padding: 24px;">
+            <div style="padding: 20px; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #fff;">
+                <h3 style="margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #0f172a;">Rincian Data Deklarasi Nilai Pabean</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr>
+                        <td style="width: 25%; font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Nomor Job Order</td>
+                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0; font-weight: 700;">{{ $job->number }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Importir / Consignee</td>
+                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $job->consignee_name ?? $customerName }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Pemasok / Shipper</td>
+                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $job->shipper_name ?? '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">No AJU / PIB</td>
+                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $noAju }} / {{ $noNopen }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Komoditas</td>
+                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $commodityStr }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+@endif
+
+{{-- ========================================================================= --}}
+{{-- TAB: TANDA TERIMA & DELIVERY                                              --}}
 {{-- ========================================================================= --}}
 <div id="tab-delivery" class="job-tab-content" style="display: none;">
     <section class="panel" style="padding: 24px; margin-bottom: 24px;">
         <div class="panel-heading" style="margin-bottom: 16px;">
-            <h2>Tanda Terima & Delivery Serah Terima</h2>
+            <h2>Surat Jalan & Tanda Terima Dokumen / Barang</h2>
             <span class="subtle">Dokumen serah terima barang dan konfirmasi pengantaran</span>
         </div>
 

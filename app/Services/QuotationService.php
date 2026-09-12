@@ -36,6 +36,9 @@ class QuotationService
                 $this->master->checkVersion($quotation, $data);
             }
             $customer = $this->activeCustomer($data['customer_id']);
+            if ($actor->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+                $data['sales_id'] = $actor->id;
+            }
             $calculated = $this->calculate($data['items'], $data['quotation_date'] ?? now());
             $data['currency'] = $data['currency'] ?? 'IDR';
             $data['exchange_rate'] = $data['exchange_rate'] ?? 1;
@@ -240,11 +243,15 @@ class QuotationService
         $items = [];
         foreach (array_values($rows) as $i => $row) {
             $row = $this->normalizePricingRow($row, $i, $date);
-            $quantity = Money::decimal($row['quantity']);
-            $unitCost = Money::decimal($row['unit_cost']);
-            $unitPrice = Money::decimal($row['unit_price']);
-            if ($row['type'] === 'temporary' && ! $unitCost->isEqualTo($unitPrice)) {
+            $quantity = Money::decimal($row['quantity'] ?? '1');
+            $unitCost = Money::decimal($row['unit_cost'] ?? '0');
+            $unitPrice = Money::decimal($row['unit_price'] ?? '0');
+            if ($row['type'] === 'temporary' && ! $unitCost->isZero() && ! $unitCost->isEqualTo($unitPrice)) {
                 throw ValidationException::withMessages(['items.'.$i.'.unit_price' => 'Temporary ditagihkan sebesar biaya: nilai jual harus sama dengan modal.']);
+            }
+            if ($row['type'] === 'temporary' && $unitCost->isZero() && ! $unitPrice->isZero()) {
+                $unitCost = $unitPrice;
+                $row['unit_cost'] = (string) $unitPrice;
             }
             $totalCost = $quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp);
             $totalPrice = $quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp);
@@ -303,7 +310,13 @@ class QuotationService
         } else {
             $row['pricing_source'] = 'manual';
             $row['pricing_id'] = null;
-            $row['exchange_rate'] = $this->pricing->convertedRate($currency, $date, 'items.'.$index.'.currency');
+            if ($currency === 'IDR') {
+                $row['exchange_rate'] = '1.00';
+            } elseif (! empty($row['exchange_rate']) && is_numeric($row['exchange_rate']) && (float) $row['exchange_rate'] > 0) {
+                $row['exchange_rate'] = (string) $row['exchange_rate'];
+            } else {
+                $row['exchange_rate'] = $this->pricing->convertedRate($currency, $date, 'items.'.$index.'.currency');
+            }
         }
 
         return $row;

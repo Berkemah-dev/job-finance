@@ -5,13 +5,29 @@
 @if($customers->isEmpty())<div class="info-note">Belum ada customer aktif. <a class="text-link" href="{{ route('customers.create') }}">Tambahkan customer terlebih dahulu.</a></div>@endif
 <section class="panel"><form class="data-form" data-quotation-form data-pricing-endpoint="{{ route('pricing.suggest-trucking') }}" data-payment-terms-map="{{ json_encode($customers->pluck('default_payment_terms', 'id')) }}" method="POST" action="{{ $quotation->exists?route('quotations.update',$quotation):route('quotations.store') }}">@csrf @if($quotation->exists) @method('PUT') @endif<input type="hidden" name="lock_version" value="{{ old('lock_version',$quotation->lock_version ?? 0) }}">
 @if($quotation->exists && $quotation->status->value === 'revision')<div class="info-note"><strong>Quotation sedang direvisi.</strong> Perbaiki sesuai catatan revisi lalu ajukan ulang. @if($quotation->revision_reason)Catatan: {{ $quotation->revision_reason }}.@endif</div>@endif
+@php
+    $currentUser = auth()->user();
+    $isSalesOnly = $currentUser && $currentUser->hasRole('sales') && ! $currentUser->hasRole(['sales-manager', 'super-admin', 'admin']);
+    $canManageCost = $currentUser && ($currentUser->hasRole(['sales-manager', 'super-admin', 'admin']) || $currentUser->hasPermission('financial.view') || $currentUser->hasPermission('quotations.approve'));
+@endphp
+
 <div class="form-grid">
 <div class="field"><label for="customer_id">Customer <span class="required">*</span></label><select name="customer_id" id="customer_id" data-customer-select required><option value="">Pilih customer</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" data-payment-terms="{{ $customer->default_payment_terms }}" @selected((string)old('customer_id',$quotation->customer_id)===(string)$customer->id)>{{ $customer->code }} — {{ $customer->name }}</option>@endforeach</select></div>
 <div class="field"><label for="subject">Judul penawaran <span class="required">*</span></label><input id="subject" name="subject" value="{{ old('subject',$quotation->subject) }}" required maxlength="255" placeholder="Contoh: Pengiriman Mesin Jakarta – Surabaya"></div>
 
+@if($isSalesOnly)
+<div class="field">
+    <label>Sales PIC</label>
+    <div style="padding: 10px 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600; color: #1e293b; min-height: 44px; display: flex; align-items: center;">
+        👤 {{ $currentUser->name }} <span class="subtle" style="margin-left: 8px; font-size: 12px;">(Akun Pembuat)</span>
+    </div>
+    <input type="hidden" name="sales_id" value="{{ $currentUser->id }}">
+</div>
+@else
 @can('users.view')
-<div class="field"><label for="sales_id">Sales PIC</label><select id="sales_id" name="sales_id"><option value="">—</option>@foreach($sales as $salesUser)<option value="{{ $salesUser->id }}" @selected((string)old('sales_id',$quotation->sales_id)===(string)$salesUser->id)>{{ $salesUser->name }}</option>@endforeach</select></div>
+<div class="field"><label for="sales_id">Sales PIC</label><select id="sales_id" name="sales_id"><option value="">— Pilih Sales —</option>@foreach($sales as $salesUser)<option value="{{ $salesUser->id }}" @selected((string)old('sales_id',$quotation->sales_id ?? $currentUser->id)===(string)$salesUser->id)>{{ $salesUser->name }}</option>@endforeach</select></div>
 @endcan
+@endif
 
 <div class="field"><label for="quotation_date">Tanggal quotation <span class="required">*</span></label><input type="date" id="quotation_date" name="quotation_date" value="{{ old('quotation_date', $quotation->quotation_date?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" required></div>
 <div class="field"><label for="valid_until">Berlaku sampai <span class="required">*</span></label><input type="date" id="valid_until" name="valid_until" value="{{ old('valid_until', $quotation->valid_until?->format('Y-m-d') ?? now()->addDays(30)->format('Y-m-d')) }}" required></div>
@@ -38,8 +54,8 @@
 .port-autocomplete-field input:focus { border-color: #dbe3ef; box-shadow: none; }
 </style>
 
-<div class="field"><label for="currency">Mata uang</label><select id="currency" name="currency">@foreach(config('operations.currencies') as $key=>$label)<option value="{{ $key }}" @selected(old('currency',$quotation->currency ?? 'IDR')===$key)>{{ $label }}</option>@endforeach</select></div>
-<div class="field"><label for="exchange_rate">Kurs</label><input id="exchange_rate" name="exchange_rate" type="number" min="0.01" step="0.01" value="{{ old('exchange_rate',$quotation->exchange_rate ?? 1) }}" max="999999999.99"></div>
+<div class="field"><label for="currency">Mata uang Utama</label><select id="currency" name="currency">@foreach(config('operations.currencies') as $key=>$label)<option value="{{ $key }}" @selected(old('currency',$quotation->currency ?? 'IDR')===$key)>{{ $label }}</option>@endforeach</select></div>
+<div class="field"><label for="exchange_rate">Kurs Utama</label><input id="exchange_rate" name="exchange_rate" type="number" min="0.01" step="0.01" value="{{ old('exchange_rate',$quotation->exchange_rate ?? 1) }}" max="999999999.99"></div>
 
 <div class="field" style="grid-column: 1 / -1;"><label for="notes">Catatan / Remarks Khusus (Opsional)</label><textarea id="notes" name="notes" rows="2" placeholder="Masukkan catatan tambahan jika ada (akan dicetak di bagian REMARKS)...">{{ old('notes', $quotation->notes) }}</textarea><small class="subtle" style="font-size:12px;color:#64748b;">Jika dikosongkan, bagian REMARKS tidak akan dicetak pada dokumen penawaran.</small></div>
 
@@ -90,15 +106,19 @@
 </details>
 
 {{-- KOTAK INPUT SATU ITEM BIAYA --}}
-<div class="panel" id="single-item-input-panel" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 18px 20px; margin-top: 25px; margin-bottom: 20px;">
+<div class="panel" id="single-item-input-panel" data-can-manage-cost="{{ $canManageCost ? '1' : '0' }}" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 18px 20px; margin-top: 25px; margin-bottom: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
         <div>
             <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1e3a8a;">➕ Input Item Biaya Penawaran</h3>
-            <span class="subtle" style="font-size: 11.5px;">Isi detail biaya di bawah, lalu klik <strong>"+ Tambah Item ke Daftar"</strong> untuk memasukkannya ke tabel.</span>
+            <span class="subtle" style="font-size: 11.5px;">Isi detail biaya & mata uang di bawah, lalu klik <strong>"+ Tambah Item ke Daftar"</strong>.</span>
         </div>
+        @if(! $canManageCost)
+            <span class="status-badge" style="background:#e0f2fe;color:#0369a1;font-size:11px;">🔒 Modal akan dimasukkan oleh Sales Manager saat approval</span>
+        @endif
     </div>
 
-<div class="form-grid" style="grid-template-columns: 2.2fr 1.5fr 1.5fr 1fr 1.2fr 2fr; gap: 12px; align-items: flex-start;">
+    {{-- BARIS 1: URAIAN BIAYA & SATUAN & QTY --}}
+    <div class="form-grid" style="grid-template-columns: 2fr 1fr 1fr 1.2fr; gap: 12px; align-items: flex-start; margin-bottom: 12px;">
         <div class="field">
             <label for="input_item_desc">Uraian Biaya <span class="required">*</span></label>
             <select id="input_item_desc" data-custom-select aria-label="Uraian Biaya"><option value="">Pilih Uraian Biaya</option>@foreach($charges ?? [] as $charge)<option value="{{ $charge->name }}">{{ $charge->name }}</option>@endforeach</select>
@@ -108,14 +128,6 @@
                     <button type="button" class="btn-quick-charge" data-charge="{{ $charge->name }}" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">{{ $charge->name }}</button>
                 @endforeach
             </div>
-        </div>
-        <div class="field">
-            <label for="input_item_cost">Modal / Unit (IDR)</label>
-            <input id="input_item_cost" type="text" inputmode="decimal" value="0" autocomplete="off">
-        </div>
-        <div class="field">
-            <label for="input_item_price">Harga Jual / Unit (IDR) <span class="required">*</span></label>
-            <input id="input_item_price" type="text" inputmode="decimal" value="0" autocomplete="off">
         </div>
         <div class="field">
             <label for="input_item_qty">Jumlah (Qty) <span class="required">*</span></label>
@@ -130,7 +142,38 @@
         </div>
         <div class="field">
             <label for="input_item_note">Remark / Catatan</label>
-            <input id="input_item_note" type="text" placeholder="cth: Per 20ft / Exclude PPN / Free Time" maxlength="255">
+            <input id="input_item_note" type="text" placeholder="cth: Free Time 14 hari" maxlength="255">
+        </div>
+    </div>
+
+    {{-- BARIS 2: MULTI CURRENCY, KURS, MODAL (JIKA ADA AKSES), HARGA JUAL --}}
+    <div class="form-grid" style="grid-template-columns: 1fr 1.2fr {{ $canManageCost ? '1.5fr' : '' }} 1.5fr; gap: 12px; align-items: flex-start;">
+        <div class="field">
+            <label for="input_item_currency">Mata Uang <span class="required">*</span></label>
+            <select id="input_item_currency">
+                @foreach(config('operations.currencies') as $cKey => $cLabel)
+                    <option value="{{ $cKey }}" @selected($cKey === 'IDR')>{{ $cKey }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="field">
+            <label for="input_item_exchange_rate">Kurs ke IDR <span class="required">*</span></label>
+            <input id="input_item_exchange_rate" type="text" inputmode="decimal" value="1" autocomplete="off">
+            <small class="subtle" style="font-size: 10px;" id="item_rate_hint">Kurs 1.00 untuk IDR</small>
+        </div>
+
+        @if($canManageCost)
+            <div class="field">
+                <label for="input_item_cost">Modal / Unit <span class="subtle" id="label_cost_currency">(IDR)</span></label>
+                <input id="input_item_cost" type="text" inputmode="decimal" value="0" autocomplete="off">
+            </div>
+        @else
+            <input type="hidden" id="input_item_cost" value="0">
+        @endif
+
+        <div class="field">
+            <label for="input_item_price">Harga Jual / Unit <span class="subtle" id="label_price_currency">(IDR)</span> <span class="required">*</span></label>
+            <input id="input_item_price" type="text" inputmode="decimal" value="0" autocomplete="off">
         </div>
     </div>
 
@@ -175,14 +218,17 @@
     <table style="width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0;">
-                <th style="width: 40px; text-align: center; padding: 10px 8px;">#</th>
+                <th style="width: 35px; text-align: center; padding: 10px 8px;">#</th>
                 <th style="padding: 10px 12px;">Uraian Biaya & Catatan</th>
-                <th style="width: 110px; padding: 10px 8px;">Satuan</th>
-                <th style="width: 80px; text-align: right; padding: 10px 8px;">Qty</th>
-                <th style="width: 130px; text-align: right; padding: 10px 8px;">Modal / Unit</th>
-                <th style="width: 130px; text-align: right; padding: 10px 8px;">Jual / Unit</th>
-                <th style="width: 140px; text-align: right; padding: 10px 12px;">Subtotal Jual</th>
-                <th style="width: 110px; text-align: center; padding: 10px 8px;">Aksi</th>
+                <th style="width: 110px; padding: 10px 8px;">Mata Uang / Kurs</th>
+                <th style="width: 90px; padding: 10px 8px;">Satuan</th>
+                <th style="width: 70px; text-align: right; padding: 10px 8px;">Qty</th>
+                @if($canManageCost)
+                    <th style="width: 120px; text-align: right; padding: 10px 8px;">Modal / Unit</th>
+                @endif
+                <th style="width: 120px; text-align: right; padding: 10px 8px;">Jual / Unit</th>
+                <th style="width: 140px; text-align: right; padding: 10px 12px;">Subtotal (IDR Eqv)</th>
+                <th style="width: 100px; text-align: center; padding: 10px 8px;">Aksi</th>
             </tr>
         </thead>
         <tbody id="quotation_items_tbody">
