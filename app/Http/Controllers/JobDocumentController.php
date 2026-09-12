@@ -16,12 +16,15 @@ class JobDocumentController extends Controller
     {
         $request->validate([
             'document_type_id' => 'required|exists:document_types,id',
-            'file'             => 'required|file|max:20480|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx',
+            'file'             => 'required|file|max:3072|mimes:pdf',
             'notes'            => 'nullable|string|max:500',
             'customs_document_kind' => ['nullable', Rule::in(['spjm', 'sppb', 'npe'])],
             'booking_reference' => ['nullable', 'string', 'max:60'],
+            'customs_submission_number' => ['nullable', 'string', 'max:100'],
             'nopen' => ['nullable', 'string', 'max:60'],
             'npe_number' => ['nullable', 'string', 'max:60'],
+            'peb_number' => ['nullable', 'string', 'max:60'],
+            'peb_date' => ['nullable', 'date'],
         ]);
 
         $file      = $request->file('file');
@@ -46,7 +49,14 @@ class JobDocumentController extends Controller
     {
         $updates = [];
 
-        foreach (['booking_reference', 'nopen', 'npe_number'] as $field) {
+        if ($request->filled('customs_submission_number')) {
+            $aju = $this->lastSixDigits($request->string('customs_submission_number')->toString());
+            if ($aju !== null && Schema::hasColumn('jobs', 'booking_reference')) {
+                $updates['booking_reference'] = $aju;
+            }
+        }
+
+        foreach (['booking_reference', 'nopen', 'npe_number', 'peb_number', 'peb_date'] as $field) {
             if ($request->filled($field)) {
                 if (! Schema::hasColumn('jobs', $field)) {
                     continue;
@@ -85,6 +95,17 @@ class JobDocumentController extends Controller
                 'created_at' => now(),
             ]);
         }
+    }
+
+    private function lastSixDigits(string $value): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $value);
+
+        if (! is_string($digits) || $digits === '') {
+            return null;
+        }
+
+        return substr($digits, -6);
     }
 
     public function download(Job $job, JobDocument $document)
