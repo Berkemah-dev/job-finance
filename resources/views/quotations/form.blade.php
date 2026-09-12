@@ -26,23 +26,11 @@
 
 <div class="field">
     <label for="origin">Port of Loading (POL)</label>
-    <input id="origin" name="origin" list="pol-ports-list" value="{{ old('origin',$quotation->origin) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
-    <datalist id="pol-ports-list">
-        @foreach($ports ?? [] as $port)
-            <option value="{{ $port->name }} ({{ $port->code }})">{{ $port->code }} - {{ $port->name }}</option>
-            <option value="{{ $port->name }}">{{ $port->name }}</option>
-        @endforeach
-    </datalist>
+    <select id="origin" name="origin" data-custom-select aria-label="Port of Loading (POL)"><option value="">Pilih Port of Loading (POL)</option>@foreach($ports ?? [] as $port)<option value="{{ $port->name }}" @selected(old('origin',$quotation->origin)===$port->name)>{{ $port->code }} - {{ $port->name }}</option>@endforeach</select>
 </div>
 <div class="field">
     <label for="destination">Port of Discharge (POD)</label>
-    <input id="destination" name="destination" list="pod-ports-list" value="{{ old('destination',$quotation->destination) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
-    <datalist id="pod-ports-list">
-        @foreach($ports ?? [] as $port)
-            <option value="{{ $port->name }} ({{ $port->code }})">{{ $port->code }} - {{ $port->name }}</option>
-            <option value="{{ $port->name }}">{{ $port->name }}</option>
-        @endforeach
-    </datalist>
+    <select id="destination" name="destination" data-custom-select aria-label="Port of Discharge (POD)"><option value="">Pilih Port of Discharge (POD)</option>@foreach($ports ?? [] as $port)<option value="{{ $port->name }}" @selected(old('destination',$quotation->destination)===$port->name)>{{ $port->code }} - {{ $port->name }}</option>@endforeach</select>
 </div>
 
 <style>
