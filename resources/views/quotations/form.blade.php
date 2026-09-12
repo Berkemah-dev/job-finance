@@ -46,15 +46,8 @@
 </div>
 
 <style>
-.port-autocomplete-field input {
-    border: 1px solid #1e3a8a;
-    box-shadow: inset 3px 0 0 #dc2626;
-    padding-left: 14px;
-}
-.port-autocomplete-field input:focus {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, .12), inset 3px 0 0 #1e3a8a;
-}
+.port-autocomplete-field input,
+.port-autocomplete-field input:focus { border-color: #dbe3ef; box-shadow: none; }
 </style>
 
 <div class="field"><label for="currency">Mata uang</label><select id="currency" name="currency">@foreach(config('operations.currencies') as $key=>$label)<option value="{{ $key }}" @selected(old('currency',$quotation->currency ?? 'IDR')===$key)>{{ $label }}</option>@endforeach</select></div>
