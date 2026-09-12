@@ -89,6 +89,11 @@
                 @endphp
                 @if($destination)
                 <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
+                @if($label === 'Data Document')
+                    @foreach(['exp_sea'=>'EXPORT SEA','exp_air'=>'EXPORT AIR','imp_sea'=>'IMPORT SEA','imp_air'=>'IMPORT AIR'] as $documentServiceCode => $documentServiceLabel)
+                    <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && request('service') === $documentServiceCode ? 'active' : '' }}" href="{{ route('document-types.index', ['service' => $documentServiceCode]) }}" title="{{ $documentServiceLabel }}"><span>{{ $documentServiceLabel }}</span></a>
+                    @endforeach
+                @endif
                 @else
                 <span class="nav-item upcoming" aria-disabled="true" title="{{ $label }} (Segera)"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
                 @endif

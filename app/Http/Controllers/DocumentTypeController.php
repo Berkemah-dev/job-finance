@@ -12,7 +12,13 @@ class DocumentTypeController extends Controller
     public function index(Request $request)
     {
         $search = mb_substr($request->string('search')->toString(), 0, 80);
+        $service = $request->string('service')->toString();
+        $serviceTypes = ServiceType::options(false);
+        if (! array_key_exists($service, $serviceTypes)) {
+            $service = '';
+        }
         $query = DocumentType::when($search, fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%'))
+            ->forService($service ?: null)
             ->orderBy('sort_order')
             ->orderBy('name');
 
@@ -20,8 +26,7 @@ class DocumentTypeController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $serviceTypes = ServiceType::options(false);
-        $allTypes = $search
+        $allTypes = ($search || $service)
             ? collect()
             : DocumentType::query()
             ->orderBy('sort_order')
@@ -31,7 +36,7 @@ class DocumentTypeController extends Controller
             $label => $allTypes->filter(fn ($type) => in_array($code, $type->service_codes ?? [], true))->values(),
         ])->filter(fn ($rows) => $rows->isNotEmpty());
 
-        return view('master.document-types.index', compact('types', 'search', 'groupedTypes'));
+        return view('master.document-types.index', compact('types', 'search', 'service', 'groupedTypes'));
     }
 
     public function create()

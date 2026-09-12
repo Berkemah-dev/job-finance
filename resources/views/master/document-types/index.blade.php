@@ -33,6 +33,11 @@
             </div>
         @endforeach
     </div>
+@elseif($service)
+    <div style="padding:18px 20px;">
+        <div class="section-heading"><div><h2>{{ collect(App\Models\ServiceType::options(false))->get($service, $service) }}</h2><p>Daftar document untuk service ini.</p></div><a class="text-link" href="{{ route('document-types.index') }}">Semua service</a></div>
+        <div class="table-scroll"><table><thead><tr><th>Kode</th><th>Nama Document</th><th>Kategori</th><th>Wajib?</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@forelse($types as $type)<tr><td><strong>{{ $type->code }}</strong></td><td>{{ $type->name }}</td><td>{{ $type->category_label }}</td><td>{{ $type->is_required ? 'Wajib' : 'Opsional' }}</td><td>{{ $type->is_active ? 'Aktif' : 'Nonaktif' }}</td><td><a class="btn-action" href="{{ route('document-types.edit',$type) }}" title="Edit"><x-icon name="edit"/></a></td></tr>@empty<tr><td colspan="6">Belum ada document.</td></tr>@endforelse</tbody></table></div><div class="pagination">{{ $types->links() }}</div>
+    </div>
 @else
     <div class="table-scroll"><table><thead><tr><th>Kode</th><th>Nama Document</th><th>Service</th><th>Kategori</th><th>Wajib?</th><th>Status</th><th>Urutan</th><th>Aksi</th></tr></thead><tbody>@forelse($types as $type)<tr><td><strong>{{ $type->code }}</strong></td><td>{{ $type->name }}<br><small>{{ $type->description }}</small></td><td><small>{{ $type->service_labels }}</small></td><td>{{ $type->category_label }}</td><td>{!! $type->is_required ? '<span class="status-badge status-open">Wajib</span>' : '<span class="status-badge">Opsional</span>' !!}</td><td>{!! $type->is_active ? '<span class="status-badge status-paid">Aktif</span>' : '<span class="status-badge status-cancelled">Nonaktif</span>' !!}</td><td>{{ $type->sort_order }}</td><td><div class="table-actions"><a class="btn-action" href="{{ route('document-types.edit',$type) }}" title="Edit Data Document" data-tooltip="Edit" aria-label="Edit Data Document"><x-icon name="edit"/></a></div></td></tr>@empty<tr><td colspan="8"><div class="empty-state"><x-icon name="file"/><h3>Belum ada data document</h3><p>Tambahkan data document untuk memulai.</p></div></td></tr>@endforelse</tbody></table></div><div class="pagination">{{ $types->links() }}</div>
 @endif
