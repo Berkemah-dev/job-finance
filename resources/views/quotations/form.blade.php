@@ -24,7 +24,7 @@
 
 <div class="field"><label for="commodity">Commodity</label><input id="commodity" name="commodity" value="{{ old('commodity',$quotation->commodity) }}" maxlength="160" placeholder="cth: General Cargo / Spare Parts"></div>
 
-<div class="field">
+<div class="field port-autocomplete-field">
     <label for="origin">Port of Loading (POL)</label>
     <input id="origin" name="origin" list="pol-ports-list" value="{{ old('origin',$quotation->origin) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
     <datalist id="pol-ports-list">
@@ -32,16 +32,9 @@
             <option value="{{ $port->name }} ({{ $port->code }})">{{ $port->code }} - {{ $port->name }}</option>
             <option value="{{ $port->name }}">{{ $port->name }}</option>
         @endforeach
-        <option value="TANJUNG PRIOK, JAKARTA (IDTPP)">IDTPP - TANJUNG PRIOK, JAKARTA</option>
-        <option value="TANJUNG PERAK, SURABAYA (IDTPS)">IDTPS - TANJUNG PERAK, SURABAYA</option>
-        <option value="BELAWAN, MEDAN (IDBLW)">IDBLW - BELAWAN, MEDAN</option>
-        <option value="SHANGHAI, CHINA (CNSHG)">CNSHG - SHANGHAI, CHINA</option>
-        <option value="SINGAPORE (SGSIN)">SGSIN - SINGAPORE</option>
-        <option value="PORT KLANG, MALAYSIA (MYPKG)">MYPKG - PORT KLANG, MALAYSIA</option>
-        <option value="SOEKARNO HATTA AIRPORT (CGK)">CGK - SOEKARNO HATTA AIRPORT</option>
     </datalist>
 </div>
-<div class="field">
+<div class="field port-autocomplete-field">
     <label for="destination">Port of Discharge (POD)</label>
     <input id="destination" name="destination" list="pod-ports-list" value="{{ old('destination',$quotation->destination) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
     <datalist id="pod-ports-list">
@@ -49,15 +42,20 @@
             <option value="{{ $port->name }} ({{ $port->code }})">{{ $port->code }} - {{ $port->name }}</option>
             <option value="{{ $port->name }}">{{ $port->name }}</option>
         @endforeach
-        <option value="TANJUNG PRIOK, JAKARTA (IDTPP)">IDTPP - TANJUNG PRIOK, JAKARTA</option>
-        <option value="TANJUNG PERAK, SURABAYA (IDTPS)">IDTPS - TANJUNG PERAK, SURABAYA</option>
-        <option value="BELAWAN, MEDAN (IDBLW)">IDBLW - BELAWAN, MEDAN</option>
-        <option value="SHANGHAI, CHINA (CNSHG)">CNSHG - SHANGHAI, CHINA</option>
-        <option value="SINGAPORE (SGSIN)">SGSIN - SINGAPORE</option>
-        <option value="PORT KLANG, MALAYSIA (MYPKG)">MYPKG - PORT KLANG, MALAYSIA</option>
-        <option value="SOEKARNO HATTA AIRPORT (CGK)">CGK - SOEKARNO HATTA AIRPORT</option>
     </datalist>
 </div>
+
+<style>
+.port-autocomplete-field input {
+    border: 1px solid #1e3a8a;
+    box-shadow: inset 3px 0 0 #dc2626;
+    padding-left: 14px;
+}
+.port-autocomplete-field input:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, .12), inset 3px 0 0 #1e3a8a;
+}
+</style>
 
 <div class="field"><label for="currency">Mata uang</label><select id="currency" name="currency">@foreach(config('operations.currencies') as $key=>$label)<option value="{{ $key }}" @selected(old('currency',$quotation->currency ?? 'IDR')===$key)>{{ $label }}</option>@endforeach</select></div>
 <div class="field"><label for="exchange_rate">Kurs</label><input id="exchange_rate" name="exchange_rate" type="number" min="0.01" step="0.01" value="{{ old('exchange_rate',$quotation->exchange_rate ?? 1) }}" max="999999999.99"></div>

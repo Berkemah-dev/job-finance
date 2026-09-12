@@ -171,7 +171,7 @@
 
             <div class="field">
                 <label for="pol">LOADING (Port of Loading) <span class="required">*</span></label>
-                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $si->pol) }}" required placeholder="Pelabuhan Muat">
+                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $si->pol) }}" required placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field">
             </div>
 
             <div class="field">

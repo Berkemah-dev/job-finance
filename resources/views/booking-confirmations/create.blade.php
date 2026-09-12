@@ -152,7 +152,7 @@
 
             <div class="field">
                 <label for="pol">Port of Loading (POL)</label>
-                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $selectedJob?->pol ?? $selectedJob?->origin) }}" placeholder="Pelabuhan Muat">
+                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $selectedJob?->pol ?? $selectedJob?->origin) }}" placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field">
             </div>
 
             <div class="field">
