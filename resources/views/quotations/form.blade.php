@@ -130,13 +130,11 @@
         </div>
         <div class="field">
             <label for="input_item_unit">Satuan <span class="required">*</span></label>
-            <input id="input_item_unit" list="unit-types-list" value="Shipment" placeholder="Pilih/ketik satuan" autocomplete="off" style="width: 100%;">
-            <datalist id="unit-types-list">
-                @foreach($units ?? [] as $unit)
-                    <option value="{{ $unit->name }}">{{ $unit->name }}</option>
-                @endforeach
-                <option value="Shipment">Shipment</option><option value="Container">Container</option><option value="20GP">20GP</option><option value="40GP">40GP</option><option value="40HQ">40HQ</option><option value="Cbm">Cbm</option><option value="KG">KG</option><option value="Doc">Doc</option><option value="Trip">Trip</option>
-            </datalist>
+            <select id="input_item_unit" data-custom-select aria-label="Satuan">
+                <option value="">Pilih Satuan</option>
+                @foreach($units ?? [] as $unit)<option value="{{ $unit->name }}">{{ $unit->name }}</option>@endforeach
+                <option value="Shipment" selected>Shipment</option><option value="Container">Container</option><option value="20GP">20GP</option><option value="40GP">40GP</option><option value="40HQ">40HQ</option><option value="Cbm">Cbm</option><option value="KG">KG</option><option value="Doc">Doc</option><option value="Trip">Trip</option>
+            </select>
         </div>
         <div class="field">
             <label for="input_item_note">Remark / Catatan</label>

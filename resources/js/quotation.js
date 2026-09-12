@@ -351,7 +351,7 @@ if (form) {
         // Reset inputs
         if (inputDesc) inputDesc.value = '';
         if (inputNote) inputNote.value = '';
-        if (inputUnit) inputUnit.value = 'Shipment';
+        if (inputUnit) { inputUnit.value = 'Shipment'; inputUnit.dispatchEvent(new Event('change', { bubbles: true })); }
         if (inputQty) inputQty.value = '1';
         if (inputCost) inputCost.value = '0';
         if (inputPrice) inputPrice.value = '0';
