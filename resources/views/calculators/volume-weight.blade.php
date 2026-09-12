@@ -2,7 +2,7 @@
 @section('title','Kalkulator Volume Weight & CBM')
 @section('content')
 <div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Volume Weight &amp; CBM</h1><p>Volume weight memakai divisor 6000 (kargo udara). Berat tagihan = berat kotor terbesar antara berat fisik dan volume weight.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
-<section class="panel form-panel"><form class="data-form calculator-form" id="vw-form">
+<section class="panel form-panel calculator-panel"><form class="data-form calculator-form" id="vw-form">
 <div class="form-grid">
 <div class="field"><label for="qty">Quantity</label><input id="qty" type="number" min="1" value="1"></div>
 <div class="field"><label for="length">Panjang (cm)</label><input id="length" type="number" min="0" step="0.01" value="100"></div>

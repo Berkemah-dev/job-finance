@@ -70,7 +70,7 @@ $quickFilters = [
                 <option value="{{ $rows }}" @selected($perPage === $rows)>{{ $rows }} baris</option>
                 @endforeach
             </select>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap"><input type="checkbox" name="my_jobs" value="1" @checked($myJobs)> Hanya Job Saya (CS/Sales)</label>
+            <label class="document-filter-check"><input type="checkbox" name="my_jobs" value="1" @checked($myJobs)> <span>Hanya Job Saya (CS/Sales)</span></label>
             <button class="button button-primary">Terapkan</button>
             <a class="button button-secondary" href="{{ route('documents.index') }}">Reset Filter</a>
         </div>

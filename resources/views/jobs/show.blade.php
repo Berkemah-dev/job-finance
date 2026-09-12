@@ -733,36 +733,46 @@
 
 {{-- SCRIPT TOGGLE TAB HORIZONTAL --}}
 <script>
+function activateJobTab(targetTabId, updateHash = true) {
+    const activeButton = document.querySelector(`.job-tab-btn[data-tab="${targetTabId}"]`);
+    const target = document.getElementById(targetTabId);
+
+    if (!activeButton || !target) return;
+
+    document.querySelectorAll('.job-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.color = '#475569';
+        btn.style.fontWeight = '600';
+        btn.style.boxShadow = 'none';
+    });
+
+    activeButton.classList.add('active');
+    activeButton.style.background = '#fff';
+    activeButton.style.color = '#0f172a';
+    activeButton.style.fontWeight = '700';
+    activeButton.style.boxShadow = '0 1px 4px rgba(0,0,0,0.12)';
+
+    document.querySelectorAll('.job-tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    target.style.display = 'block';
+
+    if (updateHash) {
+        history.replaceState(null, '', `#${targetTabId}`);
+    }
+}
+
 document.querySelectorAll('.job-tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-        const targetTabId = this.dataset.tab;
-
-        // Reset all buttons
-        document.querySelectorAll('.job-tab-btn').forEach(b => {
-            b.classList.remove('active');
-            b.style.background = 'transparent';
-            b.style.color = '#475569';
-            b.style.fontWeight = '600';
-            b.style.boxShadow = 'none';
-        });
-
-        // Set active button
-        this.classList.add('active');
-        this.style.background = '#fff';
-        this.style.color = '#0f172a';
-        this.style.fontWeight = '700';
-        this.style.boxShadow = '0 1px 4px rgba(0,0,0,0.12)';
-
-        // Hide all contents & show targeted
-        document.querySelectorAll('.job-tab-content').forEach(content => {
-            content.style.display = 'none';
-        });
-        const target = document.getElementById(targetTabId);
-        if (target) {
-            target.style.display = 'block';
-        }
+        activateJobTab(this.dataset.tab);
     });
 });
+
+const requestedJobTab = window.location.hash.replace('#', '');
+if (requestedJobTab) {
+    activateJobTab(requestedJobTab, false);
+}
 </script>
 
 @endsection

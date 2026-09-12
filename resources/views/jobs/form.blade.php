@@ -1,7 +1,25 @@
 @extends('layouts.app')
 @section('title','Edit Job Order')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">{{ $job->number }}</p><h1>Data operasional</h1><p>Lengkapi informasi pekerjaan, pihak terkait, dan pengiriman.</p></div><a class="text-link" href="{{ route('jobs.show',$job) }}">Kembali ke job</a></div>
+@php
+    $serviceTypeRaw = strtolower($job->service_type ?? '');
+    $isExportSea = $serviceTypeRaw === 'exp_sea' || ($serviceTypeRaw === 'sea' && !str_contains($serviceTypeRaw, 'imp'));
+    $isExportAir = $serviceTypeRaw === 'exp_air' || ($serviceTypeRaw === 'air' && !str_contains($serviceTypeRaw, 'imp'));
+    $isImport = str_contains($serviceTypeRaw, 'imp');
+    $serviceCategoryTitle = $isExportSea ? 'EXPORT SHIPMENT (SEA)' : ($isExportAir ? 'EXPORT SHIPMENT (AIR)' : ($serviceTypeRaw === 'imp_sea' ? 'IMPORT SHIPMENT (SEA)' : ($serviceTypeRaw === 'imp_air' ? 'IMPORT SHIPMENT (AIR)' : 'DOMESTIC / TRUCKING')));
+@endphp
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / JOB ORDER · {{ $serviceCategoryTitle }}</p><h1>Edit Data Pengapalan</h1><p>{{ $job->number }} · Lengkapi informasi pekerjaan, pihak terkait, dan pengiriman.</p></div><a class="text-link" href="{{ route('jobs.show',$job) }}">← Kembali ke tab job</a></div>
+<nav class="job-edit-tabs" aria-label="Navigasi tab job order">
+    <span class="job-edit-tab active">1. Data Pengapalan</span>
+    <a class="job-edit-tab" href="{{ route('jobs.show',$job) }}#tab-customs">2. {{ $isImport ? 'SK DO / SK Pabean' : 'Customs & AJU' }}</a>
+    <a class="job-edit-tab" href="{{ route('jobs.show',$job) }}#tab-documents">3. {{ $isImport ? 'DNP / Surat Jalan' : ($isExportAir ? 'Dokumen (AWB)' : 'Dokumen (BL/CIPL)') }}</a>
+    <a class="job-edit-tab" href="{{ route('jobs.show',$job) }}#tab-delivery">4. Tanda Terima</a>
+    @if($isExportSea || $isExportAir)
+        <a class="job-edit-tab" href="{{ route('jobs.show',$job) }}#tab-booking">5. Booking Confirmation</a>
+        <a class="job-edit-tab" href="{{ route('jobs.show',$job) }}#tab-si">6. Shipping Instruction</a>
+    @endif
+    <a class="job-edit-tab" href="{{ route('jobs.show',$job) }}#tab-financial">{{ ($isExportSea || $isExportAir) ? '7' : '5' }}. Biaya & Profit</a>
+</nav>
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ route('jobs.update',$job) }}">@csrf @method('PUT')<input type="hidden" name="lock_version" value="{{ old('lock_version',$job->lock_version) }}">
 <div class="info-note">Customer dan quotation asal tetap mengikuti penawaran yang disetujui. Data operasional tidak mengubah snapshot penawaran.</div>
 <div class="form-grid">

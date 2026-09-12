@@ -65,6 +65,36 @@
 .job-cancel .button {
     margin-top: 16px;
 }
+.job-edit-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    background: #e2e8f0;
+    border-radius: 999px;
+    padding: 6px;
+    margin-bottom: 24px;
+}
+.job-edit-tab {
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 22px;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+}
+.job-edit-tab.active {
+    background: #fff;
+    color: #0f172a;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .12);
+    font-weight: 700;
+}
+.job-edit-tab:hover {
+    color: #0f172a;
+    background: rgba(255, 255, 255, .58);
+}
 .cost-amount {
     display: block;
     font-size: 18px;
@@ -165,23 +195,17 @@
     border-color: #0f1f3d;
 }
 .document-filter-grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(240px, 1.45fr) repeat(3, minmax(160px, 1fr));
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 16px 20px 20px;
 }
 .document-filter-grid > * {
-    flex: 1 1 130px;
     min-width: 0;
 }
-.document-filter-grid > input[name="search"] {
-    flex: 2 1 220px;
-}
-.document-filter-grid > label,
-.document-filter-grid > .button,
-.document-filter-grid > a.button {
-    flex: 0 0 auto;
+.document-filter-grid .date-filter-group {
+    grid-column: span 2;
 }
 .document-filter-grid input,
 .document-filter-grid select {
@@ -192,6 +216,29 @@
     font-size: 11px;
     color: #354967;
     min-width: 0;
+}
+.document-filter-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 4px;
+    color: #0f1f3d;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.document-filter-check input {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: #0f1f3d;
+}
+.document-filter-grid .button {
+    min-height: 40px;
+    justify-content: center;
 }
 .document-table td {
     vertical-align: top;
@@ -321,6 +368,9 @@
     .document-filter-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+    .document-filter-grid .date-filter-group {
+        grid-column: span 2;
+    }
     .document-detail-grid {
         grid-template-columns: 1fr;
     }
@@ -363,6 +413,12 @@
     .document-filter-grid {
         grid-template-columns: 1fr;
         padding: 14px;
+    }
+    .document-filter-grid .date-filter-group {
+        grid-column: auto;
+    }
+    .document-filter-check {
+        white-space: normal;
     }
     .quick-filters {
         padding: 14px 14px 0;
@@ -614,4 +670,3 @@
         grid-template-columns: 1fr;
     }
 }
-

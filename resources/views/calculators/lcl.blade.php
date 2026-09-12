@@ -2,7 +2,7 @@
 @section('title','Kalkulator Estimasi Biaya LCL')
 @section('content')
 <div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1><p>Hitung estimasi awal berdasarkan basis W/M. Nilai akhir dan tarif LCL akan diinformasikan lebih lanjut oleh tim Finance/Operational.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
-<section class="panel form-panel"><div class="info-note"><strong>Estimasi biaya LCL akan diinformasikan lebih lanjut.</strong><br>Hasil di bawah hanya membantu menghitung CBM, berat kotor, dan basis W/M. Biaya final mengikuti tarif vendor, rute, dan konfirmasi Finance/Operational.</div><form class="data-form calculator-form" id="lcl-form">
+<section class="panel form-panel calculator-panel"><div class="info-note"><strong>Estimasi biaya LCL akan diinformasikan lebih lanjut.</strong><br>Hasil di bawah hanya membantu menghitung CBM, berat kotor, dan basis W/M. Biaya final mengikuti tarif vendor, rute, dan konfirmasi Finance/Operational.</div><form class="data-form calculator-form" id="lcl-form">
 <div class="form-grid">
 <div class="field span-2"><label for="rate_per_cbm">Tarif per m³ (IDR)</label><input id="rate_per_cbm" type="text" inputmode="decimal" placeholder="Kosongkan pakai default {{ number_format((float) config('operations.lcl.default_rate'), 0, ',', '.') }}"></div>
 </div>

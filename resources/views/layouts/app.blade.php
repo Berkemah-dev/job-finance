@@ -49,7 +49,7 @@
         @endforeach
         @php
         $groups = [
-            'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer'],['customers.view','clock','Kontak & PIC','customer-contacts.index'],['vendors.manage','users','Vendor']],
+            'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer'],['vendors.manage','users','Vendor']],
             'PRICING' => [['pricing.view','chart','Pricing Mingguan','pricing.weekly.index'],['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']],
             'KALKULATOR' => [['dashboard.view','calculator','Kalkulator','calculators.index']],
             'OPERASIONAL' => [['jobs.view','check','Booking Confirmation','booking-confirmations.index'],['jobs.view','briefcase','Job Order','jobs.index'],['jobs.view','file','Shipping Instruction','shipping-instructions.index'],['jobs.view','file','Dokumen Job','documents.index'],['jobs.manage','file','Tipe Dokumen','document-types.index'],['tps.manage','briefcase','Master TPS Air & Sea','tps.index']],
