@@ -27,7 +27,7 @@ class QuotationRequest extends FormRequest
             'valid_until' => ['required', 'date_format:Y-m-d', 'after_or_equal:quotation_date'], 'notes' => ['nullable', 'string', 'max:5000'],
             'shipper_name' => ['nullable', 'string', 'max:160'], 'shipper_address' => ['nullable', 'string', 'max:5000'],
             'consignee_name' => ['nullable', 'string', 'max:160'], 'consignee_address' => ['nullable', 'string', 'max:5000'],
-            'service_type' => ['nullable', 'string', Rule::in(array_keys(ServiceType::options()))],
+            'service_type' => ['nullable', 'string', Rule::in(ServiceType::allowedKeys())],
             'origin' => ['nullable', 'string', 'max:120'], 'destination' => ['nullable', 'string', 'max:120'],
             'currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
             'exchange_rate' => ['nullable', 'regex:/^\\d{1,9}(\\.\\d{1,2})?$/', 'min:0.01'],

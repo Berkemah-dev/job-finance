@@ -20,11 +20,25 @@ class ContainerUnit extends Model
             return config('operations.container_types', []);
         }
 
-        return self::query()
+        $options = self::query()
             ->when($activeOnly, fn ($query) => $query->where('is_active', true))
             ->orderBy('name')
             ->pluck('name', 'name')
             ->all();
+
+        return ! empty($options) ? $options : config('operations.container_types', []);
+    }
+
+    public static function allowedKeys(): array
+    {
+        return array_unique(array_merge(
+            array_keys(self::options(false)),
+            array_values(self::options(false)),
+            array_keys(config('operations.container_types', [])),
+            array_keys(config('operations.trucking_container_types', [])),
+            array_values(config('operations.container_types', [])),
+            array_values(config('operations.trucking_container_types', []))
+        ));
     }
 
     public static function label(?string $name): string

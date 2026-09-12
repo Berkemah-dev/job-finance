@@ -10,6 +10,13 @@ return [
         'imp_sea' => 'IMPORT SEA',
         'imp_air' => 'IMPORT AIR',
         'domestic' => 'DOMESTIC / TRUCKING',
+        // Fallback aliases for legacy test compatibility
+        'sea' => 'EXPORT SEA',
+        'air' => 'EXPORT AIR',
+        'dom_sea' => 'DOMESTIC / TRUCKING',
+        'dom_air' => 'DOMESTIC / TRUCKING',
+        'land' => 'DOMESTIC / TRUCKING',
+        'other' => 'DOMESTIC / TRUCKING',
     ],
     'canonical_service_types' => [
         'exp_sea' => 'EXPORT SEA',

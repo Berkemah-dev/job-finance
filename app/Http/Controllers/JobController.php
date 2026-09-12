@@ -33,7 +33,7 @@ class JobController extends Controller
             ->when(in_array($request->input('status'), array_keys(config('operations.job_statuses')), true), fn ($q) => $q->where('status', $request->input('status')))
             ->when($salesId, fn ($q) => $q->where('sales_id', $salesId))
             ->when($csId, fn ($q) => $q->where('cs_id', $csId))
-            ->when($serviceType !== '' && array_key_exists($serviceType, $serviceTypes), fn ($q) => $q->where('service_type', $serviceType))
+            ->when($serviceType !== '' && in_array($serviceType, ServiceType::allowedKeys(), true), fn ($q) => $q->where('service_type', $serviceType))
             ->when($shipmentStatus !== '' && array_key_exists($shipmentStatus, config('operations.shipment_statuses')), fn ($q) => $q->where('shipment_status', $shipmentStatus))
             ->when($dateFrom, fn ($q) => $q->whereDate('job_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('job_date', '<=', $dateTo))

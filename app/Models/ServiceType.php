@@ -20,12 +20,22 @@ class ServiceType extends Model
             return config('operations.canonical_service_types', config('operations.service_types', []));
         }
 
-        return self::query()
+        $options = self::query()
             ->when($activeOnly, fn ($query) => $query->where('is_active', true))
             ->orderBy('sort_order')
             ->orderBy('name')
             ->pluck('name', 'code')
             ->all();
+
+        return ! empty($options) ? $options : config('operations.canonical_service_types', config('operations.service_types', []));
+    }
+
+    public static function allowedKeys(): array
+    {
+        return array_unique(array_merge(
+            array_keys(self::options(false)),
+            array_keys(config('operations.service_types', []))
+        ));
     }
 
     public static function label(?string $code): string

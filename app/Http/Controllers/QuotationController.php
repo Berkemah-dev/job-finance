@@ -34,7 +34,7 @@ class QuotationController extends Controller
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when($customerId, fn ($q) => $q->where('customer_id', $customerId))
             ->when($salesId, fn ($q) => $q->where(fn ($q) => $q->where('sales_id', $salesId)->orWhere(fn ($q) => $q->whereNull('sales_id')->where('created_by', $salesId))))
-            ->when($serviceType !== '' && array_key_exists($serviceType, $serviceTypes), fn ($q) => $q->where('service_type', $serviceType))
+            ->when($serviceType !== '' && in_array($serviceType, ServiceType::allowedKeys(), true), fn ($q) => $q->where('service_type', $serviceType))
             ->when($dateFrom, fn ($q) => $q->whereDate('quotation_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('quotation_date', '<=', $dateTo))
             ->latest('id')->paginate(10)->withQueryString();
