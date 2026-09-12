@@ -462,6 +462,25 @@ select:focus,
     font-size: 11px;
     color: #8490a4;
 }
+.custom-select-create {
+    display: flex;
+    align-items: center;
+    width: calc(100% - 8px);
+    margin: 4px;
+    padding: 9px 13px;
+    border: 1px dashed #93c5fd;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+.custom-select-create:hover {
+    background: #dbeafe;
+    border-color: #60a5fa;
+}
 .custom-select-options::-webkit-scrollbar {
     width: 6px;
 }

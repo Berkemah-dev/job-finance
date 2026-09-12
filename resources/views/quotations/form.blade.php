@@ -64,7 +64,7 @@
     details.lcl-panel summary::marker { display: none; content: ""; }
     details.lcl-panel summary::-webkit-details-marker { display: none; }
 </style>
-
+{{--
 <details class="lcl-panel" data-lcl-panel style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 25px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
 <summary style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; margin: 0; cursor: pointer; list-style: none; display: flex; align-items: center;"><x-icon name="calculator" style="margin-right: 8px;"/><strong>Estimator biaya LCL</strong><span class="subtle" style="margin-left: 10px;">Hitung lalu skor sebagai item quotation.</span></summary>
 <div class="lcl-body" style="padding: 16px;">
@@ -103,7 +103,7 @@
     <div><span class="subtle" style="display: block; margin-bottom: 5px;">Chargeable Weight</span><strong style="font-size: 1.1rem;"><span data-v-cw></span></strong></div>
 </div>
 </div>
-</details>
+</details> --}}
 
 {{-- KOTAK INPUT SATU ITEM BIAYA --}}
 <div class="panel" id="single-item-input-panel" data-can-manage-cost="{{ $canManageCost ? '1' : '0' }}" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 18px 20px; margin-top: 25px; margin-bottom: 20px;">

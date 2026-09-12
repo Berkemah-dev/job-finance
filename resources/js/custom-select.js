@@ -1,9 +1,11 @@
 export function initCustomSelects() {
-    const selects = document.querySelectorAll('select[data-custom-select], .data-form select:not([data-native-select]), .filter-bar select:not([data-native-select])');
+    const selects = document.querySelectorAll('select:not([data-native-select])');
 
     selects.forEach((select) => {
+        if (select.multiple || select.size > 1) return;
         if (select.dataset.customSelectInitialized) return;
         select.dataset.customSelectInitialized = 'true';
+        const allowCustomValue = select.hasAttribute('data-custom-select') || select.dataset.allowCustom === 'true';
 
         // Hide native select visually but keep accessible for form submissions & validation
         select.style.position = 'absolute';
@@ -47,22 +49,15 @@ export function initCustomSelects() {
         const dropdown = document.createElement('div');
         dropdown.className = 'custom-select-dropdown';
 
-        // Check if options >= 4, add search bar
-        const optionsList = Array.from(select.options);
-        const hasSearch = optionsList.length >= 4;
-        let searchInput = null;
+        const searchContainer = document.createElement('div');
+        searchContainer.className = 'custom-select-search';
 
-        if (hasSearch) {
-            const searchContainer = document.createElement('div');
-            searchContainer.className = 'custom-select-search';
-            
-            searchInput = document.createElement('input');
-            searchInput.type = 'text';
-            searchInput.placeholder = 'Cari pilihan...';
-            searchInput.autocomplete = 'off';
-            searchContainer.appendChild(searchInput);
-            dropdown.appendChild(searchContainer);
-        }
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = allowCustomValue ? 'Ketik atau pilih...' : 'Ketik untuk cari...';
+        searchInput.autocomplete = 'off';
+        searchContainer.appendChild(searchInput);
+        dropdown.appendChild(searchContainer);
 
         const optionsContainer = document.createElement('div');
         optionsContainer.className = 'custom-select-options';
@@ -75,6 +70,12 @@ export function initCustomSelects() {
         noResults.style.display = 'none';
         optionsContainer.appendChild(noResults);
 
+        const createOption = document.createElement('button');
+        createOption.type = 'button';
+        createOption.className = 'custom-select-create';
+        createOption.style.display = 'none';
+        optionsContainer.appendChild(createOption);
+
         wrapper.appendChild(dropdown);
 
         // Render options
@@ -82,6 +83,7 @@ export function initCustomSelects() {
             // Keep noResults element
             optionsContainer.innerHTML = '';
             optionsContainer.appendChild(noResults);
+            optionsContainer.appendChild(createOption);
 
             Array.from(select.options).forEach((opt, idx) => {
                 const optEl = document.createElement('div');
@@ -142,6 +144,7 @@ export function initCustomSelects() {
 
             wrapper.classList.add('is-open');
             trigger.setAttribute('aria-expanded', 'true');
+            renderOptions();
 
             // Ensure parent panel and filter bar allow dropdown visibility
             const panel = wrapper.closest('.panel');
@@ -154,11 +157,9 @@ export function initCustomSelects() {
                 filterBar.style.zIndex = '50';
             }
 
-            if (searchInput) {
-                searchInput.value = '';
-                filterOptions('');
-                setTimeout(() => searchInput.focus(), 50);
-            }
+            searchInput.value = '';
+            filterOptions('');
+            setTimeout(() => searchInput.focus(), 50);
 
             // Scroll selected option into view
             const selectedEl = optionsContainer.querySelector('.custom-select-option.is-selected');
@@ -192,39 +193,80 @@ export function initCustomSelects() {
         const filterOptions = (query) => {
             const q = query.trim().toLowerCase();
             let hasMatch = false;
+            let hasExactMatch = false;
 
             optionsContainer.querySelectorAll('.custom-select-option').forEach((el) => {
                 const text = (el.dataset.text || '').toLowerCase();
                 const match = text.includes(q);
                 el.style.display = match ? 'flex' : 'none';
                 if (match) hasMatch = true;
+                if (text === q || String(el.dataset.value || '').toLowerCase() === q) hasExactMatch = true;
             });
 
-            noResults.style.display = hasMatch ? 'none' : 'block';
+            const canCreate = allowCustomValue && q !== '' && !hasExactMatch;
+            createOption.textContent = query.trim() ? `Gunakan "${query.trim()}"` : '';
+            createOption.style.display = canCreate ? 'flex' : 'none';
+            noResults.style.display = hasMatch || canCreate ? 'none' : 'block';
         };
 
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                filterOptions(e.target.value);
-            });
+        const setCustomValue = (value) => {
+            const clean = value.trim();
+            if (!clean) return;
 
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    closeDropdown();
-                    trigger.focus();
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const firstVisible = optionsContainer.querySelector('.custom-select-option:not([style*="display: none"])');
-                    if (firstVisible) {
-                        firstVisible.click();
-                    }
+            let option = Array.from(select.options).find((opt) => opt.value === clean || opt.text === clean);
+            if (!option) {
+                option = document.createElement('option');
+                option.value = clean;
+                option.textContent = clean;
+                option.dataset.customOption = 'true';
+                select.appendChild(option);
+            }
+
+            select.value = option.value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            renderOptions();
+            updateDisplay();
+            closeDropdown();
+            trigger.focus();
+        };
+
+        createOption.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setCustomValue(searchInput.value);
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            filterOptions(e.target.value);
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDropdown();
+                trigger.focus();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const firstVisible = optionsContainer.querySelector('.custom-select-option:not([style*="display: none"])');
+                if (firstVisible) {
+                    firstVisible.click();
+                } else if (allowCustomValue) {
+                    setCustomValue(searchInput.value);
                 }
-            });
-        }
+            }
+        });
 
         trigger.addEventListener('click', (e) => {
             e.preventDefault();
             toggleDropdown();
+        });
+
+        trigger.addEventListener('keydown', (e) => {
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                openDropdown();
+                searchInput.value = e.key;
+                filterOptions(searchInput.value);
+            }
         });
 
         // Sync if select value is changed externally
@@ -260,4 +302,25 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initCustomSelects);
 } else {
     initCustomSelects();
+}
+
+let customSelectObserverTimer = null;
+const observeCustomSelects = () => {
+    if (!document.body || window.customSelectObserverStarted) return;
+    window.customSelectObserverStarted = true;
+
+    new MutationObserver((mutations) => {
+        if (!mutations.some((mutation) => Array.from(mutation.addedNodes).some((node) => node.nodeType === 1 && (node.matches?.('select') || node.querySelector?.('select'))))) {
+            return;
+        }
+
+        clearTimeout(customSelectObserverTimer);
+        customSelectObserverTimer = setTimeout(initCustomSelects, 30);
+    }).observe(document.body, { childList: true, subtree: true });
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', observeCustomSelects);
+} else {
+    observeCustomSelects();
 }

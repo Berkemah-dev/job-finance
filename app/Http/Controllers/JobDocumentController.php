@@ -32,7 +32,7 @@ class JobDocumentController extends Controller
         $kind = (string) $request->input('customs_document_kind', '');
         $kind = $kind ?: $this->detectCustomsKind($docText);
         if (in_array($kind, ['spjm', 'behandle', 'sppb'], true) && ! $request->user()->hasRole(['operational', 'super-admin', 'admin'])) {
-            abort(403, 'Dokumen SPJM, Behandle, dan SPPB hanya dapat diupload oleh Operational.');
+            abort(403, 'Dokumen SPJM, Pemeriksaan Fisik/SLIM, dan SPPB hanya dapat diupload oleh Operational.');
         }
 
         $file      = $request->file('file');
@@ -84,18 +84,32 @@ class JobDocumentController extends Controller
             } elseif ($isNpe) {
                 $notification = 'Dokumen NPE berhasil diupload. Notifikasi: Customs Checklist terverifikasi (NPE Terbit).';
             }
-        } elseif ($isImportSea || $isImportAir) {
-            // Alur kepabeanan Import: PIB → Billing BC → Penjaluran (SPPB / SPJM → Behandle → SPPB)
-            if ($kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB')) {
-                $notification = 'Dokumen SPPB berhasil diupload. 🟢 SPPB Terbit — Proses Kepabeanan Selesai (Jalur Hijau).';
-            } elseif ($kind === 'behandle' || str_contains($docCode, 'BEHANDLE') || str_contains($docName, 'BEHANDLE')) {
-                $notification = 'Dokumen Behandle berhasil diupload. Notifikasi: Pemeriksaan Fisik Selesai — Menunggu SPPB.';
-            } elseif ($kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM')) {
-                $notification = 'Dokumen SPJM berhasil diupload. 🔴 Jalur Merah — Barang perlu pemeriksaan fisik (Behandle).';
-            } elseif ($kind === 'billing' || str_contains($docCode, 'BILLING') || str_contains($docName, 'BILLING') || str_contains($docName, 'TAGIHAN BC')) {
-                $notification = 'Dokumen Billing BC berhasil diupload. Notifikasi: Billing Bea Cukai Diproses — Menunggu Penjaluran.';
-            } elseif ($kind === 'pib' || str_contains($docCode, 'PIB') || str_contains($docName, 'PIB') || str_contains($docName, 'PEMBERITAHUAN IMPOR')) {
-                $notification = 'Dokumen PIB berhasil diupload. Notifikasi: PIB Diajukan ke Bea Cukai — Menunggu Billing BC.';
+        } elseif ($isImportSea) {
+            $isDo = str_contains($docCode, 'DO') || str_contains($docName, 'DO') || str_contains($docName, 'DELIVERY ORDER');
+            $isSpjm = $kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM');
+            $isSppb = $kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB');
+
+            if ($job->hasDoChecklist() && $job->hasSpjmDocument() && $job->hasSppbDocument()) {
+                $notification = 'Dokumen berhasil diupload. Notifikasi: DO Checklist + SPJM dalam inspection + SPPB final.';
+            } elseif ($job->hasDoChecklist() && $job->hasSpjmDocument()) {
+                $notification = 'Dokumen berhasil diupload. Notifikasi: DO Checklist + SPJM dalam inspection.';
+            } elseif ($isSppb) {
+                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB final.';
+            } elseif ($isSpjm) {
+                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection.';
+            } elseif ($isDo) {
+                $notification = 'Dokumen DO berhasil diupload. Notifikasi: DO Checklist terverifikasi.';
+            }
+        } elseif ($isImportAir) {
+            $isSpjm = $kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM');
+            $isSppb = $kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB');
+
+            if ($job->hasSpjmDocument() && $job->hasSppbDocument()) {
+                $notification = 'Dokumen berhasil diupload. Notifikasi: SPJM dalam inspection + SPPB final.';
+            } elseif ($isSppb) {
+                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB final.';
+            } elseif ($isSpjm) {
+                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection.';
             }
         }
 
@@ -132,7 +146,7 @@ class JobDocumentController extends Controller
             $isImport = in_array($job->service_type, ['imp_sea', 'imp_air'], true);
             $isExport = in_array($job->service_type, ['exp_sea', 'exp_air'], true);
 
-            // Peta kind → shipment_status sesuai alur Import: PIB → Billing → Penjaluran → Behandle → SPPB
+            // Peta kind -> shipment_status sesuai alur Import: PIB -> Billing -> Penjaluran -> Pemeriksaan Fisik -> SPPB
             $importKindMap = [
                 'pib'      => 'pib_submitted',
                 'billing'  => 'billing',

@@ -188,7 +188,7 @@ class Job extends Model
 
     public function hasSpjmDocument(): bool
     {
-        if (in_array($this->shipment_status, ['spjm', 'behandle', 'sppb'], true)) {
+        if (in_array($this->shipment_status, ['spjm', 'behandle'], true)) {
             return true;
         }
 
@@ -201,11 +201,21 @@ class Job extends Model
     }
 
     /**
-     * Apakah sedang dalam tahap Behandle (pemeriksaan fisik jalur merah).
+     * Apakah sedang dalam tahap pemeriksaan fisik dari jalur SPJM.
      */
     public function hasBehandleStatus(): bool
     {
-        return in_array($this->shipment_status, ['behandle', 'sppb'], true);
+        if ($this->shipment_status === 'behandle') {
+            return true;
+        }
+
+        return $this->documents->contains(function (JobDocument $doc) {
+            $code = strtoupper((string) ($doc->documentType?->code ?? ''));
+            $name = strtoupper((string) ($doc->documentType?->name ?? ''));
+
+            return str_contains($code, 'BEHANDLE') || str_contains($name, 'BEHANDLE') ||
+                   str_contains($code, 'SLIM') || str_contains($name, 'SLIM');
+        });
     }
 
     public function hasSppbDocument(): bool
@@ -295,75 +305,49 @@ class Job extends Model
         }
 
         if ($isImportSea) {
-            $hasPib      = $this->hasPibDocument();
-            $hasBilling  = $this->hasBillingDocument();
+            $hasDo       = $this->hasDoChecklist();
             $hasSpjm     = $this->hasSpjmDocument();
-            $hasBehandle = $this->hasBehandleStatus();
             $hasSppb     = $this->hasSppbDocument();
 
-            // Tentukan status summary berdasarkan tahap tertinggi yang sudah dicapai
             if ($hasSppb) {
-                $statusSummary = 'SPPB Terbit — Proses Selesai ✓';
-            } elseif ($hasBehandle) {
-                $statusSummary = 'Behandle (Pemeriksaan Fisik Jalur Merah)';
+                $statusSummary = 'DO Checklist + SPJM Inspection + SPPB Final Selesai';
             } elseif ($hasSpjm) {
-                $statusSummary = 'SPJM Diterima — Menunggu Behandle';
-            } elseif ($hasBilling) {
-                $statusSummary = 'Billing BC Diproses — Menunggu Penjaluran';
-            } elseif ($hasPib) {
-                $statusSummary = 'PIB Diajukan — Menunggu Billing BC';
+                $statusSummary = 'SPJM dalam inspection — menunggu SPPB';
+            } elseif ($hasDo) {
+                $statusSummary = 'DO Checklist Selesai — menunggu SPJM/SPPB';
             } else {
-                $statusSummary = 'Proses Dokumen Import';
+                $statusSummary = 'Menunggu Dokumen Import Sea';
             }
 
             return [
                 'type'            => 'import_sea',
-                'title'           => 'Import Sea — Alur Kepabeanan',
-                'is_all_completed' => $hasSppb,
+                'title'           => 'Import Sea Checklist',
+                'is_all_completed' => $hasDo && $hasSppb,
                 'status_summary'  => $statusSummary,
                 'items'           => [
                     [
-                        'key'          => 'pib',
-                        'label'        => 'PIB Diajukan',
-                        'sublabel'     => 'Pemberitahuan Impor Barang ke Bea Cukai',
-                        'completed'    => $hasPib,
-                        'badge_text'   => $hasPib ? 'PIB Diajukan ✓' : 'Menunggu PIB',
-                        'badge_color'  => $hasPib ? '#0369a1' : '#64748b',
-                        'badge_bg'     => $hasPib ? '#e0f2fe' : '#f1f5f9',
-                    ],
-                    [
-                        'key'          => 'billing',
-                        'label'        => 'Billing Bea Cukai',
-                        'sublabel'     => 'Tagihan BC wajib dilunasi sebelum penjaluran',
-                        'completed'    => $hasBilling,
-                        'badge_text'   => $hasBilling ? 'Billing BC Selesai ✓' : 'Menunggu Billing BC',
-                        'badge_color'  => $hasBilling ? '#7c3aed' : '#64748b',
-                        'badge_bg'     => $hasBilling ? '#ede9fe' : '#f1f5f9',
+                        'key'          => 'do',
+                        'label'        => 'DO Checklist',
+                        'sublabel'     => 'Delivery Order untuk proses pengeluaran barang',
+                        'completed'    => $hasDo,
+                        'badge_text'   => $hasDo ? 'DO Checklist ✓' : 'Menunggu DO',
+                        'badge_color'  => $hasDo ? '#166534' : '#64748b',
+                        'badge_bg'     => $hasDo ? '#dcfce7' : '#f1f5f9',
                     ],
                     [
                         'key'          => 'spjm',
-                        'label'        => 'Penjaluran (SPJM / SPPB)',
-                        'sublabel'     => 'Jalur Hijau = SPPB langsung | Jalur Merah = SPJM → Behandle',
-                        'completed'    => $hasSppb || $hasSpjm,
+                        'label'        => 'SPJM Inspection',
+                        'sublabel'     => 'SPJM berarti barang dalam proses inspection',
+                        'completed'    => $hasSpjm || $hasSppb,
                         'active'       => $hasSpjm && ! $hasSppb,
-                        'badge_text'   => $hasSppb ? 'Jalur Hijau (SPPB) ✓' : ($hasSpjm ? 'Jalur Merah (SPJM)' : 'Menunggu Penjaluran'),
+                        'badge_text'   => $hasSppb ? 'Inspection Selesai ✓' : ($hasSpjm ? 'SPJM dalam inspection' : 'Menunggu SPJM'),
                         'badge_color'  => $hasSppb ? '#166534' : ($hasSpjm ? '#991b1b' : '#64748b'),
                         'badge_bg'     => $hasSppb ? '#dcfce7' : ($hasSpjm ? '#fee2e2' : '#f1f5f9'),
                     ],
                     [
-                        'key'          => 'behandle',
-                        'label'        => 'Behandle (Pemeriksaan Fisik)',
-                        'sublabel'     => 'Hanya Jalur Merah — barang diperiksa fisik di TPS',
-                        'completed'    => $hasBehandle,
-                        'active'       => $hasSpjm && ! $hasBehandle && ! $hasSppb,
-                        'badge_text'   => $hasBehandle ? 'Behandle Selesai ✓' : ($hasSpjm ? 'Menunggu Behandle' : 'N/A (Jalur Hijau)'),
-                        'badge_color'  => $hasBehandle ? '#166534' : ($hasSpjm ? '#b45309' : '#94a3b8'),
-                        'badge_bg'     => $hasBehandle ? '#dcfce7' : ($hasSpjm ? '#fef3c7' : '#f1f5f9'),
-                    ],
-                    [
                         'key'          => 'sppb',
                         'label'        => 'SPPB (Final)',
-                        'sublabel'     => 'Surat Persetujuan Pengeluaran Barang — ujung alur',
+                        'sublabel'     => 'Surat Persetujuan Pengeluaran Barang — final',
                         'completed'    => $hasSppb,
                         'badge_text'   => $hasSppb ? 'SPPB Terbit — Selesai ✓' : 'Menunggu SPPB',
                         'badge_color'  => $hasSppb ? '#166534' : '#64748b',
@@ -374,74 +358,37 @@ class Job extends Model
         }
 
         if ($isImportAir) {
-            $hasPib      = $this->hasPibDocument();
-            $hasBilling  = $this->hasBillingDocument();
             $hasSpjm     = $this->hasSpjmDocument();
-            $hasBehandle = $this->hasBehandleStatus();
             $hasSppb     = $this->hasSppbDocument();
 
             if ($hasSppb) {
-                $statusSummary = 'SPPB Terbit — Proses Selesai ✓';
-            } elseif ($hasBehandle) {
-                $statusSummary = 'Behandle (Pemeriksaan Fisik Jalur Merah)';
+                $statusSummary = 'SPJM Inspection + SPPB Final Selesai';
             } elseif ($hasSpjm) {
-                $statusSummary = 'SPJM Diterima — Menunggu Behandle';
-            } elseif ($hasBilling) {
-                $statusSummary = 'Billing BC Diproses — Menunggu Penjaluran';
-            } elseif ($hasPib) {
-                $statusSummary = 'PIB Diajukan — Menunggu Billing BC';
+                $statusSummary = 'SPJM dalam inspection — menunggu SPPB';
             } else {
-                $statusSummary = 'Proses Dokumen Import';
+                $statusSummary = 'Menunggu Dokumen Import Air';
             }
 
             return [
                 'type'            => 'import_air',
-                'title'           => 'Import Air — Alur Kepabeanan',
+                'title'           => 'Import Air Checklist',
                 'is_all_completed' => $hasSppb,
                 'status_summary'  => $statusSummary,
                 'items'           => [
                     [
-                        'key'          => 'pib',
-                        'label'        => 'PIB Diajukan',
-                        'sublabel'     => 'Pemberitahuan Impor Barang ke Bea Cukai',
-                        'completed'    => $hasPib,
-                        'badge_text'   => $hasPib ? 'PIB Diajukan ✓' : 'Menunggu PIB',
-                        'badge_color'  => $hasPib ? '#0369a1' : '#64748b',
-                        'badge_bg'     => $hasPib ? '#e0f2fe' : '#f1f5f9',
-                    ],
-                    [
-                        'key'          => 'billing',
-                        'label'        => 'Billing Bea Cukai',
-                        'sublabel'     => 'Tagihan BC wajib dilunasi sebelum penjaluran',
-                        'completed'    => $hasBilling,
-                        'badge_text'   => $hasBilling ? 'Billing BC Selesai ✓' : 'Menunggu Billing BC',
-                        'badge_color'  => $hasBilling ? '#7c3aed' : '#64748b',
-                        'badge_bg'     => $hasBilling ? '#ede9fe' : '#f1f5f9',
-                    ],
-                    [
                         'key'          => 'spjm',
-                        'label'        => 'Penjaluran (SPJM / SPPB)',
-                        'sublabel'     => 'Jalur Hijau = SPPB langsung | Jalur Merah = SPJM → Behandle',
-                        'completed'    => $hasSppb || $hasSpjm,
+                        'label'        => 'SPJM Inspection',
+                        'sublabel'     => 'SPJM berarti barang dalam proses inspection',
+                        'completed'    => $hasSpjm || $hasSppb,
                         'active'       => $hasSpjm && ! $hasSppb,
-                        'badge_text'   => $hasSppb ? 'Jalur Hijau (SPPB) ✓' : ($hasSpjm ? 'Jalur Merah (SPJM)' : 'Menunggu Penjaluran'),
+                        'badge_text'   => $hasSppb ? 'Inspection Selesai ✓' : ($hasSpjm ? 'SPJM dalam inspection' : 'Menunggu SPJM'),
                         'badge_color'  => $hasSppb ? '#166534' : ($hasSpjm ? '#991b1b' : '#64748b'),
                         'badge_bg'     => $hasSppb ? '#dcfce7' : ($hasSpjm ? '#fee2e2' : '#f1f5f9'),
                     ],
                     [
-                        'key'          => 'behandle',
-                        'label'        => 'Behandle (Pemeriksaan Fisik)',
-                        'sublabel'     => 'Hanya Jalur Merah — barang diperiksa fisik di TPS',
-                        'completed'    => $hasBehandle,
-                        'active'       => $hasSpjm && ! $hasBehandle && ! $hasSppb,
-                        'badge_text'   => $hasBehandle ? 'Behandle Selesai ✓' : ($hasSpjm ? 'Menunggu Behandle' : 'N/A (Jalur Hijau)'),
-                        'badge_color'  => $hasBehandle ? '#166534' : ($hasSpjm ? '#b45309' : '#94a3b8'),
-                        'badge_bg'     => $hasBehandle ? '#dcfce7' : ($hasSpjm ? '#fef3c7' : '#f1f5f9'),
-                    ],
-                    [
                         'key'          => 'sppb',
                         'label'        => 'SPPB (Final)',
-                        'sublabel'     => 'Surat Persetujuan Pengeluaran Barang — ujung alur',
+                        'sublabel'     => 'Surat Persetujuan Pengeluaran Barang — final',
                         'completed'    => $hasSppb,
                         'badge_text'   => $hasSppb ? 'SPPB Terbit — Selesai ✓' : 'Menunggu SPPB',
                         'badge_color'  => $hasSppb ? '#166534' : '#64748b',

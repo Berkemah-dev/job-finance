@@ -3,7 +3,7 @@
 @section('content')
 @php $serviceCategoryTitle = match (strtolower($job->service_type ?? '')) { 'exp_sea' => 'EXPORT SHIPMENT (SEA)', 'exp_air' => 'EXPORT SHIPMENT (AIR)', 'imp_sea' => 'IMPORT SHIPMENT (SEA)', 'imp_air' => 'IMPORT SHIPMENT (AIR)', default => 'DOMESTIC / TRUCKING' }; @endphp
 <div class="page-heading"><div><p class="eyebrow">OPERASIONAL / JOB ORDER · {{ $serviceCategoryTitle }}</p><h1>Edit Data Pengapalan</h1><p>{{ $job->number }} · Perbarui informasi operasional pengiriman.</p></div><a class="text-link" href="{{ route('jobs.show',$job) }}">← Kembali ke Job Order</a></div>
-<section class="panel form-panel"><form class="data-form" method="POST" action="{{ route('jobs.update',$job) }}">@csrf @method('PUT')<input type="hidden" name="lock_version" value="{{ old('lock_version',$job->lock_version) }}">
+<section class="panel form-panel"><form class="data-form" method="POST" action="{{ route('jobs.update',$job) }}">@csrf @method('PUT')<input type="hidden" name="lock_version" value="{{ old('lock_version',$job->lock_version) }}"><input type="hidden" name="subject" value="{{ old('subject',$job->subject) }}"><input type="hidden" name="job_date" value="{{ old('job_date',$job->job_date?->format('Y-m-d')) }}">
 <div class="info-note">Isi data operasional yang berubah. Informasi customer, service, rute, dan dokumen tetap tersimpan di Job Order.</div>
 <div class="form-section-heading"><h2>Data Operasional</h2><p>Lengkapi informasi pengiriman dan muatan.</p></div>
 <div class="form-grid">
