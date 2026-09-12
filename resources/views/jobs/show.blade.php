@@ -597,7 +597,7 @@
                     </div>
                 </div>
 
-                @if($isImport || $isExportSea || $isExportAir)
+                {{-- @if($isImport || $isExportSea || $isExportAir)
                     <div style="margin-top: 18px; padding: 18px; border: 1px solid #dbeafe; border-radius: 14px; background: #f8fbff;">
                         <div class="panel-heading" style="margin-bottom: 12px;">
                             <h2 style="font-size: 16px;">Data Kepabeanan dari Dokumen</h2>
@@ -656,7 +656,7 @@
                             @endif
                         </div>
                     </div>
-                @endif
+                @endif --}}
 
                 <div class="form-actions">
                     <button class="button button-primary">Upload Dokumen</button>
