@@ -91,6 +91,65 @@ if (form) {
     const inputCost = document.getElementById('input_item_cost');
     const inputPrice = document.getElementById('input_item_price');
     const btnSubmitItem = document.getElementById('btn_submit_single_item');
+    const truckingFields = document.getElementById('trucking-pricing-fields');
+    const truckingOrigin = document.getElementById('input_trucking_origin');
+    const truckingDestination = document.getElementById('input_trucking_destination');
+    const truckingContainer = document.getElementById('input_trucking_container_type');
+    const truckingOverweight = document.getElementById('input_trucking_overweight');
+    const fetchTruckingButton = document.getElementById('btn_fetch_trucking');
+    const truckingStatus = document.getElementById('trucking_pricing_status');
+    let truckingPricing = null;
+    let truckingTimer = null;
+
+    const isTrucking = () => (inputDesc?.value || '').trim().toUpperCase() === 'TRUCKING';
+    const setTruckingStatus = (message, color = '#64748b') => {
+        if (truckingStatus) { truckingStatus.textContent = message; truckingStatus.style.color = color; }
+    };
+    const syncTruckingFields = () => {
+        const active = isTrucking();
+        if (truckingFields) truckingFields.hidden = !active;
+        if (!active) { truckingPricing = null; setTruckingStatus('Isi asal, tujuan, dan tipe armada. Harga akan dicari otomatis.'); }
+        else if (truckingOrigin?.value && truckingDestination?.value) scheduleTruckingLookup();
+    };
+    const fetchTruckingPrice = async () => {
+        if (!isTrucking() || !truckingOrigin?.value.trim() || !truckingDestination?.value.trim()) return;
+        const endpoint = form.dataset.pricingEndpoint;
+        if (!endpoint) return;
+        setTruckingStatus('Mencari tarif dari Master Trucking...', '#1d4ed8');
+        if (fetchTruckingButton) fetchTruckingButton.disabled = true;
+        try {
+            const params = new URLSearchParams({
+                port_origin: truckingOrigin.value.trim(),
+                destination: truckingDestination.value.trim(),
+                container_type: truckingContainer.value,
+                overweight: truckingOverweight.value,
+            });
+            const response = await fetch(`${endpoint}?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await response.json();
+            if (!response.ok || !data.found) {
+                truckingPricing = null;
+                inputCost.value = '0'; inputPrice.value = '0';
+                setTruckingStatus('Tarif belum tersedia untuk rute, armada, dan kategori ini.', '#b45309');
+                return;
+            }
+            truckingPricing = data;
+            inputCost.value = data.unit_cost ?? 0;
+            inputPrice.value = data.unit_price ?? 0;
+            setTruckingStatus(`Tarif ditemukan: ${data.port_origin} → ${data.destination}. Modal dan harga jual sudah diisi.`, '#15803d');
+        } catch (error) {
+            truckingPricing = null;
+            setTruckingStatus('Tarif belum bisa diambil. Periksa koneksi atau Master Trucking.', '#b91c1c');
+        } finally { if (fetchTruckingButton) fetchTruckingButton.disabled = false; }
+    };
+    function scheduleTruckingLookup() {
+        clearTimeout(truckingTimer);
+        truckingTimer = setTimeout(fetchTruckingPrice, 350);
+    }
+    [truckingOrigin, truckingDestination].forEach(input => input?.addEventListener('input', scheduleTruckingLookup));
+    [truckingContainer, truckingOverweight].forEach(input => input?.addEventListener('change', scheduleTruckingLookup));
+    fetchTruckingButton?.addEventListener('click', fetchTruckingPrice);
+    inputDesc?.addEventListener('change', syncTruckingFields);
+    syncTruckingFields();
 
     let itemsArray = [];
 
@@ -151,6 +210,10 @@ if (form) {
                     <input type="hidden" name="items[${index}][currency]" value="${escapeHtml(item.currency || 'IDR')}">
                     <input type="hidden" name="items[${index}][exchange_rate]" value="${escapeHtml(item.exchange_rate || '1.00')}">
                     <input type="hidden" name="items[${index}][pricing_snapshot]" value="${escapeHtml(typeof item.pricing_snapshot === 'object' ? JSON.stringify(item.pricing_snapshot) : (item.pricing_snapshot || ''))}">
+                    <input type="hidden" name="items[${index}][container_type]" value="${escapeHtml(item.container_type || '')}">
+                    <input type="hidden" name="items[${index}][overweight]" value="${item.overweight ? '1' : '0'}">
+                    <input type="hidden" name="items[${index}][port_origin]" value="${escapeHtml(item.port_origin || '')}">
+                    <input type="hidden" name="items[${index}][destination]" value="${escapeHtml(item.destination || '')}">
                 </td>
                 <td style="padding: 10px 8px;">
                     <span class="status-badge" style="background:#f1f5f9; color:#334155; font-size:11px;">${escapeHtml(item.unit || 'Shipment')}</span>
@@ -211,6 +274,10 @@ if (form) {
             currency: item.currency || 'IDR',
             exchange_rate: item.exchange_rate || '1.00',
             pricing_snapshot: item.pricing_snapshot || null,
+            container_type: item.container_type || '',
+            overweight: !!item.overweight,
+            port_origin: item.port_origin || '',
+            destination: item.destination || '',
         });
         renderTable();
     };
@@ -223,6 +290,7 @@ if (form) {
         const qty = parseFloat(inputQty?.value || 0);
         const price = parseFloat(inputPrice?.value || 0);
         const cost = parseFloat(inputCost?.value || 0);
+        const trucking = isTrucking();
 
         if (!desc) {
             alert('Pilih atau isi Uraian Biaya terlebih dahulu.');
@@ -236,6 +304,12 @@ if (form) {
             return;
         }
 
+        if (trucking && !truckingPricing) {
+            fetchTruckingPrice();
+            alert('Tarif trucking belum ditemukan. Isi asal dan tujuan, lalu tunggu harga muncul.');
+            return;
+        }
+
         addItem({
             description: desc,
             note: inputNote?.value?.trim() || '',
@@ -244,11 +318,15 @@ if (form) {
             unit_cost: String(cost),
             unit_price: String(price),
             type: 'provision',
-            pricing_source: 'manual',
-            pricing_id: '',
-            pricing_snapshot: null,
-            currency: 'IDR',
-            exchange_rate: '1.00',
+            pricing_source: trucking ? 'trucking' : 'manual',
+            pricing_id: trucking ? (truckingPricing?.pricing_id || '') : '',
+            pricing_snapshot: trucking ? (truckingPricing?.snapshot || truckingPricing) : null,
+            currency: trucking ? (truckingPricing?.currency || 'IDR') : 'IDR',
+            exchange_rate: trucking ? (truckingPricing?.exchange_rate || '1.00') : '1.00',
+            container_type: trucking ? truckingContainer.value : '',
+            overweight: trucking ? truckingOverweight.value === '1' : false,
+            port_origin: trucking ? truckingOrigin.value.trim() : '',
+            destination: trucking ? truckingDestination.value.trim() : '',
         });
 
         // Reset inputs
@@ -258,6 +336,10 @@ if (form) {
         if (inputQty) inputQty.value = '1';
         if (inputCost) inputCost.value = '0';
         if (inputPrice) inputPrice.value = '0';
+        if (truckingOrigin) truckingOrigin.value = '';
+        if (truckingDestination) truckingDestination.value = '';
+        truckingPricing = null;
+        syncTruckingFields();
         inputDesc?.focus();
     });
 
@@ -309,6 +391,12 @@ if (form) {
                 if (inputQty) inputQty.value = item.quantity || '1';
                 if (inputCost) inputCost.value = item.unit_cost || '0';
                 if (inputPrice) inputPrice.value = item.unit_price || '0';
+                if (truckingOrigin) truckingOrigin.value = item.port_origin || '';
+                if (truckingDestination) truckingDestination.value = item.destination || '';
+                if (truckingContainer) truckingContainer.value = item.container_type || truckingContainer.value;
+                if (truckingOverweight) truckingOverweight.value = item.overweight ? '1' : '0';
+                truckingPricing = item.pricing_source === 'trucking' ? (item.pricing_snapshot || null) : null;
+                syncTruckingFields();
                 
                 itemsArray.splice(index, 1);
                 renderTable();

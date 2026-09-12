@@ -132,6 +132,7 @@ class PricingService
         }
         $rate = $this->convertedRate($price->currency, $date);
         $unitCost = Money::decimal($price->price)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp);
+        $unitPrice = Money::decimal($price->selling_price ?? $price->price)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp);
         $snapshot = [
             'source' => 'trucking', 'port_origin' => $price->port_origin, 'destination' => $price->destination,
             'container_type' => $price->container_type, 'overweight' => (bool) $price->overweight,
@@ -141,7 +142,7 @@ class PricingService
         ];
 
         return [
-            'found' => true, 'pricing_id' => $price->id, 'unit_cost' => Money::checked($unitCost),
+            'found' => true, 'pricing_id' => $price->id, 'unit_cost' => Money::checked($unitCost), 'unit_price' => Money::checked($unitPrice),
             'currency' => $price->currency, 'exchange_rate' => $rate, 'container_type' => $price->container_type,
             'overweight' => (bool) $price->overweight, 'port_origin' => $price->port_origin, 'destination' => $price->destination,
             'vendor_name' => $price->vendor?->name, 'effective_date' => $price->effective_date->format('Y-m-d'), 'snapshot' => $snapshot,

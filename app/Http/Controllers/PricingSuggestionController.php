@@ -18,7 +18,7 @@ class PricingSuggestionController extends Controller
         $data = $request->validate([
             'port_origin' => ['required', 'string', 'max:120'],
             'destination' => ['required', 'string', 'max:120'],
-            'container_type' => ['required', 'string', Rule::in(array_keys(config('operations.container_types')))],
+            'container_type' => ['required', 'string', Rule::in(array_keys(config('operations.trucking_container_types', [])))],
             'overweight' => ['nullable', 'boolean'],
             'vendor_id' => ['nullable', 'integer', 'min:1'],
             'date' => ['nullable', 'date'],
