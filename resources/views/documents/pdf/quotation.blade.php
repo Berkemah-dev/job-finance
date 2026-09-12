@@ -285,7 +285,7 @@
     <tr>
         <td class="field-label">Services</td>
         <td class="colon">:</td>
-        <td class="val">{{ strtoupper(config('operations.service_types.'.$quotation->service_type) ?? ($quotation->service_type ?? '—')) }}</td>
+        <td class="val">{{ strtoupper(\App\Models\ServiceType::label($quotation->service_type)) }}</td>
     </tr>
     <tr>
         <td class="field-label">Terms of Delivery</td>

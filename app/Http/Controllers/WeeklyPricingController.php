@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\VersionRequest;
 use App\Http\Requests\WeeklyPricingRequest;
+use App\Models\ServiceType;
 use App\Models\WeeklyPricing;
 use App\Services\PricingService;
 use Illuminate\Http\Request;
@@ -22,14 +23,14 @@ class WeeklyPricingController extends Controller
         if ($request->input('status') === 'inactive') {
             $query->where('is_active', false);
         }
-        $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(15)->withQueryString();
+        $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(10)->withQueryString();
 
         return view('pricing.weekly.index', compact('items'));
     }
 
     public function create()
     {
-        return view('pricing.weekly.form', ['weeklyPricing' => new WeeklyPricing]);
+        return view('pricing.weekly.form', ['weeklyPricing' => new WeeklyPricing, 'serviceTypes' => ServiceType::options()]);
     }
 
     public function store(WeeklyPricingRequest $request, PricingService $service)
@@ -41,7 +42,7 @@ class WeeklyPricingController extends Controller
 
     public function edit(WeeklyPricing $weeklyPricing)
     {
-        return view('pricing.weekly.form', compact('weeklyPricing'));
+        return view('pricing.weekly.form', ['weeklyPricing' => $weeklyPricing, 'serviceTypes' => ServiceType::options()]);
     }
 
     public function update(WeeklyPricingRequest $request, WeeklyPricing $weeklyPricing, PricingService $service)

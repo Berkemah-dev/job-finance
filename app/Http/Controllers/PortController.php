@@ -16,7 +16,7 @@ class PortController extends Controller
             ->when($status === 'active', fn($q) => $q->where('is_active', true))
             ->when($status === 'inactive', fn($q) => $q->where('is_active', false))
             ->orderBy('name')
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
 
         return view('master.ports.index', compact('ports', 'search', 'status'));

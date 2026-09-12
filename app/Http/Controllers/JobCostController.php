@@ -18,7 +18,7 @@ class JobCostController extends Controller
         $jobs = Job::withCount(['costs', 'costs as draft_costs_count' => fn ($q) => $q->where('status', 'draft'), 'costs as final_costs_count' => fn ($q) => $q->where('status', 'final')])
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')))
             ->when(in_array($request->input('status'), array_keys(config('operations.job_statuses')), true), fn ($q) => $q->where('status', $request->input('status')))
-            ->latest('id')->paginate(15)->withQueryString();
+            ->latest('id')->paginate(10)->withQueryString();
 
         return view('costs.overview', compact('jobs', 'search'));
     }
@@ -27,7 +27,7 @@ class JobCostController extends Controller
     {
         $costs = $job->costs()->with('creator')->when(in_array($request->input('status'), ['draft', 'final'], true), fn ($q) => $q->where('status', $request->input('status')))
             ->when(in_array($request->input('type'), ['temporary', 'provision'], true), fn ($q) => $q->where('type', $request->input('type')))
-            ->latest('id')->paginate(15)->withQueryString();
+            ->latest('id')->paginate(10)->withQueryString();
 
         return view('costs.index', ['job' => $job, 'costs' => $costs, 'summary' => $service->summary($job)]);
     }

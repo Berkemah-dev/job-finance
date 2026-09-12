@@ -26,7 +26,7 @@
 <div class="field span-2"><label for="subject">Nama pekerjaan <span class="required">*</span></label><input id="subject" name="subject" maxlength="255" value="{{ old('subject',$job->subject) }}" required></div>
 <div class="field"><label for="job_date">Tanggal job</label><input id="job_date" name="job_date" type="date" value="{{ old('job_date',$job->job_date->format('Y-m-d')) }}" required @readonly($job->status!=='draft')>@if($job->status!=='draft')<p class="form-help">Tanggal dikunci setelah job dibuka.</p>@endif</div>
 <div class="field"><label for="expected_completion_date">Target selesai</label><input id="expected_completion_date" name="expected_completion_date" type="date" value="{{ old('expected_completion_date',$job->expected_completion_date?->format('Y-m-d')) }}"></div>
-<div class="field"><label for="service_type">Jenis layanan</label><select id="service_type" name="service_type"><option value="">Pilih jenis layanan</option>@foreach(config('operations.canonical_service_types') as $value=>$label)<option value="{{ $value }}" @selected(old('service_type',$job->service_type)===$value)>{{ $label }}</option>@endforeach</select></div>
+<div class="field"><label for="service_type">Jenis layanan</label><select id="service_type" name="service_type"><option value="">Pilih jenis layanan</option>@foreach($serviceTypes ?? \App\Models\ServiceType::options() as $value=>$label)<option value="{{ $value }}" @selected(old('service_type',$job->service_type)===$value)>{{ $label }}</option>@endforeach</select></div>
 </div>
 <div class="form-section-heading"><h2>Pihak terkait</h2><p>Pengirim dan penerima muatan pada job ini.</p></div>
 <div class="form-grid">

@@ -21,8 +21,6 @@ class OperationalDocumentController extends Controller
         $periodFrom = (string) $request->input('period_from', '');
         $periodTo = (string) $request->input('period_to', '');
         $myJobs = $request->boolean('my_jobs');
-        $perPage = min(max($request->integer('per_page', 10), 5), 50);
-
         $documents = Quotation::with(['customer', 'job.invoice', 'job.closingSnapshot'])
             ->when($myJobs, function ($query) use ($request) {
                 $query->where(function ($q) use ($request) {
@@ -46,23 +44,32 @@ class OperationalDocumentController extends Controller
             ->when($status === 'running', fn ($query) => $query->whereHas('job', fn ($query) => $query->where('status', 'open')))
             ->when($status === 'done', fn ($query) => $query->whereHas('job', fn ($query) => $query->where('status', 'closed')))
             ->latest('id')
-            ->paginate($perPage)
+            ->paginate(10)
             ->withQueryString();
 
         $baseJobQuery = Job::query()->when($myJobs, fn ($q) => $q->where(fn ($wq) => $wq->where('cs_id', $request->user()->id)->orWhere('sales_id', $request->user()->id)));
         $baseQuoteQuery = Quotation::query()->when($myJobs, fn ($q) => $q->where('created_by', $request->user()->id));
 
+        $quoteStatusCounts = (clone $baseQuoteQuery)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $jobStatusCounts = (clone $baseJobQuery)
+            ->selectRaw('status, count(*) as total')
+            ->whereIn('status', ['open', 'closed'])
+            ->groupBy('status')
+            ->pluck('total', 'status');
         $summary = [
-            'total' => (clone $baseQuoteQuery)->count(),
-            'draft' => (clone $baseQuoteQuery)->where('status', QuotationStatus::Draft)->count(),
-            'approval' => (clone $baseQuoteQuery)->where('status', QuotationStatus::Submitted)->count(),
+            'total' => (int) $quoteStatusCounts->sum(),
+            'draft' => (int) ($quoteStatusCounts[QuotationStatus::Draft->value] ?? 0),
+            'approval' => (int) ($quoteStatusCounts[QuotationStatus::Submitted->value] ?? 0),
             'approved' => (clone $baseQuoteQuery)->where('status', QuotationStatus::Approved)->whereDoesntHave('job')->count(),
-            'running' => (clone $baseJobQuery)->where('status', 'open')->count(),
-            'done' => (clone $baseJobQuery)->where('status', 'closed')->count(),
+            'running' => (int) ($jobStatusCounts['open'] ?? 0),
+            'done' => (int) ($jobStatusCounts['closed'] ?? 0),
         ];
         $customers = Customer::orderBy('name')->get(['id', 'name', 'code']);
 
-        return view('documents.index', compact('documents', 'summary', 'customers', 'search', 'perPage', 'myJobs'));
+        return view('documents.index', compact('documents', 'summary', 'customers', 'search', 'myJobs'));
     }
 
     public function show(Quotation $quotation)

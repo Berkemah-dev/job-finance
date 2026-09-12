@@ -39,7 +39,7 @@ class ReimbursementController extends Controller
         }
         $totals = Reimbursement::query()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status')->mapWithKeys(fn ($count, $key) => [$key => (int) $count])->all();
 
-        return view('reimbursements.index', ['reimbursements' => $query->paginate(15)->withQueryString(), 'status' => $status, 'category' => $category, 'search' => $search, 'totals' => $totals]);
+        return view('reimbursements.index', ['reimbursements' => $query->paginate(10)->withQueryString(), 'status' => $status, 'category' => $category, 'search' => $search, 'totals' => $totals]);
     }
 
     public function create()

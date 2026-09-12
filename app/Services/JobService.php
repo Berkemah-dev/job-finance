@@ -28,7 +28,7 @@ class JobService
                 throw ValidationException::withMessages(['job_date' => 'Tanggal job tidak dapat diubah setelah job dibuka.']);
             }
             // Customer, quotation, document number, snapshot and workflow fields are never editable here.
-            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'booking_reference', 'package_count', 'gross_weight', 'volume', 'container_type', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes']));
+            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'booking_reference', 'nopen', 'npe_number', 'package_count', 'gross_weight', 'volume', 'container_type', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes']));
             $job->updated_by = $actor->id;
             $job->lock_version++;
             $job->save();

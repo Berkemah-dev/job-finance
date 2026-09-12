@@ -17,7 +17,7 @@ class AccessController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        return view('access.users', ['users' => User::with('role')->orderBy('name')->paginate(15), 'roles' => Role::with('permissions')->get()]);
+        return view('access.users', ['users' => User::with('role')->orderBy('name')->paginate(10), 'roles' => Role::with('permissions')->get()]);
     }
 
     public function createUser(): View
@@ -66,7 +66,7 @@ class AccessController extends Controller
             ->when($filters['role_id'], fn ($q) => $q->where('role_id', $filters['role_id']))
             ->when($filters['module'] !== '', fn ($q) => $q->where('module', $filters['module']))
             ->when($filters['action'] !== '', fn ($q) => $q->where('action', $filters['action']))
-            ->latest('id')->paginate(15)->withQueryString();
+            ->latest('id')->paginate(10)->withQueryString();
 
         $roles = Role::orderBy('label')->get(['id', 'label']);
         $users = User::orderBy('name')->get(['id', 'name']);

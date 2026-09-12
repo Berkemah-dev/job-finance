@@ -131,7 +131,7 @@
 @php
     $customerName = $job->customer?->name ?? $job->quotation_snapshot['customer']['name'] ?? '—';
     $marketingName = $job->sales?->name ?? $quotation?->sales?->name ?? '—';
-    $serviceType = strtoupper(config('operations.service_types.'.$job->service_type) ?? ($job->service_type ?? '—'));
+    $serviceType = strtoupper(\App\Models\ServiceType::label($job->service_type));
     $loadingPort = strtoupper($job->pol ?? $job->origin ?? $quotation?->origin ?? '—');
     $dischargePort = strtoupper($job->pod ?? $job->destination ?? $quotation?->destination ?? '—');
     $etdDate = $job->etd ? $job->etd->format('d-m-Y') : '—';

@@ -10,6 +10,7 @@ use App\Models\ContainerUnit;
 use App\Models\ChargeType;
 use App\Models\Port;
 use App\Models\Quotation;
+use App\Models\ServiceType;
 use App\Models\User;
 use App\Services\MasterDataService;
 use App\Services\QuotationService;
@@ -27,17 +28,18 @@ class QuotationController extends Controller
         $serviceType = (string) $request->input('service_type', '');
         $dateFrom = (string) $request->input('date_from', '');
         $dateTo = (string) $request->input('date_to', '');
+        $serviceTypes = ServiceType::options();
         $quotations = Quotation::with(['customer', 'creator'])
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when($customerId, fn ($q) => $q->where('customer_id', $customerId))
             ->when($salesId, fn ($q) => $q->where(fn ($q) => $q->where('sales_id', $salesId)->orWhere(fn ($q) => $q->whereNull('sales_id')->where('created_by', $salesId))))
-            ->when($serviceType !== '' && in_array($serviceType, array_keys(config('operations.service_types')), true), fn ($q) => $q->where('service_type', $serviceType))
+            ->when($serviceType !== '' && array_key_exists($serviceType, $serviceTypes), fn ($q) => $q->where('service_type', $serviceType))
             ->when($dateFrom, fn ($q) => $q->whereDate('quotation_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('quotation_date', '<=', $dateTo))
-            ->latest('id')->paginate(15)->withQueryString();
+            ->latest('id')->paginate(10)->withQueryString();
 
-        return view('quotations.index', ['quotations' => $quotations, 'search' => $search, 'status' => $status, 'customerId' => $customerId, 'salesId' => $salesId, 'serviceType' => $serviceType, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']), 'sales' => User::whereHas('role', function ($q) {
+        return view('quotations.index', ['quotations' => $quotations, 'search' => $search, 'status' => $status, 'customerId' => $customerId, 'salesId' => $salesId, 'serviceType' => $serviceType, 'serviceTypes' => $serviceTypes, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']), 'sales' => User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager']);
         })->orderBy('name')->get(['id', 'name'])]);
     }
@@ -51,6 +53,7 @@ class QuotationController extends Controller
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
+            'serviceTypes' => ServiceType::options(),
         ]);
     }
 
@@ -98,6 +101,7 @@ class QuotationController extends Controller
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
+            'serviceTypes' => ServiceType::options(),
         ]);
     }
 

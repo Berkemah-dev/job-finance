@@ -28,13 +28,14 @@
         ($serviceTypeRaw === 'imp_sea' ? 'IMPORT SHIPMENT (SEA)' :
         ($serviceTypeRaw === 'imp_air' ? 'IMPORT SHIPMENT (AIR)' : 'DOMESTIC / TRUCKING')));
 
-    $serviceTypeLabel = config('operations.service_types.'.$job->service_type) ?? strtoupper($job->service_type ?? '—');
+    $serviceTypeLabel = \App\Models\ServiceType::label($job->service_type);
     $loadingPort = $job->pol ?? $job->origin ?? $quotation?->origin ?? '—';
     $dischargePort = $job->pod ?? $job->destination ?? $quotation?->destination ?? '—';
     $etdDate = $job->etd ? $job->etd->format('d-m-Y') : '—';
     $etaDate = $job->eta ? $job->eta->format('d-m-Y') : '—';
     $noAju = $job->booking_reference ?? '—';
-    $noNopen = $job->nopen ?? ($job->booking_reference ? 'NOPEN-' . substr(preg_replace('/[^0-9]/', '', $job->booking_reference), 0, 5) . '/' . date('d-m-Y') : '—');
+    $noNopen = $job->nopen ?? '—';
+    $noNpe = $job->npe_number ?? '—';
     $noHbl = $job->hbl_number ?? $job->hawb_number ?? '—';
     $noMbl = $job->bl_number ?? $job->mawb_number ?? '—';
     $vesselName = $job->vessel_voyage ?? $job->flight_number ?? '—';
@@ -267,7 +268,7 @@
     <section class="panel" style="padding: 24px; margin-bottom: 24px;">
         <div class="panel-heading" style="margin-bottom: 20px;">
             <h2>Dokumen Kepabeanan & Status Jalur Cukai</h2>
-            <span class="subtle">Nomor Pengajuan AJU, Nopen, dan Status Pengeluaran Barang</span>
+            <span class="subtle">{{ $isImport ? 'Nomor Pengajuan AJU, Nopen, SPJM/SPPB' : 'Nomor Pengajuan AJU, NPE, dan status ekspor' }}</span>
         </div>
 
         {{-- GRID NOMOR PENGAJUAN & NOPEN (PERSIS GAMBAR) --}}
@@ -277,15 +278,15 @@
                     Nomor Pengajuan (No AJU)
                 </label>
                 <div style="padding: 12px 16px; border: 2px solid #f97316; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0f172a; background: #fff;">
-                    {{ $job->booking_reference ?: '000087-260904' }}
+                    {{ $noAju }}
                 </div>
             </div>
             <div>
                 <label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
-                    Nomor Pendaftaran (Nopen)
+                    {{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'Nomor NPE' }}
                 </label>
                 <div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">
-                    {{ $noNopen }}
+                    {{ $isImport ? $noNopen : $noNpe }}
                 </div>
             </div>
         </div>
@@ -328,6 +329,15 @@
                     Pemberitahuan Jalur Merah - Diperlukan pemeriksaan fisik barang (Behandle) di Terminal / TPS.
                 </div>
             </div>
+        @elseif($job->shipment_status === 'npe')
+            <div style="padding: 18px 24px; background: #eef2ff; border: 1.5px solid #a5b4fc; border-radius: 12px; margin-bottom: 24px;">
+                <div style="font-size: 15px; font-weight: 800; color: #3730a3; letter-spacing: 0.5px;">
+                    STATUS: NPE TERBIT
+                </div>
+                <div style="font-size: 13px; color: #4338ca; margin-top: 6px; font-weight: 500;">
+                    Nota Pelayanan Ekspor sudah tercatat untuk proses dokumen export.
+                </div>
+            </div>
         @else
             <div style="padding: 18px 24px; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 12px; margin-bottom: 24px;">
                 <div style="font-size: 15px; font-weight: 800; color: #075985; letter-spacing: 0.5px;">
@@ -347,6 +357,8 @@
                 <label for="shipment_status_customs" style="font-weight: 700;">Update Status Kepabeanan / Pengiriman</label>
                 <select name="shipment_status" id="shipment_status_customs">
                     @foreach(config('operations.shipment_statuses') as $value=>$label)
+                        @continue($isImport && $value === 'npe')
+                        @continue(!$isImport && in_array($value, ['spjm', 'sppb'], true))
                         <option value="{{ $value }}" @selected($job->shipment_status===$value)>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -365,103 +377,6 @@
         <div class="panel-heading" style="margin-bottom: 16px;">
             <h2>Dokumen Operasional: {{ $serviceCategoryTitle }}</h2>
             <span class="subtle">Dokumen resmi pengapalan sesuai kategori layanan</span>
-        </div>
-
-        {{-- TOOLBAR DOKUMEN SESUAI KATEGORI SERVICE CLIENT --}}
-        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px; text-transform: uppercase;">
-                {{ $serviceCategoryTitle }} — DAFTAR DOKUMEN RESMI
-            </div>
-
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                {{-- 1. JOB ORDER (All Categories) --}}
-                <a class="button button-secondary" href="{{ route('jobs.preview', $job) }}" target="_blank">
-                    <x-icon name="printer"/> JOB ORDER PDF
-                </a>
-
-                {{-- EXPORT SHIPMENT (SEA): JOB ORDER | SHIPPING INSTRUCTION | BOOKING CONFIRMATION | BILL OF LADING | TANDA TERIMA --}}
-                @if($isExportSea)
-                    @if($job->shippingInstructions->isNotEmpty())
-                        <a class="button button-secondary" href="{{ route('shipping-instructions.preview', $job->shippingInstructions->first()) }}" target="_blank">
-                            <x-icon name="file"/> SHIPPING INSTRUCTION
-                        </a>
-                    @else
-                        <a class="button button-secondary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">
-                            + SHIPPING INSTRUCTION
-                        </a>
-                    @endif
-
-                    @if($job->bookingConfirmations->isNotEmpty())
-                        <a class="button button-secondary" href="{{ route('booking-confirmations.preview', $job->bookingConfirmations->first()) }}" target="_blank">
-                            <x-icon name="file"/> BOOKING CONFIRMATION
-                        </a>
-                    @else
-                        <a class="button button-secondary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">
-                            + BOOKING CONFIRMATION
-                        </a>
-                    @endif
-
-                    <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> TANDA TERIMA DOCUMENT
-                    </a>
-                @endif
-
-                {{-- EXPORT SHIPMENT (AIR): JOB ORDER | SHIPPING INSTRUCTION | BOOKING CONFIRMATION | AIRWAYBILL | TANDA TERIMA --}}
-                @if($isExportAir)
-                    @if($job->shippingInstructions->isNotEmpty())
-                        <a class="button button-secondary" href="{{ route('shipping-instructions.preview', $job->shippingInstructions->first()) }}" target="_blank">
-                            <x-icon name="file"/> SHIPPING INSTRUCTION
-                        </a>
-                    @else
-                        <a class="button button-secondary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">
-                            + SHIPPING INSTRUCTION
-                        </a>
-                    @endif
-
-                    @if($job->bookingConfirmations->isNotEmpty())
-                        <a class="button button-secondary" href="{{ route('booking-confirmations.preview', $job->bookingConfirmations->first()) }}" target="_blank">
-                            <x-icon name="file"/> BOOKING CONFIRMATION
-                        </a>
-                    @else
-                        <a class="button button-secondary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">
-                            + BOOKING CONFIRMATION
-                        </a>
-                    @endif
-
-                    <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> TANDA TERIMA DOCUMENT
-                    </a>
-                @endif
-
-                {{-- IMPORT SHIPMENT (SEA/AIR): JOB ORDER | SK DO | SK PABEAN | DNP | SURAT JALAN | TANDA TERIMA --}}
-                @if($isImport)
-                    <a class="button button-secondary" href="{{ route('jobs.sk-do.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> SK DO
-                    </a>
-                    <a class="button button-secondary" href="{{ route('jobs.sk-pabean.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> SK PABEAN
-                    </a>
-                    <a class="button button-secondary" href="{{ route('jobs.dnp.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> DNP
-                    </a>
-                    <a class="button button-secondary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> SURAT JALAN
-                    </a>
-                    <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> TANDA TERIMA DOCUMENT
-                    </a>
-                @endif
-
-                {{-- DOMESTIC / TRUCKING: JOB ORDER | SURAT JALAN | TANDA TERIMA --}}
-                @if($isDomestic)
-                    <a class="button button-secondary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> SURAT JALAN
-                    </a>
-                    <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', $job) }}" target="_blank">
-                        <x-icon name="file"/> TANDA TERIMA DOCUMENT
-                    </a>
-                @endif
-            </div>
         </div>
 
         {{-- FILE LAMPIRAN BL / CIPL / COO DLL --}}
@@ -535,6 +450,45 @@
                         <input type="text" name="notes" id="notes" maxlength="255" placeholder="Opsional">
                     </div>
                 </div>
+
+                @if($isImport || $isExportSea || $isExportAir)
+                    <div style="margin-top: 18px; padding: 18px; border: 1px solid #dbeafe; border-radius: 14px; background: #f8fbff;">
+                        <div class="panel-heading" style="margin-bottom: 12px;">
+                            <h2 style="font-size: 16px;">Data Kepabeanan dari Dokumen</h2>
+                            <span class="subtle">Isi jika dokumen yang diupload adalah {{ $isImport ? 'SPJM/SPPB' : 'NPE' }}. Data ini akan langsung masuk ke tab Customs & AJU.</span>
+                        </div>
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="customs_document_kind">Jenis Dokumen Bea Cukai</label>
+                                <select name="customs_document_kind" id="customs_document_kind">
+                                    <option value="">Tidak update status</option>
+                                    @if($isImport)
+                                        <option value="spjm" @selected(old('customs_document_kind') === 'spjm')>SPJM - Jalur Merah</option>
+                                        <option value="sppb" @selected(old('customs_document_kind') === 'sppb')>SPPB - Jalur Hijau</option>
+                                    @else
+                                        <option value="npe" @selected(old('customs_document_kind') === 'npe')>NPE - Nota Pelayanan Ekspor</option>
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="booking_reference_upload">Nomor Pengajuan (No AJU)</label>
+                                <input type="text" name="booking_reference" id="booking_reference_upload" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 000087-260904">
+                            </div>
+                            @if($isImport)
+                                <div class="field">
+                                    <label for="nopen_upload">Nomor Pendaftaran (Nopen)</label>
+                                    <input type="text" name="nopen" id="nopen_upload" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari SPPB/SPJM">
+                                </div>
+                            @else
+                                <div class="field">
+                                    <label for="npe_number_upload">Nomor NPE</label>
+                                    <input type="text" name="npe_number" id="npe_number_upload" maxlength="60" value="{{ old('npe_number', $job->npe_number) }}" placeholder="Isi nomor NPE">
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 <div class="form-actions">
                     <button class="button button-primary">Upload Dokumen</button>
                 </div>

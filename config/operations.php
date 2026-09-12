@@ -2,7 +2,7 @@
 
 return [
     'job_statuses' => ['draft' => 'Draft', 'open' => 'Open', 'closed' => 'Closed', 'cancelled' => 'Dibatalkan'],
-    'shipment_statuses' => ['booked' => 'Booked', 'in_progress' => 'In Progress', 'departed' => 'Departed', 'arrived' => 'Arrived', 'spjm' => 'SPJM', 'sppb' => 'SPPB', 'do_process' => 'DO Process', 'completed' => 'Completed'],
+    'shipment_statuses' => ['booked' => 'Booked', 'in_progress' => 'In Progress', 'departed' => 'Departed', 'arrived' => 'Arrived', 'spjm' => 'SPJM', 'sppb' => 'SPPB', 'npe' => 'NPE', 'do_process' => 'DO Process', 'completed' => 'Completed'],
     'cost_statuses' => ['draft' => 'Draft', 'final' => 'Final'],
     'service_types' => [
         'exp_sea' => 'EXPORT SEA',

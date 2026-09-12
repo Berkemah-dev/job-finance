@@ -65,11 +65,6 @@ $quickFilters = [
                 <span class="date-sep">→</span>
                 <input type="date" name="period_to" value="{{ request('period_to') }}" aria-label="Periode sampai" title="Periode sampai">
             </div>
-            <select name="per_page" aria-label="Rows per page">
-                @foreach([10, 15, 25, 50] as $rows)
-                <option value="{{ $rows }}" @selected($perPage === $rows)>{{ $rows }} baris</option>
-                @endforeach
-            </select>
             <label class="document-filter-check"><input type="checkbox" name="my_jobs" value="1" @checked($myJobs)> <span>Hanya Job Saya (CS/Sales)</span></label>
             <button class="button button-primary">Terapkan</button>
             <a class="button button-secondary" href="{{ route('documents.index') }}">Reset Filter</a>

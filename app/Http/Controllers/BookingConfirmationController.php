@@ -50,7 +50,7 @@ class BookingConfirmationController extends Controller
             $query->whereDate('booking_date', '<=', $dateTo);
         }
 
-        $bookingConfirmations = $query->paginate(15)->withQueryString();
+        $bookingConfirmations = $query->paginate(10)->withQueryString();
 
         return view('booking-confirmations.index', [
             'bookingConfirmations' => $bookingConfirmations,

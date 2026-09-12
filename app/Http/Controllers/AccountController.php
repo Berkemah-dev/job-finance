@@ -29,7 +29,7 @@ class AccountController extends Controller
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%')));
 
         if ($search || $type || $archived) {
-            $accounts = $query->orderBy('code')->paginate(50)->withQueryString();
+            $accounts = $query->orderBy('code')->paginate(10)->withQueryString();
             $isTree = false;
         } else {
             $allAccounts = ChartOfAccount::withCount('children')->orderBy('code')->get();

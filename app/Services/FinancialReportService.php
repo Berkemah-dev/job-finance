@@ -27,10 +27,22 @@ class FinancialReportService
     public function ledger(int $accountId, string $from, string $to): array
     {
         $account = ChartOfAccount::withTrashed()->findOrFail($accountId);
-        $openingRows = JournalEntry::where('chart_of_account_id', $accountId)->whereHas('journal', fn (Builder $q) => $q->where('journal_date', '<', $from))->get();
-        $opening = $this->net($account->type, $openingRows->sum('debit'), $openingRows->sum('credit'));
+        $openingRow = JournalEntry::where('chart_of_account_id', $accountId)
+            ->whereHas('journal', fn (Builder $q) => $q->where('journal_date', '<', $from))
+            ->selectRaw('COALESCE(SUM(debit), 0) as debit, COALESCE(SUM(credit), 0) as credit')
+            ->first();
+        $opening = $this->net($account->type, $openingRow->debit ?? 0, $openingRow->credit ?? 0);
         $balance = Money::decimal($opening);
-        $entries = JournalEntry::with('journal')->where('chart_of_account_id', $accountId)->whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))->get()->sortBy(fn ($entry) => $entry->journal->journal_date->format('Y-m-d').str_pad($entry->id, 15, '0', STR_PAD_LEFT))->values();
+        $entries = JournalEntry::with('journal')
+            ->where('chart_of_account_id', $accountId)
+            ->whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
+            ->orderBy(
+                \App\Models\Journal::select('journal_date')
+                    ->whereColumn('journals.id', 'journal_entries.journal_id')
+                    ->limit(1)
+            )
+            ->orderBy('id')
+            ->get();
         foreach ($entries as $entry) {
             $movement = $this->net($account->type, $entry->debit, $entry->credit);
             $balance = $balance->plus($movement);

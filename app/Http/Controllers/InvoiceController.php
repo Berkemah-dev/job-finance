@@ -10,7 +10,7 @@ class InvoiceController extends Controller
 {
     public function index(Request $request)
     {
-        $q = Invoice::query()->when(in_array($request->input('status'), ['issued', 'partially_paid', 'paid'], true), fn ($q) => $q->where('status', $request->input('status')))->latest('id')->paginate(15)->withQueryString();
+        $q = Invoice::query()->when(in_array($request->input('status'), ['issued', 'partially_paid', 'paid'], true), fn ($q) => $q->where('status', $request->input('status')))->latest('id')->paginate(10)->withQueryString();
 
         return view('invoices.index', ['invoices' => $q]);
     }
@@ -27,7 +27,7 @@ class InvoiceController extends Controller
             $q->where(fn ($x) => $x->where('number', 'like', '%'.$search.'%')->orWhere('customer_snapshot->name', 'like', '%'.$search.'%'));
         }
 
-        return view('invoices.coretax', ['invoices' => $q->paginate(15)->withQueryString(), 'search' => $search, 'status' => $status]);
+        return view('invoices.coretax', ['invoices' => $q->paginate(10)->withQueryString(), 'search' => $search, 'status' => $status]);
     }
 
     public function show(Invoice $invoice)

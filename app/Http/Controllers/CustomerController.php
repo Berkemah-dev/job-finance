@@ -24,7 +24,7 @@ class CustomerController extends Controller
         $customers = Customer::query()->when($onlyTrashed, fn ($q) => $q->onlyTrashed())
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%')
                 ->orWhere('email', 'like', '%'.$search.'%')->orWhere('tax_number', 'like', '%'.$search.'%')->orWhere('phone', 'like', '%'.$search.'%')))
-            ->orderBy('name')->paginate(15)->withQueryString();
+            ->orderBy('name')->paginate(10)->withQueryString();
 
         return view('customers.index', compact('customers', 'search', 'status'));
     }

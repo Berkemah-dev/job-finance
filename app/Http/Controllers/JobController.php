@@ -6,6 +6,7 @@ use App\Http\Requests\JobRequest;
 use App\Http\Requests\ShipmentStatusRequest;
 use App\Http\Requests\VersionRequest;
 use App\Models\Job;
+use App\Models\ServiceType;
 use App\Models\User;
 use App\Services\JobCostService;
 use App\Services\JobService;
@@ -25,18 +26,19 @@ class JobController extends Controller
         $shipmentStatus = (string) $request->input('shipment_status', '');
         $dateFrom = (string) $request->input('date_from', '');
         $dateTo = (string) $request->input('date_to', '');
-        $jobs = Job::with(['customer', 'sales', 'cs', 'bookingConfirmations'])
+        $serviceTypes = ServiceType::options();
+        $jobs = Job::with(['customer', 'sales', 'cs', 'quotation', 'bookingConfirmations'])
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
             ->when(in_array($request->input('status'), array_keys(config('operations.job_statuses')), true), fn ($q) => $q->where('status', $request->input('status')))
             ->when($salesId, fn ($q) => $q->where('sales_id', $salesId))
             ->when($csId, fn ($q) => $q->where('cs_id', $csId))
-            ->when($serviceType !== '' && in_array($serviceType, array_keys(config('operations.service_types')), true), fn ($q) => $q->where('service_type', $serviceType))
+            ->when($serviceType !== '' && array_key_exists($serviceType, $serviceTypes), fn ($q) => $q->where('service_type', $serviceType))
             ->when($shipmentStatus !== '' && array_key_exists($shipmentStatus, config('operations.shipment_statuses')), fn ($q) => $q->where('shipment_status', $shipmentStatus))
             ->when($dateFrom, fn ($q) => $q->whereDate('job_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('job_date', '<=', $dateTo))
-            ->latest('id')->paginate(15)->withQueryString();
+            ->latest('id')->paginate(10)->withQueryString();
 
-        return view('jobs.index', ['jobs' => $jobs, 'search' => $search, 'salesId' => $salesId, 'csId' => $csId, 'serviceType' => $serviceType, 'shipmentStatus' => $shipmentStatus, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'assignees' => User::whereHas('role', function ($q) {
+        return view('jobs.index', ['jobs' => $jobs, 'search' => $search, 'salesId' => $salesId, 'csId' => $csId, 'serviceType' => $serviceType, 'serviceTypes' => $serviceTypes, 'shipmentStatus' => $shipmentStatus, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'assignees' => User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager', 'customer-service']);
         })->orderBy('name')->get(['id', 'name'])]);
     }
@@ -47,7 +49,7 @@ class JobController extends Controller
             'quotation', 'customer', 'sales', 'cs', 'bookingConfirmations', 'shippingInstructions', 'statusHistory.user', 
             'shipmentStatusHistory.user', 'documents.documentType', 'documents.uploader'
         ]);
-        $documentTypes = \App\Models\DocumentType::active()->orderBy('sort_order')->get();
+        $documentTypes = \App\Models\DocumentType::active()->forService($job->service_type)->orderBy('sort_order')->get();
         $summary = [];
 
         if (Gate::allows('financial.view')) {
@@ -66,7 +68,7 @@ class JobController extends Controller
     {
         Gate::authorize('update', $job);
 
-        return view('jobs.form', ['job' => $job->load(['sales', 'cs']), 'assignees' => User::whereHas('role', function ($q) {
+        return view('jobs.form', ['job' => $job->load(['sales', 'cs']), 'serviceTypes' => ServiceType::options(), 'assignees' => User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager', 'customer-service']);
         })->orderBy('name')->get(['id', 'name'])]);
     }

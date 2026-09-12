@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentType;
+use App\Models\ServiceType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class DocumentTypeController extends Controller
 {
@@ -13,7 +15,7 @@ class DocumentTypeController extends Controller
         $types = DocumentType::when($search, fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%'))
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         return view('master.document-types.index', compact('types', 'search'));
@@ -21,7 +23,7 @@ class DocumentTypeController extends Controller
 
     public function create()
     {
-        return view('master.document-types.form', ['type' => new DocumentType, 'categories' => $this->categories()]);
+        return view('master.document-types.form', ['type' => new DocumentType, 'categories' => $this->categories(), 'serviceTypes' => ServiceType::options(false)]);
     }
 
     public function store(Request $request)
@@ -30,6 +32,8 @@ class DocumentTypeController extends Controller
             'code'        => 'required|string|max:20|unique:document_types,code',
             'name'        => 'required|string|max:100',
             'category'    => 'required|in:general,shipment,finance,compliance',
+            'service_codes' => 'nullable|array',
+            'service_codes.*' => 'string|in:'.implode(',', array_keys(ServiceType::options(false))),
             'description' => 'nullable|string|max:500',
             'is_required' => 'boolean',
             'is_active'   => 'boolean',
@@ -37,6 +41,11 @@ class DocumentTypeController extends Controller
         ]);
 
         $data['code'] = strtoupper($data['code']);
+        if (Schema::hasColumn('document_types', 'service_codes')) {
+            $data['service_codes'] = array_values(array_filter($data['service_codes'] ?? []));
+        } else {
+            unset($data['service_codes']);
+        }
         $data['is_required'] = $request->boolean('is_required');
         $data['is_active']   = $request->boolean('is_active', true);
 
@@ -47,7 +56,7 @@ class DocumentTypeController extends Controller
 
     public function edit(DocumentType $documentType)
     {
-        return view('master.document-types.form', ['type' => $documentType, 'categories' => $this->categories()]);
+        return view('master.document-types.form', ['type' => $documentType, 'categories' => $this->categories(), 'serviceTypes' => ServiceType::options(false)]);
     }
 
     public function update(Request $request, DocumentType $documentType)
@@ -56,6 +65,8 @@ class DocumentTypeController extends Controller
             'code'        => 'required|string|max:20|unique:document_types,code,'.$documentType->id,
             'name'        => 'required|string|max:100',
             'category'    => 'required|in:general,shipment,finance,compliance',
+            'service_codes' => 'nullable|array',
+            'service_codes.*' => 'string|in:'.implode(',', array_keys(ServiceType::options(false))),
             'description' => 'nullable|string|max:500',
             'is_required' => 'boolean',
             'is_active'   => 'boolean',
@@ -63,6 +74,11 @@ class DocumentTypeController extends Controller
         ]);
 
         $data['code'] = strtoupper($data['code']);
+        if (Schema::hasColumn('document_types', 'service_codes')) {
+            $data['service_codes'] = array_values(array_filter($data['service_codes'] ?? []));
+        } else {
+            unset($data['service_codes']);
+        }
         $data['is_required'] = $request->boolean('is_required');
         $data['is_active']   = $request->boolean('is_active');
 

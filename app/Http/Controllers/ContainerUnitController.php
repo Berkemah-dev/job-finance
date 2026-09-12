@@ -13,7 +13,7 @@ class ContainerUnitController extends Controller
 
         $units = ContainerUnit::when($search, fn($q) => $q->where('name', 'like', '%'.$search.'%'))
             ->orderBy('name')
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
 
         return view('master.container-units.index', compact('units', 'search'));

@@ -16,7 +16,7 @@
 <div class="field"><label for="quotation_date">Tanggal quotation <span class="required">*</span></label><input type="date" id="quotation_date" name="quotation_date" value="{{ old('quotation_date', $quotation->quotation_date?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" required></div>
 <div class="field"><label for="valid_until">Berlaku sampai <span class="required">*</span></label><input type="date" id="valid_until" name="valid_until" value="{{ old('valid_until', $quotation->valid_until?->format('Y-m-d') ?? now()->addDays(30)->format('Y-m-d')) }}" required></div>
 
-<div class="field"><label for="service_type">Services (Layanan) <span class="required">*</span></label><select id="service_type" name="service_type" required><option value="">Pilih Services (IMP/EXP SEA/AIR)</option>@foreach(config('operations.canonical_service_types') as $key=>$label)<option value="{{ $key }}" @selected(old('service_type',$quotation->service_type)===$key)>{{ $label }}</option>@endforeach</select></div>
+<div class="field"><label for="service_type">Services (Layanan) <span class="required">*</span></label><select id="service_type" name="service_type" required><option value="">Pilih Service</option>@foreach($serviceTypes ?? \App\Models\ServiceType::options() as $key=>$label)<option value="{{ $key }}" @selected(old('service_type',$quotation->service_type)===$key)>{{ $label }}</option>@endforeach</select></div>
 <div class="field"><label for="terms_of_delivery">Terms of Delivery (Incoterms)</label><select id="terms_of_delivery" name="terms_of_delivery"><option value="">Pilih Terms of Delivery</option>@foreach(config('operations.terms_of_delivery') as $key=>$label)<option value="{{ $key }}" @selected(old('terms_of_delivery',$quotation->terms_of_delivery)===$key)>{{ $label }}</option>@endforeach</select></div>
 
 <div class="field"><label for="cargo_qty">Quantity (Shipment)</label><input id="cargo_qty" name="cargo_qty" value="{{ old('cargo_qty',$quotation->cargo_qty) }}" maxlength="100" placeholder="cth: 1 x 20' GP / 50 Cartons / 2 Pallets"></div>
@@ -104,11 +104,9 @@
             <select id="input_item_desc" data-custom-select aria-label="Uraian Biaya"><option value="">Pilih Uraian Biaya</option>@foreach($charges ?? [] as $charge)<option value="{{ $charge->name }}">{{ $charge->name }}</option>@endforeach</select>
             <div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
                 <span style="font-size: 10px; color: #64748b;">Cepat:</span>
-                <button type="button" class="btn-quick-charge" data-charge="TRUCKING" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">TRUCKING</button>
-                <button type="button" class="btn-quick-charge" data-charge="OCEAN FREIGHT" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">OCEAN FREIGHT</button>
-                <button type="button" class="btn-quick-charge" data-charge="THC" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">THC</button>
-                <button type="button" class="btn-quick-charge" data-charge="CUSTOMS CLEARANCE SPPB" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">CUSTOMS CLEARANCE</button>
-                <button type="button" class="btn-quick-charge" data-charge="DO CHARGES" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">DO</button>
+                @foreach(($charges ?? collect())->take(5) as $charge)
+                    <button type="button" class="btn-quick-charge" data-charge="{{ $charge->name }}" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">{{ $charge->name }}</button>
+                @endforeach
             </div>
         </div>
         <div class="field">
@@ -127,8 +125,7 @@
             <label for="input_item_unit">Satuan <span class="required">*</span></label>
             <select id="input_item_unit" data-custom-select aria-label="Satuan">
                 <option value="">Pilih Satuan</option>
-                @foreach($units ?? [] as $unit)<option value="{{ $unit->name }}">{{ $unit->name }}</option>@endforeach
-                <option value="Shipment" selected>Shipment</option><option value="Container">Container</option><option value="20GP">20GP</option><option value="40GP">40GP</option><option value="40HQ">40HQ</option><option value="Cbm">Cbm</option><option value="KG">KG</option><option value="Doc">Doc</option><option value="Trip">Trip</option>
+                @foreach($units ?? [] as $unit)<option value="{{ $unit->name }}" @selected($unit->name === 'Shipment')>{{ $unit->name }}</option>@endforeach
             </select>
         </div>
         <div class="field">

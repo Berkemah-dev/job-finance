@@ -10,7 +10,7 @@ class PaymentController extends Controller
 {
     public function index()
     {
-        return view('payments.index', ['invoices' => Invoice::where('balance', '>', 0)->orderBy('due_date')->paginate(15)]);
+        return view('payments.index', ['invoices' => Invoice::where('balance', '>', 0)->orderBy('due_date')->paginate(10)]);
     }
 
     public function create(Invoice $invoice)

@@ -21,7 +21,7 @@ class TpsController extends Controller
             ->orderBy('mode')
             ->orderBy('city')
             ->orderBy('name')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         return view('tps.index', compact('tpsList', 'search', 'mode', 'status'));

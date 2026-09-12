@@ -13,6 +13,7 @@ use App\Models\Reimbursement;
 use App\Models\User;
 use App\Models\WeeklyPricing;
 use App\Support\Money;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class DashboardService
@@ -69,27 +70,33 @@ class DashboardService
         $canViewFinance = ($user && Gate::forUser($user)->allows('financial.view')) || in_array($role, ['finance', 'finance-manager', 'super-admin']);
 
         if ($canViewFinance) {
-            foreach (JobCost::where('status', 'final')->whereHas('job', fn ($q) => $q->where('status', 'open'))->select(['id', 'type', 'total_cost'])->cursor() as $cost) {
-                if ($cost->type === 'temporary') {
-                    $temporary = $temporary->plus($cost->total_cost);
-                } else {
-                    $provision = $provision->plus($cost->total_cost);
-                }
-            }
-            foreach (Invoice::select(['id', 'balance'])->cursor() as $invoice) {
-                $receivable = $receivable->plus($invoice->balance);
-            }
-            foreach (JobClosingSnapshot::select(['id', 'total_provision_sell', 'total_provision_cost', 'profit'])->cursor() as $snapshot) {
-                $revenue = $revenue->plus($snapshot->total_provision_sell);
-                $cogs = $cogs->plus($snapshot->total_provision_cost);
-                $profit = $profit->plus($snapshot->profit);
-            }
-            foreach (JobClosingSnapshot::where('closing_date', '>=', today()->subMonths(5)->startOfMonth())->get() as $snapshot) {
-                $key = $snapshot->closing_date->format('Y-m');
+            $costTotals = JobCost::where('status', 'final')
+                ->whereHas('job', fn ($q) => $q->where('status', 'open'))
+                ->select('type')
+                ->selectRaw('COALESCE(SUM(total_cost), 0) as total_cost')
+                ->groupBy('type')
+                ->pluck('total_cost', 'type');
+            $temporary = Money::decimal($costTotals->get('temporary', 0));
+            $provision = Money::decimal((string) $costTotals->except('temporary')->sum());
+
+            $receivable = Money::decimal((string) Invoice::sum('balance'));
+
+            $closingTotals = JobClosingSnapshot::selectRaw('COALESCE(SUM(total_provision_sell), 0) as revenue, COALESCE(SUM(total_provision_cost), 0) as cogs, COALESCE(SUM(profit), 0) as profit')->first();
+            $revenue = Money::decimal($closingTotals->revenue ?? 0);
+            $cogs = Money::decimal($closingTotals->cogs ?? 0);
+            $profit = Money::decimal($closingTotals->profit ?? 0);
+
+            $monthExpression = $this->monthExpression('closing_date');
+            $monthlyRows = JobClosingSnapshot::where('closing_date', '>=', today()->subMonths(5)->startOfMonth())
+                ->selectRaw($monthExpression.' as month_key, COALESCE(SUM(total_provision_sell), 0) as revenue, COALESCE(SUM(profit), 0) as profit')
+                ->groupByRaw($monthExpression)
+                ->get();
+            foreach ($monthlyRows as $snapshot) {
+                $key = $snapshot->month_key;
                 if ($monthly->has($key)) {
                     $row = $monthly->get($key);
-                    $row['revenue'] = $row['revenue']->plus($snapshot->total_provision_sell);
-                    $row['profit'] = $row['profit']->plus($snapshot->profit);
+                    $row['revenue'] = Money::decimal($snapshot->revenue);
+                    $row['profit'] = Money::decimal($snapshot->profit);
                     $monthly->put($key, $row);
                 }
             }
@@ -182,7 +189,13 @@ class DashboardService
             $out['overdueReceivables'] = ['count' => (clone $overdue)->count(), 'amount' => (string) (clone $overdue)->sum('balance')];
             $out['pendingReimbursements'] = Reimbursement::where('status', 'pending')->count();
             $out['journalsThisMonth'] = Journal::where('status', 'posted')->where('journal_date', '>=', today()->startOfMonth())->count();
-            $out['topJobs'] = Job::has('closingSnapshot')->with('closingSnapshot')->limit(100)->get()->sortByDesc(fn ($job) => (float) $job->closingSnapshot->profit)->take(5)->values();
+            $out['topJobs'] = Job::whereHas('closingSnapshot')
+                ->with('closingSnapshot')
+                ->join('job_closing_snapshots', 'job_closing_snapshots.job_id', '=', 'jobs.id')
+                ->orderByDesc('job_closing_snapshots.profit')
+                ->select('jobs.*')
+                ->limit(5)
+                ->get();
         }
 
         if ($role === 'super-admin' || $user->hasPermission('users.manage')) {
@@ -267,6 +280,15 @@ class DashboardService
                 'bannerArtTitle' => 'Setiap pekerjaan,',
                 'bannerArtSubtitle' => 'lebih terukur.',
             ],
+        };
+    }
+
+    private function monthExpression(string $column): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'sqlite' => "strftime('%Y-%m', {$column})",
+            'pgsql' => "to_char({$column}, 'YYYY-MM')",
+            default => "DATE_FORMAT({$column}, '%Y-%m')",
         };
     }
 

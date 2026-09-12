@@ -24,7 +24,7 @@ class CustomerContactController extends Controller
             ->when(in_array($type, ['shipper', 'consignee'], true), fn ($q) => $q->where('type', $type))
             ->when($status === 'inactive', fn ($q) => $q->where('is_active', false), fn ($q) => $q->where('is_active', true))
             ->when($customerId > 0, fn ($q) => $q->where('customer_id', $customerId))
-            ->orderBy('name')->paginate(15)->withQueryString();
+            ->orderBy('name')->paginate(10)->withQueryString();
 
         return view('customer-contacts.index', compact('contacts', 'search', 'type', 'status'));
     }

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\ServiceType;
 
 class WeeklyPricingRequest extends FormRequest
 {
@@ -25,7 +26,7 @@ class WeeklyPricingRequest extends FormRequest
             'effective_until' => ['nullable', 'date', 'after_or_equal:effective_date'],
             'currency' => ['required', Rule::in(array_keys(config('operations.currencies')))],
             'exchange_rate' => ['required', 'numeric', 'min:0.000001', 'max:99999999999.99'],
-            'service' => ['nullable', 'string', 'max:40', Rule::in(array_keys(config('operations.service_types')))],
+            'service' => ['nullable', 'string', 'max:40', Rule::in(array_keys(ServiceType::options()))],
             'notes' => ['nullable', 'string', 'max:1000'],
             'is_active' => ['boolean'],
             'lock_version' => [$this->isMethod('PUT') ? 'required' : 'nullable', 'integer', 'min:0'],

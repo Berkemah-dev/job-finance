@@ -12,7 +12,7 @@ class ClosingController extends Controller
 {
     public function index()
     {
-        return view('closing.index', ['jobs' => Job::where('status', 'open')->withCount(['costs', 'costs as draft_costs_count' => fn ($q) => $q->where('status', 'draft')])->latest('id')->paginate(15)]);
+        return view('closing.index', ['jobs' => Job::where('status', 'open')->withCount(['costs', 'costs as draft_costs_count' => fn ($q) => $q->where('status', 'draft')])->latest('id')->paginate(10)]);
     }
 
     public function create(Job $job, JobCostService $service)

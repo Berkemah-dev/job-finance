@@ -20,7 +20,7 @@
     <span class="date-sep">→</span>
     <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal" title="Sampai tanggal">
 </div>
-<select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.canonical_service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
+<select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach($serviceTypes ?? \App\Models\ServiceType::options() as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
 <select name="sales_id" aria-label="Sales"><option value="">Semua sales</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($salesId===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="cs_id" aria-label="Customer service"><option value="">Semua CS</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($csId===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="status" aria-label="Status job"><option value="">Semua status</option>@foreach(config('operations.job_statuses') as $value=>$label)<option value="{{ $value }}" @selected(request('status')===$value)>{{ $label }}</option>@endforeach</select>
@@ -68,12 +68,12 @@
                 <div><small class="muted-cell">HAWB:</small> {{ $job->hawb_number }}</div>
             @endif
             @if(!$job->bl_number && !$job->hbl_number && !$job->awb_number && !$job->hawb_number)
-                <span class="muted-cell">—</span>
+                <span class="muted-cell">Belum diisi</span>
             @endif
         </td>
         <td>
             <span class="status-badge" style="background:#e0f2fe; color:#0369a1; font-weight:600;">
-                {{ config('operations.service_types.'.$job->service_type) ?? strtoupper($job->service_type ?? '—') }}
+                {{ \App\Models\ServiceType::label($job->service_type) }}
             </span>
             @if($job->pol || $job->pod)
                 <br><small class="muted-cell">{{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}</small>
@@ -86,8 +86,12 @@
             <small class="muted-cell">Sales: {{ $job->sales?->name ?? '—' }}</small>
         </td>
         <td>
-            <strong>{{ $job->cs?->name ?? '—' }}</strong>
-            <br><small class="muted-cell">ID CS: #{{ $job->cs_id ?? ($job->created_by ?? '—') }}</small>
+            @if($job->cs)
+                <strong>{{ $job->cs->name }}</strong>
+                <br><small class="muted-cell">ID CS: #{{ $job->cs_id }}</small>
+            @else
+                <span class="muted-cell">Belum dipilih</span>
+            @endif
         </td>
         <td>
             <span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span>

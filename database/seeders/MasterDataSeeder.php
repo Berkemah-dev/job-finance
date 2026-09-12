@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\ChargeType;
 use App\Models\ContainerUnit;
+use App\Models\DocumentType;
 use App\Models\Port;
+use App\Models\ServiceType;
 use Illuminate\Database\Seeder;
 
 class MasterDataSeeder extends Seeder
@@ -131,6 +133,46 @@ class MasterDataSeeder extends Seeder
 
         foreach ($units as $name) {
             ContainerUnit::firstOrCreate(['name' => $name], ['is_active' => true]);
+        }
+
+        foreach ([
+            ['code' => 'exp_sea', 'name' => 'EXPORT SEA', 'sort_order' => 10],
+            ['code' => 'exp_air', 'name' => 'EXPORT AIR', 'sort_order' => 20],
+            ['code' => 'imp_sea', 'name' => 'IMPORT SEA', 'sort_order' => 30],
+            ['code' => 'imp_air', 'name' => 'IMPORT AIR', 'sort_order' => 40],
+            ['code' => 'domestic', 'name' => 'DOMESTIC / TRUCKING', 'sort_order' => 50],
+        ] as $service) {
+            ServiceType::firstOrCreate(
+                ['code' => $service['code']],
+                ['name' => $service['name'], 'sort_order' => $service['sort_order'], 'is_active' => true]
+            );
+        }
+
+        foreach ([
+            ['code' => 'HBL', 'name' => 'HOUSE BL', 'service_codes' => ['exp_sea', 'imp_sea']],
+            ['code' => 'MBL', 'name' => 'MASTER BL', 'service_codes' => ['exp_sea', 'imp_sea']],
+            ['code' => 'HAWB', 'name' => 'HOUSE AWB', 'service_codes' => ['exp_air', 'imp_air']],
+            ['code' => 'MAWB', 'name' => 'MASTER AWB', 'service_codes' => ['exp_air', 'imp_air']],
+            ['code' => 'PL', 'name' => 'PACKINGLIST', 'service_codes' => ['exp_sea', 'exp_air', 'imp_sea', 'imp_air']],
+            ['code' => 'INV', 'name' => 'INVOICE', 'service_codes' => ['exp_sea', 'exp_air', 'imp_sea', 'imp_air']],
+            ['code' => 'DG', 'name' => 'DG DECLARE', 'service_codes' => ['exp_sea', 'exp_air']],
+            ['code' => 'PEB', 'name' => 'PEB', 'service_codes' => ['exp_sea', 'exp_air']],
+            ['code' => 'NPE', 'name' => 'NPE', 'service_codes' => ['exp_sea', 'exp_air']],
+            ['code' => 'LS', 'name' => 'LAPORAN SURVEYOR', 'service_codes' => ['imp_sea', 'imp_air']],
+            ['code' => 'COO', 'name' => 'CERTIFICATE OF ORIGIN', 'service_codes' => ['imp_sea', 'imp_air']],
+            ['code' => 'ECOO', 'name' => 'E-CERTIFICATE OF ORIGIN', 'service_codes' => ['imp_sea', 'imp_air']],
+        ] as $index => $document) {
+            DocumentType::updateOrCreate(
+                ['code' => $document['code']],
+                [
+                    'name' => $document['name'],
+                    'category' => 'shipment',
+                    'service_codes' => $document['service_codes'],
+                    'is_required' => true,
+                    'is_active' => true,
+                    'sort_order' => ($index + 1) * 10,
+                ]
+            );
         }
 
         // =============================================

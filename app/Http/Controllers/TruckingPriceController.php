@@ -32,7 +32,7 @@ class TruckingPriceController extends Controller
         if ($request->input('status') === 'inactive') {
             $query->where('is_active', false);
         }
-        $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(15)->withQueryString();
+        $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(10)->withQueryString();
         $vendors = $this->truckingVendors();
 
         return view('pricing.trucking.index', compact('items', 'vendors'));

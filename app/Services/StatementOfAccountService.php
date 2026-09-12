@@ -15,10 +15,15 @@ class StatementOfAccountService
     {
         $invoices = Invoice::orderBy('invoice_date')->get(['customer_id', 'number', 'invoice_date', 'due_date', 'status', 'total', 'paid_amount', 'balance']);
         $grand = $this->emptyTotals();
+        $customerIds = $invoices->pluck('customer_id')->filter()->unique()->values();
+        $customersById = Customer::withTrashed()
+            ->whereIn('id', $customerIds)
+            ->get(['id', 'code', 'name', 'contact_name'])
+            ->keyBy('id');
 
         $customers = [];
         foreach ($invoices->groupBy('customer_id') as $customerId => $rows) {
-            $customer = Customer::withTrashed()->whereKey($customerId)->first();
+            $customer = $customersById->get((int) $customerId);
             if (! $customer) {
                 continue;
             }
@@ -38,7 +43,7 @@ class StatementOfAccountService
             if ($unpaidOnly && Money::decimal($totals['balance'])->isZero()) {
                 continue;
             }
-            foreach (self::AGING_BUCKETS + ['invoices'] as $key) {
+            foreach (array_merge(self::AGING_BUCKETS, ['invoices']) as $key) {
                 $this->addTo($grand, $totals, $key);
             }
             $totals['customer'] = $customer;

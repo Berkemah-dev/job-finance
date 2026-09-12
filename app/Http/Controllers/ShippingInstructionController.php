@@ -50,7 +50,7 @@ class ShippingInstructionController extends Controller
             $query->whereDate('si_date', '<=', $dateTo);
         }
 
-        $shippingInstructions = $query->paginate(15)->withQueryString();
+        $shippingInstructions = $query->paginate(10)->withQueryString();
 
         return view('shipping-instructions.index', [
             'shippingInstructions' => $shippingInstructions,
