@@ -61,19 +61,6 @@
     @endcan
     <a class="button button-secondary" href="{{ route('jobs.preview', $job) }}" target="_blank">🖨 Preview PDF Job</a>
     
-    @if($isExportSea || $isExportAir)
-        @if($job->bookingConfirmations->isNotEmpty())
-            <a class="button button-secondary" href="{{ route('booking-confirmations.preview', $job->bookingConfirmations->first()) }}" target="_blank">Booking Confirmation ({{ $job->bookingConfirmations->first()->number }})</a>
-        @else
-            <a class="button button-secondary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Booking Confirmation</a>
-        @endif
-        @if($job->shippingInstructions->isNotEmpty())
-            <a class="button button-secondary" href="{{ route('shipping-instructions.preview', $job->shippingInstructions->first()) }}" target="_blank">Shipping Instruction</a>
-        @else
-            <a class="button button-secondary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Shipping Instruction</a>
-        @endif
-    @endif
-
     @can('open',$job)
         <form method="POST" action="{{ route('jobs.open',$job) }}" data-confirm="Buka job ini? Finance dapat mulai mencatat biaya setelah job berstatus Open.">
             @csrf
@@ -113,6 +100,10 @@
     <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Dokumen (BL/CIPL)</button>
     <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Tanda Terima</button>
     <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Biaya & Profit</button>
+    @if($isExportSea || $isExportAir)
+        <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Booking Confirmation</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Shipping Instruction</button>
+    @endif
 </nav>
 
 {{-- ========================================================================= --}}
@@ -624,6 +615,29 @@
 {{-- ========================================================================= --}}
 {{-- TAB 5: BIAYA & PROFIT                                                     --}}
 {{-- ========================================================================= --}}
+@if($isExportSea || $isExportAir)
+<div id="tab-booking" class="job-tab-content" style="display: none;">
+    <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">DOKUMEN OPERASIONAL</p><h2>Booking Confirmation</h2><p>Kelola konfirmasi booking langsung dari Job Order ini.</p></div><a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a></div>
+        @if($job->bookingConfirmations->isNotEmpty())
+            <div class="table-scroll"><table><thead><tr><th>Nomor</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@foreach($job->bookingConfirmations as $bc)<tr><td><strong>{{ $bc->number }}</strong></td><td>{{ $bc->booking_date?->format('d/m/Y') ?? '—' }}</td><td><span class="status-badge">{{ ucfirst($bc->status ?? 'Draft') }}</span></td><td><a class="button button-secondary button-sm" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">Preview PDF</a> <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a></td></tr>@endforeach</tbody></table></div>
+        @else
+            <div class="empty-state"><h3>Belum ada Booking Confirmation</h3><p>Buat dokumen BC dari tab ini agar tetap terhubung dengan Job Order.</p></div>
+        @endif
+    </section>
+</div>
+<div id="tab-si" class="job-tab-content" style="display: none;">
+    <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">DOKUMEN OPERASIONAL</p><h2>Shipping Instruction</h2><p>Kelola instruksi pengiriman langsung dari Job Order ini.</p></div><a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a></div>
+        @if($job->shippingInstructions->isNotEmpty())
+            <div class="table-scroll"><table><thead><tr><th>Nomor</th><th>Carrier</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@foreach($job->shippingInstructions as $si)<tr><td><strong>{{ $si->number }}</strong></td><td>{{ $si->to_carrier ?? '—' }}</td><td>{{ $si->si_date?->format('d/m/Y') ?? '—' }}</td><td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td><td><a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">Preview PDF</a> <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a></td></tr>@endforeach</tbody></table></div>
+        @else
+            <div class="empty-state"><h3>Belum ada Shipping Instruction</h3><p>Buat dokumen SI dari tab ini agar seluruh data operasional tersusun dalam satu Job Order.</p></div>
+        @endif
+    </section>
+</div>
+@endif
+
 <div id="tab-financial" class="job-tab-content" style="display: none;">
     <div class="section-heading"><h2>Estimasi Penawaran</h2><span class="subtle">Snapshot Quotation Asal</span></div>
     @can('financial.view')
