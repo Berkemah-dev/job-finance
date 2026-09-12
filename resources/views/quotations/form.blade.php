@@ -24,7 +24,7 @@
 
 <div class="field"><label for="commodity">Commodity</label><input id="commodity" name="commodity" value="{{ old('commodity',$quotation->commodity) }}" maxlength="160" placeholder="cth: General Cargo / Spare Parts"></div>
 
-<div class="field port-autocomplete-field">
+<div class="field">
     <label for="origin">Port of Loading (POL)</label>
     <input id="origin" name="origin" list="pol-ports-list" value="{{ old('origin',$quotation->origin) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
     <datalist id="pol-ports-list">
@@ -34,7 +34,7 @@
         @endforeach
     </datalist>
 </div>
-<div class="field port-autocomplete-field">
+<div class="field">
     <label for="destination">Port of Discharge (POD)</label>
     <input id="destination" name="destination" list="pod-ports-list" value="{{ old('destination',$quotation->destination) }}" maxlength="120" placeholder="Ketik huruf depan nama atau kode port..." autocomplete="off">
     <datalist id="pod-ports-list">

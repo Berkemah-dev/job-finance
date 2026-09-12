@@ -130,12 +130,12 @@
 
             <div class="field">
                 <label for="pol">Port of Loading (POL)</label>
-                <input id="pol" name="pol" maxlength="120" value="{{ old('pol', $bc->pol) }}" placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field" data-port-autocomplete>
+                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $bc->pol) }}" placeholder="Ketik nama atau kode port..." autocomplete="off">
             </div>
 
             <div class="field">
                 <label for="pod">Port of Discharge (POD)</label>
-                <input id="pod" name="pod" maxlength="120" value="{{ old('pod', $bc->pod) }}" placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field" data-port-autocomplete>
+                <input id="pod" name="pod" list="port_list" maxlength="120" value="{{ old('pod', $bc->pod) }}" placeholder="Ketik nama atau kode port..." autocomplete="off">
             </div>
 
 
@@ -144,7 +144,11 @@
                 <input id="etd" name="etd" type="date" value="{{ old('etd', $bc->etd?->format('Y-m-d')) }}">
             </div>
 
-            <script type="application/json" id="port-options">@json($ports->map(fn($p) => ['value' => $p->name, 'label' => ($p->code ? $p->code.' - ' : '').$p->name])->values())</script>
+            <datalist id="port_list">
+                @foreach($ports as $p)
+                    <option value="{{ $p->name }}">{{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}</option>
+                @endforeach
+            </datalist>
 
             <div class="field">
                 <label for="eta">ETA (Kedatangan)</label>
