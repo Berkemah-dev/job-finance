@@ -153,6 +153,25 @@ if (form) {
 
     let itemsArray = [];
 
+    const parseFormattedNumber = value => {
+        const raw = String(value ?? '').trim().replace(/\s/g, '');
+        if (!raw) return 0;
+        // Format utama Indonesia: 1.555.000 atau 1.555.000,50.
+        if (raw.includes('.') && raw.includes(',')) return Number(raw.replace(/\./g, '').replace(',', '.')) || 0;
+        if (raw.match(/^\d{1,3}(\.\d{3})+$/)) return Number(raw.replace(/\./g, '')) || 0;
+        if (raw.includes('.')) return Number(raw) || 0;
+        return Number(raw.replace(',', '.')) || 0;
+    };
+    const formatInputNumber = input => {
+        if (!input || input.value === '') return;
+        const value = parseFormattedNumber(input.value);
+        input.value = Number.isInteger(value) ? value.toLocaleString('id-ID') : value.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+    };
+    [inputCost, inputPrice, inputQty].forEach(input => {
+        input?.addEventListener('blur', () => formatInputNumber(input));
+        input?.addEventListener('focus', () => { input.value = input.value.replace(/\./g, '').replace(',', '.'); });
+    });
+
     // Helper formatting
     const cents = value => {
         if (!value || isNaN(Number(value))) return 0n;
@@ -287,9 +306,9 @@ if (form) {
     // Handle submit single item button
     btnSubmitItem?.addEventListener('click', () => {
         const desc = inputDesc?.value?.trim();
-        const qty = parseFloat(inputQty?.value || 0);
-        const price = parseFloat(inputPrice?.value || 0);
-        const cost = parseFloat(inputCost?.value || 0);
+        const qty = parseFormattedNumber(inputQty?.value || 0);
+        const price = parseFormattedNumber(inputPrice?.value || 0);
+        const cost = parseFormattedNumber(inputCost?.value || 0);
         const trucking = isTrucking();
 
         if (!desc) {

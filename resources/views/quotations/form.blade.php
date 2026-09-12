@@ -103,7 +103,7 @@
         </div>
     </div>
 
-<div class="form-grid" style="grid-template-columns: 2.2fr 2fr 1.2fr 1fr 1.5fr 1.5fr; gap: 12px; align-items: flex-start;">
+<div class="form-grid" style="grid-template-columns: 2.2fr 1.5fr 1.5fr 1fr 1.2fr 2fr; gap: 12px; align-items: flex-start;">
         <div class="field">
             <label for="input_item_desc">Uraian Biaya <span class="required">*</span></label>
             <select id="input_item_desc" data-custom-select aria-label="Uraian Biaya"><option value="">Pilih Uraian Biaya</option>@foreach($charges ?? [] as $charge)<option value="{{ $charge->name }}">{{ $charge->name }}</option>@endforeach</select>
@@ -117,8 +117,16 @@
             </div>
         </div>
         <div class="field">
-            <label for="input_item_note">Catatan / Note Biaya</label>
-            <input id="input_item_note" type="text" placeholder="cth: Per 20ft / Exclude PPN / Free Time" maxlength="255">
+            <label for="input_item_cost">Modal / Unit (IDR)</label>
+            <input id="input_item_cost" type="text" inputmode="decimal" value="0" autocomplete="off">
+        </div>
+        <div class="field">
+            <label for="input_item_price">Harga Jual / Unit (IDR) <span class="required">*</span></label>
+            <input id="input_item_price" type="text" inputmode="decimal" value="0" autocomplete="off">
+        </div>
+        <div class="field">
+            <label for="input_item_qty">Jumlah (Qty) <span class="required">*</span></label>
+            <input id="input_item_qty" type="text" inputmode="decimal" value="1" autocomplete="off">
         </div>
         <div class="field">
             <label for="input_item_unit">Satuan <span class="required">*</span></label>
@@ -127,28 +135,12 @@
                 @foreach($units ?? [] as $unit)
                     <option value="{{ $unit->name }}">{{ $unit->name }}</option>
                 @endforeach
-                <option value="Shipment">Shipment</option>
-                <option value="Container">Container</option>
-                <option value="20GP">20GP</option>
-                <option value="40GP">40GP</option>
-                <option value="40HQ">40HQ</option>
-                <option value="Cbm">Cbm</option>
-                <option value="KG">KG</option>
-                <option value="Doc">Doc</option>
-                <option value="Trip">Trip</option>
+                <option value="Shipment">Shipment</option><option value="Container">Container</option><option value="20GP">20GP</option><option value="40GP">40GP</option><option value="40HQ">40HQ</option><option value="Cbm">Cbm</option><option value="KG">KG</option><option value="Doc">Doc</option><option value="Trip">Trip</option>
             </datalist>
         </div>
         <div class="field">
-            <label for="input_item_qty">Jumlah (Qty) <span class="required">*</span></label>
-            <input id="input_item_qty" type="number" min="0.01" step="0.01" value="1">
-        </div>
-        <div class="field">
-            <label for="input_item_cost">Modal / Unit (IDR)</label>
-            <input id="input_item_cost" type="number" min="0" step="100" value="0">
-        </div>
-        <div class="field">
-            <label for="input_item_price">Harga Jual / Unit (IDR) <span class="required">*</span></label>
-            <input id="input_item_price" type="number" min="0" step="100" value="0">
+            <label for="input_item_note">Remark / Catatan</label>
+            <input id="input_item_note" type="text" placeholder="cth: Per 20ft / Exclude PPN / Free Time" maxlength="255">
         </div>
     </div>
 
