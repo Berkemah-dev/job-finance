@@ -189,24 +189,38 @@
     <div class="clear"></div>
 </div>
 
-{{-- METADATA PENERIMA (2 KOLOM) --}}
+@php
+    $consigneeName = $bc->consignee_name ?: ($job?->consignee_name ?: ($bc->customer?->consignees?->first()?->name ?? '—'));
+    $consigneeAddress = $bc->consignee_address ?: ($job?->consignee_address ?: ($bc->customer?->consignees?->first()?->address ?? ''));
+    $consigneeContact = $bc->contact_person ?: ($bc->consignee_contact ?: ($job?->consignee_contact ?: ($bc->customer?->consignees?->first()?->contact_name ?: ($bc->customer?->consignees?->first()?->phone ?? '—'))));
+
+    $shipperCustomer = $bc->customer ?? $job?->customer;
+    $shipperName = $shipperCustomer?->name ?? ($bc->shipper_name ?: '—');
+    $shipperAddress = $shipperCustomer?->address ?? ($job?->shipper_address ?? '');
+    $docStatus = [];
+    if ($shipperCustomer?->tax_number) $docStatus[] = 'NPWP: ' . $shipperCustomer->tax_number;
+    if ($shipperCustomer?->npwp_file) $docStatus[] = 'NPWP (Terlampir)';
+    if ($shipperCustomer?->nib_file) $docStatus[] = 'NIB (Terlampir)';
+@endphp
+
+{{-- METADATA PENERIMA (CONSIGNEE) --}}
 <table class="meta-grid">
     <tr>
         <td style="width: 52%;">
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                    <td style="width: 25%; font-weight: 700;">To:</td>
-                    <td style="width: 75%; font-weight: 700; font-size: 10.5px;">{{ $bc->customer?->name ?? '—' }}</td>
+                    <td style="width: 32%; font-weight: 700;">To (Consignee):</td>
+                    <td style="width: 68%; font-weight: 700; font-size: 10.5px;">{{ $consigneeName }}</td>
                 </tr>
-                @if($bc->customer?->address)
+                @if($consigneeAddress)
                 <tr>
                     <td></td>
-                    <td style="font-size: 8.5px; color: #333;">{{ $bc->customer->address }}</td>
+                    <td style="font-size: 8.5px; color: #333;">{{ $consigneeAddress }}</td>
                 </tr>
                 @endif
                 <tr>
                     <td style="font-weight: 700; padding-top: 4px;">Contact Person</td>
-                    <td style="font-weight: 600; padding-top: 4px;">: {{ $bc->contact_person ?: '—' }}</td>
+                    <td style="font-weight: 600; padding-top: 4px;">: {{ $consigneeContact }}</td>
                 </tr>
             </table>
         </td>
@@ -246,7 +260,15 @@
                 <tr>
                     <td style="width: 32%; font-weight: 700;">Shipper</td>
                     <td style="width: 3%;">:</td>
-                    <td style="width: 65%; font-weight: 600;">{{ $bc->shipper_name ?: '—' }}</td>
+                    <td style="width: 65%; font-weight: 600;">
+                        {{ $shipperName }}
+                        @if($shipperAddress)
+                            <div style="font-size: 8px; color: #444; font-weight: normal;">{{ $shipperAddress }}</div>
+                        @endif
+                        @if(!empty($docStatus))
+                            <div style="font-size: 7.5px; color: #0284c7; font-weight: normal; margin-top: 1px;">{{ implode(' | ', $docStatus) }}</div>
+                        @endif
+                    </td>
                 </tr>
                 <tr>
                     <td style="font-weight: 700;">Carrier Booking</td>

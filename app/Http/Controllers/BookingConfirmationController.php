@@ -95,6 +95,9 @@ class BookingConfirmationController extends Controller
             'contact_person'      => 'nullable|string|max:120',
             'customer_ref'        => 'nullable|string|max:100',
             'shipper_name'        => 'nullable|string|max:160',
+            'consignee_name'      => 'nullable|string|max:160',
+            'consignee_address'   => 'nullable|string',
+            'consignee_contact'   => 'nullable|string|max:120',
             'carrier_name'        => 'nullable|string|max:160',
             'carrier_booking_no'  => 'nullable|string|max:100',
             'vessel_voyage'       => 'nullable|string|max:120',
@@ -125,7 +128,7 @@ class BookingConfirmationController extends Controller
 
     public function show(BookingConfirmation $bookingConfirmation)
     {
-        $bookingConfirmation->load(['customer', 'job', 'creator']);
+        $bookingConfirmation->load(['customer.consignees', 'job.customer.consignees', 'creator']);
 
         return view('booking-confirmations.show', [
             'bc'  => $bookingConfirmation,
@@ -159,6 +162,9 @@ class BookingConfirmationController extends Controller
             'contact_person'      => 'nullable|string|max:120',
             'customer_ref'        => 'nullable|string|max:100',
             'shipper_name'        => 'nullable|string|max:160',
+            'consignee_name'      => 'nullable|string|max:160',
+            'consignee_address'   => 'nullable|string',
+            'consignee_contact'   => 'nullable|string|max:120',
             'carrier_name'        => 'nullable|string|max:160',
             'carrier_booking_no'  => 'nullable|string|max:100',
             'vessel_voyage'       => 'nullable|string|max:120',
@@ -206,7 +212,7 @@ class BookingConfirmationController extends Controller
 
     public function pdf(Request $request, BookingConfirmation $bookingConfirmation)
     {
-        $bookingConfirmation->load(['customer', 'job', 'creator']);
+        $bookingConfirmation->load(['customer.consignees', 'job.customer.consignees', 'creator']);
 
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.booking-confirmation', [
             'bc'  => $bookingConfirmation,

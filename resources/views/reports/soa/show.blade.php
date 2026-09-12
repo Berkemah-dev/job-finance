@@ -8,7 +8,7 @@
         <p>{{ $customer->address ?? '—' }} @if($customer->tax_number)· NPWP {{ $customer->tax_number }} @endif</p>
     </div>
     <div class="action-group">
-        <a class="button button-secondary" href="{{ route('reports.soa.pdf', ['customer' => $customer, 'from' => $from->toDateString(), 'to' => $to->toDateString()]) }}" target="_blank">🖨 Cetak PDF SOA</a>
+        <a class="button button-secondary" href="{{ route('reports.soa.pdf', ['soaCustomer' => $customer->id, 'from' => $from->toDateString(), 'to' => $to->toDateString()]) }}" target="_blank">🖨 Cetak PDF SOA</a>
         <a class="text-link" href="{{ route('reports.soa') }}">← Kembali ke daftar</a>
     </div>
 </div>

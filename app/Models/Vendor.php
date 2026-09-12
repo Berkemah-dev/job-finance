@@ -41,8 +41,12 @@ class Vendor extends Model
     public function categoryLabels(): array
     {
         $types = config('operations.vendor_types');
+        $cats = $this->categories->pluck('category')->all();
+        if (empty($cats) && $this->type) {
+            $cats = [$this->type];
+        }
 
-        return [($types[$this->type] ?? $this->type)];
+        return array_map(fn ($c) => $types[$c] ?? $c, $cats);
     }
 
     public function truckingPrices(): HasMany

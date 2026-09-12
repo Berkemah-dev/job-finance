@@ -44,19 +44,33 @@
             </div>
         </div>
 
-        {{-- METADATA PENERIMA & TANGGAL (2 KOLOM) --}}
+        @php
+            $consigneeName = $bc->consignee_name ?: ($bc->job?->consignee_name ?: ($bc->customer?->consignees?->first()?->name ?? '—'));
+            $consigneeAddress = $bc->consignee_address ?: ($bc->job?->consignee_address ?: ($bc->customer?->consignees?->first()?->address ?? ''));
+            $consigneeContact = $bc->contact_person ?: ($bc->consignee_contact ?: ($bc->job?->consignee_contact ?: ($bc->customer?->consignees?->first()?->contact_name ?: ($bc->customer?->consignees?->first()?->phone ?? '—'))));
+
+            $shipperCustomer = $bc->customer ?? $bc->job?->customer;
+            $shipperName = $shipperCustomer?->name ?? ($bc->shipper_name ?: '—');
+            $shipperAddress = $shipperCustomer?->address ?? ($bc->job?->shipper_address ?? '');
+            $docStatus = [];
+            if ($shipperCustomer?->tax_number) $docStatus[] = 'NPWP: ' . $shipperCustomer->tax_number;
+            if ($shipperCustomer?->npwp_file) $docStatus[] = 'NPWP (Terlampir)';
+            if ($shipperCustomer?->nib_file) $docStatus[] = 'NIB (Terlampir)';
+        @endphp
+
+        {{-- METADATA PENERIMA (CONSIGNEE) & TANGGAL (2 KOLOM) --}}
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; font-size: 13.5px; line-height: 1.6;">
             <div>
                 <div style="margin-bottom: 6px;">
-                    <strong style="color: #475569;">To:</strong><br>
-                    <span style="font-size: 15px; font-weight: 700; color: #0f172a;">{{ $bc->customer?->name ?? '—' }}</span>
-                    @if($bc->customer?->address)
-                        <div style="font-size: 12.5px; color: #64748b;">{{ $bc->customer->address }}</div>
+                    <strong style="color: #475569;">To (Consignee):</strong><br>
+                    <span style="font-size: 15px; font-weight: 700; color: #0f172a;">{{ $consigneeName }}</span>
+                    @if($consigneeAddress)
+                        <div style="font-size: 12.5px; color: #64748b;">{{ $consigneeAddress }}</div>
                     @endif
                 </div>
                 <div>
                     <strong style="color: #475569;">Contact Person :</strong>
-                    <span style="font-weight: 600; color: #0f172a;">{{ $bc->contact_person ?: '—' }}</span>
+                    <span style="font-weight: 600; color: #0f172a;">{{ $consigneeContact }}</span>
                 </div>
             </div>
             <div>
@@ -98,7 +112,15 @@
                 <tr>
                     <td style="padding: 5px 0; width: 38%; font-weight: 700; color: #334155;">Shipper</td>
                     <td style="padding: 5px 0; width: 4%;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">{{ $bc->shipper_name ?: '—' }}</td>
+                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">
+                        {{ $shipperName }}
+                        @if($shipperAddress)
+                            <div style="font-size: 12px; color: #64748b; font-weight: normal; margin-top: 2px;">{{ $shipperAddress }}</div>
+                        @endif
+                        @if(!empty($docStatus))
+                            <div style="font-size: 11.5px; color: #0284c7; font-weight: normal; margin-top: 2px;">{{ implode(' · ', $docStatus) }}</div>
+                        @endif
+                    </td>
                 </tr>
                 <tr>
                     <td style="padding: 5px 0; font-weight: 700; color: #334155;">Carrier Booking</td>

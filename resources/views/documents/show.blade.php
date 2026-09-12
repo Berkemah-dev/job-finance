@@ -91,10 +91,12 @@ $events = collect([
     @if($job->operational_notes)<div class="detail-notes"><strong>Operational Notes</strong><br>{{ $job->operational_notes }}</div>@endif
     <div class="table-scroll"><table><thead><tr><th>Service / Item</th><th>Qty</th><th class="money">Amount</th></tr></thead><tbody>@foreach($job->quotation_snapshot['items'] as $item)<tr><td>{{ $item['description'] }}</td><td>{{ \App\Support\Money::format($item['quantity']) }} {{ $item['unit'] }}</td><td class="money">Rp {{ \App\Support\Money::format($item['total_price']) }}</td></tr>@endforeach</tbody></table></div>
     <div class="form-section-heading" style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:20px"><h2>Dokumen Operasional (PDF)</h2><p>Cetak dokumen pendukung untuk operasional pengiriman.</p></div>
-    <div class="action-group" style="margin-bottom:20px">
+    <div class="action-group" style="margin-bottom:20px; flex-wrap: wrap; gap: 8px;">
         <a class="button button-secondary" href="{{ route('documents.surat-jalan.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Surat Jalan</a>
         <a class="button button-secondary" href="{{ route('documents.tanda-terima.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Tanda Terima Barang</a>
         <a class="button button-secondary" href="{{ route('documents.sk-do.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Surat Kuasa D/O</a>
+        <a class="button button-secondary" href="{{ route('documents.dnp.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Dokumen Nota Pabean (DNP)</a>
+        <a class="button button-secondary" href="{{ route('documents.sk-pabean.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> SK Kepabeanan</a>
     </div>
 @else
     <div class="empty-state"><h3>Job Order belum dibuat.</h3><p>Data customer, quotation reference, item, dan value akan otomatis disalin dari quotation.</p>@can('convert',$quotation)<form method="POST" action="{{ route('quotations.convert',$quotation) }}">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Create Job Order dari Quotation</button></form>@endcan</div>

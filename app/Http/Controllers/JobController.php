@@ -25,7 +25,7 @@ class JobController extends Controller
         $shipmentStatus = (string) $request->input('shipment_status', '');
         $dateFrom = (string) $request->input('date_from', '');
         $dateTo = (string) $request->input('date_to', '');
-        $jobs = Job::with(['customer', 'sales', 'cs'])
+        $jobs = Job::with(['customer', 'sales', 'cs', 'bookingConfirmations'])
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
             ->when(in_array($request->input('status'), array_keys(config('operations.job_statuses')), true), fn ($q) => $q->where('status', $request->input('status')))
             ->when($salesId, fn ($q) => $q->where('sales_id', $salesId))

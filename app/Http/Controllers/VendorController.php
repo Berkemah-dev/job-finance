@@ -35,6 +35,12 @@ class VendorController extends Controller
         $vendor = DB::transaction(function () use ($request, $service) {
             $validated = $request->validated();
             $vendor = $service->save(new Vendor, $validated, $request->user());
+            if ($request->has('categories')) {
+                $vendor->categories()->delete();
+                foreach ($request->input('categories', []) as $cat) {
+                    $vendor->categories()->create(['category' => $cat]);
+                }
+            }
             return $vendor;
         }, 3);
 
@@ -43,20 +49,30 @@ class VendorController extends Controller
 
     public function show(Vendor $vendor)
     {
-        $vendor->load('truckingPrices');
+        $vendor->load(['truckingPrices', 'categories']);
 
         return view('vendors.show', compact('vendor'));
     }
 
     public function edit(Vendor $vendor)
     {
+        $vendor->load('categories');
         return view('vendors.form', compact('vendor'));
     }
 
     public function update(VendorRequest $request, Vendor $vendor, MasterDataService $service)
     {
-        $validated = $request->validated();
-        $service->save($vendor, $validated, $request->user());
+        DB::transaction(function () use ($request, $vendor, $service) {
+            $validated = $request->validated();
+            $service->save($vendor, $validated, $request->user());
+            if ($request->has('categories')) {
+                $vendor->categories()->delete();
+                foreach ($request->input('categories', []) as $cat) {
+                    $vendor->categories()->create(['category' => $cat]);
+                }
+            }
+        }, 3);
+
         return redirect()->route('vendors.show', $vendor)->with('success', 'Vendor berhasil diperbarui.');
     }
 

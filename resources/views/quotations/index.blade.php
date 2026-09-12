@@ -22,7 +22,7 @@
 </div>
 <select name="customer_id" aria-label="Customer"><option value="">Semua customer</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" @selected($customerId===$customer->id)>{{ $customer->name }}</option>@endforeach</select>
 <select name="sales_id" aria-label="Sales"><option value="">Semua sales</option>@foreach($sales as $user)<option value="{{ $user->id }}" @selected($salesId===$user->id)>{{ $user->name }}</option>@endforeach</select>
-<select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
+<select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.canonical_service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
 <select name="status" aria-label="Status quotation"><option value="">Semua status</option>@foreach(\App\Enums\QuotationStatus::cases() as $option)<option value="{{ $option->value }}" @selected($status?->value===$option->value)>{{ $option->label() }}</option>@endforeach</select>
 <button class="button button-primary">Cari</button><a class="text-link" href="{{ route('quotations.index') }}">Reset</a>
 </form>

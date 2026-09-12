@@ -16,7 +16,7 @@
 <div class="field"><label for="quotation_date">Tanggal quotation <span class="required">*</span></label><input type="date" id="quotation_date" name="quotation_date" value="{{ old('quotation_date', $quotation->quotation_date?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" required></div>
 <div class="field"><label for="valid_until">Berlaku sampai <span class="required">*</span></label><input type="date" id="valid_until" name="valid_until" value="{{ old('valid_until', $quotation->valid_until?->format('Y-m-d') ?? now()->addDays(30)->format('Y-m-d')) }}" required></div>
 
-<div class="field"><label for="service_type">Services (Layanan) <span class="required">*</span></label><select id="service_type" name="service_type" required><option value="">Pilih Services (IMP/EXP SEA/AIR)</option>@foreach(config('operations.service_types') as $key=>$label)<option value="{{ $key }}" @selected(old('service_type',$quotation->service_type)===$key)>{{ $label }}</option>@endforeach</select></div>
+<div class="field"><label for="service_type">Services (Layanan) <span class="required">*</span></label><select id="service_type" name="service_type" required><option value="">Pilih Services (IMP/EXP SEA/AIR)</option>@foreach(config('operations.canonical_service_types') as $key=>$label)<option value="{{ $key }}" @selected(old('service_type',$quotation->service_type)===$key)>{{ $label }}</option>@endforeach</select></div>
 <div class="field"><label for="terms_of_delivery">Terms of Delivery (Incoterms)</label><select id="terms_of_delivery" name="terms_of_delivery"><option value="">Pilih Terms of Delivery</option>@foreach(config('operations.terms_of_delivery') as $key=>$label)<option value="{{ $key }}" @selected(old('terms_of_delivery',$quotation->terms_of_delivery)===$key)>{{ $label }}</option>@endforeach</select></div>
 
 <div class="field"><label for="cargo_qty">Quantity (Shipment)</label><input id="cargo_qty" name="cargo_qty" value="{{ old('cargo_qty',$quotation->cargo_qty) }}" maxlength="100" placeholder="cth: 1 x 20' GP / 50 Cartons / 2 Pallets"></div>
@@ -49,8 +49,6 @@
     details.lcl-panel summary::-webkit-details-marker { display: none; }
 </style>
 
-{{-- Estimasi LCL tersedia di menu Kalkulator, tidak ditampilkan di Quotation. --}}
-@if(false)
 <details class="lcl-panel" data-lcl-panel style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 25px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
 <summary style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; margin: 0; cursor: pointer; list-style: none; display: flex; align-items: center;"><x-icon name="calculator" style="margin-right: 8px;"/><strong>Estimator biaya LCL</strong><span class="subtle" style="margin-left: 10px;">Hitung lalu skor sebagai item quotation.</span></summary>
 <div class="lcl-body" style="padding: 16px;">
@@ -63,9 +61,7 @@
 <p class="lcl-status" data-lcl-status></p>
 </div>
 </details>
-@endif
 
-@if(false)
 <details class="lcl-panel" data-vw-panel style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 30px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
 <summary style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; margin: 0; cursor: pointer; list-style: none; display: flex; align-items: center;"><x-icon name="calculator" style="margin-right: 8px;"/><strong>Estimator Volume Weight & CBM</strong><span class="subtle" style="margin-left: 10px;">Simulasikan dimensi untuk menentukan chargeable weight atau total kubikasi.</span></summary>
 <div class="item-editor" style="margin-top: 10px;">
@@ -92,7 +88,6 @@
 </div>
 </div>
 </details>
-@endif
 
 {{-- KOTAK INPUT SATU ITEM BIAYA --}}
 <div class="panel" id="single-item-input-panel" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 18px 20px; margin-top: 25px; margin-bottom: 20px;">

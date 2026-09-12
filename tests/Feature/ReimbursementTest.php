@@ -99,7 +99,14 @@ class ReimbursementTest extends TestCase
 
     public function test_foreign_reimbursement_defaults_rate_from_active_weekly_pricing(): void
     {
-        WeeklyPricing::factory()->create(['week' => now()->format('o-W'), 'currency' => 'USD', 'exchange_rate' => 15250, 'is_active' => true]);
+        WeeklyPricing::factory()->create([
+            'week' => now()->format('o-W'),
+            'effective_date' => today()->subDay()->toDateString(),
+            'effective_until' => null,
+            'currency' => 'USD',
+            'exchange_rate' => 15250,
+            'is_active' => true,
+        ]);
 
         $this->post('/reimbursements', [...$this->base(), 'currency' => 'USD', 'exchange_rate' => '', 'amount' => '100.00'])
             ->assertSessionHasNoErrors()->assertRedirect();

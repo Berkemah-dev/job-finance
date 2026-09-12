@@ -20,7 +20,7 @@
     <span class="date-sep">→</span>
     <input name="date_to" type="date" value="{{ $dateTo }}" aria-label="Sampai tanggal" title="Sampai tanggal">
 </div>
-<select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
+<select name="service_type" aria-label="Layanan"><option value="">Semua layanan</option>@foreach(config('operations.canonical_service_types') as $key=>$label)<option value="{{ $key }}" @selected($serviceType===$key)>{{ $label }}</option>@endforeach</select>
 <select name="sales_id" aria-label="Sales"><option value="">Semua sales</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($salesId===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="cs_id" aria-label="Customer service"><option value="">Semua CS</option>@foreach($assignees as $user)<option value="{{ $user->id }}" @selected($csId===$user->id)>{{ $user->name }}</option>@endforeach</select>
 <select name="status" aria-label="Status job"><option value="">Semua status</option>@foreach(config('operations.job_statuses') as $value=>$label)<option value="{{ $value }}" @selected(request('status')===$value)>{{ $label }}</option>@endforeach</select>
@@ -31,12 +31,12 @@
 <table>
 <thead>
     <tr>
-        <th>No. Job / Tanggal</th>
-        <th>Customer / Pekerjaan</th>
+        <th>No. Job</th>
+        <th>Customer & Remark Quote</th>
         <th>No. BL / AWB</th>
-        <th>Layanan</th>
-        <th>Rute & Jadwal</th>
-        <th>Sales & CS</th>
+        <th>Service</th>
+        <th>No. Quote & Sales</th>
+        <th>CS PIC</th>
         <th>Status</th>
         <th>Aksi</th>
     </tr>
@@ -47,22 +47,27 @@
         <td>
             <strong>{{ $job->number }}</strong>
             <br><small class="muted-cell">{{ $job->job_date?->format('d/m/Y') }}</small>
-            @if($job->quotation)
-                <br><small class="muted-cell">Quote: {{ $job->quotation->number }}</small>
-            @endif
         </td>
         <td>
             <strong>{{ $job->quotation_snapshot['customer']['name'] ?? $job->customer?->name ?? '—' }}</strong>
-            <br><small class="muted-cell">{{ Str::limit($job->subject ?: ($job->quotation?->remarks ?? '—'), 45) }}</small>
+            @if($job->quotation?->notes || $job->operational_notes || $job->subject)
+                <br><small class="muted-cell" title="{{ $job->quotation?->notes ?? $job->operational_notes ?? $job->subject }}">{{ Str::limit($job->quotation?->notes ?? $job->operational_notes ?? $job->subject, 45) }}</small>
+            @endif
         </td>
         <td>
             @if($job->bl_number)
                 <div><small class="muted-cell">BL:</small> <strong>{{ $job->bl_number }}</strong></div>
             @endif
+            @if($job->hbl_number)
+                <div><small class="muted-cell">HBL:</small> {{ $job->hbl_number }}</div>
+            @endif
             @if($job->awb_number)
                 <div><small class="muted-cell">AWB:</small> <strong>{{ $job->awb_number }}</strong></div>
             @endif
-            @if(!$job->bl_number && !$job->awb_number)
+            @if($job->hawb_number)
+                <div><small class="muted-cell">HAWB:</small> {{ $job->hawb_number }}</div>
+            @endif
+            @if(!$job->bl_number && !$job->hbl_number && !$job->awb_number && !$job->hawb_number)
                 <span class="muted-cell">—</span>
             @endif
         </td>
@@ -70,23 +75,19 @@
             <span class="status-badge" style="background:#e0f2fe; color:#0369a1; font-weight:600;">
                 {{ config('operations.service_types.'.$job->service_type) ?? strtoupper($job->service_type ?? '—') }}
             </span>
-        </td>
-        <td>
             @if($job->pol || $job->pod)
-                <div>{{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}</div>
-            @elseif($job->origin || $job->destination)
-                <div>{{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}</div>
-            @endif
-            @if($job->etd || $job->eta)
-                <small class="muted-cell">ETD: {{ $job->etd?->format('d/m/Y') ?? '—' }} | ETA: {{ $job->eta?->format('d/m/Y') ?? '—' }}</small>
-            @endif
-            @if(!$job->pol && !$job->pod && !$job->origin && !$job->destination && !$job->etd && !$job->eta)
-                <span class="muted-cell">—</span>
+                <br><small class="muted-cell">{{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}</small>
             @endif
         </td>
         <td>
-            <strong>{{ $job->sales?->name ?? '—' }}</strong>
-            <br><small class="muted-cell">CS: {{ $job->cs?->name ?? ($job->creator?->name ?? '—') }}</small>
+            @if($job->quotation)
+                <strong>{{ $job->quotation->number }}</strong><br>
+            @endif
+            <small class="muted-cell">Sales: {{ $job->sales?->name ?? '—' }}</small>
+        </td>
+        <td>
+            <strong>{{ $job->cs?->name ?? '—' }}</strong>
+            <br><small class="muted-cell">ID CS: #{{ $job->cs_id ?? ($job->created_by ?? '—') }}</small>
         </td>
         <td>
             <span class="status-badge status-{{ $job->status }}">{{ config('operations.job_statuses.'.$job->status) }}</span>
@@ -98,6 +99,16 @@
             <div class="table-actions">
                 <a class="btn-action btn-action-primary" href="{{ route('jobs.show',$job) }}" title="Detail Job" data-tooltip="Detail" aria-label="Detail Job"><x-icon name="eye"/></a>
                 <a class="btn-action btn-action-purple" href="{{ route('jobs.preview',$job) }}" target="_blank" title="Cetak PDF Job" data-tooltip="PDF" aria-label="Cetak PDF Job"><x-icon name="printer"/></a>
+                @php
+                    $isExportJob = str_contains(strtolower($job->service_type ?? ''), 'exp') || $job->service_type === 'export' || $job->bookingConfirmations->isNotEmpty();
+                @endphp
+                @if($isExportJob)
+                    @if($job->bookingConfirmations->isNotEmpty())
+                        <a class="btn-action btn-action-success" href="{{ route('booking-confirmations.preview', $job->bookingConfirmations->first()) }}" target="_blank" title="Cetak Booking Confirmation Export ({{ $job->bookingConfirmations->first()->number }})" data-tooltip="Booking Confirmation" aria-label="Booking Confirmation"><x-icon name="clipboard"/></a>
+                    @else
+                        <a class="btn-action btn-action-success" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}" title="Buat Booking Confirmation Export" data-tooltip="Buat BC" aria-label="Buat Booking Confirmation Export"><x-icon name="clipboard"/></a>
+                    @endif
+                @endif
                 @can('update',$job)
                     <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>
                 @endcan

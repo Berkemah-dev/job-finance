@@ -61,6 +61,25 @@ class CalculatorController extends Controller
 
     public function taxApi(Request $request): JsonResponse
     {
+        if ($request->has('rate') && ! $request->has('import_duty_rate')) {
+            $data = $request->validate([
+                'base_amount' => ['required', 'numeric', 'min:0', 'max:9999999999999999.99'],
+                'rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            ]);
+
+            $base = (float) $data['base_amount'];
+            $rate = (float) $data['rate'];
+            $tax = round($base * ($rate / 100), 2);
+            $total = round($base + $tax, 2);
+
+            return response()->json([
+                'base' => number_format($base, 2, '.', ''),
+                'rate' => $rate,
+                'tax' => number_format($tax, 2, '.', ''),
+                'total' => number_format($total, 2, '.', ''),
+            ]);
+        }
+
         $data = $request->validate([
             'base_amount' => ['required', 'numeric', 'min:0', 'max:9999999999999999.99'],
             'import_duty_rate' => ['required', 'numeric', 'min:0', 'max:100'],

@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/coretax', [InvoiceController::class, 'coretaxIndex'])->middleware('can:invoices.manage')->name('invoices.coretax.index');
     Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->middleware('can:invoices.manage')->name('invoices.preview');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->middleware('can:invoices.manage')->name('invoices.pdf');
+    Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])->middleware('can:invoices.manage')->name('invoices.delivery');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'show'])->middleware('can:invoices.manage');
     Route::get('/invoices/{invoice}/coretax', [InvoiceController::class, 'coretax'])->middleware('can:invoices.manage')->name('invoices.coretax');
     Route::get('/invoices/{invoice}/coretax/preview', [InvoiceController::class, 'coretaxPreview'])->middleware('can:invoices.manage')->name('invoices.coretax.preview');
@@ -75,6 +76,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/profit-bulanan', [ReportController::class, 'profitMonthly'])->name('profit-monthly');
         Route::get('/statement-of-account', [StatementOfAccountController::class, 'index'])->name('soa');
         Route::get('/statement-of-account/{soaCustomer}', [StatementOfAccountController::class, 'show'])->name('soa.customer');
+        Route::get('/statement-of-account/{soaCustomer}/pdf', [OperationalDocumentController::class, 'soaPdf'])->name('soa.pdf');
         Route::post('/statement-of-account/{soaCustomer}/email', [StatementOfAccountController::class, 'email'])->middleware('can:email.manage')->name('soa.email');
     });
     Route::get('/dokumen-job', [OperationalDocumentController::class, 'index'])->middleware('can:jobs.view')->name('documents.index');
@@ -86,6 +88,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/dokumen-job/{quotation}/surat-jalan/pdf', [OperationalDocumentController::class, 'suratJalanPdf'])->middleware('can:jobs.view')->name('documents.surat-jalan.pdf');
     Route::get('/api/dokumen-job/{quotation}/tanda-terima/pdf', [OperationalDocumentController::class, 'tandaTerimaPdf'])->middleware('can:jobs.view')->name('documents.tanda-terima.pdf');
     Route::get('/api/dokumen-job/{quotation}/sk-do/pdf', [OperationalDocumentController::class, 'skDoPdf'])->middleware('can:jobs.view')->name('documents.sk-do.pdf');
+    Route::get('/api/dokumen-job/{quotation}/dnp/pdf', [OperationalDocumentController::class, 'dnpPdf'])->middleware('can:jobs.view')->name('documents.dnp.pdf');
+    Route::get('/api/dokumen-job/{quotation}/sk-pabean/pdf', [OperationalDocumentController::class, 'skPabeaPdf'])->middleware('can:jobs.view')->name('documents.sk-pabean.pdf');
     Route::get('/api/pricing/suggest-trucking', [PricingSuggestionController::class, 'suggestTrucking'])->name('pricing.suggest-trucking');
     Route::get('/kalkulator', [CalculatorController::class, 'index'])->name('calculators.index');
     Route::get('/kalkulator/volume-weight', [CalculatorController::class, 'volumeWeight'])->name('calculators.volume-weight');
@@ -185,6 +189,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:pricing.view')->prefix('pricing')->name('pricing.')->group(function () {
         Route::get('/weekly', [WeeklyPricingController::class, 'index'])->name('weekly.index');
         Route::get('/trucking', [TruckingPriceController::class, 'index'])->name('trucking.index');
+        Route::get('/trucking/{truckingPrice}', [TruckingPriceController::class, 'show'])->name('trucking.show');
     });
     Route::middleware('can:pricing.manage')->prefix('pricing')->name('pricing.')->group(function () {
         Route::get('/weekly/create', [WeeklyPricingController::class, 'create'])->name('weekly.create');
@@ -241,11 +246,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/invoices/{invoice}/pdf', [OperationalDocumentController::class, 'invoicePdf'])
         ->middleware('can:invoices.manage')->name('invoices.pdf');
 
-    // DNP & SK Pabean PDF
+    // DNP & SK Pabean PDF (from Quotation)
     Route::get('/api/dokumen-job/{quotation}/dnp/pdf', [OperationalDocumentController::class, 'dnpPdf'])
         ->middleware('can:jobs.view')->name('documents.dnp.pdf');
     Route::get('/api/dokumen-job/{quotation}/sk-pabean/pdf', [OperationalDocumentController::class, 'skPabeaPdf'])
         ->middleware('can:jobs.view')->name('documents.sk-pabean.pdf');
+
+    // Job Direct Document PDFs
+    Route::get('/api/jobs/{job}/surat-jalan/pdf', [OperationalDocumentController::class, 'jobSuratJalanPdf'])
+        ->middleware('can:jobs.view')->name('jobs.surat-jalan.pdf');
+    Route::get('/api/jobs/{job}/tanda-terima/pdf', [OperationalDocumentController::class, 'jobTandaTerimaPdf'])
+        ->middleware('can:jobs.view')->name('jobs.tanda-terima.pdf');
+    Route::get('/api/jobs/{job}/sk-do/pdf', [OperationalDocumentController::class, 'jobSkDoPdf'])
+        ->middleware('can:jobs.view')->name('jobs.sk-do.pdf');
+    Route::get('/api/jobs/{job}/dnp/pdf', [OperationalDocumentController::class, 'jobDnpPdf'])
+        ->middleware('can:jobs.view')->name('jobs.dnp.pdf');
+    Route::get('/api/jobs/{job}/sk-pabean/pdf', [OperationalDocumentController::class, 'jobSkPabeanPdf'])
+        ->middleware('can:jobs.view')->name('jobs.sk-pabean.pdf');
 
     // Invoice delivery status update
     Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])

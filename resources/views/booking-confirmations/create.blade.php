@@ -39,7 +39,10 @@
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
                             data-customer-id="{{ $j->customer_id }}"
-                            data-shipper="{{ $j->shipper_name }}"
+                            data-shipper="{{ $j->customer?->name ?? $j->shipper_name }}"
+                            data-consignee="{{ $j->consignee_name ?? $j->customer?->consignees?->first()?->name }}"
+                            data-consignee-address="{{ $j->consignee_address ?? $j->customer?->consignees?->first()?->address }}"
+                            data-consignee-contact="{{ $j->consignee_contact ?? ($j->customer?->consignees?->first()?->contact_name ?? $j->customer?->consignees?->first()?->phone) }}"
                             data-vessel="{{ $j->vessel_voyage }}"
                             data-pol="{{ $j->pol ?? $j->origin }}"
                             data-pod="{{ $j->pod ?? $j->destination }}"
@@ -77,19 +80,27 @@
             </div>
         </div>
 
-        {{-- PIHAK TERKAIT --}}
+        {{-- PIHAK TERKAIT (CONSIGNEE & SHIPPER) --}}
         <div class="form-section-heading">
-            <h2>Penerima & Pihak Terkait</h2>
-            <p>Pihak yang menerima konfirmasi booking dan rincian referensi.</p>
+            <h2>Penerima (Consignee) & Pengirim (Shipper)</h2>
+            <p>Untuk dokumen export: Penerima adalah Consignee luar negeri, dan Pengirim (Shipper) mengambil data Master Customer.</p>
         </div>
 
         <div class="form-grid">
             <div class="field">
-                <label for="customer_id">Customer (To:) <span class="required">*</span></label>
+                <label for="customer_id">Master Customer (Shipper) <span class="required">*</span></label>
                 <select id="customer_id" name="customer_id" required>
                     <option value="">Pilih Customer</option>
                     @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id', $selectedJob?->customer_id) == $c->id)>
+                        <option value="{{ $c->id }}"
+                            @selected(old('customer_id', $selectedJob?->customer_id) == $c->id)
+                            data-name="{{ $c->name }}"
+                            data-address="{{ $c->address }}"
+                            data-tax="{{ $c->tax_number }}"
+                            data-consignee-name="{{ $c->consignees?->first()?->name }}"
+                            data-consignee-address="{{ $c->consignees?->first()?->address }}"
+                            data-consignee-contact="{{ $c->consignees?->first()?->contact_name ?: $c->consignees?->first()?->phone }}"
+                        >
                             {{ $c->name }}
                         </option>
                     @endforeach
@@ -97,18 +108,29 @@
             </div>
 
             <div class="field">
-                <label for="contact_person">Contact Person (PIC)</label>
-                <input id="contact_person" name="contact_person" maxlength="120" value="{{ old('contact_person') }}" placeholder="Nama PIC Customer">
+                <label for="shipper_name">Nama Shipper</label>
+                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $selectedJob?->customer?->name ?? $selectedJob?->shipper_name) }}" placeholder="Nama Shipper (Otomatis Master Customer)">
             </div>
 
             <div class="field">
-                <label for="customer_ref">Customer Ref</label>
+                <label for="consignee_name">To (Nama Consignee)</label>
+                <input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name', $selectedJob?->consignee_name ?? $selectedJob?->customer?->consignees?->first()?->name) }}" placeholder="Nama Consignee / Penerima">
+            </div>
+
+            <div class="field">
+                <label for="contact_person">Contact Person PIC (Consignee)</label>
+                <input id="contact_person" name="contact_person" maxlength="120" value="{{ old('contact_person', $selectedJob?->customer?->consignees?->first()?->contact_name ?? $selectedJob?->customer?->consignees?->first()?->phone) }}" placeholder="Otomatis dari master consignee">
+                <small class="form-help">Terisi otomatis dari data kontak Master Consignee.</small>
+            </div>
+
+            <div class="field span-2">
+                <label for="consignee_address">Alamat Consignee</label>
+                <input id="consignee_address" name="consignee_address" value="{{ old('consignee_address', $selectedJob?->consignee_address ?? $selectedJob?->customer?->consignees?->first()?->address) }}" placeholder="Alamat lengkap Consignee">
+            </div>
+
+            <div class="field">
+                <label for="customer_ref">Customer Ref (PO / Booking Ref)</label>
                 <input id="customer_ref" name="customer_ref" maxlength="100" value="{{ old('customer_ref') }}" placeholder="Nomor PO / Ref dari Customer">
-            </div>
-
-            <div class="field">
-                <label for="shipper_name">Shipper</label>
-                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $selectedJob?->shipper_name) }}" placeholder="Nama Pengirim Muatan">
             </div>
         </div>
 
@@ -259,8 +281,15 @@ document.getElementById('job_id')?.addEventListener('change', function() {
         if (el && val) el.value = val;
     };
 
-    if (opt.dataset.customerId) setVal('customer_id', opt.dataset.customerId);
+    if (opt.dataset.customerId) {
+        setVal('customer_id', opt.dataset.customerId);
+        // trigger customer change to pull master consignee if needed
+        document.getElementById('customer_id')?.dispatchEvent(new Event('change'));
+    }
     if (opt.dataset.shipper) setVal('shipper_name', opt.dataset.shipper);
+    if (opt.dataset.consignee) setVal('consignee_name', opt.dataset.consignee);
+    if (opt.dataset.consigneeAddress) setVal('consignee_address', opt.dataset.consigneeAddress);
+    if (opt.dataset.consigneeContact) setVal('contact_person', opt.dataset.consigneeContact);
     if (opt.dataset.vessel) setVal('vessel_voyage', opt.dataset.vessel);
     if (opt.dataset.pol) setVal('pol', opt.dataset.pol);
     if (opt.dataset.pod) setVal('pod', opt.dataset.pod);
@@ -271,6 +300,21 @@ document.getElementById('job_id')?.addEventListener('change', function() {
     if (opt.dataset.grossWeight) setVal('gross_weight', opt.dataset.grossWeight);
     if (opt.dataset.volume) setVal('volume', opt.dataset.volume);
     if (opt.dataset.bookingRef) setVal('carrier_booking_no', opt.dataset.bookingRef);
+});
+
+document.getElementById('customer_id')?.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    if (!opt || !opt.value) return;
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
+    };
+
+    if (opt.dataset.name) setVal('shipper_name', opt.dataset.name);
+    if (opt.dataset.consigneeName) setVal('consignee_name', opt.dataset.consigneeName);
+    if (opt.dataset.consigneeAddress) setVal('consignee_address', opt.dataset.consigneeAddress);
+    if (opt.dataset.consigneeContact) setVal('contact_person', opt.dataset.consigneeContact);
 });
 </script>
 

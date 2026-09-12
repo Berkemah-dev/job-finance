@@ -35,6 +35,8 @@ class VendorRequest extends FormRequest
             'bank_account_name' => ['nullable', 'string', 'max:255'],
             'pic' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'categories' => ['nullable', 'array'],
+            'categories.*' => ['string', Rule::in($types)],
             'is_active' => ['boolean'],
             'lock_version' => [$this->isMethod('PUT') ? 'required' : 'nullable', 'integer', 'min:0'],
         ];

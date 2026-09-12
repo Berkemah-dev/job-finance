@@ -110,4 +110,29 @@ class PricingTest extends TestCase
             'effective_date' => '2026-09-18', 'effective_until' => '2026-09-10', 'is_active' => 1,
         ])->assertSessionHasErrors('effective_until');
     }
+
+    public function test_trucking_price_show_renders_matrix_for_20gp_40ft_40hq(): void
+    {
+        $tp20 = TruckingPrice::factory()->create([
+            'port_origin' => 'Jakarta', 'destination' => 'Semarang', 'container_type' => '20gp',
+            'overweight' => false, 'vendor_id' => null, 'currency' => 'IDR', 'price' => '2500000',
+            'selling_price' => '3000000', 'effective_date' => '2026-09-01', 'is_active' => true,
+        ]);
+
+        $tp20Ow = TruckingPrice::factory()->create([
+            'port_origin' => 'Jakarta', 'destination' => 'Semarang', 'container_type' => '20gp',
+            'overweight' => true, 'vendor_id' => null, 'currency' => 'IDR', 'price' => '3200000',
+            'selling_price' => '3800000', 'effective_date' => '2026-09-01', 'is_active' => true,
+        ]);
+
+        $response = $this->get(route('pricing.trucking.show', $tp20));
+        $response->assertOk();
+        $response->assertSee('20 GP / 20 FT Trailer');
+        $response->assertSee('40 FT Trailer');
+        $response->assertSee('40 HQ / 40 HC Trailer');
+        $response->assertSee('Muatan Normal');
+        $response->assertSee('Muatan Overweight');
+        $response->assertSee('3.000.000');
+        $response->assertSee('3.800.000');
+    }
 }

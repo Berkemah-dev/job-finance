@@ -177,6 +177,56 @@ class OperationalDocumentController extends Controller
         return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }
 
+    public function jobSuratJalanPdf(Request $request, Job $job, MasterDataService $master)
+    {
+        $job->load(['customer', 'quotation']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.surat-jalan', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
+        $filename = 'Surat_Jalan_'.$job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Surat Jalan '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function jobTandaTerimaPdf(Request $request, Job $job, MasterDataService $master)
+    {
+        $job->load(['customer', 'quotation']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.tanda-terima', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
+        $filename = 'Tanda_Terima_'.$job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function jobSkDoPdf(Request $request, Job $job, MasterDataService $master)
+    {
+        $job->load(['customer', 'quotation']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.sk-do', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
+        $filename = 'SK_DO_'.$job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK DO '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function jobDnpPdf(Request $request, Job $job, MasterDataService $master)
+    {
+        $job->load(['customer', 'quotation']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.dnp', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
+        $filename = 'DNP_'.$job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF DNP '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
+    public function jobSkPabeanPdf(Request $request, Job $job, MasterDataService $master)
+    {
+        $job->load(['customer', 'quotation']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.sk-pabean', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
+        $filename = 'SK_Pabean_'.$job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK Pabean '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+    }
+
     public function invoicePdf(Request $request, \App\Models\Invoice $invoice, MasterDataService $master)
     {
         $invoice->load(['items', 'job.customer', 'job.quotation']);

@@ -55,15 +55,15 @@
             </div>
         </div>
 
-        {{-- PIHAK TERKAIT --}}
+        {{-- PIHAK TERKAIT (CONSIGNEE & SHIPPER) --}}
         <div class="form-section-heading">
-            <h2>Penerima & Pihak Terkait</h2>
-            <p>Pihak yang menerima konfirmasi booking dan rincian referensi.</p>
+            <h2>Penerima (Consignee) & Pengirim (Shipper)</h2>
+            <p>Untuk dokumen export: Penerima adalah Consignee luar negeri, dan Pengirim (Shipper) mengambil data Master Customer.</p>
         </div>
 
         <div class="form-grid">
             <div class="field">
-                <label for="customer_id">Customer (To:) <span class="required">*</span></label>
+                <label for="customer_id">Master Customer (Shipper) <span class="required">*</span></label>
                 <select id="customer_id" name="customer_id" required>
                     <option value="">Pilih Customer</option>
                     @foreach($customers as $c)
@@ -75,18 +75,28 @@
             </div>
 
             <div class="field">
-                <label for="contact_person">Contact Person (PIC)</label>
-                <input id="contact_person" name="contact_person" maxlength="120" value="{{ old('contact_person', $bc->contact_person) }}" placeholder="Nama PIC Customer">
+                <label for="shipper_name">Nama Shipper</label>
+                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $bc->shipper_name) }}" placeholder="Nama Shipper (Master Customer)">
             </div>
 
             <div class="field">
-                <label for="customer_ref">Customer Ref</label>
+                <label for="consignee_name">To (Nama Consignee)</label>
+                <input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name', $bc->consignee_name) }}" placeholder="Nama Consignee / Penerima">
+            </div>
+
+            <div class="field">
+                <label for="contact_person">Contact Person PIC (Consignee)</label>
+                <input id="contact_person" name="contact_person" maxlength="120" value="{{ old('contact_person', $bc->contact_person) }}" placeholder="Otomatis dari master consignee">
+            </div>
+
+            <div class="field span-2">
+                <label for="consignee_address">Alamat Consignee</label>
+                <input id="consignee_address" name="consignee_address" value="{{ old('consignee_address', $bc->consignee_address) }}" placeholder="Alamat lengkap Consignee">
+            </div>
+
+            <div class="field">
+                <label for="customer_ref">Customer Ref (PO / Booking Ref)</label>
                 <input id="customer_ref" name="customer_ref" maxlength="100" value="{{ old('customer_ref', $bc->customer_ref) }}" placeholder="Nomor PO / Ref dari Customer">
-            </div>
-
-            <div class="field">
-                <label for="shipper_name">Shipper</label>
-                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $bc->shipper_name) }}" placeholder="Nama Pengirim Muatan">
             </div>
         </div>
 

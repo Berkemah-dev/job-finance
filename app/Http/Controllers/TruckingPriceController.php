@@ -38,6 +38,53 @@ class TruckingPriceController extends Controller
         return view('pricing.trucking.index', compact('items', 'vendors'));
     }
 
+    public function show(TruckingPrice $truckingPrice)
+    {
+        $truckingPrice->load('vendor');
+
+        // Fetch all rates for the same route & vendor
+        $routeRates = TruckingPrice::query()
+            ->where('port_origin', $truckingPrice->port_origin)
+            ->where('destination', $truckingPrice->destination)
+            ->where(function ($q) use ($truckingPrice) {
+                if ($truckingPrice->vendor_id) {
+                    $q->where('vendor_id', $truckingPrice->vendor_id);
+                } else {
+                    $q->whereNull('vendor_id');
+                }
+            })
+            ->orderBy('container_type')
+            ->orderBy('overweight')
+            ->get();
+
+        // Helper to find specific rate in the group
+        $getRate = function (array $types, bool $overweight) use ($routeRates) {
+            return $routeRates->first(function ($r) use ($types, $overweight) {
+                return in_array($r->container_type, $types, true) && (bool) $r->overweight === $overweight;
+            });
+        };
+
+        $matrix = [
+            '20gp' => [
+                'label' => '20 GP / 20 FT Trailer',
+                'normal' => $getRate(['20gp', '20ft'], false),
+                'overweight' => $getRate(['20gp', '20ft'], true),
+            ],
+            '40ft' => [
+                'label' => '40 FT Trailer',
+                'normal' => $getRate(['40ft', '40ft_40hq'], false),
+                'overweight' => $getRate(['40ft', '40ft_40hq'], true),
+            ],
+            '40hq' => [
+                'label' => '40 HQ / 40 HC Trailer',
+                'normal' => $getRate(['40hc', '40hq', '40ft_40hq'], false),
+                'overweight' => $getRate(['40hc', '40hq', '40ft_40hq'], true),
+            ],
+        ];
+
+        return view('pricing.trucking.show', compact('truckingPrice', 'routeRates', 'matrix'));
+    }
+
     public function create()
     {
         return view('pricing.trucking.form', ['truckingPrice' => new TruckingPrice, 'vendors' => $this->truckingVendors()]);
