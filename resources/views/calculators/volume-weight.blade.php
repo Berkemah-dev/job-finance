@@ -4,11 +4,11 @@
 <div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Volume Weight &amp; CBM</h1><p>Volume weight memakai divisor 6000 (kargo udara). Berat tagihan = berat kotor terbesar antara berat fisik dan volume weight.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
 <section class="panel form-panel"><form class="data-form calculator-form" id="vw-form">
 <div class="form-grid">
-<div class="field"><label for="qty">Qty</label><input id="qty" type="number" min="1" value="1"></div>
+<div class="field"><label for="qty">Quantity</label><input id="qty" type="number" min="1" value="1"></div>
 <div class="field"><label for="length">Panjang (cm)</label><input id="length" type="number" min="0" step="0.01" value="100"></div>
 <div class="field"><label for="width">Lebar (cm)</label><input id="width" type="number" min="0" step="0.01" value="80"></div>
 <div class="field"><label for="height">Tinggi (cm)</label><input id="height" type="number" min="0" step="0.01" value="60"></div>
-<div class="field"><label for="gross_weight">Berat kotor per paket (kg)</label><input id="gross_weight" type="number" min="0" step="0.01" value="40"></div>
+<div class="field"><label for="gross_weight">Gross Weight (kg)</label><input id="gross_weight" type="number" min="0" step="0.01" value="40"></div>
 </div>
 <div class="form-actions"><button class="button button-primary" type="submit">Hitung</button></div>
 </form>

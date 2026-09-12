@@ -44,11 +44,11 @@
                 <span class="calc-badge-pill">🚢 Kargo Laut</span>
             </div>
             <h3>Estimasi Biaya LCL</h3>
-            <p>Kalkulasi biaya muatan LCL berbasis perbandingan W/M (Volume m³ vs Tonase 1.000 kg) × tarif per m³.</p>
+            <p>Masukkan detail muatan untuk melihat CBM dan basis W/M. Estimasi biaya LCL akan diinformasikan lebih lanjut oleh Finance/Operational.</p>
             <div class="calc-features">
                 <span class="calc-feature-chip">Basis W/M</span>
                 <span class="calc-feature-chip">Multi Paket</span>
-                <span class="calc-feature-chip">Tarif Fleksibel</span>
+                <span class="calc-feature-chip">Info biaya menyusul</span>
             </div>
         </div>
         <div class="calc-cta-row">

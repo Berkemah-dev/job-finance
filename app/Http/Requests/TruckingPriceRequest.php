@@ -26,7 +26,7 @@ class TruckingPriceRequest extends FormRequest
             'port_origin' => ['required', 'string', 'max:120'],
             'destination' => ['required', 'string', 'max:120'],
             'overweight' => ['boolean'],
-            'container_type' => ['required', Rule::in(array_keys(config('operations.container_types')))],
+            'container_type' => ['required', Rule::in(array_keys(config('operations.trucking_container_types')))],
             'vendor_id' => ['required', 'exists:vendors,id'],
             'price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'selling_price' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],

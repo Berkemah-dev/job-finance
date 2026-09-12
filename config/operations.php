@@ -37,7 +37,20 @@ return [
     'customer_documents' => ['mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'extensions' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'max_kb' => 5120],
     // Nilai bawaan kalkulator LCL (boleh kosong; rate ditentukan pemakai bila belum terisi).
     'lcl' => ['default_rate' => null],
-    'container_types' => ['20ft' => '20 FT', '40ft' => '40 FT', '40hc' => '40 HC', 'lcl' => 'LCL'],
+    'container_types' => [
+        '20ft' => '20 FT', '40ft' => '40 FT', '40hc' => '40 HC', 'lcl' => 'LCL',
+        '20gp' => '20GP Trailer', '40ft_40hq' => '40FT / 40HQ Trailer',
+        'pickup' => 'Pickup', 'blindvan' => 'Blindvan', 'cde' => 'CDE', 'cdd' => 'CDD', 'fuso' => 'Fuso',
+    ],
+    'trucking_container_types' => [
+        '20gp' => '20GP Trailer',
+        '40ft_40hq' => '40FT / 40HQ Trailer',
+        'pickup' => 'Pickup',
+        'blindvan' => 'Blindvan',
+        'cde' => 'CDE',
+        'cdd' => 'CDD',
+        'fuso' => 'Fuso',
+    ],
     'currencies' => ['IDR' => 'IDR (Rupiah Indonesia)', 'EUR' => 'EUR (Euro)', 'CNY' => 'CNY (Chinese Yuan)', 'USD' => 'USD (US Dollar)', 'GBP' => 'GBP (Pound Sterling)', 'SGD' => 'SGD (Singapore Dollar)', 'MYR' => 'MYR (Malaysian Ringgit)'],
     'cost_descriptions' => ['Ocean Freight', 'Air Freight', 'Trucking', 'Customs Clearance', 'Documentation', 'Handling', 'Warehouse', 'Delivery', 'Other'],
     'pricing_sources' => ['manual' => 'Manual', 'trucking' => 'Tarif Trucking'],
