@@ -12,12 +12,13 @@ class TpsController extends Controller
     {
         $search = mb_substr($request->string('search')->toString(), 0, 100);
         $mode = (string) $request->input('mode', '');
-        $status = (string) $request->input('status', 'active');
+        $status = (string) $request->input('status', 'all');
 
         $tpsList = Tps::query()
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%')->orWhere('city', 'like', '%'.$search.'%')))
             ->when(in_array($mode, ['air', 'sea'], true), fn ($q) => $q->where('mode', $mode))
-            ->when($status === 'inactive', fn ($q) => $q->where('is_active', false), fn ($q) => $q->where('is_active', true))
+            ->when($status === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->orderBy('mode')
             ->orderBy('city')
             ->orderBy('name')

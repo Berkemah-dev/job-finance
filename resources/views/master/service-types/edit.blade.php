@@ -9,7 +9,7 @@
     <a class="button button-secondary" href="{{ route('service-types.index') }}">Kembali</a>
 </div>
 
-<section class="panel form-panel">
+<section class="panel form-panel" style="max-width: 640px;">
     <form class="data-form" method="POST" action="{{ route('service-types.update', $serviceType) }}">
         @csrf @method('PUT')
         <div class="form-grid">

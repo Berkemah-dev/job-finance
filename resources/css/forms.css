@@ -372,8 +372,8 @@ select:focus,
 }
 .custom-select-dropdown {
     position: absolute;
-    top: calc(100% + 4px) !important;
-    bottom: auto !important;
+    top: calc(100% + 4px);
+    bottom: auto;
     left: 0;
     right: 0;
     z-index: 1000;
@@ -385,6 +385,11 @@ select:focus,
     flex-direction: column;
     overflow: hidden;
     animation: customSelectSlideDown .15s ease-out;
+}
+.custom-select-wrapper.is-drop-up .custom-select-dropdown {
+    top: auto;
+    bottom: calc(100% + 4px);
+    animation: customSelectSlideUp .15s ease-out;
 }
 .filter-bar .custom-select-wrapper {
     flex: 1;
@@ -398,6 +403,10 @@ select:focus,
 }
 @keyframes customSelectSlideDown {
     from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes customSelectSlideUp {
+    from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: translateY(0); }
 }
 .custom-select-search {
@@ -505,10 +514,34 @@ select:focus,
     font-weight: 500;
     margin-bottom: 8px;
 }
-.field input,
+.field input:not([type=checkbox]):not([type=radio]),
 .field select,
 .field textarea {
     width: 100%;
+}
+.checkbox-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.checkbox-field label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    margin: 0 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #1e293b !important;
+}
+.checkbox-field input[type=checkbox] {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    flex: 0 0 auto !important;
+    accent-color: #0f1f3d !important;
 }
 .span-2 {
     grid-column: span 2;

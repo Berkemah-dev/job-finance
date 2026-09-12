@@ -79,6 +79,16 @@ class TpsTest extends TestCase
         $this->get('/tps?search=Beta')->assertOk()->assertSee('TPS-B')->assertDontSee('TPS-A');
     }
 
+    public function test_filter_by_status(): void
+    {
+        Tps::create(['code' => 'TPS-ACT', 'name' => 'Active TPS', 'city' => 'Jakarta', 'mode' => 'sea', 'is_active' => true]);
+        Tps::create(['code' => 'TPS-INA', 'name' => 'Inactive TPS', 'city' => 'Jakarta', 'mode' => 'sea', 'is_active' => false]);
+
+        $this->get('/tps?status=all')->assertOk()->assertSee('TPS-ACT')->assertSee('TPS-INA');
+        $this->get('/tps?status=active')->assertOk()->assertSee('TPS-ACT')->assertDontSee('TPS-INA');
+        $this->get('/tps?status=inactive')->assertOk()->assertSee('TPS-INA')->assertDontSee('TPS-ACT');
+    }
+
     public function test_finance_cannot_access_tps_master(): void
     {
         $this->actingAs($this->finance);

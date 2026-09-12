@@ -13,7 +13,7 @@
     art-subtitle="terintegrasi."
 />
 <section class="panel">
-<form class="filter-bar" method="GET"><input name="search" value="{{ $search }}" placeholder="Cari nama, kode, atau kota" aria-label="Cari TPS"><select name="mode" aria-label="Moda TPS"><option value="">Semua moda</option><option value="air" @selected($mode==='air')>✈ Udara (Air)</option><option value="sea" @selected($mode==='sea')>🚢 Laut (Sea)</option></select><select name="status" aria-label="Status TPS"><option value="active" @selected($status==='active')>Aktif</option><option value="inactive" @selected($status==='inactive')>Nonaktif</option></select><button class="button button-primary">Cari</button><a class="text-link" href="{{ route('tps.index') }}">Reset</a></form>
+<form class="filter-bar" method="GET"><input name="search" value="{{ $search }}" placeholder="Cari nama, kode, atau kota" aria-label="Cari TPS"><select name="mode" aria-label="Moda TPS"><option value="">Semua moda</option><option value="air" @selected($mode==='air')>✈ Udara (Air)</option><option value="sea" @selected($mode==='sea')>🚢 Laut (Sea)</option></select><select name="status" aria-label="Status TPS"><option value="all" @selected($status==='all')>Semua status</option><option value="active" @selected($status==='active')>Aktif</option><option value="inactive" @selected($status==='inactive')>Nonaktif</option></select><button class="button button-primary">Cari</button><a class="text-link" href="{{ route('tps.index') }}">Reset</a></form>
 <div class="table-scroll"><table><thead><tr><th>Kode TPS</th><th>Nama TPS</th><th>Kota</th><th>Moda</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
 @forelse($tpsList as $tps)
 <tr>

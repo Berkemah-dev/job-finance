@@ -89,8 +89,9 @@
                 @endphp
                 @if($destination)
                 @if($label === 'Data Document')
-                <details class="nav-subgroup" {{ request()->routeIs('document-types.index') ? 'open' : '' }}>
+                <details class="nav-subgroup" {{ request()->routeIs('document-types.*') ? 'open' : '' }}>
                     <summary class="nav-item {{ $active ? 'active' : '' }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span><x-icon name="chevron-down" class="nav-group-chevron"/></summary>
+                    <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && !request('service') ? 'active' : '' }}" href="{{ route('document-types.index') }}" title="Semua Dokumen"><x-icon name="grid"/><span>Semua Dokumen</span></a>
                     @foreach(['exp_sea'=>'EXPORT SEA','exp_air'=>'EXPORT AIR','imp_sea'=>'IMPORT SEA','imp_air'=>'IMPORT AIR'] as $documentServiceCode => $documentServiceLabel)
                     <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && request('service') === $documentServiceCode ? 'active' : '' }}" href="{{ route('document-types.index', ['service' => $documentServiceCode]) }}" title="{{ $documentServiceLabel }}"><x-icon name="file"/><span>{{ $documentServiceLabel }}</span></a>
                     @endforeach

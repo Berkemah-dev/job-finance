@@ -18,6 +18,10 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
+        if ($this->role?->name === 'super-admin') {
+            return true;
+        }
+
         return $this->role?->permissions->contains('name', $permission) ?? false;
     }
 

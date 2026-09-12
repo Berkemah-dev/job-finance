@@ -45,12 +45,17 @@ export function initCustomSelects() {
         trigger.appendChild(arrow);
         wrapper.appendChild(trigger);
 
-        // Create dropdown menu (always positioned downwards)
+        const showSearch = allowCustomValue || select.options.length > 5;
+
+        // Create dropdown menu
         const dropdown = document.createElement('div');
         dropdown.className = 'custom-select-dropdown';
 
         const searchContainer = document.createElement('div');
         searchContainer.className = 'custom-select-search';
+        if (!showSearch) {
+            searchContainer.style.display = 'none';
+        }
 
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
@@ -138,9 +143,22 @@ export function initCustomSelects() {
             document.querySelectorAll('.custom-select-wrapper.is-open').forEach((other) => {
                 if (other !== wrapper) {
                     other.classList.remove('is-open');
+                    other.classList.remove('is-drop-up');
                     other.querySelector('.custom-select-trigger')?.setAttribute('aria-expanded', 'false');
                 }
             });
+
+            // Calculate drop-up if space below is limited
+            const rect = wrapper.getBoundingClientRect();
+            const estHeight = showSearch ? Math.min(260, 48 + select.options.length * 36) : Math.min(220, select.options.length * 36 + 10);
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            if (spaceBelow < estHeight && spaceAbove > estHeight) {
+                wrapper.classList.add('is-drop-up');
+            } else {
+                wrapper.classList.remove('is-drop-up');
+            }
 
             wrapper.classList.add('is-open');
             trigger.setAttribute('aria-expanded', 'true');
@@ -157,9 +175,11 @@ export function initCustomSelects() {
                 filterBar.style.zIndex = '50';
             }
 
-            searchInput.value = '';
-            filterOptions('');
-            setTimeout(() => searchInput.focus(), 50);
+            if (showSearch) {
+                searchInput.value = '';
+                filterOptions('');
+                setTimeout(() => searchInput.focus(), 50);
+            }
 
             // Scroll selected option into view
             const selectedEl = optionsContainer.querySelector('.custom-select-option.is-selected');
@@ -170,6 +190,7 @@ export function initCustomSelects() {
 
         const closeDropdown = () => {
             wrapper.classList.remove('is-open');
+            wrapper.classList.remove('is-drop-up');
             trigger.setAttribute('aria-expanded', 'false');
 
             const panel = wrapper.closest('.panel');
@@ -261,11 +282,45 @@ export function initCustomSelects() {
         });
 
         trigger.addEventListener('keydown', (e) => {
-            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                 e.preventDefault();
-                openDropdown();
-                searchInput.value = e.key;
-                filterOptions(searchInput.value);
+                if (!wrapper.classList.contains('is-open')) {
+                    openDropdown();
+                    return;
+                }
+                const visibleOptions = Array.from(optionsContainer.querySelectorAll('.custom-select-option:not([style*="display: none"])'));
+                if (!visibleOptions.length) return;
+                const currentIndex = visibleOptions.findIndex(el => el.classList.contains('is-selected'));
+                let nextIndex = 0;
+                if (e.key === 'ArrowDown') {
+                    nextIndex = currentIndex < visibleOptions.length - 1 ? currentIndex + 1 : 0;
+                } else {
+                    nextIndex = currentIndex > 0 ? currentIndex - 1 : visibleOptions.length - 1;
+                }
+                const targetOpt = visibleOptions[nextIndex];
+                if (targetOpt) {
+                    select.value = targetOpt.dataset.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    updateDisplay();
+                    targetOpt.scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                if (!showSearch || !wrapper.classList.contains('is-open')) {
+                    e.preventDefault();
+                    toggleDropdown();
+                }
+            } else if (e.key === 'Escape') {
+                if (wrapper.classList.contains('is-open')) {
+                    e.preventDefault();
+                    closeDropdown();
+                }
+            } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (showSearch) {
+                    e.preventDefault();
+                    openDropdown();
+                    searchInput.value = e.key;
+                    filterOptions(searchInput.value);
+                }
             }
         });
 
