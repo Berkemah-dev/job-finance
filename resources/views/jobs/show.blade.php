@@ -127,7 +127,7 @@
 @php
     $checklist = $job->shipment_checklist_summary;
 @endphp
-@if(!empty($checklist['items']))
+{{-- @if(!empty($checklist['items']))
     <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -161,7 +161,7 @@
             @endforeach
         </div>
     </div>
-@endif
+@endif --}}
 
 {{-- ========================================================================= --}}
 {{-- TAB 1: DATA PENGAPALAN                                                    --}}
