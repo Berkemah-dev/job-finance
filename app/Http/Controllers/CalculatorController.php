@@ -63,9 +63,20 @@ class CalculatorController extends Controller
     {
         $data = $request->validate([
             'base_amount' => ['required', 'numeric', 'min:0', 'max:9999999999999999.99'],
-            'rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'import_duty_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'vat_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'withholding_mode' => ['required', 'in:api,non_api,manual'],
+            'withholding_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
-        return response()->json($this->calc->tax($data['base_amount'], $data['rate']));
+        $base = (float) $data['base_amount'];
+        $importDuty = round($base * ((float) $data['import_duty_rate'] / 100), 2);
+        $taxBase = $base + $importDuty;
+        $vat = round($taxBase * ((float) $data['vat_rate'] / 100), 2);
+        $withholdingRate = match ($data['withholding_mode']) {
+            'api' => 2.5, 'non_api' => 7, default => (float) ($data['withholding_rate'] ?? 0),
+        };
+        $withholding = round($taxBase * ($withholdingRate / 100), 2);
+        return response()->json(['base' => $base, 'import_duty' => $importDuty, 'tax_base' => $taxBase, 'vat' => $vat, 'vat_rate' => (float) $data['vat_rate'], 'withholding' => $withholding, 'withholding_rate' => $withholdingRate, 'total_tax' => round($importDuty + $vat + $withholding, 2), 'total' => round($base + $importDuty + $vat + $withholding, 2)]);
     }
 }

@@ -18,7 +18,7 @@
 <section class="panel" style="margin-bottom: 20px;">
     <div class="panel-heading"><h2>📄 Document Details</h2><span class="subtle">Informasi pencetakan dokumen operasional & pabean</span></div>
     <dl class="detail-grid">
-        <div><dt>Nama Dokumen Customer</dt><dd><strong>{{ $customer->name }}</strong></dd></div>
+        <div><dt>Nama Customer</dt><dd><strong>{{ $customer->name }}</strong></dd></div>
         <div><dt>Nama Pemberi Kuasa (DNP/SK)</dt><dd>{{ $customer->authorizer_name ?? '—' }}</dd></div>
         <div><dt>Jabatan Pemberi Kuasa (DNP/SK)</dt><dd>{{ $customer->authorizer_title ?? '—' }}</dd></div>
         <div class="span-2"><dt>Alamat Resmi Perusahaan (BL/AWB/SI/Booking/SK/DNP)</dt><dd>{{ $customer->address ?? '—' }}</dd></div>

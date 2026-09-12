@@ -79,10 +79,7 @@ class TruckingPriceController extends Controller
     private function truckingVendors()
     {
         return Vendor::query()
-            ->where(function ($q) {
-                $q->where('type', 'trucking')
-                  ->orWhereHas('categories', fn ($c) => $c->where('category', 'trucking'));
-            })
+            ->where('type', 'trucking')
             ->orderBy('name')
             ->get();
     }

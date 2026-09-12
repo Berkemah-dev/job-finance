@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title','Kalkulator Estimasi Biaya LCL')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1><p>Tabungan beberapa jenis kargo yang berbeda dimensi. Biaya = basis W/M (maksimum total m³ atau tonase 1.000 kg) × tarif per m³.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
-<section class="panel form-panel"><form class="data-form calculator-form" id="lcl-form">
+<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1><p>Hitung estimasi awal berdasarkan basis W/M. Nilai akhir dan tarif LCL akan diinformasikan lebih lanjut oleh tim Finance/Operational.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
+<section class="panel form-panel"><div class="info-note">Hasil kalkulator ini hanya estimasi. Biaya LCL final mengikuti tarif vendor, rute, dan konfirmasi operasional.</div><form class="data-form calculator-form" id="lcl-form">
 <div class="form-grid">
 <div class="field span-2"><label for="rate_per_cbm">Tarif per m³ (IDR)</label><input id="rate_per_cbm" type="text" inputmode="decimal" placeholder="Kosongkan pakai default {{ number_format((float) config('operations.lcl.default_rate'), 0, ',', '.') }}"></div>
 </div>

@@ -27,12 +27,11 @@ class TruckingPriceRequest extends FormRequest
             'destination' => ['required', 'string', 'max:120'],
             'overweight' => ['boolean'],
             'container_type' => ['required', Rule::in(array_keys(config('operations.container_types')))],
-            'vendor_id' => ['nullable', 'exists:vendors,id'],
+            'vendor_id' => ['required', 'exists:vendors,id'],
             'price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'selling_price' => ['nullable', 'numeric', 'min:0', 'max:999999999999.99'],
             'currency' => ['required', Rule::in(array_keys(config('operations.currencies')))],
             'effective_date' => ['required', 'date'],
-            'effective_until' => ['nullable', 'date', 'after_or_equal:effective_date'],
             'is_active' => ['boolean'],
             'lock_version' => [$this->isMethod('PUT') ? 'required' : 'nullable', 'integer', 'min:0'],
         ];
@@ -40,7 +39,12 @@ class TruckingPriceRequest extends FormRequest
 
     public function withValidator(Validator $validator): void
     {
-        $validator->after(fn () => $this->assertNoOverlap($validator));
+        $validator->after(function () use ($validator) {
+            if ($this->filled('vendor_id') && ! \App\Models\Vendor::whereKey($this->input('vendor_id'))->where('type', 'trucking')->exists()) {
+                $validator->errors()->add('vendor_id', 'Vendor harus berasal dari kategori Vendor Trucking.');
+            }
+            $this->assertNoOverlap($validator);
+        });
     }
 
     /**
@@ -54,7 +58,6 @@ class TruckingPriceRequest extends FormRequest
             return;
         }
         $start = $data['effective_date'];
-        $end = $data['effective_until'] ?? null;
         $query = TruckingPrice::query()
             ->where('is_active', true)
             ->where('port_origin', $data['port_origin'])
@@ -63,9 +66,6 @@ class TruckingPriceRequest extends FormRequest
             ->where('overweight', filter_var($data['overweight'], FILTER_VALIDATE_BOOL))
             ->where(fn ($q) => $q->whereNull('vendor_id')->orWhere('vendor_id', $data['vendor_id'] ?? null))
             ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', $start));
-        if ($end !== null) {
-            $query->where('effective_date', '<=', $end);
-        }
         if ($this->route('truckingPrice')) {
             $query->whereKeyNot((int) $this->route('truckingPrice')->id);
         }
@@ -76,6 +76,6 @@ class TruckingPriceRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['port_origin' => 'pelabuhan asal', 'destination' => 'tujuan', 'overweight' => 'overweight', 'container_type' => 'tipe kontainer', 'price' => 'harga', 'currency' => 'mata uang', 'effective_date' => 'tanggal berlaku', 'effective_until' => 'berlaku sampai', 'is_active' => 'status aktif', 'lock_version' => 'versi data'];
+        return ['port_origin' => 'pelabuhan asal', 'destination' => 'tujuan', 'overweight' => 'overweight', 'container_type' => 'tipe kontainer', 'vendor_id' => 'vendor trucking', 'price' => 'modal', 'selling_price' => 'harga jual', 'currency' => 'mata uang', 'effective_date' => 'tanggal berlaku', 'is_active' => 'status aktif', 'lock_version' => 'versi data'];
     }
 }

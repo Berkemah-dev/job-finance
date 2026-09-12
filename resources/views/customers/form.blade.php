@@ -43,7 +43,7 @@
     </div>
     <div class="form-grid" style="padding: 24px;">
         <div class="field span-2">
-            <label for="doc_customer_name">Nama Customer</label>
+            <label for="doc_customer_name">Nama Customer (Sesuai inputan di atas)</label>
             <input id="doc_customer_name" type="text" value="{{ old('name',$customer->name) }}" placeholder="Otomatis mengikuti nama customer di atas" readonly style="background: #f8fafc; color: #475569; font-weight: 600;">
             <small class="form-help">Sesuai nama customer yang diinput di atas.</small>
         </div>

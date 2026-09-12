@@ -23,7 +23,7 @@ class CustomerRequest extends FormRequest
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40', 'regex:/^[0-9+\-\s()]+$/'],
-            'address' => ['nullable', 'string', 'max:2000'],
+            'address' => ['required', 'string', 'max:2000'],
             'authorizer_name' => ['nullable', 'string', 'max:255'],
             'authorizer_title' => ['nullable', 'string', 'max:255'],
             'tax_number' => ['nullable', 'string', 'max:40', 'regex:/^[0-9]{15,16}$/'],
@@ -49,7 +49,7 @@ class CustomerRequest extends FormRequest
         return [
             'name' => 'nama customer',
             'contact_name' => 'nama kontak',
-            'address' => 'alamat',
+            'address' => 'alamat perusahaan',
             'authorizer_name' => 'nama pemberi kuasa',
             'authorizer_title' => 'jabatan pemberi kuasa',
             'tax_number' => 'NPWP',

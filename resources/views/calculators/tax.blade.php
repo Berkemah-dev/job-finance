@@ -1,40 +1,10 @@
 @extends('layouts.app')
 @section('title','Kalkulator Pajak')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Hitung Pajak</h1><p>Hitung nominal pajak (PPN, PPh, dsb.) dari nilai dasar dan persentase.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
-<section class="panel form-panel"><form class="data-form calculator-form" id="tax-form">
-<div class="form-grid">
-<div class="field"><label for="base_amount">Nilai dasar (IDR)</label><input id="base_amount" type="text" inputmode="decimal" value="10000000"></div>
-<div class="field"><label for="rate">Persentase (%)</label><input id="rate" type="number" min="0" max="100" step="0.01" value="11"></div>
-</div>
-<div class="form-actions"><button class="button button-primary" type="submit">Hitung pajak</button></div>
-</form>
-<div class="cost-summary-body" id="tax-result" hidden><div class="stats-grid">
-<div class="stat-card"><p>Nilai dasar</p><strong id="r-base">—</strong></div>
-<div class="stat-card"><p>Pajak</p><strong id="r-tax">—</strong></div>
-<div class="stat-card"><p>Total termasuk pajak</p><strong id="r-total">—</strong></div>
-</div></div></section>
+<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Hitung Pajak Impor</h1><p>Hitung Bea Masuk, PPN 11%/12%, dan PPh API, Non-API, atau tarif manual.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
+<section class="panel form-panel"><form class="data-form calculator-form" id="tax-form"><div class="form-grid"><div class="field span-2"><label for="base_amount">Nilai dasar / CIF (IDR)</label><input id="base_amount" type="text" inputmode="decimal" value="10000000" required></div><div class="field"><label for="import_duty_rate">Bea Masuk (%)</label><input id="import_duty_rate" type="number" min="0" max="100" step="0.01" value="0" required></div><div class="field"><label for="vat_rate">PPN</label><select id="vat_rate"><option value="11">PPN 11%</option><option value="12">PPN 12%</option></select></div><div class="field"><label for="withholding_mode">PPh</label><select id="withholding_mode"><option value="api">API · 2,5%</option><option value="non_api">Non-API · 7%</option><option value="manual">Manual</option></select></div><div class="field" id="manual-rate-field" hidden><label for="withholding_rate">Tarif PPh manual (%)</label><input id="withholding_rate" type="number" min="0" max="100" step="0.01" value="0"></div></div><div class="form-actions"><button class="button button-primary" type="submit">Hitung pajak</button></div></form>
+<div class="cost-summary-body" id="tax-result" hidden><div class="stats-grid"><div class="stat-card"><p>Bea Masuk</p><strong id="r-import-duty">—</strong></div><div class="stat-card"><p>PPN</p><strong id="r-vat">—</strong></div><div class="stat-card"><p>PPh</p><strong id="r-withholding">—</strong></div><div class="stat-card"><p>Total pajak</p><strong id="r-total-tax">—</strong></div><div class="stat-card"><p>Total setelah pajak</p><strong id="r-total">—</strong></div></div></div></section>
 <script>
-(function(){
-    const form = document.getElementById('tax-form');
-    const result = document.getElementById('tax-result');
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const params = new URLSearchParams({
-            base_amount: document.getElementById('base_amount').value,
-            rate: document.getElementById('rate').value,
-        });
-        fetch('/api/calculators/tax?'+params, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.json().then(d => ({ ok: r.ok, d })))
-            .then(({ ok, d }) => {
-                result.hidden = !ok;
-                if (!ok) { alert('Periksa kembali input.'); return; }
-                const idr = new Intl.NumberFormat('id-ID');
-                document.getElementById('r-base').textContent = 'Rp ' + idr.format(d.base);
-                document.getElementById('r-tax').textContent = 'Rp ' + idr.format(d.tax) + ' (' + d.rate.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '%)';
-                document.getElementById('r-total').textContent = 'Rp ' + idr.format(d.total);
-            });
-    });
-})();
+(function(){const form=document.getElementById('tax-form'),result=document.getElementById('tax-result'),mode=document.getElementById('withholding_mode'),manual=document.getElementById('manual-rate-field');mode.addEventListener('change',()=>manual.hidden=mode.value!=='manual');form.addEventListener('submit',e=>{e.preventDefault();const p=new URLSearchParams({base_amount:document.getElementById('base_amount').value,import_duty_rate:document.getElementById('import_duty_rate').value,vat_rate:document.getElementById('vat_rate').value,withholding_mode:mode.value,withholding_rate:document.getElementById('withholding_rate').value});fetch('/api/calculators/tax?'+p,{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.json().then(d=>({ok:r.ok,d}))).then(({ok,d})=>{result.hidden=!ok;if(!ok){alert('Periksa kembali input.');return}const idr=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:2});document.getElementById('r-import-duty').textContent=idr.format(d.import_duty);document.getElementById('r-vat').textContent=idr.format(d.vat)+' ('+d.vat_rate+'%)';document.getElementById('r-withholding').textContent=idr.format(d.withholding)+' ('+d.withholding_rate+'%)';document.getElementById('r-total-tax').textContent=idr.format(d.total_tax);document.getElementById('r-total').textContent=idr.format(d.total)})})})();
 </script>
 @endsection
