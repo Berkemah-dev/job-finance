@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Models\ServiceType;
+use App\Models\ContainerUnit;
 
 class JobRequest extends FormRequest
 {
@@ -31,7 +32,7 @@ class JobRequest extends FormRequest
             'nopen' => ['nullable', 'string', 'max:60'], 'npe_number' => ['nullable', 'string', 'max:60'],
             'package_count' => ['nullable', 'integer', 'min:0', 'max:999999'],
             'gross_weight' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'], 'volume' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
-            'container_type' => ['nullable', Rule::in(array_keys(config('operations.container_types')))],
+            'container_type' => ['nullable', Rule::in(array_keys(ContainerUnit::options()))],
             'sales_id' => ['nullable', 'integer', 'exists:users,id'], 'cs_id' => ['nullable', 'integer', 'exists:users,id'],
             'cargo_description' => ['nullable', 'string', 'max:2000'], 'operational_notes' => ['nullable', 'string', 'max:5000']];
     }

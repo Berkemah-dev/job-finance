@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\PricingService;
+use App\Models\ContainerUnit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +19,7 @@ class PricingSuggestionController extends Controller
         $data = $request->validate([
             'port_origin' => ['required', 'string', 'max:120'],
             'destination' => ['required', 'string', 'max:120'],
-            'container_type' => ['required', 'string', Rule::in(array_keys(config('operations.trucking_container_types', [])))],
+            'container_type' => ['required', 'string', Rule::in(array_keys(ContainerUnit::options()))],
             'overweight' => ['nullable', 'boolean'],
             'vendor_id' => ['nullable', 'integer', 'min:1'],
             'date' => ['nullable', 'date'],

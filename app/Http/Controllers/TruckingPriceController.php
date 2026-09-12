@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\TruckingPriceRequest;
 use App\Http\Requests\VersionRequest;
 use App\Models\TruckingPrice;
+use App\Models\ContainerUnit;
 use App\Models\Vendor;
 use App\Services\PricingService;
 use Illuminate\Http\Request;
@@ -35,7 +36,9 @@ class TruckingPriceController extends Controller
         $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(10)->withQueryString();
         $vendors = $this->truckingVendors();
 
-        return view('pricing.trucking.index', compact('items', 'vendors'));
+        $containerUnits = ContainerUnit::options();
+
+        return view('pricing.trucking.index', compact('items', 'vendors', 'containerUnits'));
     }
 
     public function show(TruckingPrice $truckingPrice)
@@ -87,7 +90,7 @@ class TruckingPriceController extends Controller
 
     public function create()
     {
-        return view('pricing.trucking.form', ['truckingPrice' => new TruckingPrice, 'vendors' => $this->truckingVendors()]);
+        return view('pricing.trucking.form', ['truckingPrice' => new TruckingPrice, 'vendors' => $this->truckingVendors(), 'containerUnits' => ContainerUnit::options()]);
     }
 
     public function store(TruckingPriceRequest $request, PricingService $service)
@@ -99,7 +102,7 @@ class TruckingPriceController extends Controller
 
     public function edit(TruckingPrice $truckingPrice)
     {
-        return view('pricing.trucking.form', ['truckingPrice' => $truckingPrice, 'vendors' => $this->truckingVendors()]);
+        return view('pricing.trucking.form', ['truckingPrice' => $truckingPrice, 'vendors' => $this->truckingVendors(), 'containerUnits' => ContainerUnit::options()]);
     }
 
     public function update(TruckingPriceRequest $request, TruckingPrice $truckingPrice, PricingService $service)

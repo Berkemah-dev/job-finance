@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\QuotationStatus;
 use App\Models\Customer;
 use App\Models\Job;
+use App\Models\ContainerUnit;
 use App\Models\Quotation;
 use App\Models\TruckingPrice;
 use App\Models\User;
@@ -275,7 +276,7 @@ class QuotationService
         $containerType = isset($row['container_type']) && $row['container_type'] !== ''
             ? (string) $row['container_type']
             : null;
-        if ($containerType !== null && ! in_array($containerType, array_keys(config('operations.container_types')), true)) {
+        if ($containerType !== null && ! in_array($containerType, array_keys(ContainerUnit::options()), true)) {
             throw ValidationException::withMessages(['items.'.$index.'.container_type' => 'Jenis kontainer tidak valid.']);
         }
         $row['currency'] = $currency;

@@ -7,6 +7,7 @@ use App\Http\Requests\ShipmentStatusRequest;
 use App\Http\Requests\VersionRequest;
 use App\Models\Job;
 use App\Models\ServiceType;
+use App\Models\ContainerUnit;
 use App\Models\User;
 use App\Services\JobCostService;
 use App\Services\JobService;
@@ -68,7 +69,7 @@ class JobController extends Controller
     {
         Gate::authorize('update', $job);
 
-        return view('jobs.form', ['job' => $job->load(['sales', 'cs']), 'serviceTypes' => ServiceType::options(), 'assignees' => User::whereHas('role', function ($q) {
+        return view('jobs.form', ['job' => $job->load(['sales', 'cs']), 'serviceTypes' => ServiceType::options(), 'containerUnits' => ContainerUnit::options(), 'assignees' => User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager', 'customer-service']);
         })->orderBy('name')->get(['id', 'name'])]);
     }

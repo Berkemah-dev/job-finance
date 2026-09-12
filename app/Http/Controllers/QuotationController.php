@@ -52,6 +52,7 @@ class QuotationController extends Controller
             'sales' => $this->salesUsers(),
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
+            'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
         ]);
@@ -100,6 +101,7 @@ class QuotationController extends Controller
             'sales' => $this->salesUsers(),
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
+            'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
         ]);

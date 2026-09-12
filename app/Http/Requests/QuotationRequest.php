@@ -7,6 +7,7 @@ use App\Models\Quotation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Models\ServiceType;
+use App\Models\ContainerUnit;
 
 class QuotationRequest extends FormRequest
 {
@@ -46,7 +47,7 @@ class QuotationRequest extends FormRequest
             'items.*.unit_cost' => $money, 'items.*.unit_price' => $money,
             'items.*.currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
             'items.*.exchange_rate' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
-            'items.*.container_type' => ['nullable', 'string', Rule::in(array_keys(config('operations.container_types')))],
+            'items.*.container_type' => ['nullable', 'string', Rule::in(array_keys(ContainerUnit::options()))],
             'items.*.overweight' => ['nullable', 'boolean'],
             'items.*.gross_weight' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'items.*.volume' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],

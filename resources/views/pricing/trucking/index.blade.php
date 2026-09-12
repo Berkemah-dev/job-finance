@@ -46,7 +46,7 @@
     <tr>
         <td>
             <strong>{{ $item->port_origin }}</strong> → {{ $item->destination }}
-            <br><small class="muted-cell">{{ config('operations.container_types.'.$item->container_type, $item->container_type) }} · {{ $item->overweight ? 'Overweight' : 'Normal' }}</small>
+            <br><small class="muted-cell">{{ \App\Models\ContainerUnit::label($item->container_type) }} · {{ $item->overweight ? 'Overweight' : 'Normal' }}</small>
         </td>
         <td>{{ $item->vendor?->name ?? '—' }}</td>
         <td>

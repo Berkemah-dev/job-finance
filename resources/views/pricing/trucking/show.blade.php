@@ -147,7 +147,7 @@
                 @foreach($routeRates as $item)
                     <tr>
                         <td>
-                            <span class="badge-pill">{{ config('operations.container_types.'.$item->container_type, strtoupper($item->container_type)) }}</span>
+                            <span class="badge-pill">{{ \App\Models\ContainerUnit::label($item->container_type) }}</span>
                         </td>
                         <td>
                             <span class="status-badge {{ $item->overweight ? 'status-submitted' : '' }}">
