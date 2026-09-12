@@ -122,6 +122,48 @@
 </nav>
 
 {{-- ========================================================================= --}}
+{{-- STATUS SHIPMENT & CHECKLIST DOKUMEN WIDGET                                --}}
+{{-- ========================================================================= --}}
+@php
+    $checklist = $job->shipment_checklist_summary;
+@endphp
+@if(!empty($checklist['items']))
+    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #e0f2fe; color: #0284c7; font-size: 14px; font-weight: 700;">✓</span>
+                <strong style="font-size: 14.5px; color: #0f172a;">Status Shipment & Checklist Dokumen</strong>
+                <span style="font-size: 12.5px; color: #64748b;">({{ $checklist['title'] }})</span>
+            </div>
+            <div>
+                @if($checklist['is_all_completed'])
+                    <span class="status-badge" style="background: #dcfce7; color: #166534; font-weight: 700; border: 1px solid #86efac;">
+                        ✓ {{ $checklist['status_summary'] }}
+                    </span>
+                @else
+                    <span class="status-badge" style="background: #f1f5f9; color: #475569; font-weight: 600;">
+                        {{ $checklist['status_summary'] }}
+                    </span>
+                @endif
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            @foreach($checklist['items'] as $item)
+                <div style="padding: 10px 14px; border-radius: 8px; border: 1px solid {{ $item['completed'] ? '#bbf7d0' : ($item['active'] ?? false ? '#fca5a5' : '#e2e8f0') }}; background: {{ $item['completed'] ? '#f0fdf4' : ($item['active'] ?? false ? '#fef2f2' : '#f8fafc') }}; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">{{ $item['label'] }}</div>
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">{{ $item['sublabel'] }}</div>
+                    </div>
+                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $item['badge_bg'] }}; color: {{ $item['badge_color'] }};">
+                        {{ $item['badge_text'] }}
+                    </span>
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
+
+{{-- ========================================================================= --}}
 {{-- TAB 1: DATA PENGAPALAN                                                    --}}
 {{-- ========================================================================= --}}
 <div id="tab-shipping" class="job-tab-content">

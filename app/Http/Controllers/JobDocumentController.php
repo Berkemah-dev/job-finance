@@ -42,7 +42,59 @@ class JobDocumentController extends Controller
 
         $this->syncCustomsDataFromUpload($request, $job);
 
-        return back()->with('success', 'Dokumen berhasil diupload.');
+        $job->load(['documents.documentType']);
+        $docType = DocumentType::find($request->document_type_id);
+        $docCode = strtoupper((string) ($docType?->code ?? ''));
+        $docName = strtoupper((string) ($docType?->name ?? ''));
+        $kind = (string) $request->input('customs_document_kind', '');
+
+        $service = (string) ($job->service_type ?? '');
+        $isExportSea = in_array($service, ['exp_sea', 'sea'], true);
+        $isExportAir = in_array($service, ['exp_air', 'air'], true);
+        $isImportSea = $service === 'imp_sea';
+        $isImportAir = $service === 'imp_air';
+
+        $notification = 'Dokumen berhasil diupload.';
+
+        if ($isExportSea) {
+            $isBl = str_contains($docCode, 'HBL') || str_contains($docCode, 'MBL') || str_contains($docName, 'BL') || str_contains($docName, 'BILL OF LADING');
+            $isNpe = $kind === 'npe' || str_contains($docCode, 'NPE') || str_contains($docName, 'NPE') || $request->filled('npe_number');
+
+            if ($job->hasBlDocument() && $job->hasNpeDocument()) {
+                $notification = 'Dokumen berhasil diupload. Notifikasi: BL Checklist & Customs Checklist Lengkap!';
+            } elseif ($isBl) {
+                $notification = 'Dokumen BL berhasil diupload. Notifikasi: BL Checklist terverifikasi.';
+            } elseif ($isNpe) {
+                $notification = 'Dokumen NPE berhasil diupload. Notifikasi: Customs Checklist terverifikasi (NPE Terbit).';
+            }
+        } elseif ($isExportAir) {
+            $isAwb = str_contains($docCode, 'HAWB') || str_contains($docCode, 'MAWB') || str_contains($docName, 'AWB') || str_contains($docName, 'AIR WAYBILL');
+            $isNpe = $kind === 'npe' || str_contains($docCode, 'NPE') || str_contains($docName, 'NPE') || str_contains($docCode, 'PEBNPE') || $request->filled('npe_number');
+
+            if ($job->hasAwbDocument() && $job->hasNpeDocument()) {
+                $notification = 'Dokumen berhasil diupload. Notifikasi: AWB Checklist & Customs Checklist Lengkap!';
+            } elseif ($isAwb) {
+                $notification = 'Dokumen AWB berhasil diupload. Notifikasi: AWB Checklist terverifikasi.';
+            } elseif ($isNpe) {
+                $notification = 'Dokumen NPE berhasil diupload. Notifikasi: Customs Checklist terverifikasi (NPE Terbit).';
+            }
+        } elseif ($isImportSea) {
+            if ($kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB')) {
+                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Terbit (Jalur Hijau) - Proses Kepabeanan Selesai.';
+            } elseif ($kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM')) {
+                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection (Jalur Merah - Pemeriksaan Fisik).';
+            } elseif (str_contains($docCode, 'DO') || str_contains($docName, 'DO') || str_contains($docName, 'DELIVERY ORDER')) {
+                $notification = 'Dokumen DO berhasil diupload. Notifikasi: DO Checklist terverifikasi.';
+            }
+        } elseif ($isImportAir) {
+            if ($kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB')) {
+                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Terbit (Jalur Hijau) - Proses Kepabeanan Selesai.';
+            } elseif ($kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM')) {
+                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection (Jalur Merah - Pemeriksaan Fisik).';
+            }
+        }
+
+        return back()->with('success', $notification);
     }
 
     private function syncCustomsDataFromUpload(Request $request, Job $job): void

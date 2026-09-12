@@ -98,6 +98,18 @@
             @if($job->shipment_status)
                 <br><small style="margin-top:4px; display:inline-block;"><span class="status-badge status-{{ $job->shipment_status }}">{{ config('operations.shipment_statuses.'.$job->shipment_status) }}</span></small>
             @endif
+            @php
+                $summary = $job->shipment_checklist_summary;
+            @endphp
+            @if(!empty($summary['items']))
+                <div style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px;">
+                    @foreach($summary['items'] as $item)
+                        <span style="font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: {{ $item['badge_bg'] }}; color: {{ $item['badge_color'] }};">
+                            {{ $item['badge_text'] }}
+                        </span>
+                    @endforeach
+                </div>
+            @endif
         </td>
         <td>
             <div class="table-actions">
