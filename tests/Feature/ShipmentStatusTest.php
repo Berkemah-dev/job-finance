@@ -226,7 +226,7 @@ class ShipmentStatusTest extends TestCase
             'document_type_id' => $docType->id,
             'customs_document_kind' => 'spjm',
             'file' => UploadedFile::fake()->create('spjm_jalur_merah.pdf', 200, 'application/pdf'),
-        ])->assertSessionHas('success', 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection (Jalur Merah - Pemeriksaan Fisik).');
+        ])->assertSessionHas('success', 'Dokumen SPJM berhasil diupload. 🔴 Jalur Merah — Barang perlu pemeriksaan fisik (Behandle).');
 
         $job->refresh();
         $this->assertSame('spjm', $job->shipment_status);
@@ -234,16 +234,15 @@ class ShipmentStatusTest extends TestCase
 
         $this->get('/jobs/'.$job->id)
             ->assertOk()
-            ->assertSee('DO Checklist')
-            ->assertSee('SPJM dalam inspection')
-            ->assertSee('STATUS: JALUR MERAH (SPJM DITERBITKAN)');
+            ->assertSee('SPJM Diterima')
+            ->assertSee('SPJM (Jalur Merah)');
 
         // 3. Upload SPPB
         $this->post('/jobs/'.$job->id.'/documents', [
             'document_type_id' => $docType->id,
             'customs_document_kind' => 'sppb',
             'file' => UploadedFile::fake()->create('sppb_jalur_hijau.pdf', 200, 'application/pdf'),
-        ])->assertSessionHas('success', 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Terbit (Jalur Hijau) - Proses Kepabeanan Selesai.');
+        ])->assertSessionHas('success', 'Dokumen SPPB berhasil diupload. 🟢 SPPB Terbit — Proses Kepabeanan Selesai (Jalur Hijau).');
 
         $job->refresh();
         $this->assertSame('sppb', $job->shipment_status);
@@ -252,8 +251,8 @@ class ShipmentStatusTest extends TestCase
 
         $this->get('/jobs/'.$job->id)
             ->assertOk()
-            ->assertSee('SPPB Terbit (Selesai)')
-            ->assertSee('STATUS: JALUR HIJAU (SPPB TERBIT)');
+            ->assertSee('SPPB Terbit')
+            ->assertSee('SPPB TERBIT');
     }
 
     public function test_import_air_spjm_and_sppb_flow_notifications(): void
@@ -270,7 +269,7 @@ class ShipmentStatusTest extends TestCase
             'document_type_id' => $docType->id,
             'customs_document_kind' => 'spjm',
             'file' => UploadedFile::fake()->create('spjm_air.pdf', 200, 'application/pdf'),
-        ])->assertSessionHas('success', 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection (Jalur Merah - Pemeriksaan Fisik).');
+        ])->assertSessionHas('success', 'Dokumen SPJM berhasil diupload. 🔴 Jalur Merah — Barang perlu pemeriksaan fisik (Behandle).');
 
         $job->refresh();
         $this->assertSame('spjm', $job->shipment_status);
@@ -278,15 +277,15 @@ class ShipmentStatusTest extends TestCase
 
         $this->get('/jobs/'.$job->id)
             ->assertOk()
-            ->assertSee('SPJM dalam inspection')
-            ->assertSee('STATUS: JALUR MERAH (SPJM DITERBITKAN)');
+            ->assertSee('SPJM Diterima')
+            ->assertSee('SPJM (Jalur Merah)');
 
         // 2. Upload SPPB
         $this->post('/jobs/'.$job->id.'/documents', [
             'document_type_id' => $docType->id,
             'customs_document_kind' => 'sppb',
             'file' => UploadedFile::fake()->create('sppb_air.pdf', 200, 'application/pdf'),
-        ])->assertSessionHas('success', 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Terbit (Jalur Hijau) - Proses Kepabeanan Selesai.');
+        ])->assertSessionHas('success', 'Dokumen SPPB berhasil diupload. 🟢 SPPB Terbit — Proses Kepabeanan Selesai (Jalur Hijau).');
 
         $job->refresh();
         $this->assertSame('sppb', $job->shipment_status);
@@ -295,7 +294,7 @@ class ShipmentStatusTest extends TestCase
 
         $this->get('/jobs/'.$job->id)
             ->assertOk()
-            ->assertSee('SPPB Terbit (Selesai)')
-            ->assertSee('STATUS: JALUR HIJAU (SPPB TERBIT)');
+            ->assertSee('SPPB Terbit')
+            ->assertSee('SPPB TERBIT');
     }
 }

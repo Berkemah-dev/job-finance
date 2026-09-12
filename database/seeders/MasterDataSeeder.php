@@ -162,6 +162,7 @@ class MasterDataSeeder extends Seeder
             ['code' => 'EXPAIR-INV', 'name' => 'INVOICE', 'service_codes' => ['exp_air']],
             ['code' => 'EXPAIR-DG', 'name' => 'DG DECLARE', 'service_codes' => ['exp_air']],
             ['code' => 'EXPAIR-PEBNPE', 'name' => 'PEB NPE', 'service_codes' => ['exp_air']],
+            // Import Sea — dokumen umum
             ['code' => 'IMPSEA-HBL', 'name' => 'HOUSE BL', 'service_codes' => ['imp_sea']],
             ['code' => 'IMPSEA-MBL', 'name' => 'MASTER BL', 'service_codes' => ['imp_sea']],
             ['code' => 'IMPSEA-PL', 'name' => 'PACKINGLIST', 'service_codes' => ['imp_sea']],
@@ -169,6 +170,13 @@ class MasterDataSeeder extends Seeder
             ['code' => 'IMPSEA-LS', 'name' => 'LAPORAN SURVEYOR', 'service_codes' => ['imp_sea']],
             ['code' => 'IMPSEA-COO', 'name' => 'CERTIFICATE OF ORIGIN', 'service_codes' => ['imp_sea']],
             ['code' => 'IMPSEA-ECOO', 'name' => 'E-CERTIFICATE OF ORIGIN', 'service_codes' => ['imp_sea']],
+            // Import Sea — dokumen kepabeanan (alur PIB → Billing → Penjaluran → SPPB)
+            ['code' => 'IMPSEA-PIB', 'name' => 'PIB (PEMBERITAHUAN IMPOR BARANG)', 'service_codes' => ['imp_sea']],
+            ['code' => 'IMPSEA-BILLING', 'name' => 'BILLING BEA CUKAI', 'service_codes' => ['imp_sea']],
+            ['code' => 'IMPSEA-SPJM', 'name' => 'SPJM (JALUR MERAH)', 'service_codes' => ['imp_sea']],
+            ['code' => 'IMPSEA-BEHANDLE', 'name' => 'BEHANDLE (PEMERIKSAAN FISIK)', 'service_codes' => ['imp_sea']],
+            ['code' => 'IMPSEA-SPPB', 'name' => 'SPPB (JALUR HIJAU)', 'service_codes' => ['imp_sea']],
+            // Import Air — dokumen umum
             ['code' => 'IMPAIR-HAWB', 'name' => 'HOUSE AWB', 'service_codes' => ['imp_air']],
             ['code' => 'IMPAIR-MAWB', 'name' => 'MASTER AWB', 'service_codes' => ['imp_air']],
             ['code' => 'IMPAIR-PL', 'name' => 'PACKINGLIST', 'service_codes' => ['imp_air']],
@@ -176,6 +184,12 @@ class MasterDataSeeder extends Seeder
             ['code' => 'IMPAIR-LS', 'name' => 'LAPORAN SURVEYOR', 'service_codes' => ['imp_air']],
             ['code' => 'IMPAIR-COO', 'name' => 'CERTIFICATE OF ORIGIN', 'service_codes' => ['imp_air']],
             ['code' => 'IMPAIR-ECOO', 'name' => 'E-CERTIFICATE OF ORIGIN', 'service_codes' => ['imp_air']],
+            // Import Air — dokumen kepabeanan (alur PIB → Billing → Penjaluran → SPPB)
+            ['code' => 'IMPAIR-PIB', 'name' => 'PIB (PEMBERITAHUAN IMPOR BARANG)', 'service_codes' => ['imp_air']],
+            ['code' => 'IMPAIR-BILLING', 'name' => 'BILLING BEA CUKAI', 'service_codes' => ['imp_air']],
+            ['code' => 'IMPAIR-SPJM', 'name' => 'SPJM (JALUR MERAH)', 'service_codes' => ['imp_air']],
+            ['code' => 'IMPAIR-BEHANDLE', 'name' => 'BEHANDLE (PEMERIKSAAN FISIK)', 'service_codes' => ['imp_air']],
+            ['code' => 'IMPAIR-SPPB', 'name' => 'SPPB (JALUR HIJAU)', 'service_codes' => ['imp_air']],
         ] as $index => $document) {
             DocumentType::updateOrCreate(
                 ['code' => $document['code']],

@@ -386,23 +386,76 @@
             </div>
         </div>
 
-        {{-- STATUS KEPABEANAN BANNER (PERSIS GAMBAR JALUR HIJAU / MERAH) --}}
+        {{-- STATUS KEPABEANAN BANNER (ALUR PIB → BILLING → PENJALURAN → BEHANDLE → SPPB) --}}
         @if($job->shipment_status === 'sppb')
             <div style="padding: 18px 24px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; margin-bottom: 24px;">
                 <div style="font-size: 15px; font-weight: 800; color: #166534; letter-spacing: 0.5px;">
-                    STATUS: JALUR HIJAU (SPPB TERBIT)
+                    🟢 STATUS: SPPB TERBIT — PROSES KEPABEANAN SELESAI
                 </div>
                 <div style="font-size: 13px; color: #15803d; margin-top: 6px; font-weight: 500;">
-                    Surat Persetujuan Pengeluaran Barang telah terverifikasi oleh sistem Bea Cukai Tanjung Priok / Bandara.
+                    Surat Persetujuan Pengeluaran Barang telah diterbitkan. Barang dapat dikeluarkan dari area Bea Cukai.
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ Billing BC</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ SPPB</span>
+                </div>
+            </div>
+        @elseif($job->shipment_status === 'behandle')
+            <div style="padding: 18px 24px; background: #fefce8; border: 1.5px solid #fde047; border-radius: 12px; margin-bottom: 24px;">
+                <div style="font-size: 15px; font-weight: 800; color: #854d0e; letter-spacing: 0.5px;">
+                    🟡 STATUS: BEHANDLE — PEMERIKSAAN FISIK JALUR MERAH
+                </div>
+                <div style="font-size: 13px; color: #92400e; margin-top: 6px; font-weight: 500;">
+                    Barang sedang diperiksa fisik di Terminal / TPS. Setelah selesai, akan diterbitkan SPPB.
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ Billing BC</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 700;">⚠ SPJM → Behandle</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700;">⏳ Menunggu SPPB</span>
                 </div>
             </div>
         @elseif($job->shipment_status === 'spjm')
             <div style="padding: 18px 24px; background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 12px; margin-bottom: 24px;">
                 <div style="font-size: 15px; font-weight: 800; color: #991b1b; letter-spacing: 0.5px;">
-                    STATUS: JALUR MERAH (SPJM DITERBITKAN)
+                    🔴 STATUS: JALUR MERAH — SPJM DITERBITKAN
                 </div>
                 <div style="font-size: 13px; color: #b91c1c; margin-top: 6px; font-weight: 500;">
-                    Pemberitahuan Jalur Merah - Diperlukan pemeriksaan fisik barang (Behandle) di Terminal / TPS.
+                    Pemberitahuan Jalur Merah — Diperlukan pemeriksaan fisik barang (Behandle) di Terminal / TPS sebelum SPPB terbit.
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ Billing BC</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 700;">🔴 SPJM (Jalur Merah)</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 700;">→ Behandle → SPPB</span>
+                </div>
+            </div>
+        @elseif($job->shipment_status === 'billing')
+            <div style="padding: 18px 24px; background: #f5f3ff; border: 1.5px solid #c4b5fd; border-radius: 12px; margin-bottom: 24px;">
+                <div style="font-size: 15px; font-weight: 800; color: #5b21b6; letter-spacing: 0.5px;">
+                    🟣 STATUS: BILLING BEA CUKAI — MENUNGGU PENJALURAN
+                </div>
+                <div style="font-size: 13px; color: #6d28d9; margin-top: 6px; font-weight: 500;">
+                    Tagihan Bea Cukai sedang diproses. Setelah billing dilunasi, akan ditentukan jalur hijau (SPPB) atau jalur merah (SPJM → Behandle → SPPB).
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #ede9fe; color: #5b21b6; font-size: 12px; font-weight: 700;">🟣 Billing BC</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 700;">→ Penjaluran</span>
+                </div>
+            </div>
+        @elseif($job->shipment_status === 'pib_submitted')
+            <div style="padding: 18px 24px; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 12px; margin-bottom: 24px;">
+                <div style="font-size: 15px; font-weight: 800; color: #075985; letter-spacing: 0.5px;">
+                    🔵 STATUS: PIB DIAJUKAN — MENUNGGU BILLING BEA CUKAI
+                </div>
+                <div style="font-size: 13px; color: #0369a1; margin-top: 6px; font-weight: 500;">
+                    Pemberitahuan Impor Barang (PIB) telah diajukan ke Bea Cukai. Menunggu tagihan billing diterbitkan.
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; font-weight: 700;">🔵 PIB Diajukan</span>
+                    <span style="padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 700;">→ Billing BC → Penjaluran</span>
                 </div>
             </div>
         @elseif($job->shipment_status === 'npe')
@@ -415,12 +468,16 @@
                 </div>
             </div>
         @else
-            <div style="padding: 18px 24px; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #075985; letter-spacing: 0.5px;">
+            <div style="padding: 18px 24px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px;">
+                <div style="font-size: 15px; font-weight: 800; color: #334155; letter-spacing: 0.5px;">
                     STATUS KEPABEANAN: {{ strtoupper(config('operations.shipment_statuses.'.$job->shipment_status) ?? $job->shipment_status ?? 'DALAM PROSES DOKUMEN') }}
                 </div>
-                <div style="font-size: 13px; color: #0369a1; margin-top: 6px; font-weight: 500;">
-                    Proses kepabeanan dan pendaftaran dokumen aktif dalam pemantauan operasional.
+                <div style="font-size: 13px; color: #64748b; margin-top: 6px; font-weight: 500;">
+                    @if($isImport)
+                        Alur: <strong>PIB</strong> → <strong>Billing BC</strong> → <strong>Penjaluran</strong> (Jalur Hijau: SPPB | Jalur Merah: SPJM → Behandle → SPPB)
+                    @else
+                        Proses kepabeanan dan pendaftaran dokumen aktif dalam pemantauan operasional.
+                    @endif
                 </div>
             </div>
         @endif
@@ -431,14 +488,24 @@
                 @csrf
                 <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
                 <label for="shipment_status_customs" style="font-weight: 700;">Update Status Kepabeanan / Pengiriman</label>
-                <select name="shipment_status" id="shipment_status_customs">
-                    @foreach(config('operations.shipment_statuses') as $value=>$label)
-                        @continue($isImport && $value === 'npe')
-                        @continue(!$isImport && in_array($value, ['spjm', 'sppb'], true))
-                        <option value="{{ $value }}" @selected($job->shipment_status===$value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-                <p class="form-help">Pilih status untuk mencatat progress SPJM (Jalur Merah) atau SPPB (Jalur Hijau).</p>
+                @if($isImport)
+                    <select name="shipment_status" id="shipment_status_customs">
+                        <option value="pib_submitted" @selected($job->shipment_status==='pib_submitted')>PIB Diajukan (Menunggu Billing BC)</option>
+                        <option value="billing" @selected($job->shipment_status==='billing')>Billing BC Diterima (Menunggu Penjaluran)</option>
+                        <option value="spjm" @selected($job->shipment_status==='spjm')>SPJM — Jalur Merah (Menunggu Behandle)</option>
+                        <option value="behandle" @selected($job->shipment_status==='behandle')>Behandle — Pemeriksaan Fisik (Menunggu SPPB)</option>
+                        <option value="sppb" @selected($job->shipment_status==='sppb')>SPPB Terbit — Selesai</option>
+                    </select>
+                    <p class="form-help">Alur Import: <strong>PIB</strong> → <strong>Billing BC</strong> → <strong>Penjaluran</strong> (Jalur Hijau: SPPB langsung | Jalur Merah: SPJM → Behandle → SPPB)</p>
+                @else
+                    <select name="shipment_status" id="shipment_status_customs">
+                        @foreach(config('operations.shipment_statuses') as $value=>$label)
+                            @continue(in_array($value, ['pib_submitted','billing','spjm','sppb','behandle'], true))
+                            <option value="{{ $value }}" @selected($job->shipment_status===$value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <p class="form-help">Pilih status untuk mencatat progress pengiriman export.</p>
+                @endif
                 <button class="button button-secondary">Simpan Status Kepabeanan</button>
             </form>
         @endif
@@ -532,7 +599,7 @@
                     <div style="margin-top: 18px; padding: 18px; border: 1px solid #dbeafe; border-radius: 14px; background: #f8fbff;">
                         <div class="panel-heading" style="margin-bottom: 12px;">
                             <h2 style="font-size: 16px;">Data Kepabeanan dari Dokumen</h2>
-                            <span class="subtle">Isi jika dokumen yang diupload adalah {{ $isImport ? 'SPJM/SPPB' : 'NPE' }}. Data ini akan langsung masuk ke tab Customs & AJU.</span>
+                            <span class="subtle">Isi jika dokumen yang diupload adalah {{ $isImport ? 'PIB/Billing/SPJM/SPPB' : 'NPE' }}. Data ini akan langsung masuk ke tab Customs & AJU.</span>
                         </div>
                         <div class="form-grid">
                             <div class="field">
@@ -540,12 +607,22 @@
                                 <select name="customs_document_kind" id="customs_document_kind">
                                     <option value="">Tidak update status</option>
                                     @if($isImport)
-                                        <option value="spjm" @selected(old('customs_document_kind') === 'spjm')>SPJM - Jalur Merah</option>
-                                        <option value="sppb" @selected(old('customs_document_kind') === 'sppb')>SPPB - Jalur Hijau</option>
+                                        <option value="pib" @selected(old('customs_document_kind') === 'pib')>PIB — Pemberitahuan Impor Barang</option>
+                                        <option value="billing" @selected(old('customs_document_kind') === 'billing')>Billing BC — Tagihan Bea Cukai</option>
+                                        <option value="spjm" @selected(old('customs_document_kind') === 'spjm')>SPJM — Jalur Merah</option>
+                                        <option value="behandle" @selected(old('customs_document_kind') === 'behandle')>Behandle — Pemeriksaan Fisik</option>
+                                        <option value="sppb" @selected(old('customs_document_kind') === 'sppb')>SPPB — Jalur Hijau (Selesai)</option>
                                     @else
-                                        <option value="npe" @selected(old('customs_document_kind') === 'npe')>NPE - Nota Pelayanan Ekspor</option>
+                                        <option value="npe" @selected(old('customs_document_kind') === 'npe')>NPE — Nota Pelayanan Ekspor</option>
                                     @endif
                                 </select>
+                                <small class="form-help">
+                                    @if($isImport)
+                                        Alur: PIB → Billing BC → SPJM (Jalur Merah) → Behandle → SPPB | atau PIB → Billing BC → SPPB (Jalur Hijau langsung)
+                                    @else
+                                        Pilih NPE jika dokumen yang diupload adalah Nota Pelayanan Ekspor.
+                                    @endif
+                                </small>
                             </div>
                             <div class="field">
                                 <label for="customs_submission_number_upload">Nomor Pengajuan Penuh</label>

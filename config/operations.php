@@ -2,7 +2,23 @@
 
 return [
     'job_statuses' => ['draft' => 'Draft', 'open' => 'Open', 'closed' => 'Closed', 'cancelled' => 'Dibatalkan'],
-    'shipment_statuses' => ['booked' => 'Booked', 'in_progress' => 'In Progress', 'departed' => 'Departed', 'arrived' => 'Arrived', 'spjm' => 'SPJM', 'sppb' => 'SPPB', 'npe' => 'NPE', 'do_process' => 'DO Process', 'completed' => 'Completed'],
+    'shipment_statuses' => [
+        // Status umum
+        'booked'        => 'Booked',
+        'in_progress'   => 'In Progress',
+        'departed'      => 'Departed',
+        'arrived'       => 'Arrived',
+        'completed'     => 'Completed',
+        // Status Export
+        'npe'           => 'NPE Terbit',
+        'do_process'    => 'DO Process',
+        // Status Import — alur: PIB → Billing → Penjaluran (SPPB atau SPJM → Behandle → SPPB)
+        'pib_submitted' => 'PIB Diajukan',
+        'billing'       => 'Menunggu Billing BC',
+        'spjm'          => 'SPJM (Jalur Merah)',
+        'behandle'      => 'Behandle (Pemeriksaan Fisik)',
+        'sppb'          => 'SPPB Terbit',
+    ],
     'cost_statuses' => ['draft' => 'Draft', 'final' => 'Final'],
     'service_types' => [
         'exp_sea' => 'EXPORT SEA',

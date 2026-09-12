@@ -18,7 +18,7 @@ class JobDocumentController extends Controller
             'document_type_id' => 'required|exists:document_types,id',
             'file'             => 'required|file|max:3072|mimes:pdf',
             'notes'            => 'nullable|string|max:500',
-            'customs_document_kind' => ['nullable', Rule::in(['spjm', 'sppb', 'npe'])],
+            'customs_document_kind' => ['nullable', Rule::in(['pib', 'billing', 'spjm', 'sppb', 'behandle', 'npe'])],
             'booking_reference' => ['nullable', 'string', 'max:60'],
             'customs_submission_number' => ['nullable', 'string', 'max:100'],
             'nopen' => ['nullable', 'string', 'max:60'],
@@ -78,19 +78,18 @@ class JobDocumentController extends Controller
             } elseif ($isNpe) {
                 $notification = 'Dokumen NPE berhasil diupload. Notifikasi: Customs Checklist terverifikasi (NPE Terbit).';
             }
-        } elseif ($isImportSea) {
+        } elseif ($isImportSea || $isImportAir) {
+            // Alur kepabeanan Import: PIB → Billing BC → Penjaluran (SPPB / SPJM → Behandle → SPPB)
             if ($kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB')) {
-                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Terbit (Jalur Hijau) - Proses Kepabeanan Selesai.';
+                $notification = 'Dokumen SPPB berhasil diupload. 🟢 SPPB Terbit — Proses Kepabeanan Selesai (Jalur Hijau).';
+            } elseif ($kind === 'behandle' || str_contains($docCode, 'BEHANDLE') || str_contains($docName, 'BEHANDLE')) {
+                $notification = 'Dokumen Behandle berhasil diupload. Notifikasi: Pemeriksaan Fisik Selesai — Menunggu SPPB.';
             } elseif ($kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM')) {
-                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection (Jalur Merah - Pemeriksaan Fisik).';
-            } elseif (str_contains($docCode, 'DO') || str_contains($docName, 'DO') || str_contains($docName, 'DELIVERY ORDER')) {
-                $notification = 'Dokumen DO berhasil diupload. Notifikasi: DO Checklist terverifikasi.';
-            }
-        } elseif ($isImportAir) {
-            if ($kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB')) {
-                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Terbit (Jalur Hijau) - Proses Kepabeanan Selesai.';
-            } elseif ($kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM')) {
-                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection (Jalur Merah - Pemeriksaan Fisik).';
+                $notification = 'Dokumen SPJM berhasil diupload. 🔴 Jalur Merah — Barang perlu pemeriksaan fisik (Behandle).';
+            } elseif ($kind === 'billing' || str_contains($docCode, 'BILLING') || str_contains($docName, 'BILLING') || str_contains($docName, 'TAGIHAN BC')) {
+                $notification = 'Dokumen Billing BC berhasil diupload. Notifikasi: Billing Bea Cukai Diproses — Menunggu Penjaluran.';
+            } elseif ($kind === 'pib' || str_contains($docCode, 'PIB') || str_contains($docName, 'PIB') || str_contains($docName, 'PEMBERITAHUAN IMPOR')) {
+                $notification = 'Dokumen PIB berhasil diupload. Notifikasi: PIB Diajukan ke Bea Cukai — Menunggu Billing BC.';
             }
         }
 
@@ -123,8 +122,21 @@ class JobDocumentController extends Controller
             $isImport = in_array($job->service_type, ['imp_sea', 'imp_air'], true);
             $isExport = in_array($job->service_type, ['exp_sea', 'exp_air'], true);
 
-            if (($isImport && in_array($kind, ['spjm', 'sppb'], true)) || ($isExport && $kind === 'npe')) {
-                $updates['shipment_status'] = $kind;
+            // Peta kind → shipment_status sesuai alur Import: PIB → Billing → Penjaluran → Behandle → SPPB
+            $importKindMap = [
+                'pib'      => 'pib_submitted',
+                'billing'  => 'billing',
+                'spjm'     => 'spjm',
+                'behandle' => 'behandle',
+                'sppb'     => 'sppb',
+            ];
+
+            if ($isImport && isset($importKindMap[$kind])) {
+                $updates['shipment_status'] = $importKindMap[$kind];
+                $updates['shipment_status_by'] = $request->user()?->id;
+                $updates['shipment_status_at'] = now();
+            } elseif ($isExport && $kind === 'npe') {
+                $updates['shipment_status'] = 'npe';
                 $updates['shipment_status_by'] = $request->user()?->id;
                 $updates['shipment_status_at'] = now();
             }
