@@ -152,19 +152,14 @@
 
             <div class="field">
                 <label for="pol">Port of Loading (POL)</label>
-                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $selectedJob?->pol ?? $selectedJob?->origin) }}" placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field">
+                <input id="pol" name="pol" maxlength="120" value="{{ old('pol', $selectedJob?->pol ?? $selectedJob?->origin) }}" placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field">
             </div>
 
             <div class="field">
                 <label for="pod">Port of Discharge (POD)</label>
-                <input id="pod" name="pod" list="port_list" maxlength="120" value="{{ old('pod', $selectedJob?->pod ?? $selectedJob?->destination) }}" placeholder="Pelabuhan Bongkar">
+                <input id="pod" name="pod" maxlength="120" value="{{ old('pod', $selectedJob?->pod ?? $selectedJob?->destination) }}" placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field">
             </div>
 
-            <datalist id="port_list">
-                @foreach($ports as $p)
-                    <option value="{{ $p->name }}">{{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}</option>
-                @endforeach
-            </datalist>
 
             <div class="field">
                 <label for="etd">ETD (Keberangkatan)</label>
