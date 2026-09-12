@@ -265,7 +265,12 @@ if (form) {
     document.querySelectorAll('.btn-quick-charge').forEach(btn => {
         btn.addEventListener('click', () => {
             if (inputDesc) {
-                inputDesc.value = btn.dataset.charge;
+                const value = btn.dataset.charge;
+                if (inputDesc.tagName === 'SELECT' && ![...inputDesc.options].some(option => option.value === value)) {
+                    inputDesc.add(new Option(value, value));
+                }
+                inputDesc.value = value;
+                inputDesc.dispatchEvent(new Event('change', { bubbles: true }));
                 inputPrice?.focus();
             }
         });
@@ -339,4 +344,3 @@ if (form) {
         }
     });
 }
-

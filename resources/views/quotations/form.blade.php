@@ -103,15 +103,10 @@
         </div>
     </div>
 
-    <div class="form-grid" style="grid-template-columns: 2.2fr 2fr 1.2fr 1fr 1.5fr 1.5fr; gap: 12px; align-items: flex-start;">
+<div class="form-grid" style="grid-template-columns: 2.2fr 2fr 1.2fr 1fr 1.5fr 1.5fr; gap: 12px; align-items: flex-start;">
         <div class="field">
             <label for="input_item_desc">Uraian Biaya <span class="required">*</span></label>
-            <input id="input_item_desc" list="charge-types-list" placeholder="Ketik huruf depan / pilih biaya..." autocomplete="off" style="width: 100%;">
-            <datalist id="charge-types-list">
-                @foreach($charges ?? [] as $charge)
-                    <option value="{{ $charge->name }}">{{ $charge->name }}</option>
-                @endforeach
-            </datalist>
+            <select id="input_item_desc" data-custom-select aria-label="Uraian Biaya"><option value="">Pilih Uraian Biaya</option>@foreach($charges ?? [] as $charge)<option value="{{ $charge->name }}">{{ $charge->name }}</option>@endforeach</select>
             <div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
                 <span style="font-size: 10px; color: #64748b;">Cepat:</span>
                 <button type="button" class="btn-quick-charge" data-charge="TRUCKING" style="background:#e2e8f0; border:none; border-radius:4px; padding:2px 6px; font-size:10px; cursor:pointer; color:#1e293b;">TRUCKING</button>
@@ -163,6 +158,13 @@
         </button>
     </div>
 </div>
+
+<style>
+#single-item-input-panel .form-grid > .field { min-width: 0; }
+#single-item-input-panel .form-grid > .field > label { display: block; min-height: 20px; line-height: 1.35; }
+#single-item-input-panel .form-grid > .field > input,
+#single-item-input-panel .form-grid > .field > select { width: 100%; min-height: 44px; height: 44px; box-sizing: border-box; }
+</style>
 
 {{-- DAFTAR ITEM PENAWARAN (TABEL SUBMITTED ITEMS) --}}
 <div class="section-heading" style="margin-top: 25px; margin-bottom: 10px;">
