@@ -25,7 +25,8 @@
 
     $serviceCategoryTitle = $isExportSea ? 'EXPORT SHIPMENT (SEA)' : 
         ($isExportAir ? 'EXPORT SHIPMENT (AIR)' : 
-        ($isImport ? 'IMPORT SHIPMENT (SEA/AIR)' : 'DOMESTIC / TRUCKING'));
+        ($serviceTypeRaw === 'imp_sea' ? 'IMPORT SHIPMENT (SEA)' :
+        ($serviceTypeRaw === 'imp_air' ? 'IMPORT SHIPMENT (AIR)' : 'DOMESTIC / TRUCKING')));
 
     $serviceTypeLabel = config('operations.service_types.'.$job->service_type) ?? strtoupper($job->service_type ?? '—');
     $loadingPort = $job->pol ?? $job->origin ?? $quotation?->origin ?? '—';
@@ -96,14 +97,14 @@
 {{-- HORIZONTAL PILL TABS MENU KE KANAN (SESUAI REQUEST & SCREENSHOT CLIENT) --}}
 <nav class="job-pill-tabs-nav" style="display: flex; gap: 8px; background: #e2e8f0; padding: 6px; border-radius: 9999px; margin-bottom: 24px; overflow-x: auto;">
     <button type="button" class="job-tab-btn active" data-tab="tab-shipping" style="padding: 10px 22px; border-radius: 9999px; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0,0,0,0.12);">1. Data Pengapalan</button>
-    <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. Customs & AJU</button>
-    <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Dokumen (BL/CIPL)</button>
+    <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. {{ $isImport ? 'SK DO / SK Pabean' : 'Customs & AJU' }}</button>
+    <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. {{ $isImport ? 'DNP / Surat Jalan' : ($isExportAir ? 'Dokumen (AWB)' : 'Dokumen (BL/CIPL)') }}</button>
     <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Tanda Terima</button>
-    <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Biaya & Profit</button>
     @if($isExportSea || $isExportAir)
         <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Booking Confirmation</button>
         <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Shipping Instruction</button>
     @endif
+    <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. Biaya & Profit</button>
 </nav>
 
 {{-- ========================================================================= --}}
