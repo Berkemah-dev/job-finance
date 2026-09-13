@@ -1,82 +1,90 @@
-@if ($paginator->hasPages())
+@if ($paginator->total() > 0)
+    @php
+        $currentPage = $paginator->currentPage();
+        $lastPage = $paginator->lastPage();
+        $total = $paginator->total();
+        $perPage = $paginator->perPage();
+
+        $window = [];
+        if ($lastPage <= 5) {
+            $window = range(1, $lastPage);
+        } else {
+            if ($currentPage <= 2) {
+                $window = [1, 2, 3, '...', $lastPage];
+            } elseif ($currentPage >= $lastPage - 1) {
+                $window = [1, '...', $lastPage - 2, $lastPage - 1, $lastPage];
+            } else {
+                $window = [1, '...', $currentPage, '...', $lastPage];
+            }
+        }
+    @endphp
+
     <nav role="navigation" aria-label="Pagination Navigation" class="pagination-nav">
         <div class="pagination-info">
             <p>
                 Menampilkan
-                <strong>{{ $paginator->firstItem() }}</strong>
-                sampai
-                <strong>{{ $paginator->lastItem() }}</strong>
+                <strong>{{ $paginator->firstItem() ?? 1 }}</strong>
+                &ndash;
+                <strong>{{ $paginator->lastItem() ?? $total }}</strong>
                 dari
-                <strong>{{ $paginator->total() }}</strong>
+                <strong>{{ $total }}</strong>
                 data
             </p>
+
+            <div class="pagination-per-page">
+                <select class="pagination-select" onchange="window.location.href=this.value" aria-label="Jumlah data per halaman">
+                    @foreach([10, 25, 50, 100] as $size)
+                        <option value="{{ request()->fullUrlWithQuery(['per_page' => $size, 'page' => 1]) }}" @selected($perPage == $size)>
+                            {{ $size }} / hal
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
         <div class="pagination-links">
             {{-- Previous Page Link --}}
             @if ($paginator->onFirstPage())
-                <span class="pagination-btn pagination-btn-disabled" aria-disabled="true" aria-label="@lang('pagination.previous')">
+                <span class="pagination-btn pagination-btn-disabled" aria-disabled="true" title="Halaman Sebelumnya">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                 </span>
             @else
-                <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="pagination-btn" aria-label="@lang('pagination.previous')">
+                <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="pagination-btn" title="Halaman Sebelumnya" aria-label="Halaman Sebelumnya">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                 </a>
             @endif
 
-            {{-- Pagination Elements --}}
+            {{-- Compact Page Numbers --}}
             <div class="pagination-pages">
-                @foreach ($elements as $element)
-                    {{-- "Three Dots" Separator --}}
-                    @if (is_string($element))
-                        <span class="pagination-dots" aria-disabled="true">{{ $element }}</span>
-                    @endif
-
-                    {{-- Array Of Links --}}
-                    @if (is_array($element))
-                        @foreach ($element as $page => $url)
-                            @if ($page == $paginator->currentPage())
-                                <span class="pagination-btn pagination-btn-active" aria-current="page">{{ $page }}</span>
-                            @else
-                                <a href="{{ $url }}" class="pagination-btn">{{ $page }}</a>
-                            @endif
-                        @endforeach
+                @foreach ($window as $item)
+                    @if ($item === '...')
+                        <span class="pagination-dots" aria-disabled="true">&hellip;</span>
+                    @elseif ($item == $currentPage)
+                        <span class="pagination-btn pagination-btn-active" aria-current="page">{{ $item }}</span>
+                    @else
+                        <a href="{{ $paginator->url($item) }}" class="pagination-btn">{{ $item }}</a>
                     @endif
                 @endforeach
             </div>
 
             {{-- Next Page Link --}}
             @if ($paginator->hasMorePages())
-                <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="pagination-btn" aria-label="@lang('pagination.next')">
+                <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="pagination-btn" title="Halaman Selanjutnya" aria-label="Halaman Selanjutnya">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </a>
             @else
-                <span class="pagination-btn pagination-btn-disabled" aria-disabled="true" aria-label="@lang('pagination.next')">
+                <span class="pagination-btn pagination-btn-disabled" aria-disabled="true" title="Halaman Selanjutnya">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </span>
             @endif
-        </div>
-    </nav>
-@elseif($paginator->total() > 0)
-    <nav role="navigation" aria-label="Pagination Navigation" class="pagination-nav">
-        <div class="pagination-info">
-            <p>
-                Menampilkan
-                <strong>{{ $paginator->firstItem() ?? 1 }}</strong>
-                sampai
-                <strong>{{ $paginator->lastItem() ?? $paginator->total() }}</strong>
-                dari
-                <strong>{{ $paginator->total() }}</strong>
-                data
-            </p>
         </div>
     </nav>
 @endif

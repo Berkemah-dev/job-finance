@@ -6,10 +6,10 @@
         <p class="eyebrow">MASTER DATA &rsaquo; SATUAN</p>
         <h1>Edit Satuan</h1>
     </div>
-    <a class="button button-secondary" href="{{ route('container-units.index') }}">Kembali</a>
+    <a class="button button-secondary" href="{{ route('container-units.index') }}">← Kembali</a>
 </div>
 
-<section class="panel form-panel" style="max-width: 560px;">
+<section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('container-units.update', $containerUnit) }}">
         @csrf
         @method('PUT')

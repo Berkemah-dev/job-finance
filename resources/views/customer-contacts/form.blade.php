@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title',$contact->exists?'Edit Kontak':'Tambah Kontak')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">SALES & CUSTOMER</p><h1>{{ $contact->exists?'Edit kontak':'Tambah kontak' }}</h1><p>Shipper (pengirim) dan consignee (penerima) yang digunakan pada quotation &amp; dokumen.</p></div><a class="text-link" href="{{ $contact->exists?route('customer-contacts.show',$contact):route('customer-contacts.index') }}">Kembali</a></div>
+<div class="page-heading"><div><p class="eyebrow">SALES & CUSTOMER</p><h1>{{ $contact->exists?'Edit kontak':'Tambah kontak' }}</h1><p>Shipper (pengirim) dan consignee (penerima) yang digunakan pada quotation &amp; dokumen.</p></div><a class="button button-secondary" href="{{ $contact->exists?route('customer-contacts.show',$contact):route('customer-contacts.index') }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ $contact->exists?route('customer-contacts.update',$contact):route('customer-contacts.store') }}">@csrf @if($contact->exists) @method('PUT') @endif
 <input type="hidden" name="lock_version" value="{{ old('lock_version',$contact->lock_version ?? 0) }}">
 <div class="form-grid">

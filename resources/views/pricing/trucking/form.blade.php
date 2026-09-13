@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title',$truckingPrice->exists?'Edit Trucking Price':'Tambah Trucking Price')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">PRICING</p><h1>{{ $truckingPrice->exists?'Edit trucking price':'Tambah trucking price' }}</h1><p>Harga trucking untuk rute dan tipe kontainer tertentu.</p></div><a class="text-link" href="{{ route('pricing.trucking.index') }}">Kembali ke daftar</a></div>
+<div class="page-heading"><div><p class="eyebrow">PRICING</p><h1>{{ $truckingPrice->exists?'Edit trucking price':'Tambah trucking price' }}</h1><p>Harga trucking untuk rute dan tipe kontainer tertentu.</p></div>    <a class="button button-secondary" href="{{ route('pricing.trucking.index') }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ $truckingPrice->exists?route('pricing.trucking.update',$truckingPrice):route('pricing.trucking.store') }}">@csrf @if($truckingPrice->exists) @method('PUT') @endif
 <input type="hidden" name="lock_version" value="{{ old('lock_version',$truckingPrice->lock_version ?? 0) }}">
 <div class="form-grid">

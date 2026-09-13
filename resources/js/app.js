@@ -153,6 +153,40 @@ if (sidebarNav) {
     });
 }
 
+// Sidebar Nav Category Group Open State Persistence
+const navGroups = document.querySelectorAll('details.nav-group');
+if (navGroups.length) {
+    const STORAGE_KEY = 'jobfinance_sidebar_open_groups';
+    try {
+        const savedOpenGroups = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
+        navGroups.forEach((group) => {
+            const title = group.querySelector('.nav-group-title span')?.textContent?.trim();
+            const hasActive = group.querySelector('.nav-item.active') !== null;
+            if (hasActive) {
+                group.open = true;
+            } else if (title && savedOpenGroups.includes(title)) {
+                group.open = true;
+            }
+        });
+    } catch (e) {}
+
+    const saveGroupStates = () => {
+        if (document.documentElement.classList.contains('sidebar-collapsed')) return;
+        const openTitles = [];
+        navGroups.forEach((group) => {
+            if (group.open) {
+                const title = group.querySelector('.nav-group-title span')?.textContent?.trim();
+                if (title) openTitles.push(title);
+            }
+        });
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(openTitles));
+    };
+
+    navGroups.forEach((group) => {
+        group.addEventListener('toggle', saveGroupStates);
+    });
+}
+
 initSidebar();
 window.addEventListener('resize', initSidebar);
 document.querySelector('[data-password-toggle]')?.addEventListener('click', (event) => {

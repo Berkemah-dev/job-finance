@@ -8,13 +8,14 @@ use App\Models\JournalEntry;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class FinancialReportService
 {
-    public function trialBalance(string $to): Collection
+    public function trialBalance(string $to): array
     {
-        return $this->accountBalances($to)->map(function ($account) {
+        $all = $this->accountBalances($to)->map(function ($account) {
             $normalDebit = in_array($account->type, ['asset', 'cogs', 'expense'], true);
             $net = $normalDebit ? Money::decimal($account->debit)->minus($account->credit) : Money::decimal($account->credit)->minus($account->debit);
             $account->closing_debit = $normalDebit ? ($net->isNegative() ? '0.00' : (string) $net) : ($net->isNegative() ? (string) $net->abs() : '0.00');
@@ -22,6 +23,22 @@ class FinancialReportService
 
             return $account;
         });
+
+        $totalDebit = $all->sum(fn ($r) => (float) $r->closing_debit);
+        $totalCredit = $all->sum(fn ($r) => (float) $r->closing_credit);
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = min(100, max(5, (int) request('per_page', 10)));
+        $offset = ($page - 1) * $perPage;
+        $rows = new LengthAwarePaginator(
+            $all->slice($offset, $perPage)->values(),
+            $all->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => request()->query()]
+        );
+
+        return compact('rows', 'totalDebit', 'totalCredit');
     }
 
     public function ledger(int $accountId, string $from, string $to): array
@@ -33,7 +50,7 @@ class FinancialReportService
             ->first();
         $opening = $this->net($account->type, $openingRow->debit ?? 0, $openingRow->credit ?? 0);
         $balance = Money::decimal($opening);
-        $entries = JournalEntry::with('journal')
+        $allEntries = JournalEntry::with('journal')
             ->where('chart_of_account_id', $accountId)
             ->whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
             ->orderBy(
@@ -43,11 +60,22 @@ class FinancialReportService
             )
             ->orderBy('id')
             ->get();
-        foreach ($entries as $entry) {
+        foreach ($allEntries as $entry) {
             $movement = $this->net($account->type, $entry->debit, $entry->credit);
             $balance = $balance->plus($movement);
             $entry->running_balance = (string) $balance;
         }
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = min(100, max(5, (int) request('per_page', 10)));
+        $offset = ($page - 1) * $perPage;
+        $entries = new LengthAwarePaginator(
+            $allEntries->slice($offset, $perPage)->values(),
+            $allEntries->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => request()->query()]
+        );
 
         return compact('account', 'entries', 'opening') + ['closing' => (string) $balance];
     }
@@ -87,9 +115,24 @@ class FinancialReportService
         return collect($groups)->map(fn ($amount) => (string) $amount)->all() + ['net' => (string) collect($groups)->reduce(fn ($sum, $amount) => $sum->plus($amount), Money::decimal(0))];
     }
 
-    public function profitPerJob(string $from, string $to): Collection
+    public function profitPerJob(string $from, string $to): array
     {
-        return JobClosingSnapshot::with('job')->whereDate('closing_date', '>=', $from)->whereDate('closing_date', '<=', $to)->orderByDesc('closing_date')->get();
+        $query = JobClosingSnapshot::with('job')
+            ->whereDate('closing_date', '>=', $from)
+            ->whereDate('closing_date', '<=', $to)
+            ->orderByDesc('closing_date');
+
+        $all = $query->get();
+        $totalJobs = $all->count();
+        $totalTemporary = $all->sum(fn ($row) => (float) $row->total_temporary);
+        $totalCost = $all->sum(fn ($row) => (float) $row->total_provision_cost);
+        $totalRevenue = $all->sum(fn ($row) => (float) $row->total_provision_sell);
+        $totalProfit = $all->sum(fn ($row) => (float) $row->profit);
+        $totalMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+
+        $rows = $query->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
+
+        return compact('rows', 'totalJobs', 'totalTemporary', 'totalCost', 'totalRevenue', 'totalProfit', 'totalMargin');
     }
 
     public function monthlyProfit(int $year): array

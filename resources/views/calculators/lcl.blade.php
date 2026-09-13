@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title','Kalkulator Estimasi Biaya LCL')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
+<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1></div>    <a class="button button-secondary" href="{{ route('calculators.index') }}">← Kembali</a></div>
 <section class="panel form-panel calculator-panel calc-detail-card">
 <div class="calc-detail-head"><div class="calc-icon-badge amber"><x-icon name="briefcase"/></div><h2>Input Muatan</h2></div>
 <form class="data-form calculator-form" id="lcl-form">

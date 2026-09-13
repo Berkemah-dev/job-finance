@@ -74,7 +74,7 @@
         </table>
     </div>
 
-    @if(method_exists($units, 'links') && $units->hasPages())
+    @if(method_exists($units, 'links') && count($units) > 0)
         <div class="pagination">{{ $units->links() }}</div>
     @endif
 </section>

@@ -79,7 +79,7 @@
         </table>
     </div>
 
-    @if(method_exists($charges, 'links') && $charges->hasPages())
+    @if(method_exists($charges, 'links') && count($charges) > 0)
         <div class="pagination">{{ $charges->links() }}</div>
     @endif
 </section>

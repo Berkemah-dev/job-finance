@@ -28,7 +28,7 @@ class CustomerController extends Controller
             ->when(! $onlyTrashed && ! $pending, fn ($q) => $q->where('approval_status', 'approved'))
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%')
                 ->orWhere('email', 'like', '%'.$search.'%')->orWhere('tax_number', 'like', '%'.$search.'%')->orWhere('phone', 'like', '%'.$search.'%')))
-            ->orderBy('name')->paginate(10)->withQueryString();
+            ->orderBy('name')->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
 
         return view('customers.index', compact('customers', 'search', 'status'));
     }

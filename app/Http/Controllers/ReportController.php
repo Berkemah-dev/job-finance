@@ -29,7 +29,7 @@ class ReportController extends Controller
     {
         $to = $request->input('to', today()->toDateString());
 
-        return view('reports.trial-balance', ['rows' => $service->trialBalance($to), 'to' => $to]);
+        return view('reports.trial-balance', $service->trialBalance($to) + compact('to'));
     }
 
     public function balanceSheet(ReportFilterRequest $request, FinancialReportService $service)
@@ -57,7 +57,7 @@ class ReportController extends Controller
     {
         [$from, $to] = $this->period($request);
 
-        return view('reports.profit-per-job', ['rows' => $service->profitPerJob($from, $to), 'from' => $from, 'to' => $to]);
+        return view('reports.profit-per-job', $service->profitPerJob($from, $to) + compact('from', 'to'));
     }
 
     public function profitMonthly(ReportFilterRequest $request, FinancialReportService $service)

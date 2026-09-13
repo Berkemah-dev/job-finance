@@ -11,7 +11,7 @@
     <style>
         .theme-toggle{width:40px;height:40px;border:1px solid var(--border-color,#dbe3ef);background:var(--surface,#fff);color:var(--text,#0f1f3d);border-radius:10px;padding:0;cursor:pointer;display:inline-grid;place-items:center;font-size:17px}.theme-toggle:hover{border-color:#1e3a8a}.port-autocomplete-field,.port-autocomplete-field:focus{border:1px solid #dbe3ef!important;box-shadow:none!important}
         .theme-toggle:hover{border-color:#1e3a8a}.theme-dark body{background:#0f172a;color:#e5e7eb}.theme-dark .workspace,.theme-dark main{background:#0f172a}.theme-dark .topbar,.theme-dark .panel,.theme-dark .card,.theme-dark .stat-card,.theme-dark .calculator-hub-card,.theme-dark .account-dropdown,.theme-dark .form-panel,.theme-dark .archive-panel{background:#172033!important;color:#e5e7eb;border-color:#334155!important}.theme-dark input,.theme-dark select,.theme-dark textarea{background:#111827!important;color:#f8fafc!important;border-color:#475569!important}.theme-dark h1,.theme-dark h2,.theme-dark h3,.theme-dark label,.theme-dark strong,.theme-dark .breadcrumb{color:#f8fafc}.theme-dark p,.theme-dark small,.theme-dark .subtle,.theme-dark .form-help{color:#aab7ca}.theme-dark table th{background:#1e293b;color:#cbd5e1}.theme-dark table td{border-color:#334155}.theme-dark .theme-toggle{background:#1e293b;color:#f8fafc;border-color:#475569}.theme-dark .page-footer{color:#94a3b8}
-        .theme-dark .sidebar{background:#172033!important;border-color:#334155!important}.theme-dark .sidebar .nav-item,.theme-dark .sidebar .nav-item span,.theme-dark .sidebar .nav-heading,.theme-dark .sidebar .sidebar-footer{color:#cbd5e1!important}.theme-dark .sidebar .nav-item.active{background:#2a2230;color:#fff!important}.theme-dark .sidebar .nav-item:hover{background:#243047;color:#fff!important}.theme-dark .text-link{color:#cbd5e1!important}.nav-group{margin:0 0 8px}.nav-group>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;padding-right:14px}.nav-group>summary::-webkit-details-marker{display:none}.nav-group-title{display:inline-flex;align-items:center;gap:8px}.nav-group-title .icon{width:14px;height:14px;color:#94a3b8}.nav-group-chevron{width:14px;height:14px;transition:transform .2s;color:#94a3b8}.nav-group[open] .nav-group-chevron{transform:rotate(180deg)}.nav-group .nav-item{margin-top:2px}.theme-dark .nav-group>summary{color:#cbd5e1!important}.port-autocomplete-wrap{position:relative}.port-suggestions{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 12px 24px rgba(15,31,61,.16);max-height:220px;overflow-y:auto;display:none}.port-suggestions.show{display:block}.port-suggestion{display:block;width:100%;padding:10px 12px;border:0;background:#fff;text-align:left;color:#0f1f3d;font-size:13px;cursor:pointer}.port-suggestion:hover,.port-suggestion.active{background:#e0f2fe;color:#0f1f3d}.theme-dark .port-suggestions,.theme-dark .port-suggestion{background:#172033;color:#f8fafc;border-color:#475569}.theme-dark .port-suggestion:hover,.theme-dark .port-suggestion.active{background:#243047}.port-autocomplete-field,.port-autocomplete-field:focus{border:1px solid #dbe3ef!important;box-shadow:none!important}.app-toast-wrap{position:fixed;right:22px;top:92px;z-index:120;display:grid;gap:10px;max-width:min(380px,calc(100vw - 32px))}.app-toast{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #dfe7f2;border-left:4px solid #16a34a;border-radius:14px;padding:14px 16px;box-shadow:0 18px 38px rgba(15,31,61,.14);animation:toastIn .22s ease}.app-toast.error{border-left-color:#dc2626}.app-toast.warning{border-left-color:#f59e0b}.app-toast-icon{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#dcfce7;color:#15803d;font-weight:700;flex:0 0 auto}.app-toast.error .app-toast-icon{background:#fee2e2;color:#b91c1c}.app-toast.warning .app-toast-icon{background:#fef3c7;color:#b45309}.app-toast strong{display:block;color:#0f1f3d;font-size:13px;margin-bottom:3px}.app-toast p,.app-toast li{color:#61718a;font-size:11px;line-height:1.6;margin:0}.app-toast ul{margin:4px 0 0 16px;padding:0}.app-toast-close{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;margin-left:auto}.confirm-backdrop{position:fixed;inset:0;z-index:130;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.42);padding:20px}.confirm-backdrop.show{display:flex}.confirm-card{width:min(430px,100%);background:#fff;border-radius:18px;border:1px solid #e1e7f1;box-shadow:0 24px 70px rgba(15,31,61,.28);padding:24px}.confirm-icon{width:46px;height:46px;border-radius:14px;background:#fef2f2;color:#b91c1c;display:grid;place-items:center;font-weight:800;margin-bottom:16px}.confirm-card h2{font-size:18px;color:#0f1f3d;margin:0 0 8px}.confirm-card p{font-size:12px;line-height:1.8;color:#64748b;margin:0}.confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.confirm-actions button{min-width:96px}.theme-dark .app-toast,.theme-dark .confirm-card{background:#172033!important;border-color:#334155!important}.theme-dark .app-toast strong,.theme-dark .confirm-card h2{color:#f8fafc}.theme-dark .app-toast p,.theme-dark .app-toast li,.theme-dark .confirm-card p{color:#cbd5e1}@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        .theme-dark .sidebar{background:#172033!important;border-color:#334155!important}.theme-dark .sidebar .nav-item,.theme-dark .sidebar .nav-item span,.theme-dark .sidebar .nav-heading,.theme-dark .sidebar .sidebar-footer{color:#cbd5e1!important}.theme-dark .sidebar .nav-item.active{background:#2a2230;color:#fff!important}.theme-dark .sidebar .nav-item:hover{background:#243047;color:#fff!important}.theme-dark .text-link{color:#cbd5e1!important}.nav-group{margin:0 0 4px}.nav-group>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:8px;margin:4px 0 2px;transition:background .15s ease,color .15s ease;color:#8591a6}.nav-group>summary::-webkit-details-marker{display:none}.nav-group>summary:hover{background:#fef2f2;color:#0f1f3d}.nav-group>summary:hover .nav-group-title .icon,.nav-group>summary:hover .nav-group-chevron{color:#0f1f3d}.nav-group[open]>summary{color:#0f1f3d;font-weight:600}.nav-group[open]>summary .nav-group-title .icon,.nav-group[open]>summary .nav-group-chevron{color:#0f1f3d}.nav-group-title{display:inline-flex;align-items:center;gap:10px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase}.nav-group-title .icon{width:16px;height:16px;color:#8a9ab3;flex-shrink:0}.nav-group-chevron{width:14px;height:14px;transition:transform .2s ease;color:#94a3b8;flex-shrink:0}.nav-group[open] .nav-group-chevron{transform:rotate(180deg)}.nav-group .nav-item{margin-top:2px;margin-left:4px}.theme-dark .nav-group>summary{color:#cbd5e1!important}.theme-dark .nav-group>summary:hover{background:#243047!important;color:#fff!important}.port-autocomplete-wrap{position:relative}.port-suggestions{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 12px 24px rgba(15,31,61,.16);max-height:220px;overflow-y:auto;display:none}.port-suggestions.show{display:block}.port-suggestion{display:block;width:100%;padding:10px 12px;border:0;background:#fff;text-align:left;color:#0f1f3d;font-size:13px;cursor:pointer}.port-suggestion:hover,.port-suggestion.active{background:#e0f2fe;color:#0f1f3d}.theme-dark .port-suggestions,.theme-dark .port-suggestion{background:#172033;color:#f8fafc;border-color:#475569}.theme-dark .port-suggestion:hover,.theme-dark .port-suggestion.active{background:#243047}.port-autocomplete-field,.port-autocomplete-field:focus{border:1px solid #dbe3ef!important;box-shadow:none!important}.app-toast-wrap{position:fixed;right:22px;top:92px;z-index:120;display:grid;gap:10px;max-width:min(380px,calc(100vw - 32px))}.app-toast{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #dfe7f2;border-left:4px solid #16a34a;border-radius:14px;padding:14px 16px;box-shadow:0 18px 38px rgba(15,31,61,.14);animation:toastIn .22s ease}.app-toast.error{border-left-color:#dc2626}.app-toast.warning{border-left-color:#f59e0b}.app-toast-icon{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#dcfce7;color:#15803d;font-weight:700;flex:0 0 auto}.app-toast.error .app-toast-icon{background:#fee2e2;color:#b91c1c}.app-toast.warning .app-toast-icon{background:#fef3c7;color:#b45309}.app-toast strong{display:block;color:#0f1f3d;font-size:13px;margin-bottom:3px}.app-toast p,.app-toast li{color:#61718a;font-size:11px;line-height:1.6;margin:0}.app-toast ul{margin:4px 0 0 16px;padding:0}.app-toast-close{border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;margin-left:auto}.confirm-backdrop{position:fixed;inset:0;z-index:130;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.42);padding:20px}.confirm-backdrop.show{display:flex}.confirm-card{width:min(430px,100%);background:#fff;border-radius:18px;border:1px solid #e1e7f1;box-shadow:0 24px 70px rgba(15,31,61,.28);padding:24px}.confirm-icon{width:46px;height:46px;border-radius:14px;background:#fef2f2;color:#b91c1c;display:grid;place-items:center;font-weight:800;margin-bottom:16px}.confirm-card h2{font-size:18px;color:#0f1f3d;margin:0 0 8px}.confirm-card p{font-size:12px;line-height:1.8;color:#64748b;margin:0}.confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.confirm-actions button{min-width:96px}.theme-dark .app-toast,.theme-dark .confirm-card{background:#172033!important;border-color:#334155!important}.theme-dark .app-toast strong,.theme-dark .confirm-card h2{color:#f8fafc}.theme-dark .app-toast p,.theme-dark .app-toast li,.theme-dark .confirm-card p{color:#cbd5e1}@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
     </style>
 </head>
 <body>
@@ -49,7 +49,7 @@
         @endforeach
         @php
         $groups = [
-            'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer'],['vendors.manage','users','Vendor']],
+            'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer','customers.index'],['vendors.manage','users','Vendor','vendors.index']],
             'PRICING' => [['pricing.view','chart','Pricing Mingguan','pricing.weekly.index'],['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']],
             'KALKULATOR' => [['dashboard.view','calculator','Kalkulator','calculators.index']],
             'OPERASIONAL' => [['jobs.view','briefcase','Job Order','jobs.index'],['tps.manage','briefcase','Master TPS Air & Sea','tps.index']],
@@ -59,49 +59,53 @@
             'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job'],['reports.view','calendar','Profit Bulanan','reports.profit-monthly'],['reports.view','wallet','Statement of Account','reports.soa']],
         ];
         $groupIcons = ['SALES & CUSTOMER' => 'users', 'PRICING' => 'chart', 'KALKULATOR' => 'calculator', 'OPERASIONAL' => 'briefcase', 'MASTER DATA' => 'database', 'KEUANGAN' => 'wallet', 'AKUNTANSI' => 'book', 'Laporan Keuangan' => 'chart'];
+
+        $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
+        $checkItemActive = function ($item) use ($isCostPage) {
+            $permission = $item[0];
+            $destination = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
+            if (!$destination) return false;
+            if (str_starts_with((string)$destination, 'reports.')) {
+                return request()->routeIs($destination, $destination.'.*');
+            } elseif ($destination === 'accounts.mappings') {
+                return request()->routeIs('accounts.mappings');
+            } elseif ($destination === 'accounts.index') {
+                return request()->routeIs('accounts.*') && !request()->routeIs('accounts.mappings');
+            } elseif ($permission === 'costs.manage') {
+                return $isCostPage;
+            } else {
+                $prefix = str_contains((string)$destination, '.') ? substr($destination, 0, strrpos($destination, '.')) : $destination;
+                return request()->routeIs($prefix . '.*') && !($destination === 'jobs.index' && $isCostPage);
+            }
+        };
         @endphp
         @foreach($groups as $heading => $items)
             @if(collect($items)->contains(fn ($item) => auth()->user()->can($item[0])))
-            @php $groupOpen = collect($items)->contains(fn ($item) => isset($item[3]) && request()->routeIs($item[3].'*')); @endphp
+            @php $groupOpen = collect($items)->contains(fn ($item) => $checkItemActive($item)); @endphp
             <details class="nav-group" data-nav-group {{ $groupOpen ? 'open' : '' }}>
-            <summary class="nav-heading"><span class="nav-group-title"><x-icon name="{{ $groupIcons[$heading] ?? 'folder' }}"/> <span>{{ $heading }}</span></span><x-icon name="chevron-down" class="nav-group-chevron"/></summary>
+            <summary class="nav-heading" title="{{ $heading }}"><span class="nav-group-title"><x-icon name="{{ $groupIcons[$heading] ?? 'folder' }}"/> <span>{{ $heading }}</span></span><x-icon name="chevron-down" class="nav-group-chevron"/></summary>
             @foreach($items as $item)
-                @php [$permission, $icon, $label] = $item; @endphp
-                @can($permission)
                 @php
-                $destination = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
-                $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
-                $active = false;
-                if ($destination) {
-                    if (str_starts_with((string)$destination, 'reports.')) {
-                        $active = request()->routeIs($destination, $destination.'.*');
-                    } elseif ($destination === 'accounts.mappings') {
-                        $active = request()->routeIs('accounts.mappings');
-                    } elseif ($destination === 'accounts.index') {
-                        $active = request()->routeIs('accounts.*') && !request()->routeIs('accounts.mappings');
-                    } elseif ($permission === 'costs.manage') {
-                        $active = $isCostPage;
-                    } else {
-                        $prefix = str_contains((string)$destination, '.') ? substr($destination, 0, strrpos($destination, '.')) : $destination;
-                        $active = request()->routeIs($prefix . '.*') && !($destination === 'jobs.index' && $isCostPage);
-                    }
-                }
+                    [$permission, $icon, $label] = $item;
                 @endphp
-                @if($destination)
-                @if($label === 'Data Document')
-                <details class="nav-subgroup" {{ request()->routeIs('document-types.*') ? 'open' : '' }}>
-                    <summary class="nav-item {{ $active ? 'active' : '' }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span><x-icon name="chevron-down" class="nav-group-chevron"/></summary>
-                    <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && !request('service') ? 'active' : '' }}" href="{{ route('document-types.index') }}" title="Semua Dokumen"><x-icon name="grid"/><span>Semua Dokumen</span></a>
-                    @foreach(['exp_sea'=>'EXPORT SEA','exp_air'=>'EXPORT AIR','imp_sea'=>'IMPORT SEA','imp_air'=>'IMPORT AIR'] as $documentServiceCode => $documentServiceLabel)
-                    <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && request('service') === $documentServiceCode ? 'active' : '' }}" href="{{ route('document-types.index', ['service' => $documentServiceCode]) }}" title="{{ $documentServiceLabel }}"><x-icon name="file"/><span>{{ $documentServiceLabel }}</span></a>
-                    @endforeach
-                </details>
-                @else
-                <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
-                @endif
-                @else
-                <span class="nav-item upcoming" aria-disabled="true" title="{{ $label }} (Segera)"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
-                @endif
+                @can($permission)
+                    @php
+                    $destination = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
+                    $active = $checkItemActive($item);
+                    @endphp
+                    @if(!$destination)
+                        <span class="nav-item upcoming" aria-disabled="true" title="{{ $label }} (Segera)"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
+                    @elseif($label === 'Data Document')
+                        <details class="nav-subgroup" {{ request()->routeIs('document-types.*') ? 'open' : '' }}>
+                            <summary class="nav-item {{ $active ? 'active' : '' }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span><x-icon name="chevron-down" class="nav-group-chevron"/></summary>
+                            <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && !request('service') ? 'active' : '' }}" href="{{ route('document-types.index') }}" title="Semua Dokumen"><x-icon name="grid"/><span>Semua Dokumen</span></a>
+                            @foreach(['exp_sea'=>'EXPORT SEA','exp_air'=>'EXPORT AIR','imp_sea'=>'IMPORT SEA','imp_air'=>'IMPORT AIR'] as $documentServiceCode => $documentServiceLabel)
+                            <a class="nav-item nav-subitem {{ request()->routeIs('document-types.index') && request('service') === $documentServiceCode ? 'active' : '' }}" href="{{ route('document-types.index', ['service' => $documentServiceCode]) }}" title="{{ $documentServiceLabel }}"><x-icon name="file"/><span>{{ $documentServiceLabel }}</span></a>
+                            @endforeach
+                        </details>
+                    @else
+                        <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
+                    @endif
                 @endcan
             @endforeach
             </details>

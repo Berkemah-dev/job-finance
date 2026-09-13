@@ -56,7 +56,7 @@
         <h1>{{ $job->number }}</h1>
         <p>{{ $job->subject }} · Customer: <strong>{{ $customerName }}</strong>@if($job->pol || $job->pod) · {{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}@elseif($job->origin || $job->destination) · {{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}@endif</p>
     </div>
-    <a class="text-link" href="{{ route('jobs.index') }}">← Kembali ke daftar</a>
+    <a class="button button-secondary" href="{{ route('jobs.index') }}">← Kembali</a>
 </div>
 
     @if($job->statusHistory->isNotEmpty())

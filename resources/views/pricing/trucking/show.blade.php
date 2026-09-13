@@ -8,7 +8,7 @@
         <h1>{{ $truckingPrice->port_origin }} → {{ $truckingPrice->destination }}</h1>
         <p>Vendor: <strong>{{ $truckingPrice->vendor?->name ?? 'Tarif Standar / Umum' }}</strong> · Status: <span class="status-badge {{ $truckingPrice->is_active ? 'status-active' : 'status-inactive' }}">{{ $truckingPrice->is_active ? 'Aktif' : 'Nonaktif' }}</span></p>
     </div>
-    <a class="text-link" href="{{ route('pricing.trucking.index') }}">← Kembali ke daftar</a>
+    <a class="button button-secondary" href="{{ route('pricing.trucking.index') }}">← Kembali</a>
 </div>
 
 <div class="quote-actions" style="margin-bottom: 20px;">

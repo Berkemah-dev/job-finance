@@ -21,7 +21,7 @@ class VendorController extends Controller
             ->when($status === 'archived', fn ($q) => $q->onlyTrashed())
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%')->orWhere('country', 'like', '%'.$search.'%')))
             ->when($category !== '' && array_key_exists($category, config('operations.vendor_types')), fn ($q) => $q->where('type', $category))
-            ->orderBy('name')->paginate(10)->withQueryString();
+            ->orderBy('name')->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
 
         return view('vendors.index', compact('vendors', 'search', 'status', 'category'));
     }

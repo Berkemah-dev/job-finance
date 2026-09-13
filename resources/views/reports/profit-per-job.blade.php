@@ -10,15 +10,6 @@
     art-subtitle="maksimal."
 />
 
-@php
-    $totalJobs = $rows->count();
-    $totalTemporary = $rows->sum(fn ($row) => (float) $row->total_temporary);
-    $totalCost = $rows->sum(fn ($row) => (float) $row->total_provision_cost);
-    $totalRevenue = $rows->sum(fn ($row) => (float) $row->total_provision_sell);
-    $totalProfit = $rows->sum(fn ($row) => (float) $row->profit);
-    $totalMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
-@endphp
-
 <section class="panel report-filter-panel">
     <form class="filter-bar" method="GET">
         <div class="date-filter-group">
@@ -61,5 +52,6 @@
             </tbody>
         </table>
     </div>
+    <div class="pagination">{{ $rows->links() }}</div>
 </section>
 @endsection

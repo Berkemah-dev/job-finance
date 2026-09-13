@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title','Kalkulator Pajak')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Hitung Pajak Impor</h1></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
+<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Hitung Pajak Impor</h1></div>    <a class="button button-secondary" href="{{ route('calculators.index') }}">← Kembali</a></div>
 <section class="panel form-panel calculator-panel calc-detail-card">
 <div class="calc-detail-head"><div class="calc-icon-badge emerald"><x-icon name="file"/></div><h2>Input Pajak</h2></div>
 <form class="data-form calculator-form" id="tax-form"><div class="form-grid"><div class="field span-2"><label for="base_amount">Nilai Pabean / CIF (IDR)</label><input id="base_amount" type="text" inputmode="decimal" value="10000000" required></div><div class="field"><label for="import_duty_rate">Bea Masuk (%)</label><input id="import_duty_rate" type="number" min="0" max="100" step="0.01" value="0" required></div><div class="field"><label for="vat_rate">PPN</label><select id="vat_rate"><option value="11">PPN 11%</option><option value="12">PPN 12%</option></select></div><div class="field"><label for="withholding_mode">PPh</label><select id="withholding_mode"><option value="api">API · 2,5%</option><option value="non_api">Non-API · 7%</option><option value="manual">Manual</option></select></div><div class="field" id="manual-rate-field" hidden><label for="withholding_rate">Tarif PPh manual (%)</label><input id="withholding_rate" type="number" min="0" max="100" step="0.01" value="0"></div></div><div class="form-actions"><button class="button button-primary" type="submit">Hitung pajak</button></div></form>

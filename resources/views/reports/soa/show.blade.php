@@ -9,7 +9,7 @@
     </div>
     <div class="action-group">
         <a class="button button-secondary" href="{{ route('reports.soa.pdf', ['soaCustomer' => $customer->id, 'from' => $from->toDateString(), 'to' => $to->toDateString()]) }}" target="_blank">🖨 Cetak PDF SOA</a>
-        <a class="text-link" href="{{ route('reports.soa') }}">← Kembali ke daftar</a>
+        <a class="button button-secondary" href="{{ route('reports.soa') }}">← Kembali</a>
     </div>
 </div>
 <section class="panel">
@@ -98,6 +98,7 @@
             </tbody>
         </table>
     </div>
+    <div class="pagination">{{ $statement['rows']->links() }}</div>
 </section>
 
 @if(isset($logs) && $logs->isNotEmpty())

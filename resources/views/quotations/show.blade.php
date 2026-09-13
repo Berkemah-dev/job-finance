@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title','Detail Quotation')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">QUOTATION</p><h1>{{ $quotation->number }}</h1><p>{{ $quotation->subject }}</p></div><a class="text-link" href="{{ route('quotations.index') }}">Kembali ke daftar</a></div>
+<div class="page-heading"><div><p class="eyebrow">QUOTATION</p><h1>{{ $quotation->number }}</h1><p>{{ $quotation->subject }}</p></div><a class="button button-secondary" href="{{ route('quotations.index') }}">← Kembali</a></div>
 <section class="panel"><div class="panel-heading"><h2>Informasi penawaran</h2><span class="status-badge status-{{ $quotation->status->value }}">{{ $quotation->status->label() }}</span></div>
 <dl class="detail-grid"><div><dt>Customer</dt><dd><strong>{{ $quotation->customer_snapshot['name'] }}</strong><br>{{ $quotation->customer_snapshot['code'] }} @if($quotation->customer->trashed())<span class="count-badge">Diarsipkan</span>@endif</dd></div><div><dt>Tanggal quotation</dt><dd>{{ $quotation->quotation_date->format('d/m/Y') }}</dd></div><div><dt>Berlaku sampai</dt><dd>{{ $quotation->valid_until->format('d/m/Y') }}</dd></div><div><dt>Kontak</dt><dd>{{ $quotation->customer_snapshot['contact_name'] ?? '—' }}<br>{{ $quotation->customer_snapshot['email'] ?? '' }}<br>{{ $quotation->customer_snapshot['phone'] ?? '' }}</dd></div><div><dt>Alamat customer</dt><dd>{{ $quotation->customer_snapshot['address'] ?? '—' }}</dd></div><div><dt>Dibuat oleh</dt><dd>{{ $quotation->creator?->name ?? '—' }}<br>{{ $quotation->created_at->format('d/m/Y H:i') }}</dd></div>
 @if($quotation->sales)<div><dt>Sales PIC</dt><dd>{{ $quotation->sales->name }}</dd></div>@endif

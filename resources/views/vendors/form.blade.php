@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title',$vendor->exists?'Edit Vendor':'Tambah Vendor')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">MASTER DATA</p><h1>{{ $vendor->exists?'Edit vendor':'Tambah vendor' }}</h1><p>Data vendor digunakan pada trucking pricing dan biaya operasional.</p></div><a class="text-link" href="{{ $vendor->exists?route('vendors.show',$vendor):route('vendors.index') }}">Kembali</a></div>
+<div class="page-heading"><div><p class="eyebrow">MASTER DATA</p><h1>{{ $vendor->exists?'Edit vendor':'Tambah vendor' }}</h1><p>Data vendor digunakan pada trucking pricing dan biaya operasional.</p></div><a class="button button-secondary" href="{{ $vendor->exists?route('vendors.show',$vendor):route('vendors.index') }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ $vendor->exists?route('vendors.update',$vendor):route('vendors.store') }}">@csrf @if($vendor->exists) @method('PUT') @endif
 <input type="hidden" name="lock_version" value="{{ old('lock_version',$vendor->lock_version ?? 0) }}">
 <div class="form-grid">

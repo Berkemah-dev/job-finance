@@ -45,11 +45,12 @@
             <tfoot>
                 <tr class="summary-total">
                     <th colspan="3">Total</th>
-                    <th class="money">Rp {{ \App\Support\Money::format($rows->sum(fn($r)=>(float)$r->closing_debit)) }}</th>
-                    <th class="money">Rp {{ \App\Support\Money::format($rows->sum(fn($r)=>(float)$r->closing_credit)) }}</th>
+                    <th class="money">Rp {{ \App\Support\Money::format($totalDebit) }}</th>
+                    <th class="money">Rp {{ \App\Support\Money::format($totalCredit) }}</th>
                 </tr>
             </tfoot>
         </table>
     </div>
+    <div class="pagination">{{ $rows->links() }}</div>
 </section>
 @endsection

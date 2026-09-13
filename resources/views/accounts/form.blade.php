@@ -7,7 +7,7 @@
         <h1>{{ $account->exists ? 'Edit Akun' : ($parent ? 'Tambah Sub Akun: '.$parent->code.' · '.$parent->name : 'Tambah Akun') }}</h1>
         <p>{{ $parent ? 'Sub-akun baru akan berada di bawah '.$parent->code.' - '.$parent->name : 'Gunakan kode unik dan tipe akun yang sesuai.' }}</p>
     </div>
-    <a class="text-link" href="{{ route('accounts.index') }}">← Kembali ke Data COA</a>
+    <a class="button button-secondary" href="{{ route('accounts.index') }}">← Kembali</a>
 </div>
 
 @if($parent && !$account->exists)

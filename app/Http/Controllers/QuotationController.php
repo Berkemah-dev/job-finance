@@ -37,7 +37,7 @@ class QuotationController extends Controller
             ->when($serviceType !== '' && in_array($serviceType, ServiceType::allowedKeys(), true), fn ($q) => $q->where('service_type', $serviceType))
             ->when($dateFrom, fn ($q) => $q->whereDate('quotation_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('quotation_date', '<=', $dateTo))
-            ->latest('id')->paginate(10)->withQueryString();
+            ->latest('id')->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
 
         return view('quotations.index', ['quotations' => $quotations, 'search' => $search, 'status' => $status, 'customerId' => $customerId, 'salesId' => $salesId, 'serviceType' => $serviceType, 'serviceTypes' => $serviceTypes, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']), 'sales' => User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager']);

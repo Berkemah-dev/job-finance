@@ -8,7 +8,7 @@
         <h1>{{ $bc->number }}</h1>
         <p>Customer: <strong>{{ $bc->customer?->name ?? '—' }}</strong> @if($bc->job) · Job Order: <a class="text-link" href="{{ route('jobs.show', $bc->job) }}">{{ $bc->job->number }}</a>@endif</p>
     </div>
-    <a class="text-link" href="{{ route('booking-confirmations.index') }}">← Kembali ke daftar</a>
+    <a class="button button-secondary" href="{{ route('booking-confirmations.index') }}">← Kembali</a>
 </div>
 
 <div class="quote-actions" style="margin-bottom: 20px;">

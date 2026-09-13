@@ -78,5 +78,6 @@
             </tbody>
         </table>
     </div>
+    <div class="pagination">{{ $entries->links() }}</div>
 </section>
 @endsection

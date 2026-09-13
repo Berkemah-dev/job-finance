@@ -2,7 +2,7 @@
 @section('title', 'Edit Booking Confirmation ' . $bc->number)
 @section('content')
 
-<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Edit Booking Confirmation" description="{{ $bc->number }} · Customer: {{ $bc->customer?->name }}" action-url="{{ route('booking-confirmations.show', $bc) }}" action-label="← Kembali ke detail" action-icon="arrow" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
+<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Edit Booking Confirmation" description="{{ $bc->number }} · Customer: {{ $bc->customer?->name }}" action-url="{{ route('booking-confirmations.show', $bc) }}" action-label="← Kembali" action-icon="arrow" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
 
 <section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('booking-confirmations.update', $bc) }}" id="bcForm">

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title',$weeklyPricing->exists?'Edit Weekly Pricing':'Tambah Weekly Pricing')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">PRICING</p><h1>{{ $weeklyPricing->exists?'Edit weekly pricing':'Tambah weekly pricing' }}</h1><p>Kurs ini menjadi default quotation / invoice sampai ada weekly pricing baru.</p></div><a class="text-link" href="{{ route('pricing.weekly.index') }}">Kembali ke daftar</a></div>
+<div class="page-heading"><div><p class="eyebrow">PRICING</p><h1>{{ $weeklyPricing->exists?'Edit weekly pricing':'Tambah weekly pricing' }}</h1><p>Kurs ini menjadi default quotation / invoice sampai ada weekly pricing baru.</p></div>    <a class="button button-secondary" href="{{ route('pricing.weekly.index') }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ $weeklyPricing->exists?route('pricing.weekly.update',$weeklyPricing):route('pricing.weekly.store') }}">@csrf @if($weeklyPricing->exists) @method('PUT') @endif
 <input type="hidden" name="lock_version" value="{{ old('lock_version',$weeklyPricing->lock_version ?? 0) }}">
 <div class="form-grid">

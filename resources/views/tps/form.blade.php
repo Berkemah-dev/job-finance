@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title',$tps->exists?'Edit TPS':'Tambah TPS')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">MASTER DATA</p><h1>{{ $tps->exists?'Edit TPS':'Tambah TPS' }}</h1><p>Data TPS digunakan untuk mencatat Tempat Penimbunan Sementara pada proses operasional.</p></div><a class="text-link" href="{{ route('tps.index') }}">Kembali</a></div>
+<div class="page-heading"><div><p class="eyebrow">MASTER DATA</p><h1>{{ $tps->exists?'Edit TPS':'Tambah TPS' }}</h1><p>Data TPS digunakan untuk mencatat Tempat Penimbunan Sementara pada proses operasional.</p></div><a class="button button-secondary" href="{{ route('tps.index') }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ $tps->exists?route('tps.update',$tps):route('tps.store') }}">@csrf @if($tps->exists) @method('PUT') @endif
 <div class="form-grid">
 <div class="field"><label for="code">Kode TPS <span class="required">*</span></label><input id="code" name="code" type="text" value="{{ old('code',$tps->code) }}" placeholder="cth: JKTSP01" maxlength="30" required></div>

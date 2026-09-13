@@ -8,7 +8,7 @@
         <h1>{{ $si->number }}</h1>
         <p>Carrier: <strong>{{ $si->to_carrier }}</strong> @if($si->job) · Job Order: <a class="text-link" href="{{ route('jobs.show', $si->job) }}">{{ $si->job->number }}</a>@endif @if($si->customer) · Customer: {{ $si->customer->name }}@endif</p>
     </div>
-    <a class="text-link" href="{{ route('shipping-instructions.index') }}">← Kembali ke daftar</a>
+    <a class="button button-secondary" href="{{ route('shipping-instructions.index') }}">← Kembali</a>
 </div>
 
 <div class="quote-actions" style="margin-bottom: 20px;">

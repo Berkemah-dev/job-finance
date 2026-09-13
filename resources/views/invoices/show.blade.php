@@ -20,7 +20,7 @@
         <h1>{{ $invoice->number }}</h1>
         <p>{{ $invoice->customer_snapshot['name'] }} · Job: <a class="text-link" href="{{ route('jobs.show', $job) }}">{{ $job?->number ?? '—' }}</a></p>
     </div>
-    <a class="text-link" href="{{ route('invoices.index') }}">← Kembali ke daftar invoice</a>
+    <a class="button button-secondary" href="{{ route('invoices.index') }}">← Kembali</a>
 </div>
 
 <div class="quote-actions" style="margin-bottom: 20px;">

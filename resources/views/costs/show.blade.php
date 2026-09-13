@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title','Detail Biaya')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">{{ $job->number }} · {{ config('operations.job_statuses.'.$job->status) }}</p><h1>{{ $cost->number }}</h1><p>{{ $cost->description }}</p></div><a class="text-link" href="{{ route('jobs.costs.index',$job) }}">Kembali ke biaya</a></div>
+<div class="page-heading"><div><p class="eyebrow">{{ $job->number }} · {{ config('operations.job_statuses.'.$job->status) }}</p><h1>{{ $cost->number }}</h1><p>{{ $cost->description }}</p></div><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">← Kembali</a></div>
 @if($cost->status==='final')<div class="info-note">Biaya sudah Final dan terkunci. Perubahan langsung serta penghapusan tidak diperbolehkan.</div>@endif
 <section class="panel"><div class="panel-heading"><h2>Rincian biaya aktual</h2><span class="status-badge status-{{ $cost->status }}">{{ config('operations.cost_statuses.'.$cost->status) }}</span></div>
 <dl class="detail-grid">

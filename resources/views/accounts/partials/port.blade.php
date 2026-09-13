@@ -80,7 +80,7 @@
         </table>
     </div>
 
-    @if(method_exists($ports, 'links') && $ports->hasPages())
+    @if(method_exists($ports, 'links') && count($ports) > 0)
         <div class="pagination">{{ $ports->links() }}</div>
     @endif
 </section>

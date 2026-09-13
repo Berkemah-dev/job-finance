@@ -169,7 +169,7 @@
         </table>
     </div>
 
-    @if(method_exists($accounts, 'links') && $accounts->hasPages())
+    @if(method_exists($accounts, 'links') && count($accounts) > 0)
         <div class="pagination">{{ $accounts->links() }}</div>
     @endif
 </section>

@@ -37,7 +37,7 @@ class JobController extends Controller
             ->when($shipmentStatus !== '' && array_key_exists($shipmentStatus, config('operations.shipment_statuses')), fn ($q) => $q->where('shipment_status', $shipmentStatus))
             ->when($dateFrom, fn ($q) => $q->whereDate('job_date', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('job_date', '<=', $dateTo))
-            ->latest('id')->paginate(10)->withQueryString();
+            ->latest('id')->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
 
         return view('jobs.index', ['jobs' => $jobs, 'search' => $search, 'salesId' => $salesId, 'csId' => $csId, 'serviceType' => $serviceType, 'serviceTypes' => $serviceTypes, 'shipmentStatus' => $shipmentStatus, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'assignees' => User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager', 'customer-service']);

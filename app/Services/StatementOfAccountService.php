@@ -7,6 +7,8 @@ use App\Models\Invoice;
 use App\Support\Money;
 use Carbon\Carbon;
 
+use Illuminate\Pagination\LengthAwarePaginator;
+
 class StatementOfAccountService
 {
     private const AGING_BUCKETS = ['current', 'aging_1_30', 'aging_31_60', 'aging_61_90', 'aging_90_plus'];
@@ -51,7 +53,18 @@ class StatementOfAccountService
         }
         usort($customers, fn ($a, $b) => $b['balance']->compareTo($a['balance']));
 
-        return ['customers' => $customers, 'grand' => $grand];
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = min(100, max(5, (int) request('per_page', 10)));
+        $offset = ($page - 1) * $perPage;
+        $paginatedCustomers = new LengthAwarePaginator(
+            array_slice($customers, $offset, $perPage),
+            count($customers),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => request()->query()]
+        );
+
+        return ['customers' => $paginatedCustomers, 'grand' => $grand];
     }
 
     public function statement(Customer $customer, Carbon $from, Carbon $to): array
@@ -117,7 +130,18 @@ class StatementOfAccountService
             $aged[$this->bucket($days)] = $aged[$this->bucket($days)]->plus(Money::decimal($invoice->balance));
         }
 
-        return ['opening' => Money::checked($opening), 'closing' => Money::checked($closing), 'invoiced' => Money::checked($invoiced), 'paid' => Money::checked($paid), 'rows' => $rows, 'aged' => $aged];
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = min(100, max(5, (int) request('per_page', 10)));
+        $offset = ($page - 1) * $perPage;
+        $paginatedRows = new LengthAwarePaginator(
+            array_slice($rows, $offset, $perPage),
+            count($rows),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => request()->query()]
+        );
+
+        return ['opening' => Money::checked($opening), 'closing' => Money::checked($closing), 'invoiced' => Money::checked($invoiced), 'paid' => Money::checked($paid), 'rows' => $paginatedRows, 'aged' => $aged];
     }
 
     private function bucket(int $days): string

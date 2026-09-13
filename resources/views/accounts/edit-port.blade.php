@@ -6,10 +6,10 @@
         <p class="eyebrow">MASTER DATA &rsaquo; PORT</p>
         <h1>Edit Port</h1>
     </div>
-    <a class="button button-secondary" href="{{ route('ports.index') }}">Kembali</a>
+    <a class="button button-secondary" href="{{ route('ports.index') }}">← Kembali</a>
 </div>
 
-<section class="panel form-panel" style="max-width: 640px;">
+<section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('ports.update', $port) }}">
         @csrf
         @method('PUT')

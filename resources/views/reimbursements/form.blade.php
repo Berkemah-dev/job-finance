@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title','Buat Reimbursement')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">REIMBURSEMENT</p><h1>Buat reimbursement</h1><p>Catat pengeluaran karyawan yang belum diganti. Status awal: Menunggu persetujuan.</p></div><a class="text-link" href="{{ route('reimbursements.index') }}">Kembali</a></div>
+<div class="page-heading"><div><p class="eyebrow">REIMBURSEMENT</p><h1>Buat reimbursement</h1><p>Catat pengeluaran karyawan yang belum diganti. Status awal: Menunggu persetujuan.</p></div><a class="button button-secondary" href="{{ route('reimbursements.index') }}">← Kembali</a></div>
 <section class="panel"><form class="data-form" method="POST" action="{{ route('reimbursements.store') }}" enctype="multipart/form-data">@csrf
 @if($errors->any())<div class="info-note">{{ $errors->first() }}</div>@endif
 <div class="form-grid">

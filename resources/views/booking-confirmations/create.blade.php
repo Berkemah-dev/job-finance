@@ -11,7 +11,7 @@
         "This booking confirmation is not valid for any claim.";
 @endphp
 
-<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Buat Booking Confirmation" description="Terbitkan konfirmasi alokasi ruang kapal/pesawat untuk shipper dan customer." action-url="{{ route('booking-confirmations.index') }}" action-label="← Kembali ke daftar" action-icon="arrow" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
+<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Buat Booking Confirmation" description="Terbitkan konfirmasi alokasi ruang kapal/pesawat untuk shipper dan customer." action-url="{{ route('booking-confirmations.index') }}" action-label="← Kembali" action-icon="arrow" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
 
 <section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('booking-confirmations.store') }}" id="bcForm">

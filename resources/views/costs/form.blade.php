@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title',$cost->exists?'Edit Biaya':'Tambah Biaya')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">{{ $job->number }}</p><h1>{{ $cost->exists?'Edit biaya Draft':'Tambah biaya' }}</h1><p>{{ $job->subject }}</p></div><a class="text-link" href="{{ route('jobs.costs.index',$job) }}">Kembali ke biaya</a></div>
+<div class="page-heading"><div><p class="eyebrow">{{ $job->number }}</p><h1>{{ $cost->exists?'Edit biaya Draft':'Tambah biaya' }}</h1><p>{{ $job->subject }}</p></div><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" data-cost-form method="POST" action="{{ $cost->exists?route('jobs.costs.update',[$job,$cost]):route('jobs.costs.store',$job) }}">@csrf @if($cost->exists) @method('PUT') @endif
 <input type="hidden" name="job_version" value="{{ old('job_version',$job->lock_version) }}"><input type="hidden" name="lock_version" value="{{ old('lock_version',$cost->lock_version ?? 0) }}">
 <div class="info-note">Temporary ditagihkan kembali sebesar modal. Provision memiliki modal dan nilai jual; selisihnya menjadi estimasi profit job.</div>

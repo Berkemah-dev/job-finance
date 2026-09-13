@@ -6,10 +6,10 @@
         <p class="eyebrow">MASTER DATA</p>
         <h1>Edit Service</h1>
     </div>
-    <a class="button button-secondary" href="{{ route('service-types.index') }}">Kembali</a>
+    <a class="button button-secondary" href="{{ route('service-types.index') }}">← Kembali</a>
 </div>
 
-<section class="panel form-panel" style="max-width: 640px;">
+<section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('service-types.update', $serviceType) }}">
         @csrf @method('PUT')
         <div class="form-grid">

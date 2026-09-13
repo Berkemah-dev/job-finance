@@ -6,10 +6,10 @@
         <p class="eyebrow">MASTER DATA &rsaquo; JENIS BIAYA</p>
         <h1>Edit Jenis Biaya</h1>
     </div>
-    <a class="button button-secondary" href="{{ route('charge-types.index') }}">Kembali</a>
+    <a class="button button-secondary" href="{{ route('charge-types.index') }}">← Kembali</a>
 </div>
 
-<section class="panel form-panel" style="max-width: 560px;">
+<section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('charge-types.update', $chargeType) }}">
         @csrf
         @method('PUT')

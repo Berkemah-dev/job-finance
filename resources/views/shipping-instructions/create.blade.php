@@ -12,7 +12,7 @@
         <h1>Buat Shipping Instruction</h1>
         <p>Instruksi pengapalan muatan kepada Shipping Line / Carrier untuk penerbitan Bill of Lading (B/L).</p>
     </div>
-    <a class="text-link" href="{{ route('shipping-instructions.index') }}">← Kembali ke daftar</a>
+    <a class="button button-secondary" href="{{ route('shipping-instructions.index') }}">← Kembali</a>
 </div>
 
 <section class="panel form-panel">

@@ -8,7 +8,7 @@
         <h1>Edit Shipping Instruction</h1>
         <p>{{ $si->number }} · Carrier: {{ $si->to_carrier }}</p>
     </div>
-    <a class="text-link" href="{{ route('shipping-instructions.show', $si) }}">← Kembali ke detail</a>
+    <a class="button button-secondary" href="{{ route('shipping-instructions.show', $si) }}">← Kembali</a>
 </div>
 
 <section class="panel form-panel">
