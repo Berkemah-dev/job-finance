@@ -308,7 +308,7 @@ if (form) {
 
         if (itemsCountDisplay) itemsCountDisplay.textContent = itemsArray.length + ' item ditambahkan';
         if (previewTotal) previewTotal.textContent = formatMoney(grandTotalIdr);
-        if (previewProfit) previewProfit.textContent = canManageCost ? formatMoney(grandProfitIdr) : '—';
+        if (previewProfit) previewProfit.textContent = formatMoney(grandProfitIdr);
     };
 
     function escapeHtml(str) {
@@ -328,8 +328,8 @@ if (form) {
             note: item.note || '',
             unit: item.unit || 'Shipment',
             quantity: item.quantity || '1',
-            unit_cost: item.unit_cost || '0',
-            unit_price: item.unit_price || '0',
+            unit_cost: item.unit_cost === undefined || item.unit_cost === null || item.unit_cost === '' ? '0' : String(item.unit_cost),
+            unit_price: item.unit_price === undefined || item.unit_price === null || item.unit_price === '' ? '0' : String(item.unit_price),
             type: item.type || 'provision',
             pricing_source: item.pricing_source || 'manual',
             pricing_id: item.pricing_id || '',

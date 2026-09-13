@@ -227,9 +227,9 @@ class QuotationService
 
     private function activeCustomer(int|string $id): Customer
     {
-        $customer = Customer::whereKey($id)->lockForUpdate()->first();
+        $customer = Customer::whereKey($id)->where('approval_status', 'approved')->lockForUpdate()->first();
         if (! $customer) {
-            throw ValidationException::withMessages(['customer_id' => 'Customer sudah diarsipkan atau tidak tersedia. Pilih customer aktif.']);
+            throw ValidationException::withMessages(['customer_id' => 'Customer belum aktif/approved. Pilih customer yang sudah disetujui Finance Manager.']);
         }
 
         return $customer;

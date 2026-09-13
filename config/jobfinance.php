@@ -61,7 +61,7 @@ return [
             'vendors.manage', 'pricing.view', 'tps.manage',
         ]],
         'customer-service' => ['label' => 'Customer Service', 'permissions' => [
-            'dashboard.view', 'customers.view', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
+            'dashboard.view', 'customers.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
             'pricing.view',
         ]],
         'management' => ['label' => 'Management', 'permissions' => ['dashboard.view']],

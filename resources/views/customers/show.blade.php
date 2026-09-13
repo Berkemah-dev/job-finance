@@ -6,13 +6,21 @@
     <div class="action-group">
         <a class="button button-secondary" href="{{ route('customers.index') }}">← Kembali</a>
         @if(!$customer->trashed())<a class="button button-primary" href="{{ route('customers.edit',$customer) }}">Edit Customer</a>@endif
+        @if(!$customer->trashed() && ($customer->approval_status ?? 'approved') === 'pending' && auth()->user()?->hasRole(['finance-manager','finance','super-admin','admin']))
+            <form method="POST" action="{{ route('customers.approve',$customer) }}" data-confirm="Setujui customer ini?">
+                @csrf
+                <input type="hidden" name="lock_version" value="{{ $customer->lock_version }}">
+                <button class="button button-primary">Approve Customer</button>
+            </form>
+        @endif
     </div>
 </div>
+@if(($customer->approval_status ?? 'approved') === 'pending')<div class="info-note"><strong>Customer menunggu approval Finance Manager.</strong> Customer belum bisa dipakai untuk quotation sampai disetujui.</div>@endif
 @if($customer->trashed())<div class="info-note"><strong>Customer nonaktif.</strong> Tidak dapat dipilih untuk transaksi baru. <form method="POST" action="{{ route('customers.restore',$customer) }}" data-confirm="Aktifkan kembali customer ini?" class="inline-form">@csrf<input type="hidden" name="lock_version" value="{{ $customer->lock_version }}"><button class="text-link">Aktifkan kembali</button></form></div>@endif
 
 <section class="panel" style="margin-bottom: 20px;">
-    <div class="panel-heading"><h2>👤 Informasi Customer</h2>@if($customer->trashed())<span class="status-badge status-inactive">Nonaktif</span>@else<span class="status-badge status-active">Aktif</span>@endif</div>
-    <dl class="detail-grid"><div><dt>Kode customer</dt><dd>{{ $customer->code }}</dd></div><div><dt>Nama</dt><dd>{{ $customer->name }}</dd></div><div><dt>Kontak</dt><dd>{{ $customer->contact_name ?? '—' }}</dd></div><div><dt>Email</dt><dd>{{ $customer->email ?? '—' }}</dd></div><div><dt>Telepon</dt><dd>{{ $customer->phone ?? '—' }}</dd></div><div><dt>NPWP</dt><dd>{{ $customer->tax_number ?? '—' }}</dd></div><div><dt>Syarat pembayaran default</dt><dd>{{ config('operations.customer_payment_terms.'.$customer->default_payment_terms) ?? $customer->default_payment_terms ?? '—' }}</dd></div><div><dt>Alamat</dt><dd>{{ $customer->address ?? '—' }}</dd></div><div><dt>Dibuat</dt><dd>{{ $customer->created_at?->format('d/m/Y H:i') }} · Diperbarui {{ $customer->updated_at?->format('d/m/Y H:i') }}</dd></div></dl>
+    <div class="panel-heading"><h2>👤 Informasi Customer</h2>@if($customer->trashed())<span class="status-badge status-inactive">Nonaktif</span>@elseif(($customer->approval_status ?? 'approved') === 'pending')<span class="status-badge status-draft">Menunggu approval</span>@else<span class="status-badge status-active">Aktif</span>@endif</div>
+    <dl class="detail-grid"><div><dt>Kode customer</dt><dd>{{ $customer->code }}</dd></div><div><dt>Nama</dt><dd>{{ $customer->name }}</dd></div><div><dt>Kontak</dt><dd>{{ $customer->contact_name ?? '—' }}</dd></div><div><dt>Email</dt><dd>{{ $customer->email ?? '—' }}</dd></div><div><dt>Telepon</dt><dd>{{ $customer->phone ?? '—' }}</dd></div><div><dt>NPWP</dt><dd>{{ $customer->tax_number ?? '—' }}</dd></div><div><dt>Syarat pembayaran default</dt><dd>{{ config('operations.customer_payment_terms.'.$customer->default_payment_terms) ?? $customer->default_payment_terms ?? '—' }}</dd></div><div><dt>Alamat</dt><dd>{{ $customer->address ?? '—' }}</dd></div><div><dt>Dibuat</dt><dd>{{ $customer->created_at?->format('d/m/Y H:i') }} · Diperbarui {{ $customer->updated_at?->format('d/m/Y H:i') }}</dd></div><div><dt>Approval</dt><dd>@if(($customer->approval_status ?? 'approved') === 'pending')Menunggu Finance Manager@else Approved @if($customer->approver) oleh {{ $customer->approver->name }}@endif @if($customer->approved_at) · {{ $customer->approved_at->format('d/m/Y H:i') }}@endif @endif</dd></div></dl>
 </section>
 
 <section class="panel" style="margin-bottom: 20px;">

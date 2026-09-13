@@ -39,7 +39,7 @@ class QuotationController extends Controller
             ->when($dateTo, fn ($q) => $q->whereDate('quotation_date', '<=', $dateTo))
             ->latest('id')->paginate(10)->withQueryString();
 
-        return view('quotations.index', ['quotations' => $quotations, 'search' => $search, 'status' => $status, 'customerId' => $customerId, 'salesId' => $salesId, 'serviceType' => $serviceType, 'serviceTypes' => $serviceTypes, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']), 'sales' => User::whereHas('role', function ($q) {
+        return view('quotations.index', ['quotations' => $quotations, 'search' => $search, 'status' => $status, 'customerId' => $customerId, 'salesId' => $salesId, 'serviceType' => $serviceType, 'serviceTypes' => $serviceTypes, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']), 'sales' => User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager']);
         })->orderBy('name')->get(['id', 'name'])]);
     }
@@ -48,7 +48,7 @@ class QuotationController extends Controller
     {
         return view('quotations.form', [
             'quotation' => new Quotation,
-            'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
+            'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']),
             'sales' => $this->salesUsers(),
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
@@ -97,7 +97,7 @@ class QuotationController extends Controller
 
         return view('quotations.form', [
             'quotation' => $quotation->load('items'),
-            'customers' => Customer::orderBy('name')->get(['id', 'code', 'name']),
+            'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']),
             'sales' => $this->salesUsers(),
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),

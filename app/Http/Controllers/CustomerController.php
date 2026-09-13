@@ -21,7 +21,11 @@ class CustomerController extends Controller
         $search = mb_substr($request->string('search')->toString(), 0, 100);
         $status = $request->boolean('archived') ? 'inactive' : (string) $request->input('status', 'active');
         $onlyTrashed = $status === 'inactive';
-        $customers = Customer::query()->when($onlyTrashed, fn ($q) => $q->onlyTrashed())
+        $pending = $status === 'pending';
+        $customers = Customer::query()
+            ->when($onlyTrashed, fn ($q) => $q->onlyTrashed())
+            ->when(! $onlyTrashed && $pending, fn ($q) => $q->where('approval_status', 'pending'))
+            ->when(! $onlyTrashed && ! $pending, fn ($q) => $q->where('approval_status', 'approved'))
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%')
                 ->orWhere('email', 'like', '%'.$search.'%')->orWhere('tax_number', 'like', '%'.$search.'%')->orWhere('phone', 'like', '%'.$search.'%')))
             ->orderBy('name')->paginate(10)->withQueryString();
@@ -40,6 +44,11 @@ class CustomerController extends Controller
             $validated = $request->validated();
             $codeFormat = config('operations.customer_code');
             $validated['code'] = $numbers->nextYear('customer', $codeFormat['prefix'] ?? null, $codeFormat['delimiter'] ?? '-', (int) ($codeFormat['pad'] ?? 5));
+            $validated['approval_status'] = $request->user()->hasRole('sales') && ! $request->user()->hasRole(['sales-manager', 'finance-manager', 'super-admin', 'admin']) ? 'pending' : 'approved';
+            if ($validated['approval_status'] === 'approved') {
+                $validated['approved_by'] = $request->user()->id;
+                $validated['approved_at'] = now();
+            }
             $customer = $service->save(new Customer, Arr::except($validated, ['contacts']), $request->user());
             $this->syncContacts($customer, $validated['contacts'] ?? [], $request->user(), $service);
 
@@ -47,12 +56,16 @@ class CustomerController extends Controller
         }, 3);
         $this->handleUploads($customer, $request, $filesystem, $request->user());
 
-        return redirect()->route('customers.show', $customer)->with('success', 'Customer '.$customer->code.' berhasil ditambahkan.');
+        $message = $customer->isApproved()
+            ? 'Customer '.$customer->code.' berhasil ditambahkan.'
+            : 'Customer '.$customer->code.' berhasil dibuat dan menunggu approval Finance Manager.';
+
+        return redirect()->route('customers.show', $customer)->with('success', $message);
     }
 
     public function show(Customer $customer)
     {
-        $customer->load(['contacts', 'documents.uploader']);
+        $customer->load(['contacts', 'documents.uploader', 'approver']);
 
         return view('customers.show', compact('customer'));
     }
@@ -72,6 +85,29 @@ class CustomerController extends Controller
         $this->handleUploads($customer, $request, $filesystem, $request->user());
 
         return redirect()->route('customers.show', $customer)->with('success', 'Customer berhasil diperbarui.');
+    }
+
+    public function approve(Request $request, Customer $customer, MasterDataService $service)
+    {
+        if (! $request->user()?->hasRole(['finance-manager', 'finance', 'super-admin', 'admin'])) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($request, $customer, $service) {
+            $customer = Customer::query()->lockForUpdate()->findOrFail($customer->id);
+            $service->checkVersion($customer, ['lock_version' => $request->integer('lock_version')]);
+            $customer->forceFill([
+                'approval_status' => 'approved',
+                'approved_by' => $request->user()->id,
+                'approved_at' => now(),
+                'updated_by' => $request->user()->id,
+                'lock_version' => $customer->lock_version + 1,
+            ])->save();
+
+            $service->log($request->user(), 'customer.approved', 'Approve customer '.$customer->code.' · '.$customer->name, ['module' => 'customer', 'record_id' => $customer->id]);
+        }, 3);
+
+        return redirect()->route('customers.show', $customer)->with('success', 'Customer sudah disetujui dan bisa dipakai transaksi.');
     }
 
     public function destroy(VersionRequest $request, Customer $customer, MasterDataService $service)

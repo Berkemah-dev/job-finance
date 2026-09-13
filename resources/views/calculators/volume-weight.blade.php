@@ -15,6 +15,8 @@
 <div class="form-actions"><button class="button button-primary" type="submit">Hitung</button></div>
 </form>
 <div class="cost-summary-body calc-result-card" id="vw-result" hidden><div class="stats-grid">
+<div class="stat-card"><p>Total Quantity</p><strong id="r-quantity">—</strong></div>
+<div class="stat-card"><p>Total Gross Weight</p><strong id="r-gross-weight">—</strong></div>
 <div class="stat-card"><p>Volume weight</p><strong id="r-volume-weight">—</strong></div>
 <div class="stat-card"><p>CBM</p><strong id="r-cbm">—</strong></div>
 <div class="stat-card"><p>Berat tagihan</p><strong id="r-chargeable">—</strong></div>
@@ -37,6 +39,8 @@
             .then(({ ok, d }) => {
                 result.hidden = !ok;
                 if (!ok) { alert('Periksa kembali input.'); return; }
+                document.getElementById('r-quantity').textContent = d.rows.reduce((sum, row) => sum + Number(row.qty || 0), 0).toLocaleString('id-ID');
+                document.getElementById('r-gross-weight').textContent = Number(d.total_gross_weight).toLocaleString('id-ID') + ' kg';
                 document.getElementById('r-volume-weight').textContent = d.total_volume_weight.toLocaleString('id-ID') + ' kg';
                 document.getElementById('r-cbm').textContent = d.total_cbm.toLocaleString('id-ID', { maximumFractionDigits: 4 });
                 document.getElementById('r-chargeable').textContent = d.total_chargeable_weight.toLocaleString('id-ID') + ' kg';

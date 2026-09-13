@@ -400,102 +400,6 @@
                 <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noHbl }}</div></div>
             </div>
         @endif
-        {{-- STATUS KEPABEANAN BANNER (ALUR PIB → BILLING → PENJALURAN → PEMERIKSAAN FISIK → SPPB) --}}
-        @if($job->shipment_status === 'sppb')
-            <div style="padding: 18px 24px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #166534; letter-spacing: 0.5px;">
-                    🟢 STATUS: SPPB TERBIT — PROSES KEPABEANAN SELESAI
-                </div>
-                <div style="font-size: 13px; color: #15803d; margin-top: 6px; font-weight: 500;">
-                    Surat Persetujuan Pengeluaran Barang telah diterbitkan. Ini adalah ujung alur kepabeanan import.
-                </div>
-                <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ Billing BC</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ SPPB</span>
-                </div>
-            </div>
-        @elseif($job->shipment_status === 'behandle')
-            <div style="padding: 18px 24px; background: #fefce8; border: 1.5px solid #fde047; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #854d0e; letter-spacing: 0.5px;">
-                    STATUS: PEMERIKSAAN FISIK — MENUNGGU SPPB
-                </div>
-                <div style="font-size: 13px; color: #92400e; margin-top: 6px; font-weight: 500;">
-                    Barang sedang diperiksa fisik di Terminal / TPS. Setelah selesai, alur lanjut ke SPPB.
-                </div>
-                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ Billing BC</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 700;">SPJM → Pemeriksaan Fisik</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700;">⏳ Menunggu SPPB</span>
-                </div>
-            </div>
-        @elseif($job->shipment_status === 'spjm')
-            <div style="padding: 18px 24px; background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #991b1b; letter-spacing: 0.5px;">
-                    STATUS: SPJM DITERBITKAN — PERLU PEMERIKSAAN FISIK
-                </div>
-                <div style="font-size: 13px; color: #b91c1c; margin-top: 6px; font-weight: 500;">
-                    SPJM sudah diterbitkan. Selanjutnya operation upload dokumen pemeriksaan fisik/SLIM, lalu SPPB sebagai final.
-                </div>
-                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ Billing BC</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 700;">SPJM</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 700;">→ Pemeriksaan Fisik → SPPB</span>
-                </div>
-            </div>
-        @elseif($job->shipment_status === 'billing')
-            <div style="padding: 18px 24px; background: #f5f3ff; border: 1.5px solid #c4b5fd; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #5b21b6; letter-spacing: 0.5px;">
-                    🟣 STATUS: BILLING BEA CUKAI — MENUNGGU PENJALURAN
-                </div>
-                <div style="font-size: 13px; color: #6d28d9; margin-top: 6px; font-weight: 500;">
-                    Tagihan Bea Cukai sedang diproses. Setelah billing, hasil penjaluran adalah SPPB langsung atau SPJM → pemeriksaan fisik → SPPB.
-                </div>
-                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700;">✓ PIB</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #ede9fe; color: #5b21b6; font-size: 12px; font-weight: 700;">🟣 Billing BC</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 700;">→ Penjaluran</span>
-                </div>
-            </div>
-        @elseif($job->shipment_status === 'pib_submitted')
-            <div style="padding: 18px 24px; background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #075985; letter-spacing: 0.5px;">
-                    🔵 STATUS: PIB DIAJUKAN — MENUNGGU BILLING BEA CUKAI
-                </div>
-                <div style="font-size: 13px; color: #0369a1; margin-top: 6px; font-weight: 500;">
-                    Pemberitahuan Impor Barang (PIB) telah diajukan ke Bea Cukai. Menunggu tagihan billing diterbitkan.
-                </div>
-                <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; font-weight: 700;">🔵 PIB Diajukan</span>
-                    <span style="padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 700;">→ Billing BC → Penjaluran</span>
-                </div>
-            </div>
-        @elseif($job->shipment_status === 'npe')
-            <div style="padding: 18px 24px; background: #eef2ff; border: 1.5px solid #a5b4fc; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #3730a3; letter-spacing: 0.5px;">
-                    STATUS: NPE TERBIT
-                </div>
-                <div style="font-size: 13px; color: #4338ca; margin-top: 6px; font-weight: 500;">
-                    Nota Pelayanan Ekspor sudah tercatat untuk proses dokumen export.
-                </div>
-            </div>
-        @else
-            <div style="padding: 18px 24px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px;">
-                <div style="font-size: 15px; font-weight: 800; color: #334155; letter-spacing: 0.5px;">
-                    STATUS KEPABEANAN: {{ strtoupper(config('operations.shipment_statuses.'.$job->shipment_status) ?? $job->shipment_status ?? 'DALAM PROSES DOKUMEN') }}
-                </div>
-                <div style="font-size: 13px; color: #64748b; margin-top: 6px; font-weight: 500;">
-                    @if($isImport)
-                        Alur: <strong>PIB</strong> → <strong>Billing BC</strong> → <strong>Penjaluran</strong> (SPPB langsung selesai | SPJM → Pemeriksaan Fisik → SPPB)
-                    @else
-                        Proses kepabeanan dan pendaftaran dokumen aktif dalam pemantauan operasional.
-                    @endif
-                </div>
-            </div>
-        @endif
-
         {{-- FORM UPDATE STATUS KEPABEANAN --}}
         @if($job->status === 'open' && auth()->user()->can('update', $job))
             <form class="transition-form" method="POST" action="{{ route('jobs.shipment-status',$job) }}" style="padding-top: 16px; border-top: 1px solid #e2e8f0;">
@@ -685,174 +589,168 @@
 {{-- TAB: SURAT KUASA (SK DO & SK PABEAN)                                      --}}
 {{-- ========================================================================= --}}
 <div id="tab-sk" class="job-tab-content" style="display: none;">
-    <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06); margin-bottom: 24px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
-            <div style="display:flex; align-items:center; gap:15px;">
-                <div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">📜</div>
+    <section class="panel" style="margin-bottom: 24px;">
+        <div class="panel-heading">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span class="stat-icon blue"><x-icon name="file"/></span>
                 <div>
                     <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN SURAT KUASA</p>
-                    <h2 style="margin:0 0 4px;">Surat Kuasa Pengurusan (Import)</h2>
-                    <p style="margin:0;color:#64748b;">Surat kuasa resmi untuk pengurusan Delivery Order (DO) dan Kepabeanan (Customs).</p>
+                    <h2>Surat Kuasa Pengurusan (Import)</h2>
+                    <p>Surat kuasa untuk pengurusan Delivery Order dan kepabeanan.</p>
                 </div>
             </div>
         </div>
-        <div style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div style="padding: 20px; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #fff;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; display: grid; place-items: center; font-size: 18px;">📄</div>
-                    <div>
-                        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a;">Surat Kuasa DO (SK DO)</h3>
-                        <span class="subtle" style="font-size: 12px;">Untuk pengambilan DO di pelayaran / agen</span>
-                    </div>
-                </div>
-                <p style="font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
-                    Surat kuasa dari Consignee/Customer kepada PT Radix International Logistics untuk mengurus dan mengambil Delivery Order.
-                </p>
-                <div style="display: flex; gap: 8px;">
-                    <a class="button button-primary" href="{{ route('jobs.sk-do.pdf', $job) }}" target="_blank">
-                        🖨 Preview / Cetak SK DO
-                    </a>
-                </div>
-            </div>
 
-            <div style="padding: 20px; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #fff;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; display: grid; place-items: center; font-size: 18px;">📑</div>
-                    <div>
-                        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a;">Surat Kuasa Kepabeanan (SK Pabean)</h3>
-                        <span class="subtle" style="font-size: 12px;">Untuk pengurusan dokumen & fisik Bea Cukai</span>
+        <div class="report-grid" style="padding: 0 24px 24px;">
+            <article class="report-card">
+                <div class="report-card-head">
+                    <div class="report-card-title">
+                        <span class="report-icon blue"><x-icon name="file"/></span>
+                        <div>
+                            <h2>Surat Kuasa DO (SK DO)</h2>
+                            <small>Pengambilan DO di pelayaran / agen</small>
+                        </div>
                     </div>
                 </div>
-                <p style="font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
-                    Surat kuasa kepabeanan untuk proses pengeluaran barang impor di kantor pelayanan Bea dan Cukai.
-                </p>
-                <div style="display: flex; gap: 8px;">
-                    <a class="button button-primary" href="{{ route('jobs.sk-pabean.pdf', $job) }}" target="_blank">
-                        🖨 Preview / Cetak SK Pabean
-                    </a>
+                <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Surat kuasa dari consignee/customer kepada PT Radix International Logistics untuk mengurus dan mengambil Delivery Order.</p>
+                <a class="button button-primary" href="{{ route('jobs.sk-do.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak SK DO</a>
+            </article>
+
+            <article class="report-card">
+                <div class="report-card-head">
+                    <div class="report-card-title">
+                        <span class="report-icon purple"><x-icon name="file"/></span>
+                        <div>
+                            <h2>Surat Kuasa Kepabeanan (SK Pabean)</h2>
+                            <small>Pengurusan dokumen & fisik Bea Cukai</small>
+                        </div>
+                    </div>
                 </div>
-            </div>
+                <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Surat kuasa kepabeanan untuk proses pengeluaran barang impor di kantor pelayanan Bea dan Cukai.</p>
+                <a class="button button-primary" href="{{ route('jobs.sk-pabean.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak SK Pabean</a>
+            </article>
         </div>
     </section>
 </div>
-
 {{-- ========================================================================= --}}
 {{-- TAB: DEKLARASI NILAI PABEAN (DNP)                                         --}}
 {{-- ========================================================================= --}}
 <div id="tab-dnp" class="job-tab-content" style="display: none;">
-    <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06); margin-bottom: 24px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
-            <div style="display:flex; align-items:center; gap:15px;">
-                <div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">📋</div>
+    <section class="panel" style="margin-bottom: 24px;">
+        <div class="panel-heading">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span class="stat-icon amber"><x-icon name="file"/></span>
                 <div>
                     <p class="eyebrow" style="margin-bottom:4px;">KEPABEANAN IMPORT</p>
-                    <h2 style="margin:0 0 4px;">Deklarasi Nilai Pabean (DNP)</h2>
-                    <p style="margin:0;color:#64748b;">Dokumen deklarasi nilai pabean resmi untuk pengisian dan pendaftaran PIB.</p>
+                    <h2>Deklarasi Nilai Pabean (DNP)</h2>
+                    <p>Dokumen deklarasi nilai pabean resmi untuk pengisian dan pendaftaran PIB.</p>
                 </div>
             </div>
-            <a class="button button-primary" href="{{ route('jobs.dnp.pdf', $job) }}" target="_blank">🖨 Preview / Cetak DNP</a>
+            <a class="button button-primary" href="{{ route('jobs.dnp.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak DNP</a>
         </div>
-        <div style="padding: 24px;">
-            <div style="padding: 20px; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #fff;">
-                <h3 style="margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #0f172a;">Rincian Data Deklarasi Nilai Pabean</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                    <tr>
-                        <td style="width: 25%; font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Nomor Job Order</td>
-                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0; font-weight: 700;">{{ $job->number }}</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Importir / Consignee</td>
-                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $job->consignee_name ?? $customerName }}</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Pemasok / Shipper</td>
-                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $job->shipper_name ?? '—' }}</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">No AJU / PIB</td>
-                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $noAju }} / {{ $noNopen }}</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600; padding: 8px 12px; border: 1px solid #e2e8f0;">Komoditas</td>
-                        <td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{{ $commodityStr }}</td>
-                    </tr>
-                </table>
-            </div>
+
+        <div style="padding: 0 24px 24px;">
+            <article class="report-card">
+                <div class="report-card-head">
+                    <div class="report-card-title">
+                        <span class="report-icon blue"><x-icon name="briefcase"/></span>
+                        <div>
+                            <h2>Rincian Data Deklarasi Nilai Pabean</h2>
+                            <small>Data utama yang masuk ke dokumen DNP</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-scroll" style="margin-top: 16px;">
+                    <table>
+                        <tbody>
+                            <tr><th style="width: 240px;">Nomor Job Order</th><td><strong>{{ $job->number }}</strong></td></tr>
+                            <tr><th>Importir / Consignee</th><td>{{ $job->consignee_name ?? $customerName }}</td></tr>
+                            <tr><th>Pemasok / Shipper</th><td>{{ $job->shipper_name ?? '—' }}</td></tr>
+                            <tr><th>No AJU / PIB</th><td>{{ $noAju }} / {{ $noNopen }}</td></tr>
+                            <tr><th>Komoditas</th><td>{{ $commodityStr }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
         </div>
     </section>
-</div>
-@endif
+</div>@endif
 
 {{-- ========================================================================= --}}
 {{-- TAB: TANDA TERIMA & DELIVERY                                              --}}
 {{-- ========================================================================= --}}
 <div id="tab-delivery" class="job-tab-content" style="display: none;">
-    <section class="panel" style="padding: 24px; margin-bottom: 24px;">
-        <div class="panel-heading" style="margin-bottom: 16px;">
-            <h2>Surat Jalan & Tanda Terima Dokumen / Barang</h2>
-            <span class="subtle">Dokumen serah terima barang dan konfirmasi pengantaran</span>
-        </div>
-
-        <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
-            <a class="button button-secondary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank">
-                <x-icon name="file"/> Cetak Surat Jalan (Delivery Order)
-            </a>
-            <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', $job) }}" target="_blank">
-                <x-icon name="file"/> Cetak Tanda Terima Dokumen & Barang
-            </a>
-        </div>
-
-        {{-- STATUS DO --}}
-        <div style="padding: 18px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #fff; margin-bottom: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+    <section class="panel" style="margin-bottom: 24px;">
+        <div class="panel-heading">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span class="stat-icon blue"><x-icon name="file"/></span>
                 <div>
-                    <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Status Delivery Order (DO)</span>
-                    <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 4px;">
-                        @if($job->do_confirmed_at)
-                            <span style="color: #16a34a;">✓ Selesai Dikonfirmasi</span>
-                            <div style="font-size: 13px; font-weight: normal; color: #64748b;">
-                                Dikonfirmasi pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}
-                            </div>
-                        @else
-                            <span style="color: #ea580c;">Menunggu Penyelesaian Pengantaran</span>
-                        @endif
-                    </div>
+                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN DELIVERY</p>
+                    <h2>Surat Jalan & Tanda Terima</h2>
+                    <p>Dokumen serah terima barang dan konfirmasi pengantaran.</p>
                 </div>
-                @if(!$job->do_confirmed_at && $job->status === 'open')
-                    @can('jobs.confirm-do')
-                        <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?">
-                            @csrf
-                            <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">Konfirmasi DO Selesai</button>
-                        </form>
-                    @endcan
-                @endif
             </div>
         </div>
 
-        {{-- TIMELINE PENGIRIMAN --}}
-        @if($job->shipmentStatusHistory->isNotEmpty())
-            <div class="panel-heading"><h2>Timeline Pengiriman & Milestone</h2></div>
-            <ol class="approval-timeline">
-                @foreach($job->shipmentStatusHistory as $event)
-                    <li>
-                        <span></span>
+        <div class="report-grid" style="padding: 0 24px 24px;">
+            <article class="report-card">
+                <div class="report-card-head">
+                    <div class="report-card-title">
+                        <span class="report-icon blue"><x-icon name="file"/></span>
                         <div>
-                            <strong>
-                                @if($event->from_status)
-                                    {{ config('operations.shipment_statuses.'.$event->from_status) ?? $event->from_status }} → {{ config('operations.shipment_statuses.'.$event->to_status) ?? $event->to_status }}
-                                @else
-                                    {{ config('operations.shipment_statuses.'.$event->to_status) ?? $event->to_status }}
-                                @endif
-                            </strong>
-                            <p>{{ $event->user?->name ?? 'System' }} · {{ $event->created_at->format('d/m/Y H:i') }}@if($event->note)<br>{{ $event->note }}@endif</p>
+                            <h2>Surat Jalan</h2>
+                            <small>Delivery order untuk pengantaran barang</small>
                         </div>
-                    </li>
-                @endforeach
-            </ol>
-        @endif
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak dokumen pengantar barang berisi penerima, rute, deskripsi barang, quantity, dan area tanda tangan.</p>
+                <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak Surat Jalan</a>
+            </article>
+
+            <article class="report-card">
+                <div class="report-card-head">
+                    <div class="report-card-title">
+                        <span class="report-icon green"><x-icon name="check"/></span>
+                        <div>
+                            <h2>Tanda Terima</h2>
+                            <small>Bukti serah terima dokumen / barang</small>
+                        </div>
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi BL/AWB, daftar dokumen/barang, catatan, dan tanda tangan.</p>
+                <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak Tanda Terima</a>
+            </article>
+        </div>
+
+        <div style="padding: 0 24px 24px;">
+            <article class="report-card">
+                <div class="report-card-head">
+                    <div class="report-card-title">
+                        <span class="report-icon amber"><x-icon name="briefcase"/></span>
+                        <div>
+                            <h2>Status Delivery Order (DO)</h2>
+                            <small>Status penyelesaian pengantaran</small>
+                        </div>
+                    </div>
+                </div>
+                <strong class="report-value {{ $job->do_confirmed_at ? 'positive' : 'negative' }}" style="font-size: 18px;">
+                    {{ $job->do_confirmed_at ? 'Selesai Dikonfirmasi' : 'Menunggu Penyelesaian Pengantaran' }}
+                </strong>
+                @if($job->do_confirmed_at)
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 10px;">Dikonfirmasi pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.</p>
+                @elseif($job->status === 'open')
+                    @can('jobs.confirm-do')
+                        <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?" style="margin-top: 16px;">
+                            @csrf
+                            <button class="button button-primary" style="background:#16a34a;border-color:#16a34a"><x-icon name="check"/> Konfirmasi DO Selesai</button>
+                        </form>
+                    @endcan
+                @endif
+            </article>
+        </div>
     </section>
 </div>
-
 {{-- ========================================================================= --}}
 {{-- TAB 5: BIAYA & PROFIT                                                     --}}
 {{-- ========================================================================= --}}

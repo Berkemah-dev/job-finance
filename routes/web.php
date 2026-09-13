@@ -169,6 +169,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('can:customers.view')->name('customers.index');
     Route::get('/customers/create', [CustomerController::class, 'create'])->middleware('can:customers.manage')->name('customers.create');
     Route::post('/customers', [CustomerController::class, 'store'])->middleware('can:customers.manage')->name('customers.store');
+    Route::post('/customers/{customer}/approve', [CustomerController::class, 'approve'])->middleware('can:customers.view')->name('customers.approve');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('can:customers.view')->name('customers.show');
     Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->middleware('can:customers.manage')->name('customers.edit');
     Route::put('/customers/{customer}', [CustomerController::class, 'update'])->middleware('can:customers.manage')->name('customers.update');
