@@ -571,43 +571,84 @@
 .approval-timeline {
     list-style: none;
     margin: 0;
-    padding: 8px 24px 24px 24px;
-}
-.approval-timeline li {
+    padding: 8px 24px 24px;
     display: flex;
     gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-color: #d7e1ef transparent;
+}
+.approval-timeline::-webkit-scrollbar {
+    height: 6px;
+}
+.approval-timeline::-webkit-scrollbar-thumb {
+    background: #d7e1ef;
+    border-radius: 999px;
+}
+.approval-timeline li {
     position: relative;
-    padding: 12px 0;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 12px;
+    min-width: 230px;
+    max-width: 280px;
+    padding: 0;
+    scroll-snap-align: start;
 }
 .approval-timeline li > span {
-    width: 11px;
-    height: 11px;
-    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
     background: #dfe8f6;
-    margin-top: 4px;
-    box-shadow: 0 0 0 4px #f2f6fd;
+    box-shadow: 0 0 0 5px #f2f6fd;
     z-index: 1;
+    margin: 0 0 0 2px;
 }
 .approval-timeline li:not(:last-child):after {
     content: "";
     position: absolute;
-    top: 22px;
-    left: 4.5px;
-    width: 2px;
-    height: calc(100% - 14px);
+    top: 7px;
+    left: 19px;
+    width: calc(100% + 10px);
+    height: 2px;
     background: #dfe8f6;
 }
+.approval-timeline li > div {
+    position: relative;
+    z-index: 1;
+    min-height: 108px;
+    padding: 14px 16px;
+    border: 1px solid #e1e7f1;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(38, 62, 101, .06);
+}
 .approval-timeline strong {
-    font-size: 11px;
-    font-weight: 500;
-    color: #344768;
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f1f3d;
+    line-height: 1.5;
 }
 .approval-timeline p {
-    font-size: 10px;
+    font-size: 10.5px;
     color: #8490a4;
-    margin-top: 3px;
+    margin-top: 7px;
     line-height: 1.7;
+    white-space: normal;
+}
+.theme-dark .approval-timeline li > div {
+    background: #172033;
+    border-color: #334155;
+}
+.theme-dark .approval-timeline strong {
+    color: #f8fafc;
+}
+@media(max-width:640px){
+    .approval-timeline { padding: 8px 18px 20px; }
+    .approval-timeline li { min-width: 210px; }
 }
 .ref-table {
     border-collapse: collapse;

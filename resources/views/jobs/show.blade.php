@@ -326,108 +326,79 @@
             <span class="subtle">{{ $isImport ? 'Nomor Pengajuan AJU, Nopen, SPJM/SPPB' : 'No AJU 6 digit terakhir, NOPEN PEB, tanggal PEB, dan NPE' }}</span>
         </div>
 
-        {{-- GRID NOMOR PENGAJUAN & NOPEN (PERSIS GAMBAR) --}}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div>
-                <label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
-                    No AJU (6 digit terakhir)
-                </label>
-                <div style="padding: 12px 16px; border: 2px solid #f97316; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0f172a; background: #fff;">
-                    {{ $noAju }}
-                </div>
-            </div>
-            <div>
-                <label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
-                    {{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}
-                </label>
-                <div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">
-                    {{ $isImport ? $noNopen : $noPeb }}
-                </div>
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            @if(!$isImport)
-                <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
-                        Tanggal PEB
-                    </label>
-                    <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">
-                        {{ $pebDate }}
-                    </div>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
-                        Nomor NPE
-                    </label>
-                    <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">
-                        {{ $noNpe }}
-                    </div>
-                </div>
-            @endif
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
-                    Nomor BL / MBL
-                </label>
-                <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">
-                    {{ $noMbl }}
-                </div>
-            </div>
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
-                    Nomor HBL / HAWB
-                </label>
-                <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">
-                    {{ $noHbl }}
-                </div>
-            </div>
-        </div>
-
         @if(auth()->user()->can('update', $job))
-            <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="padding: 18px; border: 1px solid #dbeafe; border-radius: 12px; background: #f8fbff; margin-bottom: 24px;">
+            <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="margin-bottom: 24px;">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="lock_version" value="{{ old('lock_version', $job->lock_version) }}">
                 <input type="hidden" name="subject" value="{{ old('subject', $job->subject) }}">
                 <input type="hidden" name="job_date" value="{{ old('job_date', $job->job_date?->format('Y-m-d')) }}">
-                <div class="panel-heading" style="margin-bottom: 12px;">
-                    <h2 style="font-size: 16px;">Isi Data Kepabeanan</h2>
-                    <span class="subtle">Nomor bisa diisi manual jika belum terbaca dari upload dokumen.</span>
-                </div>
-                <div class="form-grid">
+                <input type="hidden" name="redirect_tab" value="customs">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div class="field">
-                        <label for="booking_reference_customs">No AJU (6 digit terakhir)</label>
-                        <input type="text" name="booking_reference" id="booking_reference_customs" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 260200">
+                        <label for="booking_reference_customs" style="font-size: 13.5px; font-weight: 700; color: #0f172a;">No AJU (6 digit terakhir)</label>
+                        <input type="text" name="booking_reference" id="booking_reference_customs" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 260200" style="border: 2px solid #f97316; font-size: 16px; font-weight: 700;">
                     </div>
                     @if($isImport)
                         <div class="field">
-                            <label for="nopen_customs">Nomor Pendaftaran (Nopen)</label>
-                            <input type="text" name="nopen" id="nopen_customs" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari dokumen SPPB/SPJM">
+                            <label for="nopen_customs" style="font-size: 13.5px; font-weight: 700; color: #0f172a;">Nomor Pendaftaran (Nopen)</label>
+                            <input type="text" name="nopen" id="nopen_customs" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari SPPB/SPJM" style="font-size: 16px; font-weight: 600;">
                         </div>
                     @else
                         <div class="field">
-                            <label for="peb_number_customs">NOPEN PEB</label>
-                            <input type="text" name="peb_number" id="peb_number_customs" maxlength="60" value="{{ old('peb_number', $job->peb_number) }}" placeholder="contoh: 415575">
-                        </div>
-                        <div class="field">
-                            <label for="peb_date_customs">Tanggal PEB</label>
-                            <input type="date" name="peb_date" id="peb_date_customs" value="{{ old('peb_date', $job->peb_date?->format('Y-m-d')) }}">
-                        </div>
-                        <div class="field">
-                            <label for="npe_number_customs">Nomor NPE</label>
-                            <input type="text" name="npe_number" id="npe_number_customs" maxlength="60" value="{{ old('npe_number', $job->npe_number) }}" placeholder="Isi nomor NPE">
+                            <label for="peb_number_customs" style="font-size: 13.5px; font-weight: 700; color: #0f172a;">NOPEN PEB</label>
+                            <input type="text" name="peb_number" id="peb_number_customs" maxlength="60" value="{{ old('peb_number', $job->peb_number) }}" placeholder="contoh: 415575" style="font-size: 16px; font-weight: 600;">
                         </div>
                     @endif
                 </div>
-                <div class="form-actions" style="margin-bottom: 0;">
+
+                @if(!$isImport)
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="field">
+                            <label for="peb_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal PEB</label>
+                            <input type="date" name="peb_date" id="peb_date_customs" value="{{ old('peb_date', $job->peb_date?->format('Y-m-d')) }}">
+                        </div>
+                        <div class="field">
+                            <label for="npe_number_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Nomor NPE</label>
+                            <input type="text" name="npe_number" id="npe_number_customs" maxlength="60" value="{{ old('npe_number', $job->npe_number) }}" placeholder="Isi nomor NPE">
+                        </div>
+                    </div>
+                @endif
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div class="field">
+                        <label for="{{ $isAir ? 'awb_number_customs' : 'bl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label>
+                        @if($isAir)
+                            <input type="text" name="awb_number" id="awb_number_customs" maxlength="60" value="{{ old('awb_number', $job->awb_number) }}" placeholder="Isi nomor AWB / MAWB">
+                        @else
+                            <input type="text" name="bl_number" id="bl_number_customs" maxlength="60" value="{{ old('bl_number', $job->bl_number) }}" placeholder="Isi nomor BL / MBL">
+                        @endif
+                    </div>
+                    <div class="field">
+                        <label for="{{ $isAir ? 'hawb_number_customs' : 'hbl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label>
+                        @if($isAir)
+                            <input type="text" name="hawb_number" id="hawb_number_customs" maxlength="60" value="{{ old('hawb_number', $job->hawb_number) }}" placeholder="Isi nomor HAWB">
+                        @else
+                            <input type="text" name="hbl_number" id="hbl_number_customs" maxlength="60" value="{{ old('hbl_number', $job->hbl_number) }}" placeholder="Isi nomor HBL">
+                        @endif
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-bottom: 0; justify-content: flex-end;">
                     <button class="button button-primary">Simpan Data Kepabeanan</button>
                 </div>
             </form>
+        @else
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No AJU (6 digit terakhir)</label><div style="padding: 12px 16px; border: 2px solid #f97316; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0f172a; background: #fff;">{{ $noAju }}</div></div>
+                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }}</div></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div></div>
+                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noHbl }}</div></div>
+            </div>
         @endif
-
         {{-- STATUS KEPABEANAN BANNER (ALUR PIB → BILLING → PENJALURAN → PEMERIKSAAN FISIK → SPPB) --}}
         @if($job->shipment_status === 'sppb')
             <div style="padding: 18px 24px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; margin-bottom: 24px;">
