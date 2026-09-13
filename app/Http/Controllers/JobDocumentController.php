@@ -6,6 +6,7 @@ use App\Models\DocumentType;
 use App\Models\Job;
 use App\Models\JobDocument;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
