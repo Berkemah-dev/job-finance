@@ -6,18 +6,52 @@ use App\Http\Requests\UserRequest;
 use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\MasterDataService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AccessController extends Controller
 {
-    public function users(): View
+    public function users(Request $request): View
     {
         Gate::authorize('viewAny', User::class);
 
-        return view('access.users', ['users' => User::with('role')->orderBy('name')->paginate(10), 'roles' => Role::with('permissions')->get()]);
+        $filters = [
+            'search' => trim((string) $request->input('search', '')),
+            'role_id' => $request->integer('role_id') ?: null,
+            'status' => (string) $request->input('status', 'all'),
+        ];
+
+        $query = User::with('role')
+            ->when($filters['search'] !== '', function ($query) use ($filters) {
+                $search = $filters['search'];
+
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['role_id'], fn ($query) => $query->where('role_id', $filters['role_id']))
+            ->when($filters['status'] === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($filters['status'] === 'inactive', fn ($query) => $query->where('is_active', false));
+
+        $stats = [
+            'total' => User::count(),
+            'active' => User::where('is_active', true)->count(),
+            'inactive' => User::where('is_active', false)->count(),
+            'roles' => Role::count(),
+        ];
+
+        return view('access.users', [
+            'users' => $query->orderBy('name')->paginate(10)->withQueryString(),
+            'roles' => Role::with('permissions')->orderBy('label')->get(),
+            'filters' => $filters,
+            'stats' => $stats,
+        ]);
     }
 
     public function createUser(): View
@@ -46,6 +80,45 @@ class AccessController extends Controller
         $service->save($user, $request->validated(), $request->user());
 
         return redirect()->route('users.edit', $user)->with('success', 'Pengguna berhasil diperbarui.');
+    }
+
+    public function toggleUser(Request $request, User $user, MasterDataService $master)
+    {
+        Gate::authorize('users.manage');
+
+        if ($request->user()->is($user) && $user->is_active) {
+            return back()->with('error', 'Akun sendiri tidak bisa dinonaktifkan.');
+        }
+
+        $user->forceFill([
+            'is_active' => ! $user->is_active,
+            'lock_version' => $user->lock_version + 1,
+        ])->save();
+
+        $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        $master->log($request->user(), 'user.status', "Akun {$user->email} {$status}");
+
+        return back()->with('success', "Akun {$user->name} berhasil {$status}.");
+    }
+
+    public function generatePassword(Request $request, User $user, MasterDataService $master)
+    {
+        Gate::authorize('users.manage');
+
+        $password = Str::password(12, letters: true, numbers: true, symbols: false, spaces: false);
+
+        $user->forceFill([
+            'password' => Hash::make($password),
+            'lock_version' => $user->lock_version + 1,
+        ])->save();
+
+        $master->log($request->user(), 'user.password.generated', 'Generate password baru untuk '.$user->email);
+
+        return back()->with('success', 'Password baru berhasil dibuat.')->with('generated_password', [
+            'name' => $user->name,
+            'email' => $user->email,
+            'password' => $password,
+        ]);
     }
 
     public function activity(Request $request): View

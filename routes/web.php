@@ -237,6 +237,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/users', [AccessController::class, 'storeUser'])->middleware('can:users.manage')->name('users.store');
     Route::get('/users/{user}/edit', [AccessController::class, 'editUser'])->middleware('can:users.manage')->name('users.edit');
     Route::put('/users/{user}', [AccessController::class, 'updateUser'])->middleware('can:users.manage')->name('users.update');
+    Route::post('/users/{user}/toggle', [AccessController::class, 'toggleUser'])->middleware('can:users.manage')->name('users.toggle');
+    Route::post('/users/{user}/generate-password', [AccessController::class, 'generatePassword'])->middleware('can:users.manage')->name('users.generate-password');
     Route::get('/activity', [AccessController::class, 'activity'])->middleware('can:activity.view')->name('activity.index');
 
     // Master TPS Air/Sea
