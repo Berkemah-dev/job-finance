@@ -175,6 +175,7 @@ class MasterDataSeeder extends Seeder
             ['code' => 'IMPSEA-BILLING', 'name' => 'BILLING BEA CUKAI', 'service_codes' => ['imp_sea']],
             ['code' => 'IMPSEA-SPJM', 'name' => 'SPJM (JALUR MERAH)', 'service_codes' => ['imp_sea']],
             ['code' => 'IMPSEA-BEHANDLE', 'name' => 'BEHANDLE (PEMERIKSAAN FISIK)', 'service_codes' => ['imp_sea']],
+            ['code' => 'IMPSEA-SLIM', 'name' => 'SLIM (PEMERIKSAAN FISIK)', 'service_codes' => ['imp_sea']],
             ['code' => 'IMPSEA-SPPB', 'name' => 'SPPB (JALUR HIJAU)', 'service_codes' => ['imp_sea']],
             // Import Air — dokumen umum
             ['code' => 'IMPAIR-HAWB', 'name' => 'HOUSE AWB', 'service_codes' => ['imp_air']],
@@ -189,6 +190,7 @@ class MasterDataSeeder extends Seeder
             ['code' => 'IMPAIR-BILLING', 'name' => 'BILLING BEA CUKAI', 'service_codes' => ['imp_air']],
             ['code' => 'IMPAIR-SPJM', 'name' => 'SPJM (JALUR MERAH)', 'service_codes' => ['imp_air']],
             ['code' => 'IMPAIR-BEHANDLE', 'name' => 'BEHANDLE (PEMERIKSAAN FISIK)', 'service_codes' => ['imp_air']],
+            ['code' => 'IMPAIR-SLIM', 'name' => 'SLIM (PEMERIKSAAN FISIK)', 'service_codes' => ['imp_air']],
             ['code' => 'IMPAIR-SPPB', 'name' => 'SPPB (JALUR HIJAU)', 'service_codes' => ['imp_air']],
         ] as $index => $document) {
             DocumentType::updateOrCreate(
