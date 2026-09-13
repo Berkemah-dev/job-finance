@@ -6,9 +6,60 @@ import './customer';
 import './coa';
 import './custom-select';
 import './dashboard-charts';
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-toast]').forEach((toast) => {
+        const close = () => toast.remove();
+        toast.querySelector('.app-toast-close')?.addEventListener('click', close);
+        setTimeout(close, 5200);
+    });
+});
+
+let pendingConfirmForm = null;
 document.addEventListener('submit', (event) => {
     const message = event.target.dataset.confirm;
-    if (message && !window.confirm(message)) event.preventDefault();
+    if (!message || event.target.dataset.confirmed === 'true') return;
+
+    const modal = document.querySelector('[data-confirm-modal]');
+    if (!modal) {
+        if (!window.confirm(message)) event.preventDefault();
+        return;
+    }
+
+    event.preventDefault();
+    pendingConfirmForm = event.target;
+    modal.querySelector('[data-confirm-message]').textContent = message;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    modal.querySelector('[data-confirm-ok]')?.focus();
+});
+
+document.addEventListener('click', (event) => {
+    const modal = document.querySelector('[data-confirm-modal]');
+    if (!modal) return;
+
+    if (event.target.matches('[data-confirm-cancel]') || event.target === modal) {
+        pendingConfirmForm = null;
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    if (event.target.matches('[data-confirm-ok]') && pendingConfirmForm) {
+        const form = pendingConfirmForm;
+        pendingConfirmForm = null;
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        form.dataset.confirmed = 'true';
+        form.requestSubmit();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    const modal = document.querySelector('[data-confirm-modal]');
+    if (!modal?.classList.contains('show')) return;
+    pendingConfirmForm = null;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
 });
 import '@fontsource/poppins/400.css';
 import '@fontsource/poppins/500.css';
