@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}"><link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}"><title>Masuk · JobFinance</title>@vite(['resources/css/app.css','resources/js/app.js'])</head>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}?v={{ filemtime(public_path('images/favicon.png')) }}"><link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}?v={{ filemtime(public_path('images/favicon.png')) }}"><title>Masuk · JobFinance</title>@vite(['resources/css/app.css','resources/js/app.js'])</head>
 <body class="login-page">
 <section class="login-story" style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; position: relative; overflow: hidden; background: radial-gradient(circle at 20% 25%, rgba(37, 99, 235, 0.22), transparent 45%), radial-gradient(circle at 80% 75%, rgba(185, 28, 28, 0.18), transparent 45%), linear-gradient(150deg, #0f1f3d 0%, #081020 100%); padding: 48px 36px;">
     {{-- Ambient Decorative Background Rings --}}

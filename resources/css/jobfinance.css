@@ -23,3 +23,16 @@
 .profile-permissions{border-top:1px solid #edf1f7;padding:18px 20px;display:flex;flex-wrap:wrap;gap:7px}.profile-permissions small{width:100%;font-size:9px;color:#8b98ad;margin-bottom:3px}.profile-permissions span{font-size:9px;color:#405474;background:#f1f5fb;border-radius:20px;padding:6px 9px}
 .notification-button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;color:#71839f;position:relative}.notification-button:hover{background:#fef2f2;color:#0f1f3d}.notification-button .icon{width:19px;height:19px}.notification-list{overflow:hidden}.notification-row{display:flex;align-items:center;gap:14px;padding:18px 22px;border-bottom:1px solid #edf1f7}.notification-row:hover{background:#fbfcff}.notification-row>span:nth-child(2){flex:1}.notification-row strong,.notification-row small{display:block}.notification-row strong{font-size:11px;color:#344768}.notification-row small{font-size:10px;color:#8b98ad;margin-top:5px}.notification-row>.icon{width:16px;color:#9aa8bb}.notification-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center}.notification-icon.info{background:#eef3ff;color:#365b9a}.notification-icon.warning{background:#fff4da;color:#b47b0b}.notification-icon.danger{background:#ffebef;color:#b13d53}
  .calculator-panel{width:100%;max-width:none;margin-left:0;margin-right:0;box-sizing:border-box}
+.calc-detail-card{border:1px solid #e2e8f0!important;border-radius:14px!important;box-shadow:0 4px 18px rgba(15,31,61,.05)!important;overflow:hidden!important}
+.calc-detail-head{display:flex;align-items:center;gap:14px;padding:24px 28px;border-bottom:1px solid #eef2f7;background:#fff}
+.calc-detail-head h2{font-size:16px;font-weight:700;color:#0f1f3d;margin:0}
+.calc-icon-badge{width:44px;height:44px;border-radius:12px;display:inline-grid;place-items:center;flex-shrink:0}
+.calc-icon-badge .icon{width:22px;height:22px}
+.calc-icon-badge.blue{background:#eff6ff;color:#2563eb}
+.calc-icon-badge.amber{background:#fffbeb;color:#d97706}
+.calc-icon-badge.emerald{background:#ecfdf5;color:#059669}
+.calc-detail-card .data-form{padding:28px}
+.calc-detail-card .form-actions{padding-top:8px;margin-bottom:0}
+.calc-result-card{border-top:1px solid #eef2f7;background:#fbfcfe;padding:24px 28px}
+.calc-result-card .stats-grid{margin:0;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.calc-result-card .stat-card{border:1px solid #e2e8f0;border-radius:12px;box-shadow:none}

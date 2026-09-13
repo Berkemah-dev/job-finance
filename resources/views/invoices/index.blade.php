@@ -14,14 +14,22 @@
 />
 
 <section class="panel">
-    <form class="filter-bar">
+    <form class="filter-bar" method="GET">
+        <input name="search" value="{{ $search ?? request('search') }}" placeholder="Cari invoice, customer, atau job" aria-label="Cari invoice">
         <select name="status">
             <option value="">Semua status</option>
             @foreach(['issued'=>'Issued','partially_paid'=>'Partially Paid','paid'=>'Paid'] as $v=>$l)
-                <option value="{{ $v }}" @selected(request('status')===$v)>{{ $l }}</option>
+                <option value="{{ $v }}" @selected(($status ?? request('status'))===$v)>{{ $l }}</option>
             @endforeach
         </select>
-        <button class="button button-primary">Terapkan</button>
+        <select name="delivery_status" aria-label="Status pengiriman fisik">
+            <option value="">Semua pengiriman</option>
+            @foreach(['not_sent'=>'Belum Dikirim','sent'=>'Terkirim','received'=>'Diterima'] as $v=>$l)
+                <option value="{{ $v }}" @selected(($deliveryStatus ?? request('delivery_status'))===$v)>{{ $l }}</option>
+            @endforeach
+        </select>
+        <button class="button button-primary">Cari</button>
+        <a class="text-link" href="{{ route('invoices.index') }}">Reset</a>
     </form>
     <div class="table-scroll">
         <table>
@@ -76,7 +84,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8">Belum ada invoice.</td>
+                        <td colspan="8"><div class="empty-state"><x-icon name="file"/><h3>Belum ada invoice</h3><p>Invoice yang sesuai filter akan muncul di sini.</p></div></td>
                     </tr>
                 @endforelse
             </tbody>

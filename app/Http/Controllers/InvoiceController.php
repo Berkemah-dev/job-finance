@@ -10,9 +10,21 @@ class InvoiceController extends Controller
 {
     public function index(Request $request)
     {
-        $q = Invoice::query()->when(in_array($request->input('status'), ['issued', 'partially_paid', 'paid'], true), fn ($q) => $q->where('status', $request->input('status')))->latest('id')->paginate(10)->withQueryString();
+        $search = mb_substr($request->string('search')->toString(), 0, 80);
+        $status = (string) $request->input('status', '');
+        $deliveryStatus = (string) $request->input('delivery_status', '');
+        $q = Invoice::query()
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
+                ->where('number', 'like', '%'.$search.'%')
+                ->orWhere('customer_snapshot->name', 'like', '%'.$search.'%')
+                ->orWhereHas('job', fn ($job) => $job->where('number', 'like', '%'.$search.'%'))))
+            ->when(in_array($status, ['issued', 'partially_paid', 'paid'], true), fn ($q) => $q->where('status', $status))
+            ->when(in_array($deliveryStatus, ['not_sent', 'sent', 'received'], true), fn ($q) => $q->where('delivery_status', $deliveryStatus))
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('invoices.index', ['invoices' => $q]);
+        return view('invoices.index', ['invoices' => $q, 'search' => $search, 'status' => $status, 'deliveryStatus' => $deliveryStatus]);
     }
 
     public function coretaxIndex(Request $request)

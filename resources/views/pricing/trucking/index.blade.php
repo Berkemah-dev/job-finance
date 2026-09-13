@@ -14,6 +14,7 @@
 />
 <section class="panel">
 <form class="filter-bar" method="GET">
+    <input name="search" value="{{ $search ?? request('search') }}" placeholder="Cari rute, vendor, atau mata uang" aria-label="Cari trucking price">
     <input name="port_origin" value="{{ request('port_origin') }}" placeholder="Pelabuhan asal" aria-label="Pelabuhan asal">
     <input name="destination" value="{{ request('destination') }}" placeholder="Tujuan" aria-label="Tujuan">
     <select name="vendor_id" aria-label="Vendor">

@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0f1f3d">
-    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}?v={{ filemtime(public_path('images/favicon.png')) }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon.png') }}?v={{ filemtime(public_path('images/favicon.png')) }}">
     <title>@yield('title', 'Dashboard') · JobFinance</title>
     <script>try{if(window.innerWidth>900&&localStorage.getItem('jobfinance_sidebar_collapsed')==='1'){document.documentElement.classList.add('sidebar-collapsed');}if(localStorage.getItem('jobfinance_theme')==='dark'){document.documentElement.classList.add('theme-dark');}}catch(e){}</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])

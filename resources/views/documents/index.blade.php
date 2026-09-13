@@ -33,13 +33,13 @@ $quickFilters = [
 </section>
 
 <section class="panel document-workspace">
-    <form class="document-filter" method="GET">
+    <form class="filter-bar document-filter" method="GET">
         <div class="quick-filters">
             @foreach($quickFilters as $value => $label)
             <a class="{{ request('status','') === $value ? 'active' : '' }}" href="{{ route('documents.index', array_filter([...request()->except('page'), 'status' => $value], fn ($item) => $item !== null && $item !== '')) }}">{{ $label }}</a>
             @endforeach
         </div>
-        <div class="document-filter-grid">
+        <div class="document-filter-grid filter-bar">
             <input name="search" value="{{ $search }}" placeholder="Cari nomor job, quotation, customer, atau pekerjaan" aria-label="Cari dokumen job">
             <select name="customer_id" aria-label="Customer">
                 <option value="">Semua customer</option>
@@ -66,8 +66,8 @@ $quickFilters = [
                 <input type="date" name="period_to" value="{{ request('period_to') }}" aria-label="Periode sampai" title="Periode sampai">
             </div>
             <label class="document-filter-check"><input type="checkbox" name="my_jobs" value="1" @checked($myJobs)> <span>Hanya Job Saya (CS/Sales)</span></label>
-            <button class="button button-primary">Terapkan</button>
-            <a class="button button-secondary" href="{{ route('documents.index') }}">Reset Filter</a>
+            <button class="button button-primary">Cari</button>
+            <a class="text-link" href="{{ route('documents.index') }}">Reset</a>
         </div>
     </form>
 
@@ -104,6 +104,6 @@ $quickFilters = [
             </tbody>
         </table>
     </div>
-    <div class="document-pagination"><span>Total data: {{ $documents->total() }}</span>{{ $documents->links() }}</div>
+    <div class="pagination">{{ $documents->links() }}</div>
 </section>
 @endsection

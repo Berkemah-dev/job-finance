@@ -13,9 +13,18 @@ class JournalController extends Controller
 {
     public function index(JournalFilterRequest $request)
     {
-        $journals = Journal::withCount('entries')->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))->when($request->filled('from'), fn ($q) => $q->whereDate('journal_date', '>=', $request->date('from')))->when($request->filled('to'), fn ($q) => $q->whereDate('journal_date', '<=', $request->date('to')))->latest('journal_date')->latest('id')->paginate(10)->withQueryString();
+        $search = mb_substr($request->string('search')->toString(), 0, 80);
+        $journals = Journal::withCount('entries')
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('number', 'like', '%'.$search.'%')->orWhere('description', 'like', '%'.$search.'%')))
+            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))
+            ->when($request->filled('from'), fn ($q) => $q->whereDate('journal_date', '>=', $request->date('from')))
+            ->when($request->filled('to'), fn ($q) => $q->whereDate('journal_date', '<=', $request->date('to')))
+            ->latest('journal_date')
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('journals.index', compact('journals'));
+        return view('journals.index', compact('journals', 'search'));
     }
 
     public function create()

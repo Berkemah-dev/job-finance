@@ -14,6 +14,14 @@ class WeeklyPricingController extends Controller
     public function index(Request $request)
     {
         $query = WeeklyPricing::query();
+        $search = mb_substr($request->string('search')->toString(), 0, 80);
+        if ($search !== '') {
+            $query->where(fn ($q) => $q
+                ->where('week', 'like', '%'.$search.'%')
+                ->orWhere('currency', 'like', '%'.$search.'%')
+                ->orWhere('service', 'like', '%'.$search.'%')
+                ->orWhere('notes', 'like', '%'.$search.'%'));
+        }
         if ($request->filled('currency')) {
             $query->where('currency', $request->string('currency')->toString());
         }
@@ -25,7 +33,7 @@ class WeeklyPricingController extends Controller
         }
         $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(10)->withQueryString();
 
-        return view('pricing.weekly.index', compact('items'));
+        return view('pricing.weekly.index', compact('items', 'search'));
     }
 
     public function create()

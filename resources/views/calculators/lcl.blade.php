@@ -1,8 +1,10 @@
 @extends('layouts.app')
 @section('title','Kalkulator Estimasi Biaya LCL')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1><p>Hitung estimasi awal berdasarkan basis W/M. Nilai akhir dan tarif LCL akan diinformasikan lebih lanjut oleh tim Finance/Operational.</p></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
-<section class="panel form-panel calculator-panel"><div class="info-note"><strong>Estimasi biaya LCL akan diinformasikan lebih lanjut.</strong><br>Hasil di bawah hanya membantu menghitung CBM, berat kotor, dan basis W/M. Biaya final mengikuti tarif vendor, rute, dan konfirmasi Finance/Operational.</div><form class="data-form calculator-form" id="lcl-form">
+<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1></div><a class="text-link" href="{{ route('calculators.index') }}">Semua kalkulator</a></div>
+<section class="panel form-panel calculator-panel calc-detail-card">
+<div class="calc-detail-head"><div class="calc-icon-badge amber"><x-icon name="briefcase"/></div><h2>Input Muatan</h2></div>
+<form class="data-form calculator-form" id="lcl-form">
 <div class="form-grid">
 <div class="field span-2"><label for="rate_per_cbm">Tarif per m³ (IDR)</label><input id="rate_per_cbm" type="text" inputmode="decimal" placeholder="Kosongkan pakai default {{ number_format((float) config('operations.lcl.default_rate'), 0, ',', '.') }}"></div>
 </div>
@@ -16,7 +18,7 @@
 </div></div>
 <div class="form-actions"><button class="button button-primary" type="submit">Hitung biaya LCL</button></div>
 </form>
-<div class="cost-summary-body" id="lcl-result" hidden><div class="stats-grid">
+<div class="cost-summary-body calc-result-card" id="lcl-result" hidden><div class="stats-grid">
 <div class="stat-card"><p>Total CBM</p><strong id="r-cbm">—</strong></div>
 <div class="stat-card"><p>Berat kotor total</p><strong id="r-gross">—</strong></div>
 <div class="stat-card"><p>Basis tagihan (W/M)</p><strong id="r-basis">—</strong></div>

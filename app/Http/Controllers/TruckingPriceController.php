@@ -15,6 +15,15 @@ class TruckingPriceController extends Controller
     public function index(Request $request)
     {
         $query = TruckingPrice::with('vendor');
+        $search = mb_substr($request->string('search')->toString(), 0, 100);
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('port_origin', 'like', '%'.$search.'%')
+                    ->orWhere('destination', 'like', '%'.$search.'%')
+                    ->orWhere('currency', 'like', '%'.$search.'%')
+                    ->orWhereHas('vendor', fn ($vendor) => $vendor->where('name', 'like', '%'.$search.'%'));
+            });
+        }
         if ($request->filled('port_origin')) {
             $query->where('port_origin', 'like', '%'.mb_substr($request->string('port_origin')->toString(), 0, 120).'%');
         }
@@ -38,7 +47,7 @@ class TruckingPriceController extends Controller
 
         $containerUnits = ContainerUnit::options();
 
-        return view('pricing.trucking.index', compact('items', 'vendors', 'containerUnits'));
+        return view('pricing.trucking.index', compact('items', 'vendors', 'containerUnits', 'search'));
     }
 
     public function show(TruckingPrice $truckingPrice)
