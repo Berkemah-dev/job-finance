@@ -57,7 +57,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: Arial, Helvetica, DejaVu Sans, sans-serif;
             color: #000;
             font-size: 9px;
             line-height: 1.4;
@@ -136,8 +136,10 @@
             padding-left: 60px;
         }
         .sign-logo {
-            max-height: 38px;
-            margin: 8px 0 4px 0;
+            max-height: 48px;
+            max-width: 130px;
+            margin: 4px 0 2px 0;
+            display: block;
         }
         .sign-name-bold {
             font-weight: bold;
@@ -280,19 +282,19 @@
     <table class="signature-table">
         <tr>
             <td class="sign-left">
-                <div>Penerima Kuasa</div>
+                <div>Penerima Kuasa,</div>
                 <div>
-                    <img src="{{ public_path('images/logo.png') }}" class="sign-logo" alt="RDX LOGISTICS">
+                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo" alt="RDX LOGISTICS">
                 </div>
                 <div class="sign-name-bold">SYANNE</div>
-                <div class="sign-role-title">PIMPINAN PPJK</div>
+                <div class="sign-role-title">PPJK</div>
             </td>
             <td class="sign-right">
                 <div>Jakarta, {{ $signDate }}</div>
                 <div style="margin-top: 2px;">Pemberi Kuasa,</div>
                 <div class="sign-space-empty"></div>
-                <div class="sign-name-bold">{{ $authorizerName }}</div>
-                <div class="sign-role-title">{{ $authorizerTitle }}</div>
+                <div class="sign-name-bold">( {{ $authorizerName ?: '.........................................' }} )</div>
+                <div class="sign-role-title">{{ $authorizerTitle ?: 'Direktur' }}</div>
             </td>
         </tr>
     </table>

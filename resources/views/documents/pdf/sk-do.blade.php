@@ -33,7 +33,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: Arial, Helvetica, DejaVu Sans, sans-serif;
             color: #000;
             font-size: 9.5px;
             line-height: 1.45;
@@ -84,7 +84,7 @@
         .signature-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 55px;
+            margin-top: 50px;
         }
         .signature-table td {
             vertical-align: top;
@@ -99,8 +99,10 @@
             padding-left: 60px;
         }
         .sign-logo {
-            max-height: 40px;
-            margin: 10px 0 6px 0;
+            max-height: 52px;
+            max-width: 140px;
+            margin: 4px 0 2px 0;
+            display: block;
         }
         .sign-name-bold {
             font-weight: bold;
@@ -111,7 +113,7 @@
             font-size: 9.5px;
         }
         .sign-space-empty {
-            height: 60px;
+            height: 58px;
         }
     </style>
 </head>
@@ -226,9 +228,9 @@
     <table class="signature-table">
         <tr>
             <td class="sign-left">
-                <div>Penerima Kuasa</div>
+                <div>Penerima Kuasa,</div>
                 <div>
-                    <img src="{{ public_path('images/logo.png') }}" class="sign-logo" alt="RDX LOGISTICS">
+                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo" alt="RDX LOGISTICS">
                 </div>
                 <div class="sign-name-bold">SYANNE</div>
                 <div class="sign-role-title">PPJK</div>
@@ -237,8 +239,8 @@
                 <div>Jakarta, {{ $signDate }}</div>
                 <div style="margin-top: 2px;">Pemberi Kuasa,</div>
                 <div class="sign-space-empty"></div>
-                <div class="sign-name-bold">{{ $authorizerName }}</div>
-                <div class="sign-role-title">{{ $authorizerTitle }}</div>
+                <div class="sign-name-bold">( {{ $authorizerName ?: '.........................................' }} )</div>
+                <div class="sign-role-title">{{ $authorizerTitle ?: 'Direktur' }}</div>
             </td>
         </tr>
     </table>
