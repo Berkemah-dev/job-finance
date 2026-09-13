@@ -29,19 +29,11 @@ class JobDocumentController extends Controller
             'peb_date' => ['nullable', 'date'],
         ]);
 
+        Gate::authorize('update', $job);
         $docType = DocumentType::findOrFail($request->document_type_id);
         $docText = strtoupper($docType->code.' '.$docType->name);
         $kind = (string) $request->input('customs_document_kind', '');
         $kind = $kind ?: $this->detectCustomsKind($docText);
-        $isCustomsUpload = $request->boolean('customs_upload') || in_array($kind, ['pib', 'billing', 'spjm', 'behandle', 'sppb'], true);
-
-        if ($request->boolean('customs_upload') && $kind === '') {
-            return back()->withErrors(['customs_document_kind' => 'Pilih jenis dokumen customs dulu.'])->withInput();
-        }
-
-        if ($isCustomsUpload && ! $request->user()->hasRole(['operational', 'super-admin', 'admin'])) {
-            abort(403, 'Upload dokumen customs hanya dapat dilakukan oleh Operation.');
-        }
 
         $file      = $request->file('file');
         $path      = $file->store('job-documents/'.$job->id, 'private');
@@ -95,29 +87,33 @@ class JobDocumentController extends Controller
         } elseif ($isImportSea) {
             $isDo = str_contains($docCode, 'DO') || str_contains($docName, 'DO') || str_contains($docName, 'DELIVERY ORDER');
             $isSpjm = $kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM');
+            $isBehandle = $kind === 'behandle' || str_contains($docCode, 'BEHANDLE') || str_contains($docName, 'BEHANDLE') || str_contains($docName, 'SLIM');
             $isSppb = $kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB');
 
-            if ($job->hasDoChecklist() && $job->hasSpjmDocument() && $job->hasSppbDocument()) {
-                $notification = 'Dokumen berhasil diupload. Notifikasi: DO Checklist + SPJM dalam inspection + SPPB final.';
-            } elseif ($job->hasDoChecklist() && $job->hasSpjmDocument()) {
-                $notification = 'Dokumen berhasil diupload. Notifikasi: DO Checklist + SPJM dalam inspection.';
-            } elseif ($isSppb) {
-                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB final.';
+            if ($isSppb) {
+                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Final (Selesai).';
+            } elseif ($isBehandle) {
+                $notification = 'Dokumen Pemeriksaan Fisik/SLIM berhasil diupload. Notifikasi: Pemeriksaan Fisik aktif.';
             } elseif ($isSpjm) {
-                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection.';
+                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM Aktif (Menunggu Pemeriksaan Fisik).';
+            } elseif ($job->hasImportPibReadyDocuments() && $job->shipment_status === 'pib_submitted') {
+                $notification = 'Dokumen berhasil diupload. Notifikasi: Dokumen lengkap (BL + Invoice + PL) — PIB Diajukan.';
             } elseif ($isDo) {
                 $notification = 'Dokumen DO berhasil diupload. Notifikasi: DO Checklist terverifikasi.';
             }
         } elseif ($isImportAir) {
             $isSpjm = $kind === 'spjm' || str_contains($docCode, 'SPJM') || str_contains($docName, 'SPJM');
+            $isBehandle = $kind === 'behandle' || str_contains($docCode, 'BEHANDLE') || str_contains($docName, 'BEHANDLE') || str_contains($docName, 'SLIM');
             $isSppb = $kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB');
 
-            if ($job->hasSpjmDocument() && $job->hasSppbDocument()) {
-                $notification = 'Dokumen berhasil diupload. Notifikasi: SPJM dalam inspection + SPPB final.';
-            } elseif ($isSppb) {
-                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB final.';
+            if ($isSppb) {
+                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Final (Selesai).';
+            } elseif ($isBehandle) {
+                $notification = 'Dokumen Pemeriksaan Fisik/SLIM berhasil diupload. Notifikasi: Pemeriksaan Fisik aktif.';
             } elseif ($isSpjm) {
-                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM dalam inspection.';
+                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM Aktif (Menunggu Pemeriksaan Fisik).';
+            } elseif ($job->hasImportPibReadyDocuments() && $job->shipment_status === 'pib_submitted') {
+                $notification = 'Dokumen berhasil diupload. Notifikasi: Dokumen lengkap (AWB + Invoice + PL) — PIB Diajukan.';
             }
         }
 
