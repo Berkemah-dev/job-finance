@@ -12,6 +12,7 @@
     $isExportSea = $serviceTypeRaw === 'exp_sea' || ($serviceTypeRaw === 'sea' && !str_contains($serviceTypeRaw, 'imp'));
     $isExportAir = $serviceTypeRaw === 'exp_air' || ($serviceTypeRaw === 'air' && !str_contains($serviceTypeRaw, 'imp'));
     $isImport = str_contains($serviceTypeRaw, 'imp');
+    $isAir = $isExportAir || $serviceTypeRaw === 'imp_air' || str_contains($serviceTypeRaw, 'air');
     $isDomestic = str_contains($serviceTypeRaw, 'dom') || $serviceTypeRaw === 'land' || $serviceTypeRaw === 'domestic';
     
     // Fallback default
@@ -39,7 +40,7 @@
     $noPeb = $job->peb_number ?? '—';
     $pebDate = $job->peb_date ? $job->peb_date->format('d/m/Y') : '—';
     $noHbl = $job->hbl_number ?? $job->hawb_number ?? '—';
-    $noMbl = $job->bl_number ?? $job->mawb_number ?? '—';
+    $noMbl = $job->bl_number ?? $job->awb_number ?? '—';
     $vesselName = $job->vessel_voyage ?? $job->flight_number ?? '—';
     $quantityStr = $job->package_count ? $job->package_count . ' Box' : ($job->container_type ? '1x ' . strtoupper($job->container_type) : ($quotation?->cargo_qty ?? '—'));
     $grossWeightStr = $job->gross_weight ? \App\Support\Money::format($job->gross_weight) . ' KGS' : ($quotation?->weight_meas ?? '—');
