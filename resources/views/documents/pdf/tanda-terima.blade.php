@@ -26,9 +26,9 @@
         .note { border:1px solid #dfe7f2; background:#fafcff; border-radius:8px; padding:10px 12px; min-height:42px; }
         .statement { margin:16px 0; padding:12px 14px; border-left:4px solid #0f1f3d; background:#f7f9fc; color:#4b5f7a; }
         .signature { width:100%; margin-top:36px; border-collapse:collapse; }
-        .signature td { width:50%; text-align:center; padding:0 24px; vertical-align:bottom; }
-        .sign-space { height:62px; border-bottom:1px solid #9aa8ba; margin-bottom:7px; }
-        .sign-label { font-size:9.5px; color:#4b5f7a; font-weight:700; }
+        .signature td { width:50%; text-align:center; padding:0 24px; vertical-align:top; }
+        .sign-space { height:62px; border-bottom:1px solid #9aa8ba; margin-bottom:8px; }
+        .sign-label { font-size:9.5px; color:#4b5f7a; font-weight:700; line-height:1.35; }
         .footer { position:fixed; left:0; right:0; bottom:-12px; border-top:1px solid #dfe7f2; padding-top:6px; color:#8a97aa; font-size:8.5px; }
         .footer .right { float:right; }
     </style>
@@ -79,7 +79,14 @@
 <div class="note">{{ $job->operational_notes ?: 'Dokumen/barang diterima sesuai daftar di atas.' }}</div>
 
 <table class="signature">
-    <tr><td><div class="sign-space"></div><div class="sign-label">Penerima<br>Nama Jelas & Cap</div></td><td><div class="sign-space"></div><div class="sign-label">Yang Menyerahkan</div></td></tr>
+    <tr>
+        <td><div class="sign-space"></div></td>
+        <td><div class="sign-space"></div></td>
+    </tr>
+    <tr>
+        <td class="sign-label">Penerima<br>Nama Jelas & Cap</td>
+        <td class="sign-label">Yang Menyerahkan</td>
+    </tr>
 </table>
 
 <div class="footer">{{ $job->number }} · Tanda Terima <span class="right">Dicetak {{ now()->format('d/m/Y H:i') }}</span></div>
