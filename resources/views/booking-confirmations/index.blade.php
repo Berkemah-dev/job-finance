@@ -7,7 +7,7 @@
     title="Booking Confirmation (BC)"
     description="Konfirmasi alokasi ruang muatan (space booking) pengapalan untuk customer dan shipper."
     :action-url="route('booking-confirmations.create')"
-    action-label="+ Buat Booking Confirmation"
+    action-label="Buat Booking Confirmation"
     action-icon="plus"
     icon="file"
     art-title="Alokasi space,"

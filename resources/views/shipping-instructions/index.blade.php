@@ -7,7 +7,7 @@
     title="Shipping Instruction (SI)"
     description="Instruksi pengapalan resmi kepada Shipping Lines / Carrier untuk penerbitan Bill of Lading (B/L)."
     :action-url="route('shipping-instructions.create')"
-    action-label="+ Buat Shipping Instruction"
+    action-label="Buat Shipping Instruction"
     action-icon="plus"
     icon="file"
     art-title="Instruksi kapal,"

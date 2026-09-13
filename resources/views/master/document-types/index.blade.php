@@ -6,7 +6,7 @@
     title="Data Document"
     description="Kelola checklist dokumen per service: export sea, export air, import sea, dan import air."
     :action-url="route('document-types.create')"
-    action-label="+ Tambah Document"
+    action-label="Tambah Document"
     action-icon="plus"
     icon="file"
     art-title="Standar berkas,"

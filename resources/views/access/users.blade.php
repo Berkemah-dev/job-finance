@@ -7,7 +7,7 @@
     title="Pengguna & Hak Akses"
     description="Kelola akun, role, status aktif, dan password pengguna."
     :action-url="auth()->user()->can('users.manage') ? route('users.create') : null"
-    action-label="+ Tambah Pengguna"
+    action-label="Tambah Pengguna"
     action-icon="plus"
     icon="users"
     art-title="Hak akses peran,"

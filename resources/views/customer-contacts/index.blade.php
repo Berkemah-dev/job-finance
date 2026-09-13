@@ -6,7 +6,7 @@
     title="Kontak Shipper & Consignee"
     description="Master kontak pengirim dan penerima barang untuk quotation, surat jalan, dan dokumen operasional."
     :action-url="route('customer-contacts.create')"
-    action-label="+ Tambah Kontak"
+    action-label="Tambah Kontak"
     action-icon="plus"
     icon="users"
     art-title="Kontak logistik,"

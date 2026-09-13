@@ -6,7 +6,7 @@
     title="Quotation & Penawaran"
     description="Susun penawaran harga, pantau status persetujuan, dan konversi ke Job Order dengan rapi."
     :action-url="route('quotations.create')"
-    action-label="+ Buat Quotation"
+    action-label="Buat Quotation"
     action-icon="plus"
     icon="file"
     art-title="Penawaran akurat,"

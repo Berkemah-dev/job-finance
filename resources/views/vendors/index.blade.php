@@ -6,7 +6,7 @@
     title="Master Data Vendor"
     description="Kelola Shipping Lines, Vendor Trucking, dan agent pendukung operasional ekspedisi."
     :action-url="route('vendors.create')"
-    action-label="+ Tambah Vendor"
+    action-label="Tambah Vendor"
     action-icon="plus"
     icon="users"
     art-title="Mitra vendor,"

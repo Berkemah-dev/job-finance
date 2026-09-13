@@ -6,7 +6,7 @@
     title="Master Data Customer"
     description="Kelola identitas pelanggan, NPWP, batas kredit, kontak PIC, dan riwayat dokumen."
     :action-url="route('customers.create')"
-    action-label="+ Tambah Customer"
+    action-label="Tambah Customer"
     action-icon="plus"
     icon="users"
     art-title="Data pelanggan,"

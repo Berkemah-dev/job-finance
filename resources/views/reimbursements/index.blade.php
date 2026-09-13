@@ -6,7 +6,7 @@
     title="Klaim Reimbursement"
     description="Kelola pengajuan klaim biaya operasional karyawan, persetujuan atasan, hingga pencairan kas."
     :action-url="route('reimbursements.create')"
-    action-label="+ Buat Reimbursement"
+    action-label="Buat Reimbursement"
     action-icon="plus"
     icon="wallet"
     art-title="Klaim operasional,"

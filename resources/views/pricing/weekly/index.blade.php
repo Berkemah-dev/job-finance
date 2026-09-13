@@ -6,7 +6,7 @@
     title="Weekly Pricing & Kurs"
     description="Kelola kurs mingguan dan tarif dasar yang berlaku sebagai standar quotation & invoice."
     :action-url="auth()->user()->can('pricing.manage') ? route('pricing.weekly.create') : null"
-    action-label="+ Tambah Weekly Pricing"
+    action-label="Tambah Weekly Pricing"
     action-icon="plus"
     icon="chart"
     art-title="Fluktuasi kurs,"

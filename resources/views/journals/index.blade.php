@@ -6,7 +6,7 @@
     title="Jurnal Umum & Penyesuaian"
     description="Daftar transaksi debit dan kredit otomatis dari operasional serta pencatatan jurnal manual."
     :action-url="route('journals.create')"
-    action-label="+ Jurnal Penyesuaian"
+    action-label="Jurnal Penyesuaian"
     action-icon="plus"
     icon="file"
     art-title="Debit & kredit,"

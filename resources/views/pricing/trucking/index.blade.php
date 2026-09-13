@@ -6,7 +6,7 @@
     title="Trucking Price List"
     description="Tarif trucking standar berdasarkan rute asal, tujuan, tipe kontainer, dan vendor armada."
     :action-url="auth()->user()->can('pricing.manage') ? route('pricing.trucking.create') : null"
-    action-label="+ Tambah Tarif Trucking"
+    action-label="Tambah Tarif Trucking"
     action-icon="plus"
     icon="briefcase"
     art-title="Rute & armada,"

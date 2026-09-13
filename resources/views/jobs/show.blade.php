@@ -754,29 +754,36 @@
         </div>
 
         <div class="report-grid" style="padding: 0 24px 24px;">
-            <article class="report-card">
-                <div class="report-card-head">
-                    <div class="report-card-title">
-                        <span class="report-icon blue"><x-icon name="file"/></span>
-                        <div>
-                            <h2>Surat Jalan</h2>
-                            <small>Delivery order untuk pengantaran barang</small>
+            <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div class="report-card-head">
+                        <div class="report-card-title">
+                            <span class="report-icon blue"><x-icon name="file"/></span>
+                            <div>
+                                <h2>Surat Jalan</h2>
+                                <small>Delivery order untuk pengantaran barang</small>
+                            </div>
                         </div>
                     </div>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak dokumen pengantar barang berisi penerima, rute, deskripsi barang, quantity, dan area tanda tangan.</p>
                 </div>
-                <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak dokumen pengantar barang berisi penerima, rute, deskripsi barang, quantity, dan area tanda tangan.</p>
-                <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak Surat Jalan</a>
+                <div>
+                    <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak Surat Jalan</a>
+                </div>
             </article>
 
-            <article class="report-card">
-                <div class="report-card-head">
-                    <div class="report-card-title">
-                        <span class="report-icon green"><x-icon name="check"/></span>
-                        <div>
-                            <h2>Tanda Terima</h2>
-                            <small>Bukti serah terima dokumen / barang</small>
+            <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div class="report-card-head">
+                        <div class="report-card-title">
+                            <span class="report-icon green"><x-icon name="check"/></span>
+                            <div>
+                                <h2>Tanda Terima</h2>
+                                <small>Bukti serah terima dokumen / barang</small>
+                            </div>
                         </div>
                     </div>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi BL/AWB, daftar dokumen/barang, catatan, dan tanda tangan.</p>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'barang']) }}" target="_blank"><x-icon name="file"/> Cetak TT Barang</a>

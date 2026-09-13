@@ -11,6 +11,11 @@
     'showDate' => false,
 ])
 
+@php
+    $cleanLabel = $actionLabel ? ltrim($actionLabel, '+ ') : '';
+    $isTrailingIcon = in_array($actionIcon, ['arrow', 'chevron-right', 'external-link'], true);
+@endphp
+
 <section class="welcome-banner" {{ $attributes->merge(['class' => '']) }}>
     <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
@@ -25,9 +30,11 @@
         @if($description)
             <p>{!! nl2br(e($description)) !!}</p>
         @endif
-        @if($actionUrl && $actionLabel)
-            <a href="{{ $actionUrl }}" class="button button-white">
-                {{ $actionLabel }} @if($actionIcon)<x-icon :name="$actionIcon"/>@endif
+        @if($actionUrl && $cleanLabel)
+            <a href="{{ $actionUrl }}" class="button button-white" style="display: inline-flex; align-items: center; gap: 8px;">
+                @if($actionIcon && !$isTrailingIcon)<x-icon :name="$actionIcon"/>@endif
+                <span>{{ $cleanLabel }}</span>
+                @if($actionIcon && $isTrailingIcon)<x-icon :name="$actionIcon"/>@endif
             </a>
         @elseif($slot->isNotEmpty())
             <div class="banner-actions" style="margin-top: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">

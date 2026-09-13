@@ -6,7 +6,7 @@
     title="Master TPS Air & Sea"
     description="Kelola Tempat Penimbunan Sementara (TPS) bandara dan pelabuhan beserta kode kepabeanan."
     :action-url="route('tps.create')"
-    action-label="+ Tambah TPS"
+    action-label="Tambah TPS"
     action-icon="plus"
     icon="briefcase"
     art-title="Terminal kargo,"
