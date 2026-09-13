@@ -5,9 +5,12 @@
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ $vendor->exists?route('vendors.update',$vendor):route('vendors.store') }}">@csrf @if($vendor->exists) @method('PUT') @endif
 <input type="hidden" name="lock_version" value="{{ old('lock_version',$vendor->lock_version ?? 0) }}">
 <div class="form-grid">
-@foreach(['code'=>['Kode vendor','VND-001'],'name'=>['Nama vendor','PT Mitra Logistik']] as $field=>[$label,$placeholder])
-<div class="field"><label for="{{ $field }}">{{ $label }} <span class="required">*</span></label><input id="{{ $field }}" name="{{ $field }}" type="text" value="{{ old($field,$vendor->$field) }}" placeholder="{{ $placeholder }}" maxlength="{{ $field==='code'?30:255 }}" required></div>
-@endforeach
+@if($vendor->exists)
+<div class="field"><label for="code">Kode vendor <span class="required">*</span></label><input id="code" name="code" type="text" value="{{ old('code',$vendor->code) }}" placeholder="VND-2026-00001" maxlength="30" required></div>
+@else
+<div class="field"><label>Kode vendor</label><div style="min-height:44px;display:flex;align-items:center;padding:0 14px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc;color:#64748b;font-size:12px;">Otomatis saat disimpan</div></div>
+@endif
+<div class="field"><label for="name">Nama vendor <span class="required">*</span></label><input id="name" name="name" type="text" value="{{ old('name',$vendor->name) }}" placeholder="PT Mitra Logistik" maxlength="255" required></div>
 <div class="field"><label for="type">Kategori vendor <span class="required">*</span></label><select id="type" name="type" required>@foreach(config('operations.vendor_types') as $value=>$label)<option value="{{ $value }}" @selected(old('type',$vendor->type)===$value)>{{ $label }}</option>@endforeach</select></div>
 <div class="field"><label for="pic">PIC</label><input id="pic" name="pic" value="{{ old('pic',$vendor->pic) }}" placeholder="Nama penanggung jawab"></div>
 <div class="field"><label for="email">Email</label><input id="email" type="email" name="email" value="{{ old('email',$vendor->email) }}" placeholder="nama@vendor.com"></div>

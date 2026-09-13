@@ -38,18 +38,6 @@
     </div>
 </section>
 
-@if(isset($widgets['shipment']))
-<div class="section-heading"><h2>Pengiriman berjalan</h2><span class="subtle">Status shipment aktif</span></div>
-<section class="panel" style="margin-bottom:20px">
-    <div class="filter-bar" style="justify-content:flex-start;border:none;padding:14px 23px;display:flex;flex-wrap:wrap;gap:8px">
-        @foreach(config('operations.shipment_statuses') as $value=>$label)
-        <span class="badge-pill status-{{ $value }}">{{ $label }} · {{ $widgets['shipment'][$value] ?? 0 }}</span>
-        @if(!$loop->last)<span class="text-link">→</span>@endif
-        @endforeach
-    </div>
-</section>
-@endif
-
 <section class="panel">
     <div class="panel-heading"><h2>Quotation saya</h2><a class="text-link" href="{{ route('quotations.index') }}">Lihat semua</a></div>
     <div class="table-scroll">

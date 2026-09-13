@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\VendorRequest;
 use App\Http\Requests\VersionRequest;
 use App\Models\Vendor;
+use App\Services\DocumentNumberService;
 use App\Services\MasterDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,10 +32,12 @@ class VendorController extends Controller
         return view('vendors.form', ['vendor' => new Vendor]);
     }
 
-    public function store(VendorRequest $request, MasterDataService $service)
+    public function store(VendorRequest $request, MasterDataService $service, DocumentNumberService $numbers)
     {
-        $vendor = DB::transaction(function () use ($request, $service) {
+        $vendor = DB::transaction(function () use ($request, $service, $numbers) {
             $validated = $request->validated();
+            $codeFormat = config('operations.vendor_code');
+            $validated['code'] = $numbers->nextYear('vendor', $codeFormat['prefix'] ?? null, $codeFormat['delimiter'] ?? '-', (int) ($codeFormat['pad'] ?? 5));
             $vendor = $service->save(new Vendor, $validated, $request->user());
             if ($request->has('categories')) {
                 $vendor->categories()->delete();
