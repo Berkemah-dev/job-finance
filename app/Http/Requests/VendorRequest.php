@@ -14,7 +14,9 @@ class VendorRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['code' => strtoupper(trim((string) $this->input('code')))]);
+        if ($this->isMethod('PUT')) {
+            $this->merge(['code' => strtoupper(trim((string) $this->input('code')))]);
+        }
         $this->merge(['is_active' => $this->boolean('is_active')]);
     }
 
@@ -23,7 +25,7 @@ class VendorRequest extends FormRequest
         $types = array_keys(config('operations.vendor_types'));
 
         return [
-            'code' => ['required', 'regex:/^[A-Z0-9-]+$/', 'max:30', Rule::unique('vendors', 'code')->ignore($this->route('vendor'))],
+            'code' => [$this->isMethod('PUT') ? 'required' : 'prohibited', 'regex:/^[A-Z0-9-]+$/', 'max:30', Rule::unique('vendors', 'code')->ignore($this->route('vendor'))],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::in($types)],
             'email' => ['nullable', 'email', 'max:255'], 'phone' => ['nullable', 'string', 'max:40'],
