@@ -11,52 +11,8 @@
     <div style="z-index: 2; align-self: flex-start; display:flex; align-items:center; gap:10px;">
         <img src="{{ asset('images/logo.png') }}" alt="RDX" style="height:42px; width:auto; max-width:150px; object-fit:contain; filter: brightness(0) invert(1);">
     </div>
-
-    {{-- Center Glass Card with Logo & Feature Highlights --}}
-    <div style="z-index: 2; width: 100%; max-width: 440px; margin: auto; display: flex; flex-direction: column; align-items: center; text-align: center;">
-        <div style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 40px 32px; box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4); width: 100%; display: flex; flex-direction: column; align-items: center;">
-            {{-- Logo with subtle glow --}}
-            <div style="position: relative; padding: 12px; margin-bottom: 24px;">
-                <div style="position: absolute; inset: 0; background: radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%); filter: blur(12px); border-radius: 50%;"></div>
-                <img src="{{ asset('images/logo.png') }}" alt="JobFinance Logo" class="login-hero-logo" style="position: relative; width: auto; max-width: 240px; max-height: 75px; filter: brightness(0) invert(1); object-fit: contain; display: block;">
-            </div>
-
-            {{-- Divider --}}
-            <div style="width: 60px; height: 2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); margin-bottom: 24px;"></div>
-
-            {{-- Feature Badges --}}
-            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-                <div style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 10px 16px; border-radius: 10px; font-size: 11.5px; color: #f1f5f9; text-align: left; transition: all 0.2s ease;">
-                    <div style="width: 26px; height: 26px; border-radius: 6px; background: rgba(59,130,246,0.2); display: grid; place-items: center; color: #93c5fd; flex-shrink: 0;">
-                        <x-icon name="briefcase" style="width: 14px; height: 14px;"/>
-                    </div>
-                    <span>Manajemen Job Order & Operasional</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 10px 16px; border-radius: 10px; font-size: 11.5px; color: #f1f5f9; text-align: left; transition: all 0.2s ease;">
-                    <div style="width: 26px; height: 26px; border-radius: 6px; background: rgba(16,185,129,0.2); display: grid; place-items: center; color: #6ee7b7; flex-shrink: 0;">
-                        <x-icon name="chart" style="width: 14px; height: 14px;"/>
-                    </div>
-                    <span>Kontrol Biaya Aktual & Laba Rugi</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 10px 16px; border-radius: 10px; font-size: 11.5px; color: #f1f5f9; text-align: left; transition: all 0.2s ease;">
-                    <div style="width: 26px; height: 26px; border-radius: 6px; background: rgba(245,158,11,0.2); display: grid; place-items: center; color: #fcd34d; flex-shrink: 0;">
-                        <x-icon name="wallet" style="width: 14px; height: 14px;"/>
-                    </div>
-                    <span>Penagihan Invoice & Rekonsiliasi Bank</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Bottom Brand Footer --}}
-    <div style="z-index: 2; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 10px; color: #94a3b8;">
-        <span>© {{ date('Y') }} JobFinance</span>
-        <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <x-icon name="lock" style="width: 12px; height: 12px;"/> Terenkripsi & Aman
-        </span>
-    </div>
 </section>
-<main class="login-main"><div class="login-form"><div style="margin-bottom:28px;"><img src="{{ asset('images/logo.png') }}" alt="RDX" style="height:58px;width:auto;max-width:180px;object-fit:contain;"></div><p class="eyebrow">SELAMAT DATANG KEMBALI</p><h2>Masuk ke workspace</h2><p class="login-description">Gunakan akun Anda untuk melanjutkan.</p>
+<main class="login-main"><div class="login-form"><div style="margin-bottom:28px;"><img src="{{ asset('images/logo.png') }}" alt="RDX" style="height:58px;width:auto;max-width:180px;object-fit:contain;"></div><p class="eyebrow">SELAMAT DATANG KEMBALI</p>
 <form method="POST" action="{{ route('login.store') }}">@csrf
 <label for="email">Alamat email</label><input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="username" placeholder="nama@perusahaan.com" required autofocus @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
 @error('email')<p class="field-error" id="email-error" role="alert">{{ $message }}</p>@enderror
