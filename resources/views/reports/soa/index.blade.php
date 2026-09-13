@@ -11,10 +11,11 @@
 />
 @php
     $g = $result['grand'];
+    $toFloat = fn ($value) => (float) (string) \App\Support\Money::decimal($value);
     $overdue = \App\Support\Money::decimal($g['aging_1_30'])->plus($g['aging_31_60'])->plus($g['aging_61_90'])->plus($g['aging_90_plus']);
-    $totalValue = max(1, (float) $g['total']);
-    $paidPercent = round(((float) $g['paid'] / $totalValue) * 100, 2);
-    $balancePercent = round(((float) $g['balance'] / $totalValue) * 100, 2);
+    $totalValue = max(1, $toFloat($g['total']));
+    $paidPercent = round(($toFloat($g['paid']) / $totalValue) * 100, 2);
+    $balancePercent = round(($toFloat($g['balance']) / $totalValue) * 100, 2);
 @endphp
 
 <div class="report-grid report-grid-4">
