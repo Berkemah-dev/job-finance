@@ -196,7 +196,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:pricing.view')->prefix('pricing')->name('pricing.')->group(function () {
         Route::get('/weekly', [WeeklyPricingController::class, 'index'])->name('weekly.index');
         Route::get('/trucking', [TruckingPriceController::class, 'index'])->name('trucking.index');
-        Route::get('/trucking/{truckingPrice}', [TruckingPriceController::class, 'show'])->name('trucking.show');
+        Route::get('/trucking/{truckingPrice}', [TruckingPriceController::class, 'show'])->whereNumber('truckingPrice')->name('trucking.show');
     });
     Route::middleware('can:pricing.manage')->prefix('pricing')->name('pricing.')->group(function () {
         Route::get('/weekly/create', [WeeklyPricingController::class, 'create'])->name('weekly.create');
@@ -207,10 +207,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/weekly/{weeklyPricing}', [WeeklyPricingController::class, 'destroy'])->name('weekly.destroy');
         Route::get('/trucking/create', [TruckingPriceController::class, 'create'])->name('trucking.create');
         Route::post('/trucking', [TruckingPriceController::class, 'store'])->name('trucking.store');
-        Route::get('/trucking/{truckingPrice}/edit', [TruckingPriceController::class, 'edit'])->name('trucking.edit');
-        Route::put('/trucking/{truckingPrice}', [TruckingPriceController::class, 'update'])->name('trucking.update');
-        Route::post('/trucking/{truckingPrice}/toggle', [TruckingPriceController::class, 'toggle'])->name('trucking.toggle');
-        Route::delete('/trucking/{truckingPrice}', [TruckingPriceController::class, 'destroy'])->name('trucking.destroy');
+        Route::get('/trucking/{truckingPrice}/edit', [TruckingPriceController::class, 'edit'])->whereNumber('truckingPrice')->name('trucking.edit');
+        Route::put('/trucking/{truckingPrice}', [TruckingPriceController::class, 'update'])->whereNumber('truckingPrice')->name('trucking.update');
+        Route::post('/trucking/{truckingPrice}/toggle', [TruckingPriceController::class, 'toggle'])->whereNumber('truckingPrice')->name('trucking.toggle');
+        Route::delete('/trucking/{truckingPrice}', [TruckingPriceController::class, 'destroy'])->whereNumber('truckingPrice')->name('trucking.destroy');
     });
     Route::get('/accounts/mappings', [AccountController::class, 'mappings'])->middleware('can:coa.manage')->name('accounts.mappings');
     Route::get('/master/coa', [AccountController::class, 'index'])->defaults('tab', 'coa')->middleware('can:coa.manage')->name('master.coa');
