@@ -29,7 +29,7 @@ class JobController extends Controller
         $dateTo = (string) $request->input('date_to', '');
         $serviceTypes = ServiceType::options();
         $jobs = Job::with(['customer', 'sales', 'cs', 'quotation', 'bookingConfirmations', 'documents.documentType'])
-            ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
+            ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')->orWhere('booking_reference', 'like', '%'.$search.'%')->orWhere('nopen', 'like', '%'.$search.'%')->orWhere('bl_number', 'like', '%'.$search.'%')->orWhere('hbl_number', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
             ->when(in_array($request->input('status'), array_keys(config('operations.job_statuses')), true), fn ($q) => $q->where('status', $request->input('status')))
             ->when($salesId, fn ($q) => $q->where('sales_id', $salesId))
             ->when($csId, fn ($q) => $q->where('cs_id', $csId))

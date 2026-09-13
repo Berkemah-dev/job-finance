@@ -33,7 +33,7 @@
     <tr>
         <th>No. Job</th>
         <th>Customer & Remark Quote</th>
-        <th>No. BL / AWB</th>
+        <th>BL & Kepabeanan</th>
         <th>Service</th>
         <th>No. Quote & Sales</th>
         <th>CS PIC</th>
@@ -67,8 +67,17 @@
             @if($job->hawb_number)
                 <div><small class="muted-cell">HAWB:</small> {{ $job->hawb_number }}</div>
             @endif
-            @if(!$job->bl_number && !$job->hbl_number && !$job->awb_number && !$job->hawb_number)
-                <span class="muted-cell">Belum diisi</span>
+            @if($job->booking_reference)
+                <div style="color: #c2410c;"><small class="muted-cell" style="color: #ea580c;">AJU:</small> <strong>{{ $job->booking_reference }}</strong></div>
+            @endif
+            @if($job->nopen)
+                <div><small class="muted-cell">Nopen:</small> {{ $job->nopen }}@if($job->nopen_date) <small class="muted-cell">({{ $job->nopen_date->format('d/m') }})</small>@endif</div>
+            @endif
+            @if($job->peb_number)
+                <div><small class="muted-cell">PEB:</small> {{ $job->peb_number }}</div>
+            @endif
+            @if(!$job->bl_number && !$job->hbl_number && !$job->awb_number && !$job->hawb_number && !$job->booking_reference && !$job->nopen && !$job->peb_number)
+                <span class="muted-cell">—</span>
             @endif
         </td>
         <td>

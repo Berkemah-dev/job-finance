@@ -23,6 +23,7 @@ class JobDocumentController extends Controller
             'booking_reference' => ['nullable', 'string', 'max:60'],
             'customs_submission_number' => ['nullable', 'string', 'max:100'],
             'nopen' => ['nullable', 'string', 'max:60'],
+            'nopen_date' => ['nullable', 'date'],
             'npe_number' => ['nullable', 'string', 'max:60'],
             'peb_number' => ['nullable', 'string', 'max:60'],
             'peb_date' => ['nullable', 'date'],
@@ -134,7 +135,7 @@ class JobDocumentController extends Controller
             }
         }
 
-        foreach (['booking_reference', 'nopen', 'npe_number', 'peb_number', 'peb_date'] as $field) {
+        foreach (['booking_reference', 'nopen', 'nopen_date', 'npe_number', 'peb_number', 'peb_date'] as $field) {
             if ($request->filled($field)) {
                 if (! Schema::hasColumn('jobs', $field)) {
                     continue;

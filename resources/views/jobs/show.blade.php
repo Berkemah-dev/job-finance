@@ -36,6 +36,7 @@
     $etaDate = $job->eta ? $job->eta->format('d-m-Y') : '—';
     $noAju = $job->booking_reference ?? '—';
     $noNopen = $job->nopen ?? '—';
+    $nopenDate = $job->nopen_date ? $job->nopen_date->format('d/m/Y') : '—';
     $noNpe = $job->npe_number ?? '—';
     $noPeb = $job->peb_number ?? '—';
     $pebDate = $job->peb_date ? $job->peb_date->format('d/m/Y') : '—';
@@ -286,6 +287,47 @@
                         <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $vesselName }}</td>
                     </tr>
                     <tr>
+                        <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">{{ $isAir ? 'MAWB / AWB' : 'MBL / BL' }}</td>
+                        <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $noMbl }}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">{{ $isAir ? 'HAWB' : 'HBL' }}</td>
+                        <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $noHbl }}</td>
+                    </tr>
+                    @if($isImport)
+                        <tr>
+                            <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. AJU (6 digit)</td>
+                            <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000; color: #c2410c;">{{ $noAju }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Nopen (PIB)</td>
+                            <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">
+                                {{ $noNopen }}
+                                @if($job->nopen_date)
+                                    <span style="font-weight: normal; color: #475569; margin-left: 6px;">(Tgl: {{ $nopenDate }})</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @elseif($isExportSea || $isExportAir)
+                        <tr>
+                            <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. AJU (6 digit)</td>
+                            <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000; color: #c2410c;">{{ $noAju }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">NOPEN PEB</td>
+                            <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">
+                                {{ $noPeb }}
+                                @if($job->peb_date)
+                                    <span style="font-weight: normal; color: #475569; margin-left: 6px;">(Tgl: {{ $pebDate }})</span>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. NPE</td>
+                            <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $noNpe }}</td>
+                        </tr>
+                    @endif
+                    <tr>
                         <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Quantity</td>
                         <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $quantityStr }}</td>
                     </tr>
@@ -339,12 +381,12 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div class="field">
                         <label for="booking_reference_customs" style="font-size: 13.5px; font-weight: 700; color: #0f172a;">No AJU (6 digit terakhir)</label>
-                        <input type="text" name="booking_reference" id="booking_reference_customs" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 260200" style="border: 2px solid #f97316; font-size: 16px; font-weight: 700;">
+                        <input type="text" name="booking_reference" id="booking_reference_customs" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 399308" style="border: 2px solid #f97316; font-size: 16px; font-weight: 700;">
                     </div>
                     @if($isImport)
                         <div class="field">
                             <label for="nopen_customs" style="font-size: 13.5px; font-weight: 700; color: #0f172a;">Nomor Pendaftaran (Nopen)</label>
-                            <input type="text" name="nopen" id="nopen_customs" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari SPPB/SPJM" style="font-size: 16px; font-weight: 600;">
+                            <input type="text" name="nopen" id="nopen_customs" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="contoh: 508151" style="font-size: 16px; font-weight: 600;">
                         </div>
                     @else
                         <div class="field">
@@ -354,7 +396,15 @@
                     @endif
                 </div>
 
-                @if(!$isImport)
+                @if($isImport)
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="field">
+                            <label for="nopen_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal Nopen (SPPB/SPJM)</label>
+                            <input type="date" name="nopen_date" id="nopen_date_customs" value="{{ old('nopen_date', $job->nopen_date?->format('Y-m-d')) }}">
+                        </div>
+                        <div class="field"></div>
+                    </div>
+                @else
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                         <div class="field">
                             <label for="peb_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal PEB</label>
@@ -393,7 +443,7 @@
         @else
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No AJU (6 digit terakhir)</label><div style="padding: 12px 16px; border: 2px solid #f97316; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0f172a; background: #fff;">{{ $noAju }}</div></div>
-                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }}</div></div>
+                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }} @if($isImport && $job->nopen_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $nopenDate }})</span>@elseif(!$isImport && $job->peb_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $pebDate }})</span>@endif</div></div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div></div>
@@ -597,6 +647,10 @@
                             <div class="field">
                                 <label for="nopen_upload">Nomor Pendaftaran (Nopen)</label>
                                 <input type="text" name="nopen" id="nopen_upload" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari SPJM/SPPB">
+                            </div>
+                            <div class="field">
+                                <label for="nopen_date_upload">Tanggal Nopen</label>
+                                <input type="date" name="nopen_date" id="nopen_date_upload" value="{{ old('nopen_date', $job->nopen_date?->format('Y-m-d')) }}">
                             </div>
                             <div class="field span-2">
                                 <label for="customs_notes">Keterangan Tambahan</label>
