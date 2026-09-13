@@ -118,6 +118,33 @@ class Job extends Model
         });
     }
 
+    public function hasInvoiceDocument(): bool
+    {
+        return $this->documents->contains(function (JobDocument $doc) {
+            $code = strtoupper((string) ($doc->documentType?->code ?? ''));
+            $name = strtoupper((string) ($doc->documentType?->name ?? ''));
+
+            return str_contains($code, 'INV') || str_contains($name, 'INVOICE');
+        });
+    }
+
+    public function hasPackingListDocument(): bool
+    {
+        return $this->documents->contains(function (JobDocument $doc) {
+            $code = strtoupper((string) ($doc->documentType?->code ?? ''));
+            $name = strtoupper((string) ($doc->documentType?->name ?? ''));
+
+            return str_contains($code, 'PL') || str_contains($name, 'PACKINGLIST') || str_contains($name, 'PACKING LIST');
+        });
+    }
+
+    public function hasImportPibReadyDocuments(): bool
+    {
+        $service = (string) ($this->service_type ?? '');
+        $hasTransportDocument = $service === 'imp_air' ? $this->hasAwbDocument() : $this->hasBlDocument();
+
+        return $hasTransportDocument && $this->hasInvoiceDocument() && $this->hasPackingListDocument();
+    }
     public function hasNpeDocument(): bool
     {
         if ($this->shipment_status === 'npe' || ! empty($this->npe_number)) {
@@ -154,6 +181,10 @@ class Job extends Model
     public function hasPibDocument(): bool
     {
         if (in_array($this->shipment_status, ['pib_submitted', 'billing', 'spjm', 'behandle', 'sppb'], true)) {
+            return true;
+        }
+
+        if ($this->hasImportPibReadyDocuments()) {
             return true;
         }
 
@@ -305,51 +336,66 @@ class Job extends Model
         }
 
         if ($isImportSea) {
-            $hasDo       = $this->hasDoChecklist();
+            $hasPib      = $this->hasPibDocument();
             $hasSpjm     = $this->hasSpjmDocument();
+            $hasBehandle = $this->hasBehandleStatus();
             $hasSppb     = $this->hasSppbDocument();
 
-            if ($hasSppb) {
-                $statusSummary = 'DO Checklist + SPJM Inspection + SPPB Final Selesai';
+            if ($hasSppb && $hasSpjm) {
+                $statusSummary = 'PIB diajukan → SPJM → Behandle → SPPB final';
+            } elseif ($hasSppb) {
+                $statusSummary = 'PIB diajukan → SPPB final';
+            } elseif ($hasBehandle) {
+                $statusSummary = 'SPJM dalam pemeriksaan fisik — menunggu SPPB';
             } elseif ($hasSpjm) {
-                $statusSummary = 'SPJM dalam inspection — menunggu SPPB';
-            } elseif ($hasDo) {
-                $statusSummary = 'DO Checklist Selesai — menunggu SPJM/SPPB';
+                $statusSummary = 'SPJM aktif — menunggu SLIM / pemeriksaan fisik';
+            } elseif ($hasPib) {
+                $statusSummary = 'PIB diajukan — menunggu SPPB atau SPJM';
             } else {
-                $statusSummary = 'Menunggu Dokumen Import Sea';
+                $statusSummary = 'Menunggu BL, Invoice, dan Packing List';
             }
 
             return [
                 'type'            => 'import_sea',
                 'title'           => 'Import Sea Checklist',
-                'is_all_completed' => $hasDo && $hasSppb,
+                'is_all_completed' => $hasPib && $hasSppb,
                 'status_summary'  => $statusSummary,
                 'items'           => [
                     [
-                        'key'          => 'do',
-                        'label'        => 'DO Checklist',
-                        'sublabel'     => 'Delivery Order untuk proses pengeluaran barang',
-                        'completed'    => $hasDo,
-                        'badge_text'   => $hasDo ? 'DO Checklist ✓' : 'Menunggu DO',
-                        'badge_color'  => $hasDo ? '#166534' : '#64748b',
-                        'badge_bg'     => $hasDo ? '#dcfce7' : '#f1f5f9',
+                        'key'          => 'pib',
+                        'label'        => 'PIB Diajukan',
+                        'sublabel'     => 'Otomatis hijau setelah BL, Invoice, Packing List lengkap',
+                        'completed'    => $hasPib,
+                        'badge_text'   => $hasPib ? 'PIB Diajukan ✓' : 'Menunggu BL/Invoice/PL',
+                        'badge_color'  => $hasPib ? '#166534' : '#64748b',
+                        'badge_bg'     => $hasPib ? '#dcfce7' : '#f1f5f9',
                     ],
                     [
                         'key'          => 'spjm',
-                        'label'        => 'SPJM Inspection',
-                        'sublabel'     => 'SPJM berarti barang dalam proses inspection',
-                        'completed'    => $hasSpjm || $hasSppb,
+                        'label'        => 'SPJM',
+                        'sublabel'     => 'Jika jalur merah, Operation upload SPJM',
+                        'completed'    => $hasSpjm || ($hasSppb && ! $hasSpjm),
                         'active'       => $hasSpjm && ! $hasSppb,
-                        'badge_text'   => $hasSppb ? 'Inspection Selesai ✓' : ($hasSpjm ? 'SPJM dalam inspection' : 'Menunggu SPJM'),
-                        'badge_color'  => $hasSppb ? '#166534' : ($hasSpjm ? '#991b1b' : '#64748b'),
-                        'badge_bg'     => $hasSppb ? '#dcfce7' : ($hasSpjm ? '#fee2e2' : '#f1f5f9'),
+                        'badge_text'   => $hasSpjm ? 'SPJM aktif' : ($hasSppb ? 'Tidak ada SPJM' : 'Opsional'),
+                        'badge_color'  => $hasSpjm ? '#991b1b' : ($hasSppb ? '#166534' : '#64748b'),
+                        'badge_bg'     => $hasSpjm ? '#fee2e2' : ($hasSppb ? '#dcfce7' : '#f1f5f9'),
+                    ],
+                    [
+                        'key'          => 'behandle',
+                        'label'        => 'Behandle / Pemeriksaan Fisik',
+                        'sublabel'     => 'Aktif setelah Operation upload SLIM',
+                        'completed'    => $hasBehandle || ($hasSppb && ! $hasSpjm),
+                        'active'       => $hasBehandle && ! $hasSppb,
+                        'badge_text'   => $hasBehandle ? 'Behandle aktif' : ($hasSppb && ! $hasSpjm ? 'Dilewati' : 'Menunggu SLIM'),
+                        'badge_color'  => $hasBehandle ? '#92400e' : ($hasSppb && ! $hasSpjm ? '#166534' : '#64748b'),
+                        'badge_bg'     => $hasBehandle ? '#fef3c7' : ($hasSppb && ! $hasSpjm ? '#dcfce7' : '#f1f5f9'),
                     ],
                     [
                         'key'          => 'sppb',
-                        'label'        => 'SPPB (Final)',
-                        'sublabel'     => 'Surat Persetujuan Pengeluaran Barang — final',
+                        'label'        => 'SPPB Final',
+                        'sublabel'     => 'Ujung alur customs',
                         'completed'    => $hasSppb,
-                        'badge_text'   => $hasSppb ? 'SPPB Terbit — Selesai ✓' : 'Menunggu SPPB',
+                        'badge_text'   => $hasSppb ? 'SPPB Final ✓' : 'Menunggu SPPB',
                         'badge_color'  => $hasSppb ? '#166534' : '#64748b',
                         'badge_bg'     => $hasSppb ? '#dcfce7' : '#f1f5f9',
                     ],
@@ -358,46 +404,72 @@ class Job extends Model
         }
 
         if ($isImportAir) {
+            $hasPib      = $this->hasPibDocument();
             $hasSpjm     = $this->hasSpjmDocument();
+            $hasBehandle = $this->hasBehandleStatus();
             $hasSppb     = $this->hasSppbDocument();
 
-            if ($hasSppb) {
-                $statusSummary = 'SPJM Inspection + SPPB Final Selesai';
+            if ($hasSppb && $hasSpjm) {
+                $statusSummary = 'PIB diajukan → SPJM → Behandle → SPPB final';
+            } elseif ($hasSppb) {
+                $statusSummary = 'PIB diajukan → SPPB final';
+            } elseif ($hasBehandle) {
+                $statusSummary = 'SPJM dalam pemeriksaan fisik — menunggu SPPB';
             } elseif ($hasSpjm) {
-                $statusSummary = 'SPJM dalam inspection — menunggu SPPB';
+                $statusSummary = 'SPJM aktif — menunggu SLIM / pemeriksaan fisik';
+            } elseif ($hasPib) {
+                $statusSummary = 'PIB diajukan — menunggu SPPB atau SPJM';
             } else {
-                $statusSummary = 'Menunggu Dokumen Import Air';
+                $statusSummary = 'Menunggu AWB, Invoice, dan Packing List';
             }
 
             return [
                 'type'            => 'import_air',
                 'title'           => 'Import Air Checklist',
-                'is_all_completed' => $hasSppb,
+                'is_all_completed' => $hasPib && $hasSppb,
                 'status_summary'  => $statusSummary,
                 'items'           => [
                     [
+                        'key'          => 'pib',
+                        'label'        => 'PIB Diajukan',
+                        'sublabel'     => 'Otomatis hijau setelah AWB, Invoice, Packing List lengkap',
+                        'completed'    => $hasPib,
+                        'badge_text'   => $hasPib ? 'PIB Diajukan ✓' : 'Menunggu AWB/Invoice/PL',
+                        'badge_color'  => $hasPib ? '#166534' : '#64748b',
+                        'badge_bg'     => $hasPib ? '#dcfce7' : '#f1f5f9',
+                    ],
+                    [
                         'key'          => 'spjm',
-                        'label'        => 'SPJM Inspection',
-                        'sublabel'     => 'SPJM berarti barang dalam proses inspection',
-                        'completed'    => $hasSpjm || $hasSppb,
+                        'label'        => 'SPJM',
+                        'sublabel'     => 'Jika jalur merah, Operation upload SPJM',
+                        'completed'    => $hasSpjm || ($hasSppb && ! $hasSpjm),
                         'active'       => $hasSpjm && ! $hasSppb,
-                        'badge_text'   => $hasSppb ? 'Inspection Selesai ✓' : ($hasSpjm ? 'SPJM dalam inspection' : 'Menunggu SPJM'),
-                        'badge_color'  => $hasSppb ? '#166534' : ($hasSpjm ? '#991b1b' : '#64748b'),
-                        'badge_bg'     => $hasSppb ? '#dcfce7' : ($hasSpjm ? '#fee2e2' : '#f1f5f9'),
+                        'badge_text'   => $hasSpjm ? 'SPJM aktif' : ($hasSppb ? 'Tidak ada SPJM' : 'Opsional'),
+                        'badge_color'  => $hasSpjm ? '#991b1b' : ($hasSppb ? '#166534' : '#64748b'),
+                        'badge_bg'     => $hasSpjm ? '#fee2e2' : ($hasSppb ? '#dcfce7' : '#f1f5f9'),
+                    ],
+                    [
+                        'key'          => 'behandle',
+                        'label'        => 'Behandle / Pemeriksaan Fisik',
+                        'sublabel'     => 'Aktif setelah Operation upload SLIM',
+                        'completed'    => $hasBehandle || ($hasSppb && ! $hasSpjm),
+                        'active'       => $hasBehandle && ! $hasSppb,
+                        'badge_text'   => $hasBehandle ? 'Behandle aktif' : ($hasSppb && ! $hasSpjm ? 'Dilewati' : 'Menunggu SLIM'),
+                        'badge_color'  => $hasBehandle ? '#92400e' : ($hasSppb && ! $hasSpjm ? '#166534' : '#64748b'),
+                        'badge_bg'     => $hasBehandle ? '#fef3c7' : ($hasSppb && ! $hasSpjm ? '#dcfce7' : '#f1f5f9'),
                     ],
                     [
                         'key'          => 'sppb',
-                        'label'        => 'SPPB (Final)',
-                        'sublabel'     => 'Surat Persetujuan Pengeluaran Barang — final',
+                        'label'        => 'SPPB Final',
+                        'sublabel'     => 'Ujung alur customs',
                         'completed'    => $hasSppb,
-                        'badge_text'   => $hasSppb ? 'SPPB Terbit — Selesai ✓' : 'Menunggu SPPB',
+                        'badge_text'   => $hasSppb ? 'SPPB Final ✓' : 'Menunggu SPPB',
                         'badge_color'  => $hasSppb ? '#166534' : '#64748b',
                         'badge_bg'     => $hasSppb ? '#dcfce7' : '#f1f5f9',
                     ],
                 ],
             ];
         }
-
         return [
             'type' => 'domestic',
             'title' => 'Domestic Flow',

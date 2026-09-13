@@ -489,17 +489,47 @@
             </table>
         </div>
 
+        @if($isImport && !empty($checklist['items']))
+            <div style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0;">
+                <div class="panel-heading" style="margin-bottom:12px;">
+                    <h2>Status Customs</h2>
+                    <span class="subtle">{{ $checklist['status_summary'] }}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">
+                    @foreach($checklist['items'] as $item)
+                        <div style="padding:14px;border-radius:14px;border:1px solid {{ $item['completed'] ? '#bbf7d0' : (($item['active'] ?? false) ? '#fca5a5' : '#e2e8f0') }};background:{{ $item['completed'] ? '#f0fdf4' : (($item['active'] ?? false) ? '#fff7ed' : '#f8fafc') }};">
+                            <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+                                <div>
+                                    <strong style="display:block;color:#0f172a;font-size:14px;">{{ $item['label'] }}</strong>
+                                    <small style="display:block;color:#64748b;margin-top:4px;line-height:1.5;">{{ $item['sublabel'] }}</small>
+                                </div>
+                                <span style="white-space:nowrap;font-size:11px;font-weight:700;padding:5px 8px;border-radius:999px;background:{{ $item['badge_bg'] }};color:{{ $item['badge_color'] }};">{{ $item['badge_text'] }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @can('update',$job)
-            @php $canUploadOperationalCustoms = auth()->user()->hasRole(['operational', 'super-admin', 'admin']); @endphp
+            @php
+                $canUploadOperationalCustoms = auth()->user()->hasRole(['operational', 'super-admin', 'admin']);
+                $isCustomsDocumentType = fn($dt) => preg_match('/PIB|BILLING|SPJM|BEHANDLE|SLIM|SPPB/i', $dt->code.' '.$dt->name);
+                $generalDocumentTypes = $documentTypes->reject($isCustomsDocumentType);
+                $customsDocumentTypes = $documentTypes->filter($isCustomsDocumentType);
+            @endphp
             <form class="data-form" style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data">
                 @csrf
+                <div class="panel-heading" style="margin-bottom:12px;">
+                    <h2>Upload Dokumen Utama</h2>
+                    <span class="subtle">BL/AWB, Invoice, Packing List, dan dokumen service lainnya.</span>
+                </div>
                 <div class="form-grid">
                     <div class="field">
                         <label for="document_type_id">Jenis Dokumen</label>
                         <select name="document_type_id" id="document_type_id" required>
                             <option value="">Pilih tipe dokumen</option>
-                            @foreach($documentTypes as $dt)
-                                @continue(!$canUploadOperationalCustoms && preg_match('/SPJM|BEHANDLE|SLIM|SPPB/i', $dt->code.' '.$dt->name))
+                            @foreach($generalDocumentTypes as $dt)
                                 <option value="{{ $dt->id }}">{{ $dt->code }} - {{ $dt->name }}</option>
                             @endforeach
                         </select>
@@ -514,72 +544,77 @@
                         <input type="text" name="notes" id="notes" maxlength="255" placeholder="Opsional">
                     </div>
                 </div>
+                <div class="form-actions">
+                    <button class="button button-primary">Upload Dokumen Utama</button>
+                </div>
+            </form>
 
-                @if($isImport || $isExportSea || $isExportAir)
-                    <div style="margin-top: 18px; padding: 18px; border: 1px solid #dbeafe; border-radius: 14px; background: #f8fbff;">
-                        <div class="panel-heading" style="margin-bottom: 12px;">
-                            <h2 style="font-size: 16px;">Data Kepabeanan dari Dokumen</h2>
-                            <span class="subtle">Isi jika dokumen yang diupload adalah {{ $isImport ? 'PIB/Billing/SPJM/SPPB' : 'NPE' }}. Data ini akan langsung masuk ke tab Customs & AJU.</span>
-                        </div>
+            @if($isImport)
+                <form class="data-form" style="margin-top:18px;padding:20px;border:1px solid #dbeafe;border-radius:16px;background:#f8fbff;" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="customs_upload" value="1">
+                    <div class="panel-heading" style="margin-bottom:12px;">
+                        <h2>Upload Dokumen Customs</h2>
+                        <span class="subtle">Khusus Operation. Alur: PIB diajukan → SPJM/SLIM jika ada → SPPB final.</span>
+                    </div>
+
+                    @if($canUploadOperationalCustoms)
                         <div class="form-grid">
                             <div class="field">
-                                <label for="customs_document_kind">Jenis Dokumen Bea Cukai</label>
-                                <select name="customs_document_kind" id="customs_document_kind">
-                                    <option value="">Tidak update status</option>
-                                    @if($isImport)
-                                        <option value="pib" @selected(old('customs_document_kind') === 'pib')>PIB — Pemberitahuan Impor Barang</option>
-                                        <option value="billing" @selected(old('customs_document_kind') === 'billing')>Billing BC — Tagihan Bea Cukai</option>
-                                        <option value="spjm" @selected(old('customs_document_kind') === 'spjm')>SPJM — Perlu Pemeriksaan Fisik</option>
-                                        <option value="behandle" @selected(old('customs_document_kind') === 'behandle')>Pemeriksaan Fisik / SLIM</option>
-                                        <option value="sppb" @selected(old('customs_document_kind') === 'sppb')>SPPB — Final</option>
-                                    @else
-                                        <option value="npe" @selected(old('customs_document_kind') === 'npe')>NPE — Nota Pelayanan Ekspor</option>
-                                    @endif
+                                <label for="customs_document_type_id">Dokumen Customs</label>
+                                <select name="document_type_id" id="customs_document_type_id" required>
+                                    <option value="">Pilih dokumen customs</option>
+                                    @foreach($customsDocumentTypes as $dt)
+                                        <option value="{{ $dt->id }}">{{ $dt->code }} - {{ $dt->name }}</option>
+                                    @endforeach
                                 </select>
-                                <small class="form-help">
-                                    @if($isImport)
-                                        Alur: PIB → Billing BC → SPPB langsung selesai, atau PIB → Billing BC → SPJM → Pemeriksaan Fisik → SPPB.
-                                    @else
-                                        Pilih NPE jika dokumen yang diupload adalah Nota Pelayanan Ekspor.
-                                    @endif
-                                </small>
+                            </div>
+                            <div class="field">
+                                <label for="customs_document_kind">Jenis Status</label>
+                                <select name="customs_document_kind" id="customs_document_kind" required>
+                                    <option value="">Pilih status</option>
+                                    <option value="pib" @selected(old('customs_document_kind') === 'pib')>PIB Diajukan</option>
+                                    <option value="billing" @selected(old('customs_document_kind') === 'billing')>Billing BC</option>
+                                    <option value="spjm" @selected(old('customs_document_kind') === 'spjm')>SPJM</option>
+                                    <option value="behandle" @selected(old('customs_document_kind') === 'behandle')>SLIM / Behandle</option>
+                                    <option value="sppb" @selected(old('customs_document_kind') === 'sppb')>SPPB Final</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="customs_file">File PDF <span class="required">*</span></label>
+                                <input type="file" name="file" id="customs_file" required accept="application/pdf,.pdf">
+                                <small class="form-help">Hanya PDF, maksimal 3 MB.</small>
                             </div>
                             <div class="field">
                                 <label for="customs_submission_number_upload">Nomor Pengajuan Penuh</label>
                                 <input type="text" name="customs_submission_number" id="customs_submission_number_upload" maxlength="100" placeholder="Paste nomor pengajuan penuh dari dokumen">
-                                <small class="form-help">Sistem otomatis mengambil 6 digit terakhir sebagai No AJU.</small>
+                                <small class="form-help">Otomatis ambil 6 digit terakhir sebagai No AJU.</small>
                             </div>
                             <div class="field">
                                 <label for="booking_reference_upload">No AJU (6 digit terakhir)</label>
                                 <input type="text" name="booking_reference" id="booking_reference_upload" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 260200">
                             </div>
-                            @if($isImport)
-                                <div class="field">
-                                    <label for="nopen_upload">Nomor Pendaftaran (Nopen)</label>
-                                    <input type="text" name="nopen" id="nopen_upload" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari SPPB/SPJM">
-                                </div>
-                            @else
-                                <div class="field">
-                                    <label for="peb_number_upload">NOPEN PEB</label>
-                                    <input type="text" name="peb_number" id="peb_number_upload" maxlength="60" value="{{ old('peb_number', $job->peb_number) }}" placeholder="contoh: 415575">
-                                </div>
-                                <div class="field">
-                                    <label for="peb_date_upload">Tanggal PEB</label>
-                                    <input type="date" name="peb_date" id="peb_date_upload" value="{{ old('peb_date', $job->peb_date?->format('Y-m-d')) }}">
-                                </div>
-                                <div class="field">
-                                    <label for="npe_number_upload">Nomor NPE</label>
-                                    <input type="text" name="npe_number" id="npe_number_upload" maxlength="60" value="{{ old('npe_number', $job->npe_number) }}" placeholder="Isi nomor NPE">
-                                </div>
-                            @endif
+                            <div class="field">
+                                <label for="nopen_upload">Nomor Pendaftaran (Nopen)</label>
+                                <input type="text" name="nopen" id="nopen_upload" maxlength="60" value="{{ old('nopen', $job->nopen) }}" placeholder="Isi Nopen dari SPJM/SPPB">
+                            </div>
+                            <div class="field span-2">
+                                <label for="customs_notes">Keterangan Tambahan</label>
+                                <input type="text" name="notes" id="customs_notes" maxlength="255" placeholder="Opsional">
+                            </div>
                         </div>
-                    </div>
-                @endif
-
-                <div class="form-actions">
-                    <button class="button button-primary">Upload Dokumen</button>
-                </div>
-            </form>
+                        <div class="form-actions">
+                            <button class="button button-primary">Upload Dokumen Customs</button>
+                        </div>
+                    @else
+                        <div class="empty-state" style="margin:0;padding:18px;">
+                            <x-icon name="lock"/>
+                            <h3>Upload customs khusus Operation</h3>
+                            <p>CS tetap upload BL/AWB, Invoice, dan Packing List dari form dokumen utama.</p>
+                        </div>
+                    @endif
+                </form>
+            @endif
         @endcan
     </section>
 </div>
@@ -595,8 +630,8 @@
                 <span class="stat-icon blue"><x-icon name="file"/></span>
                 <div>
                     <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN SURAT KUASA</p>
-                    <h2>Surat Kuasa Pengurusan (Import)</h2>
-                    <p>Surat kuasa untuk pengurusan Delivery Order dan kepabeanan.</p>
+                    <h2>Import (Confirm) — Surat Kuasa</h2>
+                    <p>Surat kuasa untuk pengurusan Delivery Order dan kepabeanan import.</p>
                 </div>
             </div>
         </div>

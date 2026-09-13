@@ -40,8 +40,8 @@ class QuotationService
                 $data['sales_id'] = $actor->id;
             }
             $calculated = $this->calculate($data['items'], $data['quotation_date'] ?? now());
-            $data['currency'] = $data['currency'] ?? 'IDR';
-            $data['exchange_rate'] = $data['exchange_rate'] ?? 1;
+            $data['currency'] = 'IDR';
+            $data['exchange_rate'] = 1;
             // Syarat pembayaran diambil dari default customer saat tidak dipilih eksplisit.
             if (($data['payment_terms'] ?? '') === '') {
                 $data['payment_terms'] = $customer->default_payment_terms;
@@ -244,17 +244,16 @@ class QuotationService
         foreach (array_values($rows) as $i => $row) {
             $row = $this->normalizePricingRow($row, $i, $date);
             $quantity = Money::decimal($row['quantity'] ?? '1');
-            $unitCost = Money::decimal($row['unit_cost'] ?? '0');
-            $unitPrice = Money::decimal($row['unit_price'] ?? '0');
+            $unitCostValue = ($row['unit_cost'] ?? '0') === '' ? '0' : ($row['unit_cost'] ?? '0');
+            $unitPriceValue = ($row['unit_price'] ?? '0') === '' ? '0' : ($row['unit_price'] ?? '0');
+            $unitCost = Money::decimal($unitCostValue);
+            $unitPrice = Money::decimal($unitPriceValue);
             if ($row['type'] === 'temporary' && ! $unitCost->isZero() && ! $unitCost->isEqualTo($unitPrice)) {
                 throw ValidationException::withMessages(['items.'.$i.'.unit_price' => 'Temporary ditagihkan sebesar biaya: nilai jual harus sama dengan modal.']);
             }
-            if ($row['type'] === 'temporary' && $unitCost->isZero() && ! $unitPrice->isZero()) {
-                $unitCost = $unitPrice;
-                $row['unit_cost'] = (string) $unitPrice;
-            }
-            $totalCost = $quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp);
-            $totalPrice = $quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp);
+            $exchangeRate = Money::decimal($row['exchange_rate'] ?? '1');
+            $totalCost = $quantity->multipliedBy($unitCost)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
+            $totalPrice = $quantity->multipliedBy($unitPrice)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
             $items[] = array_merge($row, ['position' => $i + 1, 'quantity' => (string) $quantity, 'unit_cost' => (string) $unitCost, 'unit_price' => (string) $unitPrice, 'total_cost' => Money::checked($totalCost), 'total_price' => Money::checked($totalPrice)]);
             if ($row['type'] === 'temporary') {
                 $temporary = $temporary->plus($totalCost);

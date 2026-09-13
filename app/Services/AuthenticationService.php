@@ -23,6 +23,12 @@ class AuthenticationService
             RateLimiter::hit($key, 60);
             throw ValidationException::withMessages(['email' => 'Email atau kata sandi tidak sesuai.']);
         }
+        if (! Auth::user()?->is_active) {
+            Auth::logout();
+            RateLimiter::hit($key, 60);
+            throw ValidationException::withMessages(['email' => 'Akun ini sedang nonaktif. Hubungi administrator.']);
+        }
+
         RateLimiter::clear($key);
         $request->session()->regenerate();
         ActivityLog::create(['user_id' => Auth::id(), 'role_id' => $request->user()?->role_id, 'action' => 'auth.login', 'module' => 'auth', 'ip' => $request->ip(), 'description' => 'Masuk ke aplikasi']);

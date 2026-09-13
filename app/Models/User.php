@@ -48,6 +48,7 @@ class User extends Authenticatable
         'nik', 'phone', 'address', 'birth_date', 'gender', 'position', 'department', 'emergency_contact', 'emergency_phone',
         'email',
         'password',
+        'is_active',
     ];
 
     /**
@@ -71,6 +72,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'birth_date' => 'date',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 }

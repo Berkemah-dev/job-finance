@@ -18,6 +18,7 @@ class JobDocumentController extends Controller
             'document_type_id' => 'required|exists:document_types,id',
             'file'             => 'required|file|max:3072|mimes:pdf',
             'notes'            => 'nullable|string|max:500',
+            'customs_upload' => ['nullable', 'boolean'],
             'customs_document_kind' => ['nullable', Rule::in(['pib', 'billing', 'spjm', 'sppb', 'behandle', 'npe'])],
             'booking_reference' => ['nullable', 'string', 'max:60'],
             'customs_submission_number' => ['nullable', 'string', 'max:100'],
@@ -31,8 +32,14 @@ class JobDocumentController extends Controller
         $docText = strtoupper($docType->code.' '.$docType->name);
         $kind = (string) $request->input('customs_document_kind', '');
         $kind = $kind ?: $this->detectCustomsKind($docText);
-        if (in_array($kind, ['spjm', 'behandle', 'sppb'], true) && ! $request->user()->hasRole(['operational', 'super-admin', 'admin'])) {
-            abort(403, 'Dokumen SPJM, Pemeriksaan Fisik/SLIM, dan SPPB hanya dapat diupload oleh Operational.');
+        $isCustomsUpload = $request->boolean('customs_upload') || in_array($kind, ['pib', 'billing', 'spjm', 'behandle', 'sppb'], true);
+
+        if ($request->boolean('customs_upload') && $kind === '') {
+            return back()->withErrors(['customs_document_kind' => 'Pilih jenis dokumen customs dulu.'])->withInput();
+        }
+
+        if ($isCustomsUpload && ! $request->user()->hasRole(['operational', 'super-admin', 'admin'])) {
+            abort(403, 'Upload dokumen customs hanya dapat dilakukan oleh Operation.');
         }
 
         $file      = $request->file('file');
@@ -48,8 +55,8 @@ class JobDocumentController extends Controller
             'uploaded_by'      => $request->user()->id,
         ]);
 
+        $job->load(['documents.documentType']);
         $this->syncCustomsDataFromUpload($request, $job);
-
         $job->load(['documents.documentType']);
         $docCode = strtoupper((string) ($docType?->code ?? ''));
         $docName = strtoupper((string) ($docType?->name ?? ''));
@@ -142,11 +149,14 @@ class JobDocumentController extends Controller
             $doc = $job->documents()->with('documentType')->latest('id')->first();
             $kind = $doc ? $this->detectCustomsKind(strtoupper($doc->documentType?->code.' '.$doc->documentType?->name)) : '';
         }
-        if ($kind) {
-            $isImport = in_array($job->service_type, ['imp_sea', 'imp_air'], true);
-            $isExport = in_array($job->service_type, ['exp_sea', 'exp_air'], true);
+        $isImport = in_array($job->service_type, ['imp_sea', 'imp_air'], true);
+        $isExport = in_array($job->service_type, ['exp_sea', 'exp_air'], true);
 
-            // Peta kind -> shipment_status sesuai alur Import: PIB -> Billing -> Penjaluran -> Pemeriksaan Fisik -> SPPB
+        if (! $kind && $isImport && $job->hasImportPibReadyDocuments() && ! in_array($job->shipment_status, ['billing', 'spjm', 'behandle', 'sppb'], true)) {
+            $kind = 'pib';
+        }
+
+        if ($kind) {
             $importKindMap = [
                 'pib'      => 'pib_submitted',
                 'billing'  => 'billing',
@@ -156,9 +166,14 @@ class JobDocumentController extends Controller
             ];
 
             if ($isImport && isset($importKindMap[$kind])) {
-                $updates['shipment_status'] = $importKindMap[$kind];
-                $updates['shipment_status_by'] = $request->user()?->id;
-                $updates['shipment_status_at'] = now();
+                $currentRank = array_search($job->shipment_status, array_values($importKindMap), true);
+                $nextRank = array_search($importKindMap[$kind], array_values($importKindMap), true);
+
+                if ($currentRank === false || $nextRank === false || $nextRank >= $currentRank) {
+                    $updates['shipment_status'] = $importKindMap[$kind];
+                    $updates['shipment_status_by'] = $request->user()?->id;
+                    $updates['shipment_status_at'] = now();
+                }
             } elseif ($isExport && $kind === 'npe') {
                 $updates['shipment_status'] = 'npe';
                 $updates['shipment_status_by'] = $request->user()?->id;
@@ -189,7 +204,7 @@ class JobDocumentController extends Controller
     {
         return match (true) {
             str_contains($text, 'SPPB') => 'sppb',
-            str_contains($text, 'BEHANDLE') || str_contains($text, 'SLIM') => 'behandle',
+            str_contains($text, 'BEHANDLE') || str_contains($text, 'SLIM') || str_contains($text, 'PEMERIKSAAN FISIK') => 'behandle',
             str_contains($text, 'SPJM') => 'spjm',
             str_contains($text, 'BILLING') => 'billing',
             str_contains($text, 'PIB') => 'pib',

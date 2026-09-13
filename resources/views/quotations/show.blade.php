@@ -11,7 +11,6 @@
 @if($quotation->weight_meas)<div><dt>Weight / Meas</dt><dd>{{ $quotation->weight_meas }}</dd></div>@endif
 @if($quotation->commodity)<div><dt>Commodity</dt><dd>{{ $quotation->commodity }}</dd></div>@endif
 @if($quotation->origin || $quotation->destination)<div><dt>Port of Loading → Discharge</dt><dd>{{ $quotation->origin ?? '—' }} → {{ $quotation->destination ?? '—' }}</dd></div>@endif
-@if($quotation->currency)<div><dt>Mata uang</dt><dd>{{ $quotation->currency }} @if($quotation->currency !== 'IDR' && $quotation->exchange_rate) · kurs {{ \App\Support\Money::format($quotation->exchange_rate) }}@endif</dd></div>@endif
 @if($quotation->payment_terms)<div><dt>Ketentuan pembayaran</dt><dd>{{ config('operations.customer_payment_terms.'.$quotation->payment_terms) ?? '—' }}</dd></div>@endif
 @if($quotation->shipper_name)<div><dt>Shipper</dt><dd>{{ $quotation->shipper_name }}<br><small>{{ $quotation->shipper_address ?? '' }}</small></dd></div>@endif
 @if($quotation->consignee_name)<div><dt>Consignee</dt><dd>{{ $quotation->consignee_name }}<br><small>{{ $quotation->consignee_address ?? '' }}</small></dd></div>@endif
