@@ -59,6 +59,29 @@
     <a class="text-link" href="{{ route('jobs.index') }}">← Kembali ke daftar</a>
 </div>
 
+    @if($job->statusHistory->isNotEmpty())
+        <section class="panel" style="margin-bottom: 24px;">
+            <div class="panel-heading"><h2>Riwayat status</h2></div>
+            <ol class="approval-timeline">
+                @foreach($job->statusHistory as $event)
+                    <li>
+                        <span></span>
+                        <div>
+                            <strong>
+                                @if($event->from_status)
+                                    {{ config('operations.job_statuses.'.$event->from_status) ?? $event->from_status }} → {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}
+                                @else
+                                    {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}
+                                @endif
+                            </strong>
+                            <p>{{ $event->user?->name ?? 'System' }} · {{ $event->created_at->format('d/m/Y H:i') }}@if($event->note)<br>{{ $event->note }}@endif</p>
+                        </div>
+                    </li>
+                @endforeach
+            </ol>
+        </section>
+    @endif
+
 {{-- TOP ACTION BUTTONS --}}
 <div class="quote-actions" style="margin-bottom: 20px;">
     @can('update',$job)
@@ -292,29 +315,6 @@
             </div>
         </div>
     </section>
-
-    @if($job->statusHistory->isNotEmpty())
-        <section class="panel" style="margin-bottom: 24px;">
-            <div class="panel-heading"><h2>Riwayat status</h2></div>
-            <ol class="approval-timeline">
-                @foreach($job->statusHistory as $event)
-                    <li>
-                        <span></span>
-                        <div>
-                            <strong>
-                                @if($event->from_status)
-                                    {{ config('operations.job_statuses.'.$event->from_status) ?? $event->from_status }} → {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}
-                                @else
-                                    {{ config('operations.job_statuses.'.$event->to_status) ?? $event->to_status }}
-                                @endif
-                            </strong>
-                            <p>{{ $event->user?->name ?? 'System' }} · {{ $event->created_at->format('d/m/Y H:i') }}@if($event->note)<br>{{ $event->note }}@endif</p>
-                        </div>
-                    </li>
-                @endforeach
-            </ol>
-        </section>
-    @endif
 </div>
 
 {{-- ========================================================================= --}}
