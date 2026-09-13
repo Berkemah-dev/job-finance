@@ -144,9 +144,10 @@ class OperationalDocumentController extends Controller
     {
         $quotation->load(['job.customer']);
         abort_unless($quotation->job, 404);
-        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.tanda-terima', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
-        $filename = 'Tanda_Terima_'.$quotation->job->number.'.pdf';
-        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
+        $type = $request->query('type', 'barang');
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.tanda-terima', ['job' => $quotation->job, 'quotation' => $quotation, 'type' => $type])->setPaper('a4');
+        $filename = 'Tanda_Terima_'.ucfirst($type).'_'.$quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.ucfirst($type).' '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }
@@ -197,9 +198,10 @@ class OperationalDocumentController extends Controller
     public function jobTandaTerimaPdf(Request $request, Job $job, MasterDataService $master)
     {
         $job->load(['customer', 'quotation']);
-        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.tanda-terima', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
-        $filename = 'Tanda_Terima_'.$job->number.'.pdf';
-        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+        $type = $request->query('type', 'barang');
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.tanda-terima', ['job' => $job, 'quotation' => $job->quotation, 'type' => $type])->setPaper('a4');
+        $filename = 'Tanda_Terima_'.ucfirst($type).'_'.$job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.ucfirst($type).' '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }

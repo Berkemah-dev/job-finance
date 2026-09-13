@@ -93,7 +93,8 @@ $events = collect([
     <div class="form-section-heading" style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:20px"><h2>Dokumen Operasional (PDF)</h2><p>Cetak dokumen pendukung untuk operasional pengiriman.</p></div>
     <div class="action-group" style="margin-bottom:20px; flex-wrap: wrap; gap: 8px;">
         <a class="button button-secondary" href="{{ route('documents.surat-jalan.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Surat Jalan</a>
-        <a class="button button-secondary" href="{{ route('documents.tanda-terima.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Tanda Terima Barang</a>
+        <a class="button button-secondary" href="{{ route('documents.tanda-terima.pdf',['quotation'=>$quotation,'type'=>'barang','mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Tanda Terima Barang</a>
+        <a class="button button-secondary" href="{{ route('documents.tanda-terima.pdf',['quotation'=>$quotation,'type'=>'dokumen','mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Tanda Terima Dokumen</a>
         <a class="button button-secondary" href="{{ route('documents.sk-do.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Surat Kuasa D/O</a>
         <a class="button button-secondary" href="{{ route('documents.dnp.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> Dokumen Nota Pabean (DNP)</a>
         <a class="button button-secondary" href="{{ route('documents.sk-pabean.pdf',['quotation'=>$quotation,'mode'=>'download']) }}" target="_blank"><x-icon name="file"/> SK Kepabeanan</a>

@@ -327,6 +327,28 @@
                             <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $noNpe }}</td>
                         </tr>
                     @endif
+                    @if($job->commercial_invoice_number)
+                        <tr>
+                            <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. Commercial Invoice</td>
+                            <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">
+                                {{ $job->commercial_invoice_number }}
+                                @if($job->commercial_invoice_date)
+                                    <span style="font-weight: normal; color: #475569; margin-left: 6px;">(Tgl: {{ $job->commercial_invoice_date->format('d/m/Y') }})</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endif
+                    @if($job->packing_list_number)
+                        <tr>
+                            <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">No. Packing List</td>
+                            <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">
+                                {{ $job->packing_list_number }}
+                                @if($job->packing_list_date)
+                                    <span style="font-weight: normal; color: #475569; margin-left: 6px;">(Tgl: {{ $job->packing_list_date->format('d/m/Y') }})</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endif
                     <tr>
                         <td style="font-weight: 600; padding: 6px 12px; border: 1px solid #000;">Quantity</td>
                         <td style="font-weight: 700; padding: 6px 12px; border: 1px solid #000;">{{ $quantityStr }}</td>
@@ -436,6 +458,28 @@
                     </div>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div class="field">
+                        <label for="commercial_invoice_number_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Nomor Commercial Invoice</label>
+                        <input type="text" name="commercial_invoice_number" id="commercial_invoice_number_customs" maxlength="60" value="{{ old('commercial_invoice_number', $job->commercial_invoice_number) }}" placeholder="contoh: INV-2026/09/001">
+                    </div>
+                    <div class="field">
+                        <label for="commercial_invoice_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal Invoice</label>
+                        <input type="date" name="commercial_invoice_date" id="commercial_invoice_date_customs" value="{{ old('commercial_invoice_date', $job->commercial_invoice_date?->format('Y-m-d')) }}">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div class="field">
+                        <label for="packing_list_number_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Nomor Packing List</label>
+                        <input type="text" name="packing_list_number" id="packing_list_number_customs" maxlength="60" value="{{ old('packing_list_number', $job->packing_list_number) }}" placeholder="contoh: PL-2026/09/001">
+                    </div>
+                    <div class="field">
+                        <label for="packing_list_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal Packing List</label>
+                        <input type="date" name="packing_list_date" id="packing_list_date_customs" value="{{ old('packing_list_date', $job->packing_list_date?->format('Y-m-d')) }}">
+                    </div>
+                </div>
+
                 <div class="form-actions" style="margin-bottom: 0; justify-content: flex-end;">
                     <button class="button button-primary">Simpan Data Kepabeanan</button>
                 </div>
@@ -448,6 +492,10 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div></div>
                 <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noHbl }}</div></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Commercial Invoice</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->commercial_invoice_number ?: '—' }} @if($job->commercial_invoice_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->commercial_invoice_date->format('d/m/Y') }})</span>@endif</div></div>
+                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Packing List</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->packing_list_number ?: '—' }} @if($job->packing_list_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->packing_list_date->format('d/m/Y') }})</span>@endif</div></div>
             </div>
         @endif
         {{-- FORM UPDATE STATUS KEPABEANAN --}}
@@ -730,8 +778,10 @@
                         </div>
                     </div>
                 </div>
-                <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi BL/AWB, daftar dokumen/barang, catatan, dan tanda tangan.</p>
-                <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak Tanda Terima</a>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'barang']) }}" target="_blank"><x-icon name="file"/> Cetak TT Barang</a>
+                    <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank"><x-icon name="file"/> Cetak TT Dokumen</a>
+                </div>
             </article>
         </div>
 

@@ -1,94 +1,300 @@
+@php
+    $customer = $job->customer ?? $quotation?->customer;
+    $snapshot = $quotation?->customer_snapshot ?? [];
+
+    $customerName = $job->consignee_name ?: ($customer?->name ?? ($snapshot['name'] ?? '—'));
+    $customerAddress = $job->consignee_address ?: ($customer?->address ?? ($snapshot['address'] ?? '—'));
+    $customerPhone = $customer?->phone ?? ($snapshot['phone'] ?? '');
+
+    $dateText = $job->job_date?->format('d/m/Y') ?? now()->format('d/m/Y');
+    $docNumber = $job->number;
+
+    $type = strtolower($type ?? request('type', 'barang'));
+    $isDokumen = $type === 'dokumen';
+
+    $items = $job->quotation_snapshot['items'] ?? [];
+
+    // Pre-populate document names if type == dokumen
+    $docNames = [];
+    if ($job->relationLoaded('documents') && $job->documents->count() > 0) {
+        foreach ($job->documents as $d) {
+            $name = $d->documentType?->name ?: $d->original_name;
+            if (!in_array($name, $docNames, true)) {
+                $docNames[] = $name;
+            }
+        }
+    }
+    if (empty($docNames)) {
+        $docNames = [
+            'BILL OF LADING / AIR WAYBILL',
+            'COMMERCIAL INVOICE',
+            'PACKING LIST',
+            'DOKUMEN PABEAN (PIB / PEB / SPPB / NPE)',
+            'SURAT KUASA & DELIVERY ORDER',
+        ];
+    }
+@endphp
 <!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
+    <title>{{ $isDokumen ? 'TANDA TERIMA DOKUMEN' : 'TANDA TERIMA BARANG' }} - {{ $job->number }}</title>
     <style>
-        @page { margin: 26px 30px 30px; }
-        body { font-family: DejaVu Sans, sans-serif; color:#17233b; font-size:10.5px; line-height:1.45; }
-        .top { width:100%; border-bottom:3px solid #0f1f3d; padding-bottom:12px; margin-bottom:18px; }
-        .brand { font-size:20px; font-weight:800; color:#0f1f3d; letter-spacing:.5px; }
-        .brand-sub { color:#66748a; font-size:9.5px; margin-top:3px; }
-        .doc-title { text-align:right; font-size:23px; font-weight:800; color:#0f1f3d; letter-spacing:1.8px; margin-top:-42px; }
-        .doc-sub { text-align:right; color:#b91c1c; font-size:9px; font-weight:700; letter-spacing:1.2px; margin-top:2px; }
-        .meta { width:100%; margin:16px 0 14px; border-collapse:separate; border-spacing:0 8px; }
-        .meta td { vertical-align:top; }
-        .box { border:1px solid #dbe3ef; border-radius:8px; padding:10px 12px; }
-        .box-title { color:#7c8aa1; font-size:8.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; }
-        .box strong { color:#0f1f3d; font-size:12px; }
-        .info-table { width:100%; border-collapse:collapse; margin:14px 0 16px; }
-        .info-table th { width:22%; text-align:left; background:#f7f9fc; color:#586a84; border:1px solid #dfe7f2; padding:7px 9px; font-size:9px; }
-        .info-table td { border:1px solid #dfe7f2; padding:7px 9px; }
-        .section-title { margin:18px 0 8px; color:#0f1f3d; font-size:12px; font-weight:800; }
-        .items { width:100%; border-collapse:collapse; }
-        .items th { background:#0f1f3d; color:#fff; padding:8px; border:1px solid #0f1f3d; font-size:9px; text-align:left; }
-        .items td { padding:8px; border:1px solid #dfe7f2; vertical-align:top; }
-        .items tbody tr:nth-child(even) td { background:#fafcff; }
-        .note { border:1px solid #dfe7f2; background:#fafcff; border-radius:8px; padding:10px 12px; min-height:42px; }
-        .statement { margin:16px 0; padding:12px 14px; border-left:4px solid #0f1f3d; background:#f7f9fc; color:#4b5f7a; }
-        .signature { width:100%; margin-top:36px; border-collapse:collapse; }
-        .signature td { width:50%; text-align:center; padding:0 24px; vertical-align:top; }
-        .sign-space { height:62px; border-bottom:1px solid #9aa8ba; margin-bottom:8px; }
-        .sign-label { font-size:9.5px; color:#4b5f7a; font-weight:700; line-height:1.35; }
-        .footer { position:fixed; left:0; right:0; bottom:-12px; border-top:1px solid #dfe7f2; padding-top:6px; color:#8a97aa; font-size:8.5px; }
-        .footer .right { float:right; }
+        @page {
+            margin: 15px 25px 15px 25px;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, Helvetica, DejaVu Sans, sans-serif;
+            color: #000;
+            font-size: 8.5px;
+            line-height: 1.25;
+            margin: 0;
+            padding: 0;
+        }
+        .half-sheet {
+            height: 480px;
+            position: relative;
+        }
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+        .header-table td {
+            vertical-align: middle;
+        }
+        .logo-img {
+            max-height: 38px;
+            max-width: 180px;
+        }
+        .doc-title {
+            font-size: 13.5px;
+            font-weight: bold;
+            color: #002060;
+            letter-spacing: 0.5px;
+        }
+        .doc-sub {
+            font-size: 7.5px;
+            font-style: italic;
+            color: #475569;
+            margin-top: 1px;
+        }
+        .meta-box {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            background: #fafbfc;
+            padding: 5px 8px;
+            margin-bottom: 8px;
+            border-collapse: collapse;
+        }
+        .meta-box td {
+            vertical-align: top;
+            padding: 1.5px 0;
+            font-size: 8px;
+        }
+        .dots-line {
+            display: inline-block;
+            border-bottom: 1px dotted #94a3b8;
+            min-width: 180px;
+        }
+        .table-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        .table-grid th {
+            background: #0B2265;
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 3.5px 6px;
+            border: 1px solid #0B2265;
+            text-align: left;
+        }
+        .table-grid th.center, .table-grid td.center {
+            text-align: center;
+        }
+        .table-grid td {
+            border: 1px solid #cbd5e1;
+            padding: 3.5px 6px;
+            font-size: 8px;
+            height: 18px;
+            vertical-align: middle;
+        }
+        .sign-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+        .sign-table td {
+            width: 50%;
+            text-align: center;
+            vertical-align: top;
+            font-size: 8px;
+        }
+        .sign-space {
+            height: 38px;
+        }
+        .sign-name-dots {
+            font-size: 8px;
+            color: #1e293b;
+        }
+        .sign-role {
+            font-size: 7.5px;
+            color: #475569;
+            margin-top: 2px;
+        }
+        .cut-divider {
+            text-align: center;
+            margin: 10px 0;
+            position: relative;
+        }
+        .cut-divider-line {
+            border-top: 1px dashed #94a3b8;
+            margin-top: -6px;
+        }
+        .cut-divider-badge {
+            display: inline-block;
+            background: #fff;
+            padding: 0 10px;
+            font-size: 7.5px;
+            color: #475569;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-@php
-    $items = $job->quotation_snapshot['items'] ?? [];
-    $reference = $job->shipment_reference ?: ($job->bl_number ?: ($job->awb_number ?: ($job->hbl_number ?: ($job->hawb_number ?: '—'))));
-@endphp
-<div class="top">
-    <div class="brand">RDX / Radix International Logistics</div>
-    <div class="brand-sub">Jakarta, Indonesia · operations@radix-logistics.test · +62 21 0000 0000</div>
-    <div class="doc-title">TANDA TERIMA</div>
-    <div class="doc-sub">RECEIPT OF GOODS / DOCUMENTS</div>
-</div>
 
-<table class="meta">
-    <tr>
-        <td style="width:50%; padding-right:8px;">
-            <div class="box"><div class="box-title">Diterima Oleh</div><strong>{{ $job->consignee_name ?? ($quotation->customer_snapshot['name'] ?? '—') }}</strong><br>{{ $job->consignee_address ?? '—' }}</div>
-        </td>
-        <td style="width:50%; padding-left:8px;">
-            <div class="box"><div class="box-title">Informasi Tanda Terima</div><strong>{{ $job->number }}</strong><br>Tanggal: {{ now()->format('d/m/Y') }}<br>Referensi: {{ $reference }}</div>
-        </td>
-    </tr>
-</table>
+    @for($copy = 1; $copy <= 2; $copy++)
+        <div class="half-sheet">
+            <!-- HEADER -->
+            <table class="header-table">
+                <tr>
+                    <td style="width: 45%;">
+                        <img src="{{ public_path('images/rdx-banner.png') }}" class="logo-img" alt="RDX LOGISTICS">
+                    </td>
+                    <td style="width: 55%; text-align: right;">
+                        <div class="doc-title">{{ $isDokumen ? 'TANDA TERIMA DOKUMEN' : 'TANDA TERIMA BARANG' }}</div>
+                        <div class="doc-sub">Lembar {{ $copy }}: {{ $copy === 1 ? 'Untuk Customer (Asli)' : 'Arsip Perusahaan / Pengirim' }}</div>
+                    </td>
+                </tr>
+            </table>
 
-<div class="statement">Dengan ini dinyatakan bahwa dokumen/barang di bawah telah diterima dengan baik dan lengkap.</div>
+            <!-- META BOX -->
+            <table class="meta-box">
+                <tr>
+                    <td style="width: 90px; font-weight: 600;">Nama Customer</td>
+                    <td style="width: 10px; text-align: center;">:</td>
+                    <td style="width: 250px;">
+                        <span style="font-weight: bold;">{{ $customerName }}</span>
+                    </td>
+                    <td style="width: 70px; font-weight: 600;">Tanggal</td>
+                    <td style="width: 10px; text-align: center;">:</td>
+                    <td>{{ $dateText }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600;">Alamat / Telp</td>
+                    <td style="text-align: center;">:</td>
+                    <td>
+                        {{ $customerAddress }}{{ $customerPhone ? ' / ' . $customerPhone : '' }}
+                    </td>
+                    <td style="font-weight: 600;">No.</td>
+                    <td style="text-align: center;">:</td>
+                    <td style="font-weight: bold;">{{ $docNumber }}</td>
+                </tr>
+            </table>
 
-<table class="info-table">
-    <tr><th>Customer</th><td>{{ $job->customer?->name ?? ($quotation->customer_snapshot['name'] ?? '—') }}</td><th>Service</th><td>{{ \App\Models\ServiceType::label($job->service_type) }}</td></tr>
-    <tr><th>Rute</th><td>{{ $job->pol ?? $job->origin ?? '—' }} → {{ $job->pod ?? $job->destination ?? '—' }}</td><th>BL / AWB</th><td>{{ $reference }}</td></tr>
-</table>
+            <!-- TABLE -->
+            <table class="table-grid">
+                <thead>
+                    @if($isDokumen)
+                        <tr>
+                            <th class="center" style="width: 40px;">NO</th>
+                            <th>NAMA DOKUMEN</th>
+                        </tr>
+                    @else
+                        <tr>
+                            <th class="center" style="width: 40px;">NO</th>
+                            <th>NAMA BARANG</th>
+                            <th class="center" style="width: 75px;">QTY</th>
+                            <th class="center" style="width: 85px;">SATUAN</th>
+                        </tr>
+                    @endif
+                </thead>
+                <tbody>
+                    @if($isDokumen)
+                        @for($i = 0; $i < 5; $i++)
+                            <tr>
+                                <td class="center">{{ $i + 1 }}</td>
+                                <td>{{ $docNames[$i] ?? '' }}</td>
+                            </tr>
+                        @endfor
+                    @else
+                        @php
+                            $rowList = [];
+                            if (!empty($items)) {
+                                foreach ($items as $it) {
+                                    $rowList[] = [
+                                        'name' => $it['description'] ?? 'Barang / Kargo',
+                                        'qty' => \App\Support\Money::format($it['quantity'] ?? 1),
+                                        'unit' => $it['unit'] ?? 'Package',
+                                    ];
+                                }
+                            } else {
+                                $rowList[] = [
+                                    'name' => $job->cargo_description ?? 'Barang / Muatan Kargo',
+                                    'qty' => $job->package_count ? \App\Support\Money::format($job->package_count) : '1',
+                                    'unit' => $job->package_unit ?: ($job->container_type ? strtoupper($job->container_type) : 'Package'),
+                                ];
+                            }
+                        @endphp
+                        @for($i = 0; $i < 5; $i++)
+                            <tr>
+                                <td class="center">{{ $i + 1 }}</td>
+                                <td>{{ $rowList[$i]['name'] ?? '' }}</td>
+                                <td class="center">{{ $rowList[$i]['qty'] ?? '' }}</td>
+                                <td class="center">{{ $rowList[$i]['unit'] ?? '' }}</td>
+                            </tr>
+                        @endfor
+                    @endif
+                </tbody>
+            </table>
 
-<div class="section-title">Daftar Dokumen / Barang Diterima</div>
-<table class="items">
-    <thead><tr><th style="width:34px;">No</th><th>Jenis Dokumen / Barang</th><th style="width:110px;">Jumlah</th><th style="width:150px;">Keterangan</th></tr></thead>
-    <tbody>
-        @forelse($items as $item)
-            <tr><td>{{ $loop->iteration }}</td><td>{{ $item['description'] ?? 'Dokumen / Barang' }}</td><td>{{ \App\Support\Money::format($item['quantity'] ?? 1) }} {{ $item['unit'] ?? 'Paket' }}</td><td></td></tr>
-        @empty
-            <tr><td>1</td><td>{{ $job->cargo_description ?? 'Dokumen / Barang Pengiriman' }}</td><td>{{ $job->package_count ?? 1 }} Paket</td><td></td></tr>
-        @endforelse
-    </tbody>
-</table>
+            <!-- SIGNATURE -->
+            <table class="sign-table">
+                <tr>
+                    <td style="font-weight: 600;">Diserahkan Oleh:</td>
+                    <td style="font-weight: 600;">Diterima Oleh:</td>
+                </tr>
+                <tr>
+                    <td class="sign-space"></td>
+                    <td class="sign-space"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="sign-name-dots">( ......................................... )</div>
+                        <div class="sign-role">Pengirim / Kurir</div>
+                    </td>
+                    <td>
+                        <div class="sign-name-dots">( ......................................... )</div>
+                        <div class="sign-role">Customer / Penerima</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
-<div class="section-title">Catatan</div>
-<div class="note">{{ $job->operational_notes ?: 'Dokumen/barang diterima sesuai daftar di atas.' }}</div>
+        @if($copy === 1)
+            <!-- CUT DIVIDER -->
+            <div class="cut-divider">
+                <div class="cut-divider-line"></div>
+                <div class="cut-divider-badge">✂ &nbsp;POTONG DI SINI&nbsp; ✂</div>
+            </div>
+        @endif
+    @endfor
 
-<table class="signature">
-    <tr>
-        <td><div class="sign-space"></div></td>
-        <td><div class="sign-space"></div></td>
-    </tr>
-    <tr>
-        <td class="sign-label">Penerima<br>Nama Jelas & Cap</td>
-        <td class="sign-label">Yang Menyerahkan</td>
-    </tr>
-</table>
-
-<div class="footer">{{ $job->number }} · Tanda Terima <span class="right">Dicetak {{ now()->format('d/m/Y H:i') }}</span></div>
 </body>
 </html>

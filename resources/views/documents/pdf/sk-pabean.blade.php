@@ -1,320 +1,301 @@
+@php
+    $customer = $job->customer ?? $quotation?->customer;
+    $snapshot = $quotation?->customer_snapshot ?? [];
+
+    $customerName = $job->consignee_name ?: ($customer?->name ?? ($snapshot['name'] ?? ''));
+    $customerTax = $customer?->tax_number ?? ($snapshot['tax_number'] ?? '');
+    $customerPhone = $customer?->phone ?? ($snapshot['phone'] ?? '');
+    $customerAddress = $job->consignee_address ?: ($customer?->address ?? ($snapshot['address'] ?? ''));
+    $authorizerName = $customer?->authorizer_name ?: ($customer?->contact_name ?? ($snapshot['contact_name'] ?? ''));
+    $authorizerTitle = $customer?->authorizer_title ?: 'Direktur';
+
+    $blNumber = $job->bl_number ?: ($job->awb_number ?: '');
+    $hblNumber = $job->hbl_number ?: ($job->hawb_number ?: ($blNumber ?: ''));
+    $blDate = $job->job_date?->format('d/m/Y') ?: '';
+    
+    $shipperName = $job->shipper_name ?: ($quotation?->shipper_name ?? '');
+    $incoterm = $quotation?->incoterm ?? 'CIF';
+    $invoiceAmount = $quotation?->subtotal ?? $job->quotation_snapshot['totals']['subtotal'] ?? null;
+    $priceText = $invoiceAmount ? $incoterm . ' / Rp ' . \App\Support\Money::format($invoiceAmount) : $incoterm;
+
+    // Commercial Invoice
+    $invoiceNo = $job->commercial_invoice_number;
+    $invoiceDate = $job->commercial_invoice_date?->format('d/m/Y');
+    if (! $invoiceNo && $job->relationLoaded('documents')) {
+        $invoiceDoc = $job->documents->first(fn($doc) => str_contains(strtoupper($doc->documentType?->name ?? ''), 'INVOICE') || str_contains(strtoupper($doc->documentType?->code ?? ''), 'INV'));
+        if ($invoiceDoc) {
+            $invoiceNo = $invoiceDoc->notes ?: pathinfo($invoiceDoc->original_name, PATHINFO_FILENAME);
+            $invoiceDate = $invoiceDoc->created_at?->format('d/m/Y');
+        }
+    }
+    $invoiceText = $invoiceNo ? ($invoiceNo . ($invoiceDate ? ' / ' . $invoiceDate : '')) : '';
+
+    // Packing List
+    $plNo = $job->packing_list_number;
+    $plDate = $job->packing_list_date?->format('d/m/Y');
+    if (! $plNo && $job->relationLoaded('documents')) {
+        $plDoc = $job->documents->first(fn($doc) => str_contains(strtoupper($doc->documentType?->name ?? ''), 'PACKING') || str_contains(strtoupper($doc->documentType?->code ?? ''), 'PL'));
+        if ($plDoc) {
+            $plNo = $plDoc->notes ?: pathinfo($plDoc->original_name, PATHINFO_FILENAME);
+            $plDate = $plDoc->created_at?->format('d/m/Y');
+        }
+    }
+    $plText = $plNo ? ($plNo . ($plDate ? ' / ' . $plDate : '')) : '';
+
+    $signDate = $job->job_date?->format('d-m-Y') ?? now()->format('d-m-Y');
+@endphp
 <!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Surat Kuasa Kepabeanan - {{ $job->number }}</title>
+    <title>SURAT KUASA PENGAJUAN PEMBERITAHUAN PABEAN - {{ $job->number }}</title>
     <style>
         @page {
-            margin: 28px 36px 30px 36px;
+            margin: 35px 50px 30px 50px;
         }
         * {
             box-sizing: border-box;
         }
         body {
             font-family: DejaVu Sans, sans-serif;
-            color: #0f172a;
-            font-size: 10px;
-            line-height: 1.45;
-            margin: 0;
-            padding: 0;
+            color: #000;
+            font-size: 9px;
+            line-height: 1.4;
         }
-        .header {
-            width: 100%;
-            border-bottom: 2px solid #0f1f3d;
-            padding-bottom: 10px;
-            margin-bottom: 14px;
-        }
-        .brand {
-            font-size: 16px;
-            font-weight: 800;
-            color: #0f1f3d;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .brand-sub {
-            color: #475569;
-            font-size: 8.5px;
-            margin-top: 2px;
-            line-height: 1.35;
-        }
-        .doc-title-box {
+        .kop-placeholder {
             text-align: center;
-            margin: 14px 0 16px;
-        }
-        .doc-title {
-            font-size: 13.5px;
-            font-weight: 800;
-            color: #0f1f3d;
+            font-size: 11px;
+            font-weight: bold;
             letter-spacing: 1px;
-            text-decoration: underline;
+            margin-bottom: 25px;
         }
-        .doc-no {
-            font-size: 9.5px;
-            color: #475569;
-            margin-top: 3px;
-            font-weight: 600;
+        .header-title {
+            text-align: center;
+            margin-bottom: 20px;
         }
-        .intro-p {
-            margin: 10px 0 6px;
-            text-align: justify;
-            font-size: 9.5px;
-        }
-        .party-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 4px 0 8px 12px;
-            font-size: 9.5px;
-        }
-        .party-table td {
-            padding: 2.5px 4px;
-            vertical-align: top;
-        }
-        .party-table .label {
-            width: 135px;
-            font-weight: 600;
-            color: #334155;
-        }
-        .customs-card {
-            width: 100%;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            margin: 10px 0;
-            background: #fff;
-            border-collapse: collapse;
-        }
-        .customs-card th {
-            background: #f1f5f9;
-            color: #0f172a;
-            padding: 5px 8px;
-            font-size: 9px;
-            font-weight: 700;
-            text-align: left;
-            border-bottom: 1px solid #cbd5e1;
-            text-transform: uppercase;
+        .title-main {
+            font-size: 13px;
+            font-weight: bold;
             letter-spacing: 0.5px;
         }
-        .customs-card td {
-            padding: 4px 8px;
-            font-size: 9px;
-            border-bottom: 1px solid #e2e8f0;
+        .title-sub {
+            font-size: 11.5px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin: 1px 0;
+        }
+        .title-no {
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .paragraph {
+            margin: 10px 0 4px 0;
+            text-align: justify;
+            line-height: 1.4;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2px 0 4px 0;
+        }
+        .info-table td {
             vertical-align: top;
+            padding: 1.2px 0;
+            font-size: 9px;
         }
-        .customs-card .col-label {
-            width: 140px;
-            font-weight: 600;
-            color: #475569;
-            background: #f8fafc;
-            border-right: 1px solid #e2e8f0;
+        .col-label {
+            width: 165px;
         }
-        .customs-card .col-val {
-            font-weight: 700;
-            color: #0f172a;
+        .col-sep {
+            width: 15px;
+            text-align: center;
+        }
+        .col-val {
+            text-align: left;
+        }
+        .legal-p {
+            margin: 10px 0 6px 0;
+            text-align: justify;
+            line-height: 1.4;
         }
         .signature-table {
             width: 100%;
-            margin-top: 24px;
             border-collapse: collapse;
+            margin-top: 30px;
         }
         .signature-table td {
-            width: 50%;
-            text-align: center;
-            padding: 0 20px;
             vertical-align: top;
         }
-        .sign-title-cell {
-            vertical-align: bottom !important;
-            padding-bottom: 8px !important;
+        .sign-left {
+            text-align: left;
+            width: 50%;
         }
-        .sign-title {
-            font-size: 9.5px;
-            font-weight: 700;
-            color: #0f172a;
-            line-height: 1.4;
+        .sign-right {
+            text-align: center;
+            width: 50%;
+            padding-left: 60px;
         }
-        .sign-box {
-            height: 65px;
-            border-bottom: 1px solid #64748b;
-            margin-bottom: 8px;
-            position: relative;
+        .sign-logo {
+            max-height: 38px;
+            margin: 8px 0 4px 0;
         }
-        .meterai-box {
-            display: inline-block;
-            border: 1px dashed #94a3b8;
-            padding: 4px 10px;
-            font-size: 7.5px;
-            color: #64748b;
-            margin-top: 18px;
-            border-radius: 3px;
+        .sign-name-bold {
+            font-weight: bold;
+            font-size: 9px;
         }
-        .sign-name {
-            font-size: 9.5px;
-            font-weight: 800;
-            color: #0f172a;
+        .sign-role-title {
+            font-weight: bold;
+            font-size: 9px;
         }
-        .sign-sub {
-            font-size: 8.5px;
-            color: #64748b;
-            margin-top: 2px;
-        }
-        .footer {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: -10px;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 4px;
-            color: #94a3b8;
-            font-size: 8px;
-        }
-        .footer .right {
-            float: right;
+        .sign-space-empty {
+            height: 52px;
         }
     </style>
 </head>
 <body>
-@php
-    $customerName = $job->customer?->name ?? $quotation?->customer_snapshot['name'] ?? $job->consignee_name ?? '—';
-    $customerTax = $job->customer?->tax_number ?? $quotation?->customer_snapshot['tax_number'] ?? '—';
-    $customerAddress = $job->customer?->address ?? $quotation?->customer_snapshot['address'] ?? $job->consignee_address ?? '—';
-    $noAju = $job->booking_reference ?? '—';
-    $noNopen = $job->nopen ?? '—';
-    $nopenDate = $job->nopen_date ? $job->nopen_date->format('d/m/Y') : '—';
-    $blNumber = $job->bl_number ?: ($job->awb_number ?: '—');
-    $hblNumber = $job->hbl_number ?: ($job->hawb_number ?: '—');
-    $vessel = $job->vessel_voyage ?? ($job->flight_number ?? '—');
-    $pol = $job->pol ?? $job->origin ?? '—';
-    $pod = $job->pod ?? $job->destination ?? '—';
-    $qty = $job->package_count ? $job->package_count . ' Box / Koli' : ($job->container_type ? '1x ' . strtoupper($job->container_type) : ($quotation?->cargo_qty ?? '—'));
-    $weight = $job->gross_weight ? \App\Support\Money::format($job->gross_weight) . ' KGS' : ($quotation?->weight_meas ?? '—');
-    $volume = $job->volume ? $job->volume . ' M3' : '—';
-    $commodity = $job->cargo_description ?? $quotation?->commodity ?? 'General Cargo';
-@endphp
 
-<div class="header">
-    <div class="brand">PT. RADIX INTERNATIONAL LOGISTICS</div>
-    <div class="brand-sub">JL. TEH NO 3C RT.008 RW.007, PINANGSIA, TAMAN SARI, KOTA ADM. JAKARTA BARAT, DKI JAKARTA<br>NPWP: 02.701.891.8-603.2000 · NITKU: 0270189186032000000000 · PPJK RESMI BEA CUKAI</div>
-</div>
+    <div class="kop-placeholder">KOP SURAT</div>
 
-<div class="doc-title-box">
-    <div class="doc-title">SURAT KUASA KEPABEANAN</div>
-    <div class="doc-no">Nomor: SKP/{{ $job->number }}/{{ now()->format('Y') }}</div>
-</div>
+    <div class="header-title">
+        <div class="title-main">SURAT KUASA</div>
+        <div class="title-sub">PENGAJUAN PEMBERITAHUAN PABEAN</div>
+        <div class="title-no">(No. {{ $job->number }} )</div>
+    </div>
 
-<p class="intro-p">Yang bertanda tangan di bawah ini (Pemberi Kuasa):</p>
-<table class="party-table">
-    <tr>
-        <td class="label">Nama Perusahaan (Importir)</td>
-        <td>: <strong>{{ $customerName }}</strong></td>
-    </tr>
-    <tr>
-        <td class="label">NPWP Importir</td>
-        <td>: {{ $customerTax }}</td>
-    </tr>
-    <tr>
-        <td class="label">Alamat Lengkap</td>
-        <td>: {{ $customerAddress }}</td>
-    </tr>
-</table>
+    <div class="paragraph">Yang bertanda-tangan dibawah ini :</div>
 
-<p class="intro-p" style="margin-top: 8px;">Dengan ini memberikan kuasa penuh kepada (Penerima Kuasa / PPJK):</p>
-<table class="party-table">
-    <tr>
-        <td class="label">Nama Perusahaan (PPJK)</td>
-        <td>: <strong>PT. RADIX INTERNATIONAL LOGISTICS</strong></td>
-    </tr>
-    <tr>
-        <td class="label">NPWP / NITKU</td>
-        <td>: 02.701.891.8-603.2000 / 0270189186032000000000</td>
-    </tr>
-    <tr>
-        <td class="label">Alamat PPJK</td>
-        <td>: JL. TEH NO 3C RT.008 RW.007, PINANGSIA, TAMAN SARI, KOTA ADM. JAKARTA BARAT</td>
-    </tr>
-</table>
+    <table class="info-table">
+        <tr>
+            <td class="col-label">Nama</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $authorizerName }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Jabatan</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $authorizerTitle }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Nama Perusahaan</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $customerName }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">NPWP</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $customerTax }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Telepon</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $customerPhone }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Alamat Perusahaan</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $customerAddress }}</td>
+        </tr>
+    </table>
 
-<p class="intro-p" style="margin-top: 8px;">Untuk mewakili dan bertindak atas nama Pemberi Kuasa dalam melakukan pengurusan kepabeanan impor di Kantor Pelayanan Utama Bea dan Cukai (KPUBC), termasuk pembuatan dokumen pabean, pendaftaran PIB, menghadiri pemeriksaan fisik barang (SPJM/Behandle), pembayaran kewajiban pabean, hingga pengeluaran barang (SPPB) atas pengapalan impor berikut:</p>
+    <div class="paragraph">
+        Selanjutnya dalam Surat Kuasa ini disebut sebagai PEMBERI KUASA, dengan ini memberi kuasa kepada :
+    </div>
 
-<table class="customs-card">
-    <thead>
+    <table class="info-table">
         <tr>
-            <th colspan="2">DATA PEMBERITAHUAN IMPOR BARANG (PIB) & PENGAPALAN</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td class="col-label">No. AJU (6 Digit Terakhir)</td>
-            <td class="col-val" style="color:#c2410c;">{{ $noAju }}</td>
+            <td class="col-label">Nama PPJK</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">PT. RADIX INTERNATIONAL LOGISTICS</td>
         </tr>
         <tr>
-            <td class="col-label">Nomor Pendaftaran (Nopen)</td>
-            <td class="col-val">{{ $noNopen }} @if($job->nopen_date)<span style="font-weight:normal;color:#475569;">(Tanggal: {{ $nopenDate }})</span>@endif</td>
+            <td class="col-label">NPWP</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">27.018.918.6-032.000</td>
         </tr>
         <tr>
-            <td class="col-label">No. B/L atau AWB (Host)</td>
-            <td class="col-val">{{ $hblNumber }}</td>
+            <td class="col-label">Nama Pimpinan PPJK</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">SYANNE</td>
         </tr>
         <tr>
-            <td class="col-label">No. Master B/L atau AWB</td>
-            <td class="col-val">{{ $blNumber }}</td>
+            <td class="col-label">Alamat PPJK</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">
+                JL. TEH NO 3C, PINANGSIA, TAMAN SARI<br>
+                KOTA ADM. JAKARTA BARAT, DKI JAKARTA
+            </td>
         </tr>
         <tr>
-            <td class="col-label">Sarana Pengangkut (Vessel)</td>
-            <td class="col-val">{{ $vessel }}</td>
+            <td class="col-label">Telepon</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">(021) 38873060</td>
         </tr>
-        <tr>
-            <td class="col-label">Pelabuhan Muat / Bongkar</td>
-            <td class="col-val">{{ $pol }} &rarr; {{ $pod }}</td>
-        </tr>
-        <tr>
-            <td class="col-label">Jumlah Kemasan / Qty</td>
-            <td class="col-val">{{ $qty }}</td>
-        </tr>
-        <tr>
-            <td class="col-label">Berat Kotor / Volume</td>
-            <td class="col-val">{{ $weight }} / {{ $volume }}</td>
-        </tr>
-        <tr>
-            <td class="col-label">Uraian Barang (Commodity)</td>
-            <td class="col-val">{{ $commodity }}</td>
-        </tr>
-    </tbody>
-</table>
+    </table>
 
-<p class="intro-p" style="margin-top: 10px;">Surat kuasa ini berlaku sampai dengan seluruh proses kepabeanan pengeluaran barang impor tersebut selesai dilaksanakan. Demikian Surat Kuasa Kepabeanan ini dibuat dengan penuh tanggung jawab.</p>
+    <div class="paragraph">
+        Selanjutnya didalam surat kuasa ini disebut sebagai PENERIMA KUASA, guna bertindak untuk dan atas nama Pemberi Kuasa untuk pengajuan Pemberitahuan Pabean pada kantor Pelayanan Bea dan Cukai yang bersangkutan atas import / eksport barang tersebut dibawah ini :
+    </div>
 
-<table class="signature-table">
-    <tr>
-        <td class="sign-title-cell">
-            <div class="sign-title">Penerima Kuasa (PPJK),</div>
-        </td>
-        <td class="sign-title-cell">
-            <div class="sign-title">Jakarta, {{ now()->format('d F Y') }}<br>Pemberi Kuasa (Importir),</div>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <div class="sign-box"></div>
-        </td>
-        <td>
-            <div class="sign-box">
-                <span class="meterai-box">Materai Rp 10.000</span>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <div class="sign-name">PT. RADIX INTERNATIONAL LOGISTICS</div>
-            <div class="sign-sub">Tanda Tangan & Cap Resmi PPJK</div>
-        </td>
-        <td>
-            <div class="sign-name">{{ $customerName }}</div>
-            <div class="sign-sub">Tanda Tangan, Nama Jelas & Cap Importir</div>
-        </td>
-    </tr>
-</table>
+    <table class="info-table">
+        <tr>
+            <td class="col-label">Nomor/Tanggal B/L atau AWB</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $hblNumber }}{{ $hblNumber && $blDate ? ' / ' . $blDate : '' }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Nomor/Tanggal Invoice</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $invoiceText }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Harga ( FOB / C&F / CIF )</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $priceText }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Nomor/Tanggal Packing List</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $plText }}</td>
+        </tr>
+        <tr>
+            <td class="col-label">Dokumen Pelengkap lainnya</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">1.<br>2.</td>
+        </tr>
+        <tr>
+            <td class="col-label">Nama Penerbit Invoice</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $shipperName }}</td>
+        </tr>
+    </table>
 
-<div class="footer">
-    {{ $job->number }} · Surat Kuasa Kepabeanan (PPJK) <span class="right">Dicetak: {{ now()->format('d/m/Y H:i') }}</span>
-</div>
+    <div class="legal-p">
+        Atas penyerahan dokumen tersebut, kami bertanggung jawab penuh atas kebenaran mengenai isi, jumlah, jenis serta kualitas barang yang tercantum dalam dokumen. Kami bertanggung jawab sepenuhnya atas segala kewajiban Kepabeanan sebagaimana dimaksud dalam Undang - undang No. 17 Tahun 2006 tentang Kepabeanan.
+    </div>
+
+    <div class="paragraph" style="margin-top: 8px;">
+        Demikian Surat Kuasa ini kami buat untuk dipergunakan sebagaimana mestinya.
+    </div>
+
+    <table class="signature-table">
+        <tr>
+            <td class="sign-left">
+                <div>Penerima Kuasa</div>
+                <div>
+                    <img src="{{ public_path('images/logo.png') }}" class="sign-logo" alt="RDX LOGISTICS">
+                </div>
+                <div class="sign-name-bold">SYANNE</div>
+                <div class="sign-role-title">PIMPINAN PPJK</div>
+            </td>
+            <td class="sign-right">
+                <div>Jakarta, {{ $signDate }}</div>
+                <div style="margin-top: 2px;">Pemberi Kuasa,</div>
+                <div class="sign-space-empty"></div>
+                <div class="sign-name-bold">{{ $authorizerName }}</div>
+                <div class="sign-role-title">{{ $authorizerTitle }}</div>
+            </td>
+        </tr>
+    </table>
+
 </body>
 </html>
