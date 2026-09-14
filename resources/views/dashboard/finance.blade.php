@@ -55,6 +55,18 @@
 </section>
 @endif
 
+@if(isset($widgets['shipment']))
+<div class="section-heading" style="margin-top:20px"><h2>Pengiriman berjalan</h2><span class="subtle">Status shipment aktif</span></div>
+<section class="panel" style="margin-bottom:20px">
+    <div class="filter-bar" style="justify-content:flex-start;border:none;padding:14px 23px;display:flex;flex-wrap:wrap;gap:8px">
+        @foreach(config('operations.shipment_statuses') as $value=>$label)
+        <span class="badge-pill status-{{ $value }}">{{ $label }} · {{ $widgets['shipment'][$value] ?? 0 }}</span>
+        @if(!$loop->last)<span class="text-link">→</span>@endif
+        @endforeach
+    </div>
+</section>
+@endif
+
 <div class="finance-strip" style="margin-bottom:20px;margin-top:20px">
     <div><span>Temporary Final (Job Open)</span><strong>Rp {{ \App\Support\Money::format($temporaryBalance) }}</strong></div>
     <div><span>Provision Final (Job Open)</span><strong>Rp {{ \App\Support\Money::format($provisionBalance) }}</strong></div>
@@ -65,13 +77,13 @@
 <div class="dashboard-grid bottom-grid" style="margin-bottom:20px">
     <section class="panel">
         <div class="panel-heading"><div><h2>Pendapatan & profit</h2><p>Enam bulan terakhir dari job closed.</p></div><span class="count-badge">6 bulan</span></div>
-        @php $chartMax=max(1,$monthlyPerformance->max(fn($r)=>(float)$r['revenue'])); @endphp
+        @php $chartMax = max(1, (float) $monthlyPerformance->max(fn($r)=>(float)$r['revenue'])); @endphp
         <div class="monthly-chart">
             @foreach($monthlyPerformance as $month)
             <div class="month-column" title="Pendapatan Rp {{ \App\Support\Money::format($month['revenue']) }} · Profit Rp {{ \App\Support\Money::format($month['profit']) }}">
                 <div class="bar-pair">
-                    <i class="bar-revenue" style="height:{{ max(3,((float)$month['revenue']/$chartMax)*100) }}%"></i>
-                    <i class="bar-profit" style="height:{{ max(3,((float)$month['profit']/$chartMax)*100) }}%"></i>
+                    <i class="bar-revenue" style="height:{{ max(6, min(100, ((float)$month['revenue'] / $chartMax) * 100)) }}%" title="Pendapatan Rp {{ \App\Support\Money::format($month['revenue']) }}"></i>
+                    <i class="bar-profit" style="height:{{ max(6, min(100, ((float)$month['profit'] / $chartMax) * 100)) }}%" title="Profit Rp {{ \App\Support\Money::format($month['profit']) }}"></i>
                 </div>
                 <span>{{ $month['label'] }}</span>
             </div>
@@ -81,10 +93,22 @@
     </section>
     <section class="panel">
         <div class="panel-heading"><div><h2>Umur piutang</h2><p>Distribusi invoice berdasarkan jatuh tempo.</p></div></div>
-        <div class="mini-chart">
-            <div class="bar-item"><div class="bar" style="height:{{ max(7,$invoiceAging['current']*18) }}%;background:#0f1f3d"></div><small>Saat ini<br>{{ $invoiceAging['current'] }}</small></div>
-            <div class="bar-item"><div class="bar" style="height:{{ max(7,$invoiceAging['overdue_1_30']*18) }}%;background:#b91c1c"></div><small>1–30 hari<br>{{ $invoiceAging['overdue_1_30'] }}</small></div>
-            <div class="bar-item"><div class="bar" style="height:{{ max(7,$invoiceAging['overdue_30_plus']*18) }}%;background:#7f1d1d"></div><small>>30 hari<br>{{ $invoiceAging['overdue_30_plus'] }}</small></div>
+        <div class="mini-chart aging-chart">
+            <div class="bar-item">
+                <span class="aging-count">{{ $invoiceAging['current'] }}</span>
+                <div class="bar aging-current" style="height:{{ max(12, min(100, $invoiceAging['current'] * 20)) }}%"></div>
+                <small>Saat ini<br>({{ $invoiceAging['current'] }})</small>
+            </div>
+            <div class="bar-item">
+                <span class="aging-count">{{ $invoiceAging['overdue_1_30'] }}</span>
+                <div class="bar aging-warning" style="height:{{ max(12, min(100, $invoiceAging['overdue_1_30'] * 20)) }}%"></div>
+                <small>1–30 hari<br>({{ $invoiceAging['overdue_1_30'] }})</small>
+            </div>
+            <div class="bar-item">
+                <span class="aging-count">{{ $invoiceAging['overdue_30_plus'] }}</span>
+                <div class="bar aging-danger" style="height:{{ max(12, min(100, $invoiceAging['overdue_30_plus'] * 20)) }}%"></div>
+                <small>&gt;30 hari<br>({{ $invoiceAging['overdue_30_plus'] }})</small>
+            </div>
         </div>
     </section>
 </div>

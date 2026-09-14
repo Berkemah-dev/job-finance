@@ -639,6 +639,22 @@ select:focus,
 .field select,
 .field textarea {
     width: 100%;
+    border: 1px solid #dce4ef;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 12px;
+    color: #0f1f3d;
+    box-sizing: border-box;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    outline: none;
 }
 .checkbox-field {
     display: flex;

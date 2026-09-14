@@ -23,6 +23,18 @@
     <article class="stat-card"><span>Kurs Mingguan</span><strong class="stat-number">{{ $weeklyPricing?->currency ?? 'USD' }}</strong><p>{{ $weeklyPricing ? 'Rp ' . \App\Support\Money::format($weeklyPricing->exchange_rate) : 'Belum tersedia' }}</p></article>
 </div>
 
+@if(isset($widgets['shipment']))
+<div class="section-heading" style="margin-top:20px"><h2>Pengiriman berjalan</h2><span class="subtle">Status shipment aktif</span></div>
+<section class="panel" style="margin-bottom:20px">
+    <div class="filter-bar" style="justify-content:flex-start;border:none;padding:14px 23px;display:flex;flex-wrap:wrap;gap:8px">
+        @foreach(config('operations.shipment_statuses') as $value=>$label)
+        <span class="badge-pill status-{{ $value }}">{{ $label }} · {{ $widgets['shipment'][$value] ?? 0 }}</span>
+        @if(!$loop->last)<span class="text-link">→</span>@endif
+        @endforeach
+    </div>
+</section>
+@endif
+
 <section class="panel" style="margin-bottom:20px;margin-top:20px">
     <div class="panel-heading"><div><h2>Pipeline quotation</h2><p>Posisi quotation yang sedang berjalan ({{ $widgets['quotes30d'] ?? 0 }} penawaran 30 hari terakhir).</p></div></div>
     <div style="padding:0 22px 20px"><div class="progress-track"><i style="width:{{ min(100, (($widgets['quotes']['approved'] ?? 0) + ($widgets['quotes']['converted'] ?? 0))*12) }}%"></i></div></div>

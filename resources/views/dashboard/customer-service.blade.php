@@ -20,6 +20,18 @@
     <article class="metric-card"><div class="metric-label"><span>Job Ditangani CS</span><x-icon name="briefcase"/></div><strong class="metric-value">{{ $widgets['myOpenJobs'] ?? 0 }}</strong><span class="metric-caption">CS menangani {{ $widgets['myOpenJobs'] ?? 0 }} job terbuka</span></article>
 </div>
 
+@if(isset($widgets['shipment']))
+<div class="section-heading"><h2>Pengiriman berjalan</h2><span class="subtle">CS menangani {{ $widgets['myOpenJobs'] ?? 0 }} job terbuka</span></div>
+<section class="panel" style="margin-bottom:20px">
+    <div class="filter-bar" style="justify-content:flex-start;border:none;padding:14px 23px;display:flex;flex-wrap:wrap;gap:8px">
+        @foreach(config('operations.shipment_statuses') as $value=>$label)
+        <span class="badge-pill status-{{ $value }}">{{ $label }} · {{ $widgets['shipment'][$value] ?? 0 }}</span>
+        @if(!$loop->last)<span class="text-link">→</span>@endif
+        @endforeach
+    </div>
+</section>
+@endif
+
 <section class="panel">
     <div class="panel-heading"><div><h2>Job mendekati tiba</h2><p>ETA dalam 14 hari ke depan.</p></div><span class="count-badge">{{ $arrivalSoon->count() }}</span></div>
     <div class="table-scroll">

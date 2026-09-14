@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DASHBOARD HERO CHARTS STYLING
+   DASHBOARD HERO CHARTS & WIDGETS STYLING
    ========================================================================== */
 
 @keyframes pulse-green {
@@ -252,6 +252,290 @@
     text-overflow: ellipsis;
 }
 
+/* ==========================================================================
+   MONTHLY PERFORMANCE BAR CHART & AGING WIDGETS
+   ========================================================================== */
+
+.monthly-chart {
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    min-height: 190px !important;
+    height: 190px !important;
+    padding: 20px 22px 10px !important;
+    border-top: 1px solid #f1f5f9;
+    box-sizing: border-box;
+}
+
+.month-column {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+    position: relative;
+}
+
+.bar-pair {
+    width: 100%;
+    max-width: 48px;
+    height: calc(100% - 24px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0 6px;
+    position: relative;
+    border: 1px solid #edf2f7;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.bar-pair:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.bar-revenue,
+.bar-profit {
+    display: block;
+    width: 14px;
+    min-height: 6px;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
+}
+
+.bar-revenue {
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.bar-profit {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.bar-revenue:hover,
+.bar-profit:hover {
+    filter: brightness(1.15);
+    transform: scaleY(1.03);
+}
+
+.month-column span,
+.month-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    margin-top: 2px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.chart-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 20px 16px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.chart-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-legend i,
+.legend-revenue,
+.legend-profit {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.legend-revenue {
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+}
+
+.legend-profit {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 1px 4px rgba(16, 185, 129, 0.3);
+}
+
+/* ==========================================================================
+   MINI CHART & AGING WIDGET
+   ========================================================================== */
+
+.mini-chart {
+    height: 190px !important;
+    min-height: 190px !important;
+    padding: 20px 22px 14px !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-around !important;
+    gap: 16px !important;
+    border-top: 1px solid #f1f5f9 !important;
+    box-sizing: border-box;
+}
+
+.mini-chart .bar-item {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    position: relative;
+    text-align: center;
+}
+
+.mini-chart .bar {
+    width: 100%;
+    max-width: 44px;
+    border-radius: 8px 8px 2px 2px;
+    min-height: 8px;
+    background: linear-gradient(180deg, #0f1f3d 0%, #1e3a8a 100%);
+    transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 3px 10px rgba(15, 31, 61, 0.12);
+    cursor: pointer;
+}
+
+.mini-chart .bar:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+}
+
+.mini-chart small {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #64748b;
+    margin-top: 4px;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.aging-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f1f3d;
+    margin-bottom: 2px;
+}
+
+.aging-current {
+    background: linear-gradient(180deg, #10b981 0%, #047857 100%) !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25) !important;
+}
+
+.aging-warning {
+    background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%) !important;
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25) !important;
+}
+
+.aging-danger {
+    background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%) !important;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25) !important;
+}
+
+/* ==========================================================================
+   THEME DARK OVERRIDES
+   ========================================================================== */
+
+.theme-dark .dashboard-hero-charts {
+    background: #172033;
+    border-color: #334155;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.theme-dark .chart-hero-top {
+    border-bottom-color: #334155;
+}
+
+.theme-dark .chart-hero-title {
+    color: #f8fafc;
+}
+
+.theme-dark .chart-hero-subtitle {
+    color: #94a3b8;
+}
+
+.theme-dark .chart-live-badge {
+    background: #1e293b;
+    color: #cbd5e1;
+}
+
+.theme-dark .chart-period-badge {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+.theme-dark .chart-card-main,
+.theme-dark .donut-chart-box {
+    background: #111827;
+    border-color: #334155;
+}
+
+.theme-dark .donut-header h4 {
+    color: #f8fafc;
+}
+
+.theme-dark .donut-header p {
+    color: #94a3b8;
+}
+
+.theme-dark .chart-kpi-item {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.theme-dark .kpi-val {
+    color: #f8fafc;
+}
+
+.theme-dark .monthly-chart,
+.theme-dark .mini-chart,
+.theme-dark .chart-legend {
+    border-top-color: #334155 !important;
+}
+
+.theme-dark .monthly-chart .bar-pair {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.theme-dark .monthly-chart .bar-pair:hover {
+    background: #243047;
+    border-color: #475569;
+}
+
+.theme-dark .month-column span,
+.theme-dark .month-label,
+.theme-dark .mini-chart small,
+.theme-dark .chart-legend {
+    color: #94a3b8;
+}
+
+.theme-dark .aging-count {
+    color: #f8fafc;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+
 @media (max-width: 1024px) {
     .chart-hero-grid {
         grid-template-columns: 1fr;
@@ -280,5 +564,25 @@
     .chart-kpi-strip {
         grid-template-columns: 1fr;
         gap: 6px;
+    }
+    .monthly-chart,
+    .mini-chart {
+        padding: 14px 10px 8px !important;
+        gap: 6px !important;
+    }
+    .bar-pair {
+        padding: 0 3px;
+        gap: 3px;
+    }
+    .bar-revenue,
+    .bar-profit {
+        width: 10px;
+    }
+    .month-column span {
+        font-size: 9px;
+    }
+    .chart-legend {
+        gap: 14px;
+        font-size: 10.5px;
     }
 }

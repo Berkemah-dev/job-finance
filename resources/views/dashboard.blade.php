@@ -354,13 +354,13 @@
     <div class="dashboard-grid bottom-grid">
         <section class="panel">
             <div class="panel-heading"><div><h2>Pendapatan & profit</h2><p>Enam bulan terakhir dari job closed.</p></div><span class="count-badge">6 bulan</span></div>
-            @php $chartMax=max(1,$monthlyPerformance->max(fn($r)=>(float)$r['revenue'])); @endphp
+            @php $chartMax = max(1, (float) $monthlyPerformance->max(fn($r)=>(float)$r['revenue'])); @endphp
             <div class="monthly-chart">
                 @foreach($monthlyPerformance as $month)
                 <div class="month-column" title="Pendapatan Rp {{ \App\Support\Money::format($month['revenue']) }} · Profit Rp {{ \App\Support\Money::format($month['profit']) }}">
                     <div class="bar-pair">
-                        <i class="bar-revenue" style="height:{{ max(3,((float)$month['revenue']/$chartMax)*100) }}%"></i>
-                        <i class="bar-profit" style="height:{{ max(3,((float)$month['profit']/$chartMax)*100) }}%"></i>
+                        <i class="bar-revenue" style="height:{{ max(6, min(100, ((float)$month['revenue'] / $chartMax) * 100)) }}%" title="Pendapatan Rp {{ \App\Support\Money::format($month['revenue']) }}"></i>
+                        <i class="bar-profit" style="height:{{ max(6, min(100, ((float)$month['profit'] / $chartMax) * 100)) }}%" title="Profit Rp {{ \App\Support\Money::format($month['profit']) }}"></i>
                     </div>
                     <span>{{ $month['label'] }}</span>
                 </div>
