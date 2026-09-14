@@ -815,6 +815,17 @@
                             <button class="button button-primary" style="background:#16a34a;border-color:#16a34a"><x-icon name="check"/> Konfirmasi DO Selesai</button>
                         </form>
                     @endcan
+                @elseif($job->status === 'draft')
+                    <div style="margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; font-size: 13px; color: #1e40af; line-height: 1.6;">
+                        <strong>Perhatian:</strong> Job Order ini saat ini masih berstatus <strong>Draft</strong>. Untuk dapat mengonfirmasi DO selesai dan mencatat biaya pengiriman, Job Order perlu dibuka (diaktifkan) terlebih dahulu.
+                    </div>
+                    @can('open', $job)
+                        <form method="POST" action="{{ route('jobs.open',$job) }}" data-confirm="Buka job ini? Finance dapat mulai mencatat biaya setelah job berstatus Open." style="margin-top: 12px;">
+                            @csrf
+                            <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
+                            <button class="button button-primary"><x-icon name="check"/> Buka Job Sekarang</button>
+                        </form>
+                    @endcan
                 @endif
             </article>
         </div>

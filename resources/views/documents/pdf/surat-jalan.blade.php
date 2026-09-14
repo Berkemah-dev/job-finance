@@ -6,8 +6,12 @@
     $consigneeAddress = $job->consignee_address ?: ($customer?->address ?? ($snapshot['address'] ?? '—'));
     $customerContact = $customer?->contact_name ?: ($customer?->authorizer_name ?? ($snapshot['contact_name'] ?? '—'));
 
-    $reference = $job->shipment_reference ?: ($job->bl_number ?: ($job->awb_number ?: ($job->hbl_number ?: ($job->hawb_number ?: '—'))));
-    $items = $job->quotation_snapshot['items'] ?? [];
+    $reference = ($job->awb_number ?: $job->bl_number)
+        ?: ($job->hawb_number ?: $job->hbl_number)
+        ?: ($job->shipment_reference ?: '—');
+
+    $hasPhysicalCargo = !empty($job->cargo_description) || !empty($job->package_count);
+    $items = $hasPhysicalCargo ? [] : ($job->quotation_snapshot['items'] ?? []);
 
     $isFcl = ($job->container_type || in_array($job->service_type, ['exp_sea', 'imp_sea', 'sea'], true)) && !str_contains(strtolower($job->service_type ?? ''), 'lcl');
     $isLcl = str_contains(strtolower($job->service_type ?? ''), 'lcl');
