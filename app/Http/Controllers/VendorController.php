@@ -36,8 +36,10 @@ class VendorController extends Controller
     {
         $vendor = DB::transaction(function () use ($request, $service, $numbers) {
             $validated = $request->validated();
-            $codeFormat = config('operations.vendor_code');
-            $validated['code'] = $numbers->nextYear('vendor', $codeFormat['prefix'] ?? null, $codeFormat['delimiter'] ?? '-', (int) ($codeFormat['pad'] ?? 5));
+            if (empty($validated['code'])) {
+                $codeFormat = config('operations.vendor_code');
+                $validated['code'] = $numbers->nextYear('vendor', $codeFormat['prefix'] ?? null, $codeFormat['delimiter'] ?? '-', (int) ($codeFormat['pad'] ?? 5));
+            }
             $vendor = $service->save(new Vendor, $validated, $request->user());
             if ($request->has('categories')) {
                 $vendor->categories()->delete();

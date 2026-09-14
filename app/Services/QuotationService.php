@@ -40,8 +40,8 @@ class QuotationService
                 $data['sales_id'] = $actor->id;
             }
             $calculated = $this->calculate($data['items'], $data['quotation_date'] ?? now());
-            $data['currency'] = 'IDR';
-            $data['exchange_rate'] = 1;
+            $data['currency'] = $data['currency'] ?? 'IDR';
+            $data['exchange_rate'] = $data['currency'] === 'IDR' ? 1 : ($data['exchange_rate'] ?? 1);
             // Syarat pembayaran diambil dari default customer saat tidak dipilih eksplisit.
             if (($data['payment_terms'] ?? '') === '') {
                 $data['payment_terms'] = $customer->default_payment_terms;
@@ -251,7 +251,7 @@ class QuotationService
             if ($row['type'] === 'temporary' && ! $unitCost->isZero() && ! $unitCost->isEqualTo($unitPrice)) {
                 throw ValidationException::withMessages(['items.'.$i.'.unit_price' => 'Temporary ditagihkan sebesar biaya: nilai jual harus sama dengan modal.']);
             }
-            $exchangeRate = Money::decimal($row['exchange_rate'] ?? '1');
+            $exchangeRate = ($row['pricing_source'] ?? '') === 'trucking' ? Money::decimal('1') : Money::decimal($row['exchange_rate'] ?? '1');
             $totalCost = $quantity->multipliedBy($unitCost)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
             $totalPrice = $quantity->multipliedBy($unitPrice)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
             $items[] = array_merge($row, ['position' => $i + 1, 'quantity' => (string) $quantity, 'unit_cost' => (string) $unitCost, 'unit_price' => (string) $unitPrice, 'total_cost' => Money::checked($totalCost), 'total_price' => Money::checked($totalPrice)]);

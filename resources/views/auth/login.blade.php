@@ -13,6 +13,7 @@
     </div>
 </section>
 <main class="login-main"><div class="login-form"><div style="margin-bottom:28px;"><img src="{{ asset('images/logo.png') }}" alt="RDX" style="height:58px;width:auto;max-width:180px;object-fit:contain;"></div><p class="eyebrow">SELAMAT DATANG KEMBALI</p>
+<h1 style="font-size:24px;font-weight:700;color:#0f1f3d;margin:4px 0 16px">Masuk ke workspace</h1>
 <form method="POST" action="{{ route('login.store') }}">@csrf
 <label for="email">Alamat email</label><input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="username" placeholder="nama@perusahaan.com" required autofocus @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
 @error('email')<p class="field-error" id="email-error" role="alert">{{ $message }}</p>@enderror

@@ -59,7 +59,7 @@ class AccountingReportTest extends TestCase
         $this->assertSame('-4000000.00', $ledger['closing']);
         $this->assertCount(2, $ledger['entries']);
         $trial = $report->trialBalance(today()->toDateString());
-        $this->assertEquals($trial->sum(fn ($row) => (float) $row->closing_debit), $trial->sum(fn ($row) => (float) $row->closing_credit));
+        $this->assertEquals($trial['totalDebit'], $trial['totalCredit']);
         $this->get('/journals')->assertOk()->assertSee('Kapitalisasi biaya');
         $this->get('/reports/ledger?account_id='.$bank->id)->assertOk()->assertSee('4.000.000,00');
         $this->get('/reports/trial-balance')->assertOk()->assertSee('Neraca Saldo');
@@ -83,7 +83,7 @@ class AccountingReportTest extends TestCase
         $this->assertSame('4000000.00', $cash['customer_payment']);
         $this->assertSame('-8000000.00', $cash['job_cost_capitalization']);
         $this->assertSame('-4000000.00', $cash['net']);
-        $this->assertCount(1, $service->profitPerJob($from, $to));
+        $this->assertCount(1, $service->profitPerJob($from, $to)['rows']);
         foreach (['balance-sheet', 'income-statement', 'cash-flow', 'profit-per-job'] as $route) {
             $this->get('/reports/'.$route)->assertOk();
         }

@@ -92,11 +92,11 @@ class JobDocumentController extends Controller
             $isSppb = $kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB');
 
             if ($isSppb) {
-                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Final (Selesai).';
+                $notification = 'Dokumen SPPB berhasil diupload. 🟢 SPPB Terbit — Proses Kepabeanan Selesai (Jalur Hijau).';
             } elseif ($isBehandle) {
                 $notification = 'Dokumen Pemeriksaan Fisik/SLIM berhasil diupload. Notifikasi: Pemeriksaan Fisik aktif.';
             } elseif ($isSpjm) {
-                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM Aktif (Menunggu Pemeriksaan Fisik).';
+                $notification = 'Dokumen SPJM berhasil diupload. 🔴 Jalur Merah — Barang perlu pemeriksaan fisik (Behandle).';
             } elseif ($job->hasImportPibReadyDocuments() && $job->shipment_status === 'pib_submitted') {
                 $notification = 'Dokumen berhasil diupload. Notifikasi: Dokumen lengkap (BL + Invoice + PL) — PIB Diajukan.';
             } elseif ($isDo) {
@@ -108,11 +108,11 @@ class JobDocumentController extends Controller
             $isSppb = $kind === 'sppb' || str_contains($docCode, 'SPPB') || str_contains($docName, 'SPPB');
 
             if ($isSppb) {
-                $notification = 'Dokumen SPPB berhasil diupload. Notifikasi: SPPB Final (Selesai).';
+                $notification = 'Dokumen SPPB berhasil diupload. 🟢 SPPB Terbit — Proses Kepabeanan Selesai (Jalur Hijau).';
             } elseif ($isBehandle) {
                 $notification = 'Dokumen Pemeriksaan Fisik/SLIM berhasil diupload. Notifikasi: Pemeriksaan Fisik aktif.';
             } elseif ($isSpjm) {
-                $notification = 'Dokumen SPJM berhasil diupload. Notifikasi: SPJM Aktif (Menunggu Pemeriksaan Fisik).';
+                $notification = 'Dokumen SPJM berhasil diupload. 🔴 Jalur Merah — Barang perlu pemeriksaan fisik (Behandle).';
             } elseif ($job->hasImportPibReadyDocuments() && $job->shipment_status === 'pib_submitted') {
                 $notification = 'Dokumen berhasil diupload. Notifikasi: Dokumen lengkap (AWB + Invoice + PL) — PIB Diajukan.';
             }

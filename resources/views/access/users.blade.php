@@ -22,7 +22,7 @@
     <article class="stat-card">
         <div class="stat-top"><span>Total Pengguna</span><span class="stat-icon blue"><x-icon name="users"/></span></div>
         <strong class="stat-number">{{ number_format($stats['total']) }}</strong>
-        <p>Semua akun yang terdaftar.</p>
+        <p>Pengguna terdaftar dalam sistem.</p>
     </article>
     <article class="stat-card">
         <div class="stat-top"><span>Aktif</span><span class="stat-icon green"><x-icon name="check-circle"/></span></div>

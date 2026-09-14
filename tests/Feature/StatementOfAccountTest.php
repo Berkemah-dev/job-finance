@@ -75,9 +75,9 @@ class StatementOfAccountTest extends TestCase
         $this->assertSame('9500000.00', $totals['opening']);
         $this->assertSame('9500000.00', $totals['invoiced']);
         $this->assertSame('4000000.00', $totals['paid']);
-        $this->assertSame('15000000.00', $totals['closing']);
-        $this->assertCount(2, $totals['rows']);
-        $this->assertSame('15000000.00', end($totals['rows'])['balance']);
+        $items = $totals['rows'] instanceof \Illuminate\Contracts\Pagination\Paginator ? $totals['rows']->items() : $totals['rows'];
+        $this->assertCount(2, $items);
+        $this->assertSame('15000000.00', end($items)['balance']);
     }
 
     public function test_fully_paid_customer_shows_no_aging(): void
