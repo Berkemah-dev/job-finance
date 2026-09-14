@@ -23,4 +23,17 @@ class CustomerDocument extends Model
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
+
+    public function getFileSizeFormattedAttribute(): string
+    {
+        $bytes = $this->size ?? 0;
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 1).' MB';
+        }
+        if ($bytes >= 1024) {
+            return round($bytes / 1024, 0).' KB';
+        }
+
+        return $bytes > 0 ? $bytes.' B' : '—';
+    }
 }

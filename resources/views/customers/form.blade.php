@@ -21,8 +21,10 @@
         <div class="form-grid">
             @if($customer->exists)
                 <div class="field">
-                    <label for="code">Kode customer <span class="required">*</span></label>
-                    <input id="code" name="code" type="text" value="{{ old('code', $customer->code) }}" maxlength="30" required>
+                    <label>Kode customer</label>
+                    <div style="min-height: 44px; display: flex; align-items: center; padding: 0 14px; border: 1px solid #dce4ef; border-radius: 8px; background: #f8fafc; color: #0f172a; font-weight: 600; font-size: 13px;">
+                        {{ $customer->code }}
+                    </div>
                 </div>
             @else
                 <div class="field">

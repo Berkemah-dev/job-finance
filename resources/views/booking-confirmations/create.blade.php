@@ -3,15 +3,15 @@
 @section('content')
 
 @php
-    $defaultNotes = "This booking confirmation validates your space booking with us according to all details stated in the Shipping Instruction, we reserve right to shut out cargo for any discrepancy that disables us from doing groupage consol.\n" .
-        "This booking confirmation does not function as a guarantee of departure, we reserve right to shut out cargo in case of failures in export procedures and/or handicaps in export documentations.\n" .
-        "This booking confirmation is automatically invalid upon your booking cancellation, kindly inform us immediately for any cancellation.\n" .
-        "This booking confirmation is automatically invalid upon any cases of cargo/documentations problems, including failure of export declaration.\n" .
-        "This booking confirmation is automatically invalid for following undeclared cargo: LONG LENGTH/OVERWEIGHT/FOODS & BEVERAGES, DUTIABLE/DANGEROUS GOODS/LAW FORBIDDEN/LIVE ANIMALS.\n" .
-        "This booking confirmation is not valid for any claim.";
+    $defaultNotes = "1. This booking confirmation validates your space booking with us according to all details stated in the Shipping Instruction, we reserve right to shut out cargo for any discrepancy that disables us from doing groupage consol.\n" .
+        "2. This booking confirmation does not function as a guarantee of departure, we reserve right to shut out cargo in case of failures in export procedures and/or handicaps in export documentations.\n" .
+        "3. This booking confirmation is automatically invalid upon your booking cancellation, kindly inform us immediately for any cancellation.\n" .
+        "4. This booking confirmation is automatically invalid upon any cases of cargo/documentations problems, including failure of export declaration.\n" .
+        "5. This booking confirmation is automatically invalid for following undeclared cargo: LONG LENGTH/OVERWEIGHT/FOODS & BEVERAGES, DUTIABLE/DANGEROUS GOODS/LAW FORBIDDEN/LIVE ANIMALS.\n" .
+        "6. This booking confirmation is not valid for any claim.";
 @endphp
 
-<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Buat Booking Confirmation" description="Terbitkan konfirmasi alokasi ruang kapal/pesawat untuk shipper dan customer." action-url="{{ route('booking-confirmations.index') }}" action-label="← Kembali" action-icon="arrow" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
+<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Buat Booking Confirmation" description="Terbitkan konfirmasi alokasi ruang kapal/pesawat untuk shipper dan customer." action-url="{{ route('booking-confirmations.index') }}" action-label="← Kembali" action-icon="" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
 
 <section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('booking-confirmations.store') }}" id="bcForm">
@@ -244,16 +244,20 @@
             </div>
         </div>
 
-        {{-- IMPORTANT NOTES --}}
+        {{-- SYARAT & KETENTUAN (STANDARD TERMS & CONDITIONS) --}}
         <div class="form-section-heading">
-            <h2>Important Note & Ketentuan</h2>
-            <p>Klausul standar perusahaan untuk validitas space booking pengapalan.</p>
+            <h2>Syarat & Ketentuan Standar (Standard Terms & Conditions)</h2>
+            <p>Klausul baku pengapalan yang akan tercantum pada dokumen Booking Confirmation resmi.</p>
         </div>
 
         <div class="form-grid">
             <div class="field span-2">
-                <label for="notes">Important Notes</label>
-                <textarea id="notes" name="notes" rows="6">{{ old('notes', $defaultNotes) }}</textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="notes" style="margin-bottom: 0; font-weight: 600;">Klausul & Catatan Booking (Important Notes)</label>
+                    <span style="font-size: 11.5px; color: #475569; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-weight: 500;">Standar Klausul Ekspedisi (Dapat Disesuaikan)</span>
+                </div>
+                <textarea id="notes" name="notes" rows="8" style="min-height: 180px; line-height: 1.65; font-size: 13px; font-family: inherit; padding: 12px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff;">{{ old('notes', $defaultNotes) }}</textarea>
+                <small class="form-help">Poin ketentuan di atas adalah klausul standar operasional. Anda dapat mengedit atau menambahkan catatan khusus pengapalan jika diperlukan.</small>
             </div>
         </div>
 

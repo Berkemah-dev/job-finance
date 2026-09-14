@@ -13,6 +13,10 @@
 
 @php
     $cleanLabel = $actionLabel ? ltrim($actionLabel, '+ ') : '';
+    $isBack = str_contains($actionLabel ?? '', 'Kembali') || str_starts_with(trim($actionLabel ?? ''), '←');
+    if ($isBack && $actionIcon === 'arrow') {
+        $actionIcon = null;
+    }
     $isTrailingIcon = in_array($actionIcon, ['arrow', 'chevron-right', 'external-link'], true);
 @endphp
 

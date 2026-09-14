@@ -2,255 +2,269 @@
 @section('title', 'Booking Confirmation ' . $bc->number)
 @section('content')
 
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
-        <h1>{{ $bc->number }}</h1>
-        <p>Customer: <strong>{{ $bc->customer?->name ?? '—' }}</strong> @if($bc->job) · Job Order: <a class="text-link" href="{{ route('jobs.show', $bc->job) }}">{{ $bc->job->number }}</a>@endif</p>
-    </div>
-    <a class="button button-secondary" href="{{ route('booking-confirmations.index') }}">← Kembali</a>
-</div>
+@php
+    $consigneeName = $bc->consignee_name ?: ($bc->job?->consignee_name ?: ($bc->customer?->consignees?->first()?->name ?? '—'));
+    $consigneeAddress = $bc->consignee_address ?: ($bc->job?->consignee_address ?: ($bc->customer?->consignees?->first()?->address ?? '—'));
+    $consigneeContact = $bc->contact_person ?: ($bc->consignee_contact ?: ($job?->consignee_contact ?: ($bc->customer?->consignees?->first()?->contact_name ?: ($bc->customer?->consignees?->first()?->phone ?? '—'))));
 
-<div class="quote-actions" style="margin-bottom: 20px;">
-    <a class="button button-secondary" href="{{ route('booking-confirmations.edit', $bc) }}">Edit Booking Confirmation</a>
-    <a class="button button-secondary" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">🖨 Preview PDF</a>
+    $shipperCustomer = $bc->customer ?? $bc->job?->customer;
+    $shipperName = $shipperCustomer?->name ?? ($bc->shipper_name ?: '—');
+    $shipperAddress = $shipperCustomer?->address ?? ($bc->job?->shipper_address ?? '—');
+
+    $carrierStr = $bc->carrier_name ?: '—';
+    if ($bc->carrier_booking_no) {
+        $carrierStr .= ' (' . $bc->carrier_booking_no . ')';
+    }
+
+    $rawNotes = $bc->notes;
+    $bulletClauses = [];
+    if ($rawNotes) {
+        $lines = explode("\n", str_replace("\r", "", $rawNotes));
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') continue;
+            if (preg_match('/^[0-9]+\.\s*(.*)$/', $trimmed, $m)) {
+                $bulletClauses[] = $m[1];
+            } elseif (str_starts_with($trimmed, '•')) {
+                $bulletClauses[] = trim(ltrim($trimmed, '• '));
+            } elseif (str_starts_with($trimmed, '-')) {
+                $bulletClauses[] = trim(ltrim($trimmed, '- '));
+            } else {
+                $bulletClauses[] = $trimmed;
+            }
+        }
+    }
+@endphp
+
+<x-menu-banner 
+    tag="CUSTOMER SERVICE / OPERASIONAL" 
+    title="{{ $bc->number }}" 
+    description="Customer: {{ $shipperName }} @if($bc->job) · Job Order: {{ $bc->job->number }}@endif" 
+    action-url="{{ route('booking-confirmations.index') }}" 
+    action-label="← Kembali" 
+    action-icon="" 
+    icon="file" 
+    art-title="Booking Space," 
+    art-subtitle="terkonfirmasi." 
+/>
+
+{{-- ACTION BUTTONS --}}
+<div class="quote-actions" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+    <a class="button button-secondary" href="{{ route('booking-confirmations.edit', $bc) }}">
+        <x-icon name="pencil"/> Edit Booking Confirmation
+    </a>
+    <a class="button button-primary" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">
+        <x-icon name="eye"/> Preview PDF
+    </a>
+    <a class="button button-secondary" href="{{ route('booking-confirmations.pdf', ['bookingConfirmation' => $bc, 'mode' => 'download']) }}">
+        <x-icon name="download"/> Unduh PDF
+    </a>
     @if($bc->job)
-        <a class="button button-secondary" href="{{ route('jobs.show', $bc->job) }}">Lihat Job Order</a>
+        <a class="button button-secondary" href="{{ route('jobs.show', $bc->job) }}">
+            <x-icon name="briefcase"/> Lihat Job Order
+        </a>
     @endif
     <form method="POST" action="{{ route('booking-confirmations.destroy', $bc) }}" data-confirm="Hapus Booking Confirmation {{ $bc->number }}?" style="display:inline;">
         @csrf
         @method('DELETE')
-        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444">Hapus</button>
+        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;color:#fff;">
+            <x-icon name="trash"/> Hapus
+        </button>
     </form>
 </div>
 
-{{-- PANEL UTAMA FORMAT DOKUMEN PERUSAHAAN (BOOKING CONFIRMATION - CS.docx) --}}
-<section class="panel" style="overflow: hidden; margin-bottom: 24px; border: 1px solid #cbd5e1; background: #fff;">
-    <div style="padding: 32px 36px;">
-
-        {{-- HEADER: LOGO & JUDUL DOKUMEN --}}
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #0f172a;">
-            <div>
-                <img src="{{ asset('images/logo.png') }}" alt="RDX Logistics" style="max-height: 56px; max-width: 220px;" onerror="this.style.display='none'">
-                <div style="margin-top: 6px;">
-                    <span class="status-badge status-{{ $bc->status === 'confirmed' ? 'approved' : ($bc->status === 'draft' ? 'draft' : 'rejected') }}">
-                        Status: {{ ucfirst($bc->status) }}
-                    </span>
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <h2 style="font-size: 20px; font-weight: 800; letter-spacing: 1px; color: #0f172a; margin: 0 0 4px 0;">BOOKING CONFIRMATION</h2>
-                <div style="font-size: 14px; font-weight: 700; color: #1e293b;">NO.: {{ $bc->number }}</div>
-            </div>
+{{-- 1. INFORMASI UTAMA & STATUS --}}
+<section class="panel" style="margin-bottom: 20px;">
+    <div class="panel-heading">
+        <h2><x-icon name="file" style="width:16px;height:16px;margin-right:6px;display:inline-block;vertical-align:middle;color:#0f1f3d;"/> Informasi Utama Dokumen</h2>
+        <span class="status-badge status-{{ $bc->status === 'confirmed' ? 'approved' : ($bc->status === 'draft' ? 'draft' : 'rejected') }}">
+            Status: {{ ucfirst($bc->status) }}
+        </span>
+    </div>
+    <dl class="detail-grid">
+        <div>
+            <dt>Nomor Booking Confirmation</dt>
+            <dd><strong style="font-size: 15px; color: #0f172a;">{{ $bc->number }}</strong></dd>
         </div>
-
-        @php
-            $consigneeName = $bc->consignee_name ?: ($bc->job?->consignee_name ?: ($bc->customer?->consignees?->first()?->name ?? '—'));
-            $consigneeAddress = $bc->consignee_address ?: ($bc->job?->consignee_address ?: ($bc->customer?->consignees?->first()?->address ?? ''));
-            $consigneeContact = $bc->contact_person ?: ($bc->consignee_contact ?: ($bc->job?->consignee_contact ?: ($bc->customer?->consignees?->first()?->contact_name ?: ($bc->customer?->consignees?->first()?->phone ?? '—'))));
-
-            $shipperCustomer = $bc->customer ?? $bc->job?->customer;
-            $shipperName = $shipperCustomer?->name ?? ($bc->shipper_name ?: '—');
-            $shipperAddress = $shipperCustomer?->address ?? ($bc->job?->shipper_address ?? '');
-            $docStatus = [];
-            if ($shipperCustomer?->tax_number) $docStatus[] = 'NPWP: ' . $shipperCustomer->tax_number;
-            if ($shipperCustomer?->npwp_file) $docStatus[] = 'NPWP (Terlampir)';
-            if ($shipperCustomer?->nib_file) $docStatus[] = 'NIB (Terlampir)';
-        @endphp
-
-        {{-- METADATA PENERIMA (CONSIGNEE) & TANGGAL (2 KOLOM) --}}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; font-size: 13.5px; line-height: 1.6;">
-            <div>
-                <div style="margin-bottom: 6px;">
-                    <strong style="color: #475569;">To (Consignee):</strong><br>
-                    <span style="font-size: 15px; font-weight: 700; color: #0f172a;">{{ $consigneeName }}</span>
-                    @if($consigneeAddress)
-                        <div style="font-size: 12.5px; color: #64748b;">{{ $consigneeAddress }}</div>
-                    @endif
-                </div>
-                <div>
-                    <strong style="color: #475569;">Contact Person :</strong>
-                    <span style="font-weight: 600; color: #0f172a;">{{ $consigneeContact }}</span>
-                </div>
-            </div>
-            <div>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="padding: 3px 0; width: 38%; font-weight: 700; color: #334155;">Date</td>
-                        <td style="padding: 3px 0; width: 4%;">:</td>
-                        <td style="padding: 3px 0; font-weight: 600; color: #0f172a;">{{ $bc->booking_date->format('d-M-Y') }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 3px 0; font-weight: 700; color: #334155;">Job No.</td>
-                        <td style="padding: 3px 0;">:</td>
-                        <td style="padding: 3px 0; font-weight: 700; color: #0f172a;">
-                            @if($bc->job)
-                                <a class="text-link" href="{{ route('jobs.show', $bc->job) }}">{{ $bc->job->number }}</a>
-                            @else
-                                —
-                            @endif
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 3px 0; font-weight: 700; color: #334155;">Customer Ref</td>
-                        <td style="padding: 3px 0;">:</td>
-                        <td style="padding: 3px 0; font-weight: 600; color: #0f172a;">{{ $bc->customer_ref ?: '—' }}</td>
-                    </tr>
-                </table>
-            </div>
+        <div>
+            <dt>Tanggal Booking</dt>
+            <dd>{{ $bc->booking_date ? $bc->booking_date->format('d/m/Y') : '—' }}</dd>
         </div>
-
-        {{-- SALUTATION --}}
-        <div style="margin-bottom: 18px; font-size: 13.5px; color: #1e293b; background: #f8fafc; padding: 10px 14px; border-left: 3px solid #0284c7; border-radius: 2px;">
-            <div>We thank you for your booking.</div>
-            <div>Please review the following details and advise if any discrepancy:</div>
+        <div>
+            <dt>Customer (Pemilik Muatan)</dt>
+            <dd><strong>{{ $shipperName }}</strong></dd>
         </div>
+        <div>
+            <dt>Terkait Job Order</dt>
+            <dd>
+                @if($bc->job)
+                    <a class="text-link" href="{{ route('jobs.show', $bc->job) }}"><strong>{{ $bc->job->number }}</strong></a>
+                @else
+                    <span class="subtle">— Tidak terhubung —</span>
+                @endif
+            </dd>
+        </div>
+        <div>
+            <dt>Customer Ref / No. Referensi</dt>
+            <dd>{{ $bc->customer_ref ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>Dibuat Oleh</dt>
+            <dd>{{ $bc->creator?->name ?? 'System' }}</dd>
+        </div>
+    </dl>
+</section>
 
-        {{-- SHIPMENT DETAILS (2 KOLOM) --}}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 22px; font-size: 13.5px;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 5px 0; width: 38%; font-weight: 700; color: #334155;">Shipper</td>
-                    <td style="padding: 5px 0; width: 4%;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">
-                        {{ $shipperName }}
-                        @if($shipperAddress)
-                            <div style="font-size: 12px; color: #64748b; font-weight: normal; margin-top: 2px;">{{ $shipperAddress }}</div>
+{{-- 2. PIHAK PENGIRIM & PENERIMA --}}
+<section class="panel" style="margin-bottom: 20px;">
+    <div class="panel-heading">
+        <h2><x-icon name="user" style="width:16px;height:16px;margin-right:6px;display:inline-block;vertical-align:middle;color:#0f1f3d;"/> Pihak Pengirim & Penerima</h2>
+    </div>
+    <dl class="detail-grid">
+        <div>
+            <dt>Shipper (Pengirim)</dt>
+            <dd><strong>{{ $shipperName }}</strong></dd>
+        </div>
+        <div>
+            <dt>Consignee (Penerima)</dt>
+            <dd><strong>{{ $consigneeName }}</strong></dd>
+        </div>
+        <div>
+            <dt>Alamat Shipper</dt>
+            <dd style="line-height: 1.4;">{{ $shipperAddress }}</dd>
+        </div>
+        <div>
+            <dt>Alamat Consignee</dt>
+            <dd style="line-height: 1.4;">{{ $consigneeAddress }}</dd>
+        </div>
+        <div>
+            <dt>Contact Person Consignee</dt>
+            <dd>{{ $consigneeContact }}</dd>
+        </div>
+    </dl>
+</section>
+
+{{-- 3. RINCIAN PENGAPALAN & RUTE --}}
+<section class="panel" style="margin-bottom: 20px;">
+    <div class="panel-heading">
+        <h2><x-icon name="map-pin" style="width:16px;height:16px;margin-right:6px;display:inline-block;vertical-align:middle;color:#0f1f3d;"/> Rincian Pengapalan & Rute (Shipment & Routing)</h2>
+    </div>
+    <dl class="detail-grid">
+        <div>
+            <dt>Carrier / Vendor Pelayaran</dt>
+            <dd><strong>{{ $bc->carrier_name ?: '—' }}</strong></dd>
+        </div>
+        <div>
+            <dt>Nomor Booking Carrier</dt>
+            <dd><strong>{{ $bc->carrier_booking_no ?: '—' }}</strong></dd>
+        </div>
+        <div>
+            <dt>Kapal / Vessel & Voyage</dt>
+            <dd>{{ $bc->vessel_voyage ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>Services (Term Layanan)</dt>
+            <dd><span class="badge-pill">{{ $bc->service_term ?: 'CY/CY' }}</span></dd>
+        </div>
+        <div>
+            <dt>Port of Loading (POL)</dt>
+            <dd>{{ $bc->pol ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>Port of Discharge (POD)</dt>
+            <dd>{{ $bc->pod ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>ETD (Estimasi Keberangkatan)</dt>
+            <dd>{{ $bc->etd ? $bc->etd->format('d/m/Y') : '—' }}</dd>
+        </div>
+        <div>
+            <dt>ETA (Estimasi Kedatangan)</dt>
+            <dd>{{ $bc->eta ? $bc->eta->format('d/m/Y') : '—' }}</dd>
+        </div>
+    </dl>
+</section>
+
+{{-- 4. RINCIAN MUATAN (CARGO DETAILS) --}}
+<section class="panel" style="margin-bottom: 20px;">
+    <div class="panel-heading">
+        <h2><x-icon name="briefcase" style="width:16px;height:16px;margin-right:6px;display:inline-block;vertical-align:middle;color:#0f1f3d;"/> Rincian Muatan (Cargo Details)</h2>
+    </div>
+    <dl class="detail-grid">
+        <div>
+            <dt>Quantity (Kuantitas)</dt>
+            <dd><strong>{{ $bc->quantity ?: '—' }}</strong></dd>
+        </div>
+        <div>
+            <dt>Gross Weight (Berat Kotor)</dt>
+            <dd>{{ $bc->gross_weight ? \App\Support\Money::format($bc->gross_weight) . ' KGS' : '—' }}</dd>
+        </div>
+        <div>
+            <dt>Volume (Kubikasi)</dt>
+            <dd>{{ $bc->volume ? \App\Support\Money::format($bc->volume) . ' M3' : '—' }}</dd>
+        </div>
+        <div class="span-2">
+            <dt>Description (Deskripsi / Uraian Barang)</dt>
+            <dd style="white-space: pre-wrap; line-height: 1.4;">{{ $bc->cargo_description ?: 'General Cargo' }}</dd>
+        </div>
+    </dl>
+</section>
+
+{{-- 5. PENYERAHAN MUATAN & JADWAL CUT-OFF --}}
+<section class="panel" style="margin-bottom: 20px;">
+    <div class="panel-heading">
+        <h2><x-icon name="calendar" style="width:16px;height:16px;margin-right:6px;display:inline-block;vertical-align:middle;color:#0f1f3d;"/> Penyerahan Muatan & Jadwal Cut-Off</h2>
+    </div>
+    <dl class="detail-grid">
+        <div class="span-2">
+            <dt>Delivery Cargo To (Lokasi Penyerahan Terminal/Depo)</dt>
+            <dd style="font-size: 14px; font-weight: 600; color: #0f172a;">{{ $bc->delivery_cargo_to ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>Doc Cut-Off (Dokumen)</dt>
+            <dd>{{ $bc->doc_cutoff_at ? $bc->doc_cutoff_at->format('d/m/Y H:i') : '—' }}</dd>
+        </div>
+        <div>
+            <dt>CY Cut-Off (Closing Container)</dt>
+            <dd>{{ $bc->cy_cutoff_at ? $bc->cy_cutoff_at->format('d/m/Y H:i') : '—' }}</dd>
+        </div>
+        <div>
+            <dt>Delivery Cut-Off (Muatan Fisik)</dt>
+            <dd>{{ $bc->delivery_cutoff_at ? $bc->delivery_cutoff_at->format('d/m/Y H:i') : '—' }}</dd>
+        </div>
+    </dl>
+</section>
+
+{{-- 6. KLAUSUL & CATATAN BOOKING (IMPORTANT NOTES) --}}
+<section class="panel">
+    <div class="panel-heading">
+        <h2><x-icon name="file" style="width:16px;height:16px;margin-right:6px;display:inline-block;vertical-align:middle;color:#0f1f3d;"/> Klausul & Catatan Booking (Important Notes)</h2>
+        <span class="subtle">Syarat & Ketentuan Standar Pengapalan</span>
+    </div>
+    <div style="padding: 18px 22px;">
+        @if(!empty($bulletClauses))
+            <ol style="margin: 0; padding-left: 20px; line-height: 1.65; font-size: 13px; color: #334155;">
+                @foreach($bulletClauses as $clause)
+                    <li style="margin-bottom: 8px;">
+                        @if(str_contains($clause, 'LONG LENGTH/OVERWEIGHT'))
+                            @php
+                                $splitPos = strpos($clause, 'LONG LENGTH');
+                                $before = trim(substr($clause, 0, $splitPos));
+                                $after = trim(substr($clause, $splitPos));
+                            @endphp
+                            {{ $before }}
+                            <div style="margin-top: 4px; padding: 6px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-weight: 600; color: #991b1b; font-size: 12px;">
+                                ⚠️ {{ $after }}
+                            </div>
+                        @else
+                            {{ $clause }}
                         @endif
-                        @if(!empty($docStatus))
-                            <div style="font-size: 11.5px; color: #0284c7; font-weight: normal; margin-top: 2px;">{{ implode(' · ', $docStatus) }}</div>
-                        @endif
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 5px 0; font-weight: 700; color: #334155;">Carrier Booking</td>
-                    <td style="padding: 5px 0;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">
-                        {{ $bc->carrier_name ?: '—' }}
-                        @if($bc->carrier_booking_no)
-                            <span style="color: #64748b;">(No: {{ $bc->carrier_booking_no }})</span>
-                        @endif
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 5px 0; font-weight: 700; color: #334155;">Vessel</td>
-                    <td style="padding: 5px 0;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">{{ $bc->vessel_voyage ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 5px 0; font-weight: 700; color: #334155;">Services</td>
-                    <td style="padding: 5px 0;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">{{ $bc->service_term ?: 'CY/CY' }}</td>
-                </tr>
-            </table>
-
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 5px 0; width: 25%; font-weight: 700; color: #334155;">POL</td>
-                    <td style="padding: 5px 0; width: 4%;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">{{ $bc->pol ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 5px 0; font-weight: 700; color: #334155;">POD</td>
-                    <td style="padding: 5px 0;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">{{ $bc->pod ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 5px 0; font-weight: 700; color: #334155;">ETD</td>
-                    <td style="padding: 5px 0;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">{{ $bc->etd?->format('d-M-Y') ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 5px 0; font-weight: 700; color: #334155;">ETA</td>
-                    <td style="padding: 5px 0;">:</td>
-                    <td style="padding: 5px 0; font-weight: 600; color: #0f172a;">{{ $bc->eta?->format('d-M-Y') ?: '—' }}</td>
-                </tr>
-            </table>
-        </div>
-
-        {{-- CARGO DETAILS (4 KOLOM TABEL BERGARIS) --}}
-        <div style="margin-bottom: 20px;">
-            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 13.5px;">
-                <thead>
-                    <tr style="background: #f1f5f9; border-bottom: 1px solid #000;">
-                        <th style="padding: 8px 12px; border: 1px solid #000; text-align: left; width: 22%; font-weight: 700;">Quantity</th>
-                        <th style="padding: 8px 12px; border: 1px solid #000; text-align: left; width: 40%; font-weight: 700;">Description</th>
-                        <th style="padding: 8px 12px; border: 1px solid #000; text-align: left; width: 20%; font-weight: 700;">Gross Weight</th>
-                        <th style="padding: 8px 12px; border: 1px solid #000; text-align: left; width: 18%; font-weight: 700;">CBM</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 10px 12px; border: 1px solid #000; font-weight: 600; vertical-align: top;">
-                            {{ $bc->quantity ?: '—' }}
-                        </td>
-                        <td style="padding: 10px 12px; border: 1px solid #000; font-weight: 600; vertical-align: top; white-space: pre-wrap;">
-                            {{ $bc->cargo_description ?: 'General Cargo' }}
-                        </td>
-                        <td style="padding: 10px 12px; border: 1px solid #000; font-weight: 600; vertical-align: top;">
-                            {{ $bc->gross_weight ? \App\Support\Money::format($bc->gross_weight) . ' KGS' : '—' }}
-                        </td>
-                        <td style="padding: 10px 12px; border: 1px solid #000; font-weight: 600; vertical-align: top;">
-                            {{ $bc->volume ? \App\Support\Money::format($bc->volume) . ' M3' : '—' }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        {{-- SEAWORTHY PACKAGING NOTICE --}}
-        <div style="font-size: 12.5px; font-weight: 700; color: #b91c1c; margin-bottom: 20px; letter-spacing: 0.5px;">
-            PLEASE MAKE SURE TO USE SEAWORTHY PACKAGING.
-        </div>
-
-        {{-- DELIVERY CARGO TO & CUT-OFF TIME --}}
-        <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #000; background: #fff;">
-            <div style="margin-bottom: 12px; font-size: 13.5px;">
-                <strong style="color: #0f172a;">Delivery cargo to:</strong><br>
-                <span style="font-size: 14px; font-weight: 700; color: #0f172a;">{{ $bc->delivery_cargo_to ?: '—' }}</span>
-            </div>
-
-            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 13px; text-align: center;">
-                <thead>
-                    <tr style="background: #e2e8f0; border-bottom: 1px solid #000;">
-                        <th style="padding: 6px; border: 1px solid #000; font-weight: 700; width: 33%;">Doc Cut-Off</th>
-                        <th style="padding: 6px; border: 1px solid #000; font-weight: 700; width: 33%;">CY Cut-Off</th>
-                        <th style="padding: 6px; border: 1px solid #000; font-weight: 700; width: 34%;">Delivery Cut-Off</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #000; font-weight: 600;">
-                            {{ $bc->doc_cutoff_at?->format('d-M-Y H:i') ?: '—' }}
-                        </td>
-                        <td style="padding: 8px; border: 1px solid #000; font-weight: 600;">
-                            {{ $bc->cy_cutoff_at?->format('d-M-Y H:i') ?: '—' }}
-                        </td>
-                        <td style="padding: 8px; border: 1px solid #000; font-weight: 600;">
-                            {{ $bc->delivery_cutoff_at?->format('d-M-Y H:i') ?: '—' }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        {{-- IMPORTANT NOTES --}}
-        <div style="font-size: 12px; line-height: 1.55; color: #334155; margin-bottom: 20px;">
-            <div style="font-size: 13px; font-weight: 700; text-decoration: underline; color: #0f172a; margin-bottom: 6px;">
-                Important Note:
-            </div>
-            <div style="white-space: pre-wrap; padding-left: 12px; border-left: 2px solid #cbd5e1;">{{ $bc->notes ?: '—' }}</div>
-        </div>
-
-        {{-- DISCLAIMER --}}
-        <div style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 16px; line-height: 1.5;">
-            <div>THIS BOOKING IS SUBJECT TO CHANGE FOR DOOR (HAULAGE) DELIVERY.</div>
-            <div>DATE/ TIME AS WELL AS TO VESSEL SPACE AND VESSEL SCHEDULE MAY BE CHANGED WITHOUT NOTICE</div>
-        </div>
-
-        <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">
-            Thank you for choosing us
-        </div>
+                    </li>
+                @endforeach
+            </ol>
+        @else
+            <p class="subtle" style="margin: 0;">Tidak ada catatan khusus.</p>
+        @endif
     </div>
 </section>
 

@@ -276,9 +276,7 @@ if (form) {
                 </td>
                 <td style="padding: 10px 8px;">
                     <span class="status-badge" style="background:${curr === 'IDR' ? '#f1f5f9' : '#e0e7ff'}; color:${curr === 'IDR' ? '#334155' : '#3730a3'}; font-size:11px; font-weight:700;">${curr}</span>
-                    @if(true)
                     ${curr !== 'IDR' ? `<div style="font-size:10.5px;color:#64748b;margin-top:2px;">@ ${rate.toLocaleString('id-ID')}</div>` : ''}
-                    @endif
                 </td>
                 <td style="padding: 10px 8px;">
                     <span class="status-badge" style="background:#f1f5f9; color:#334155; font-size:11px;">${escapeHtml(item.unit || 'Shipment')}</span>

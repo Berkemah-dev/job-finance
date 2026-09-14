@@ -17,8 +17,7 @@ class CustomerRequest extends FormRequest
         $paymentTerms = array_merge(array_keys(config('operations.customer_payment_terms')), ['']);
 
         return [
-            // Kode customer dibuat oleh backend; input manual tidak diterima.
-            'code' => ['sometimes', 'prohibited'],
+            'code' => ['nullable', 'string', 'max:30'],
             'name' => ['required', 'string', 'max:255'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],

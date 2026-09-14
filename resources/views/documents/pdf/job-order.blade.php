@@ -138,7 +138,7 @@
     $etaDate = $job->eta ? $job->eta->format('d-m-Y') : '—';
     $noAju = $job->booking_reference ?? '—';
     $noHbl = $job->hbl_number ?? $job->hawb_number ?? '—';
-    $noMbl = $job->bl_number ?? $job->mawb_number ?? '—';
+    $noMbl = $job->bl_number ?? $job->awb_number ?? '—';
     $vesselName = $job->vessel_voyage ?? $job->flight_number ?? '—';
     $quantityStr = $job->package_count ? $job->package_count . ' Box' : ($job->container_type ? '1x ' . strtoupper($job->container_type) : ($quotation?->cargo_qty ?? '—'));
     $grossWeightStr = $job->gross_weight ? \App\Support\Money::format($job->gross_weight) . ' KGS' : ($quotation?->weight_meas ?? '—');
@@ -219,6 +219,24 @@
             <td class="lbl">No. AJU</td>
             <td class="val">{{ $noAju }}</td>
         </tr>
+        @if($job->nopen)
+        <tr>
+            <td class="lbl">Nopen (PIB)</td>
+            <td class="val">{{ $job->nopen }} @if($job->nopen_date) (Tgl: {{ $job->nopen_date->format('d/m/Y') }}) @endif</td>
+        </tr>
+        @endif
+        @if($job->peb_number)
+        <tr>
+            <td class="lbl">NOPEN PEB</td>
+            <td class="val">{{ $job->peb_number }} @if($job->peb_date) (Tgl: {{ $job->peb_date->format('d/m/Y') }}) @endif</td>
+        </tr>
+        @endif
+        @if($job->npe_number)
+        <tr>
+            <td class="lbl">No. NPE</td>
+            <td class="val">{{ $job->npe_number }}</td>
+        </tr>
+        @endif
         <tr>
             <td class="lbl">No. HBL</td>
             <td class="val">{{ $noHbl }}</td>

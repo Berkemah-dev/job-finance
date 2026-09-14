@@ -571,9 +571,9 @@
 .approval-timeline {
     list-style: none;
     margin: 0;
-    padding: 8px 24px 24px;
+    padding: 10px 24px 20px;
     display: flex;
-    gap: 14px;
+    gap: 16px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x proximity;
@@ -589,66 +589,95 @@
 }
 .approval-timeline li {
     position: relative;
-    display: grid;
-    grid-template-rows: auto 1fr;
-    gap: 12px;
-    min-width: 230px;
-    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 240px;
+    max-width: 290px;
+    flex: 1 0 240px;
     padding: 0;
     scroll-snap-align: start;
+    gap: 10px;
 }
 .approval-timeline li > span {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background: #dfe8f6;
-    box-shadow: 0 0 0 5px #f2f6fd;
-    z-index: 1;
-    margin: 0 0 0 2px;
+    background: #0f1f3d;
+    border: 2.5px solid #ffffff;
+    box-shadow: 0 0 0 2px #0f1f3d;
+    z-index: 2;
+    margin-left: 18px;
+    transition: all 0.2s ease;
+}
+.approval-timeline li:last-child > span {
+    background: #0f1f3d;
+    box-shadow: 0 0 0 3px rgba(15, 31, 61, 0.28), 0 0 0 1.5px #0f1f3d;
 }
 .approval-timeline li:not(:last-child):after {
     content: "";
     position: absolute;
-    top: 7px;
-    left: 19px;
-    width: calc(100% + 10px);
+    top: 6px;
+    left: 25px;
+    width: calc(100% + 16px);
     height: 2px;
-    background: #dfe8f6;
+    background: #0f1f3d;
+    z-index: 1;
 }
 .approval-timeline li > div {
     position: relative;
-    z-index: 1;
-    min-height: 108px;
-    padding: 14px 16px;
+    z-index: 2;
+    width: 100%;
+    min-height: 96px;
+    padding: 14px 18px;
     border: 1px solid #e1e7f1;
     border-radius: 12px;
     background: #fff;
-    box-shadow: 0 4px 16px rgba(38, 62, 101, .06);
+    box-shadow: 0 3px 12px rgba(15, 31, 61, .06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.approval-timeline li:hover > div {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(15, 31, 61, .1);
+    border-color: #cbd5e1;
 }
 .approval-timeline strong {
     display: block;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 700;
     color: #0f1f3d;
     line-height: 1.5;
 }
 .approval-timeline p {
-    font-size: 10.5px;
-    color: #8490a4;
-    margin-top: 7px;
-    line-height: 1.7;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 6px;
+    line-height: 1.6;
     white-space: normal;
+}
+.theme-dark .approval-timeline li > span {
+    background: #38bdf8;
+    border-color: #0f172a;
+    box-shadow: 0 0 0 2px #38bdf8;
+}
+.theme-dark .approval-timeline li:not(:last-child):after {
+    background: #334155;
 }
 .theme-dark .approval-timeline li > div {
     background: #172033;
     border-color: #334155;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
 }
 .theme-dark .approval-timeline strong {
     color: #f8fafc;
 }
+.theme-dark .approval-timeline p {
+    color: #94a3b8;
+}
 @media(max-width:640px){
-    .approval-timeline { padding: 8px 18px 20px; }
-    .approval-timeline li { min-width: 210px; }
+    .approval-timeline { padding: 8px 16px 20px; gap: 12px; }
+    .approval-timeline li { min-width: 210px; max-width: 240px; }
+    .approval-timeline li:not(:last-child):after { width: calc(100% + 12px); }
 }
 .ref-table {
     border-collapse: collapse;
