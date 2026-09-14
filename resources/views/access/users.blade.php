@@ -134,8 +134,7 @@
         </table>
     </div>
 
-    <div class="pagination users-pagination">
-        <span>Menampilkan {{ $users->firstItem() ?? 0 }}-{{ $users->lastItem() ?? 0 }} dari {{ $users->total() }} pengguna</span>
+    <div class="pagination">
         {{ $users->links() }}
     </div>
 </section>

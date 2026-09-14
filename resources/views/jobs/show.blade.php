@@ -403,7 +403,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div class="field">
                         <label for="booking_reference_customs" style="font-size: 13.5px; font-weight: 700; color: #0f172a;">No AJU (6 digit terakhir)</label>
-                        <input type="text" name="booking_reference" id="booking_reference_customs" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 399308" style="border: 2px solid #f97316; font-size: 16px; font-weight: 700;">
+                        <input type="text" name="booking_reference" id="booking_reference_customs" maxlength="60" value="{{ old('booking_reference', $job->booking_reference) }}" placeholder="contoh: 399308" style="font-size: 16px; font-weight: 600;">
                     </div>
                     @if($isImport)
                         <div class="field">
@@ -486,7 +486,7 @@
             </form>
         @else
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No AJU (6 digit terakhir)</label><div style="padding: 12px 16px; border: 2px solid #f97316; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0f172a; background: #fff;">{{ $noAju }}</div></div>
+                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No AJU (6 digit terakhir)</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $noAju }}</div></div>
                 <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }} @if($isImport && $job->nopen_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $nopenDate }})</span>@elseif(!$isImport && $job->peb_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $pebDate }})</span>@endif</div></div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
