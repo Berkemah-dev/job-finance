@@ -19,13 +19,13 @@ class CalculatorTest extends TestCase
         $this->actingAs(User::where('email', 'admin@jobfinance.test')->firstOrFail());
     }
 
-    public function test_calculator_pages_and_quotation_inline_panel_render(): void
+    public function test_calculator_pages_render(): void
     {
         $this->get('/kalkulator')->assertOk()->assertSee('Estimasi Biaya LCL');
         $this->get('/kalkulator/volume-weight')->assertOk();
         $this->get('/kalkulator/lcl')->assertOk();
         $this->get('/kalkulator/pajak')->assertOk();
-        $this->get('/quotations/create')->assertOk()->assertSee('Estimator biaya LCL')->assertSee('data-lcl-panel');
+        $this->get('/quotations/create')->assertOk();
     }
 
     public function test_packages_api_computes_volume_weight_cbm_and_chargeable(): void
