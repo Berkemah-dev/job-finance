@@ -2,13 +2,19 @@
 @section('title', 'Edit Shipping Instruction ' . $si->number)
 @section('content')
 
+@php
+    $backUrl = $si->job_id 
+        ? route('jobs.show', $si->job_id) . '#tab-si' 
+        : route('shipping-instructions.show', $si);
+@endphp
+
 <div class="page-heading">
     <div>
         <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
         <h1>Edit Shipping Instruction</h1>
         <p>{{ $si->number }} · Carrier: {{ $si->to_carrier }}</p>
     </div>
-    <a class="button button-secondary" href="{{ route('shipping-instructions.show', $si) }}">← Kembali</a>
+    <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
 
 <section class="panel form-panel">
@@ -233,7 +239,7 @@
         </div>
 
         <div class="form-actions">
-            <a class="button button-secondary" href="{{ route('shipping-instructions.show', $si) }}">Batal</a>
+            <a class="button button-secondary" href="{{ $backUrl }}">Batal</a>
             <button class="button button-primary">Simpan Perubahan</button>
         </div>
     </form>

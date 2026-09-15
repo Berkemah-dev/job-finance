@@ -439,46 +439,61 @@
                     </div>
                 @endif
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div class="field">
-                        <label for="{{ $isAir ? 'awb_number_customs' : 'bl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label>
-                        @if($isAir)
-                            <input type="text" name="awb_number" id="awb_number_customs" maxlength="60" value="{{ old('awb_number', $job->awb_number) }}" placeholder="Isi nomor AWB / MAWB">
-                        @else
-                            <input type="text" name="bl_number" id="bl_number_customs" maxlength="60" value="{{ old('bl_number', $job->bl_number) }}" placeholder="Isi nomor BL / MBL">
-                        @endif
+                @if($isImport)
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="field">
+                            <label for="{{ $isAir ? 'awb_number_customs' : 'bl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label>
+                            @if($isAir)
+                                <input type="text" name="awb_number" id="awb_number_customs" maxlength="60" value="{{ old('awb_number', $job->awb_number) }}" placeholder="Isi nomor AWB / MAWB">
+                            @else
+                                <input type="text" name="bl_number" id="bl_number_customs" maxlength="60" value="{{ old('bl_number', $job->bl_number) }}" placeholder="Isi nomor BL / MBL">
+                            @endif
+                        </div>
+                        <div class="field">
+                            <label for="{{ $isAir ? 'hawb_number_customs' : 'hbl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label>
+                            @if($isAir)
+                                <input type="text" name="hawb_number" id="hawb_number_customs" maxlength="60" value="{{ old('hawb_number', $job->hawb_number) }}" placeholder="Isi nomor HAWB">
+                            @else
+                                <input type="text" name="hbl_number" id="hbl_number_customs" maxlength="60" value="{{ old('hbl_number', $job->hbl_number) }}" placeholder="Isi nomor HBL">
+                            @endif
+                        </div>
                     </div>
-                    <div class="field">
-                        <label for="{{ $isAir ? 'hawb_number_customs' : 'hbl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label>
-                        @if($isAir)
-                            <input type="text" name="hawb_number" id="hawb_number_customs" maxlength="60" value="{{ old('hawb_number', $job->hawb_number) }}" placeholder="Isi nomor HAWB">
-                        @else
-                            <input type="text" name="hbl_number" id="hbl_number_customs" maxlength="60" value="{{ old('hbl_number', $job->hbl_number) }}" placeholder="Isi nomor HBL">
-                        @endif
-                    </div>
-                </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div class="field">
-                        <label for="commercial_invoice_number_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Nomor Commercial Invoice</label>
-                        <input type="text" name="commercial_invoice_number" id="commercial_invoice_number_customs" maxlength="60" value="{{ old('commercial_invoice_number', $job->commercial_invoice_number) }}" placeholder="contoh: INV-2026/09/001">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="field">
+                            <label for="commercial_invoice_number_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Nomor Commercial Invoice</label>
+                            <input type="text" name="commercial_invoice_number" id="commercial_invoice_number_customs" maxlength="60" value="{{ old('commercial_invoice_number', $job->commercial_invoice_number) }}" placeholder="contoh: INV-2026/09/001">
+                        </div>
+                        <div class="field">
+                            <label for="commercial_invoice_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal Invoice</label>
+                            <input type="date" name="commercial_invoice_date" id="commercial_invoice_date_customs" value="{{ old('commercial_invoice_date', $job->commercial_invoice_date?->format('Y-m-d')) }}">
+                        </div>
                     </div>
-                    <div class="field">
-                        <label for="commercial_invoice_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal Invoice</label>
-                        <input type="date" name="commercial_invoice_date" id="commercial_invoice_date_customs" value="{{ old('commercial_invoice_date', $job->commercial_invoice_date?->format('Y-m-d')) }}">
-                    </div>
-                </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div class="field">
-                        <label for="packing_list_number_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Nomor Packing List</label>
-                        <input type="text" name="packing_list_number" id="packing_list_number_customs" maxlength="60" value="{{ old('packing_list_number', $job->packing_list_number) }}" placeholder="contoh: PL-2026/09/001">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="field">
+                            <label for="packing_list_number_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Nomor Packing List</label>
+                            <input type="text" name="packing_list_number" id="packing_list_number_customs" maxlength="60" value="{{ old('packing_list_number', $job->packing_list_number) }}" placeholder="contoh: PL-2026/09/001">
+                        </div>
+                        <div class="field">
+                            <label for="packing_list_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal Packing List</label>
+                            <input type="date" name="packing_list_date" id="packing_list_date_customs" value="{{ old('packing_list_date', $job->packing_list_date?->format('Y-m-d')) }}">
+                        </div>
                     </div>
-                    <div class="field">
-                        <label for="packing_list_date_customs" style="font-size: 13px; font-weight: 600; color: #475569;">Tanggal Packing List</label>
-                        <input type="date" name="packing_list_date" id="packing_list_date_customs" value="{{ old('packing_list_date', $job->packing_list_date?->format('Y-m-d')) }}">
+                @else
+                    {{-- EXPORT PEB FORM (SESUAI GAMBAR REQUEST CLIENT: HANYA AJU, NOPEN PEB, TGL PEB, NO NPE, DAN NOMOR BL/MBL) --}}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="field">
+                            <label for="{{ $isAir ? 'awb_number_customs' : 'bl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label>
+                            @if($isAir)
+                                <input type="text" name="awb_number" id="awb_number_customs" maxlength="60" value="{{ old('awb_number', $job->awb_number) }}" placeholder="Isi nomor AWB / MAWB">
+                            @else
+                                <input type="text" name="bl_number" id="bl_number_customs" maxlength="60" value="{{ old('bl_number', $job->bl_number) }}" placeholder="Isi nomor BL / MBL">
+                            @endif
+                        </div>
+                        <div></div>
                     </div>
-                </div>
+                @endif
 
                 <div class="form-actions" style="margin-bottom: 0; justify-content: flex-end;">
                     <button class="button button-primary">Simpan Data Kepabeanan</button>
@@ -489,14 +504,21 @@
                 <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No AJU (6 digit terakhir)</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $noAju }}</div></div>
                 <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }} @if($isImport && $job->nopen_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $nopenDate }})</span>@elseif(!$isImport && $job->peb_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $pebDate }})</span>@endif</div></div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div></div>
-                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noHbl }}</div></div>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Commercial Invoice</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->commercial_invoice_number ?: '—' }} @if($job->commercial_invoice_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->commercial_invoice_date->format('d/m/Y') }})</span>@endif</div></div>
-                <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Packing List</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->packing_list_number ?: '—' }} @if($job->packing_list_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->packing_list_date->format('d/m/Y') }})</span>@endif</div></div>
-            </div>
+            @if($isImport)
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div></div>
+                    <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noHbl }}</div></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Commercial Invoice</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->commercial_invoice_number ?: '—' }} @if($job->commercial_invoice_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->commercial_invoice_date->format('d/m/Y') }})</span>@endif</div></div>
+                    <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Packing List</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->packing_list_number ?: '—' }} @if($job->packing_list_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->packing_list_date->format('d/m/Y') }})</span>@endif</div></div>
+                </div>
+            @else
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div></div>
+                    <div></div>
+                </div>
+            @endif
         @endif
         {{-- FORM UPDATE STATUS KEPABEANAN --}}
         @if($job->status === 'open' && auth()->user()->can('update', $job))

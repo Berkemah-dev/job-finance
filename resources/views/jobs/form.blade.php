@@ -1,7 +1,17 @@
 @extends('layouts.app')
 @section('title','Edit Job Order')
 @section('content')
-@php $serviceCategoryTitle = match (strtolower($job->service_type ?? '')) { 'exp_sea' => 'EXPORT SHIPMENT (SEA)', 'exp_air' => 'EXPORT SHIPMENT (AIR)', 'imp_sea' => 'IMPORT SHIPMENT (SEA)', 'imp_air' => 'IMPORT SHIPMENT (AIR)', default => 'DOMESTIC / TRUCKING' }; @endphp
+@php 
+    $serviceTypeRaw = strtolower($job->service_type ?? '');
+    $isAir = str_contains($serviceTypeRaw, 'air');
+    $serviceCategoryTitle = match ($serviceTypeRaw) { 
+        'exp_sea' => 'EXPORT SHIPMENT (SEA)', 
+        'exp_air' => 'EXPORT SHIPMENT (AIR)', 
+        'imp_sea' => 'IMPORT SHIPMENT (SEA)', 
+        'imp_air' => 'IMPORT SHIPMENT (AIR)', 
+        default => 'DOMESTIC / TRUCKING' 
+    }; 
+@endphp
 <div class="page-heading"><div><p class="eyebrow">OPERASIONAL / JOB ORDER · {{ $serviceCategoryTitle }}</p><h1>Edit Data Pengapalan</h1><p>{{ $job->number }} · Perbarui informasi operasional pengiriman.</p></div><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">← Kembali</a></div>
 <section class="panel form-panel">
 <form class="data-form" method="POST" action="{{ route('jobs.update',$job) }}">
@@ -27,18 +37,35 @@
     
     <div class="field"><label for="etd">ETD</label><input id="etd" name="etd" type="date" value="{{ old('etd',$job->etd?->format('Y-m-d')) }}"></div>
     <div class="field"><label for="eta">ETA</label><input id="eta" name="eta" type="date" value="{{ old('eta',$job->eta?->format('Y-m-d')) }}"></div>
-    <div class="field"><label for="vessel_voyage">Vessel</label><input id="vessel_voyage" name="vessel_voyage" maxlength="120" value="{{ old('vessel_voyage',$job->vessel_voyage) }}"></div>
-    <div class="field"><label for="flight_number">Nomor Penerbangan</label><input id="flight_number" name="flight_number" maxlength="60" value="{{ old('flight_number',$job->flight_number) }}"></div>
     
-    <div class="field"><label for="bl_number">Nomor BL</label><input id="bl_number" name="bl_number" maxlength="60" value="{{ old('bl_number',$job->bl_number) }}"></div>
-    <div class="field"><label for="hbl_number">Nomor HBL</label><input id="hbl_number" name="hbl_number" maxlength="60" value="{{ old('hbl_number',$job->hbl_number) }}"></div>
-    <div class="field"><label for="awb_number">Nomor AWB</label><input id="awb_number" name="awb_number" maxlength="60" value="{{ old('awb_number',$job->awb_number) }}"></div>
-    <div class="field"><label for="hawb_number">Nomor HAWB</label><input id="hawb_number" name="hawb_number" maxlength="60" value="{{ old('hawb_number',$job->hawb_number) }}"></div>
+    @if($isAir)
+        <div class="field"><label for="flight_number">Nomor Penerbangan</label><input id="flight_number" name="flight_number" maxlength="60" value="{{ old('flight_number',$job->flight_number) }}" placeholder="e.g. GA 881"></div>
+        <div class="field"></div>
+        <div class="field"><label for="awb_number">Nomor AWB</label><input id="awb_number" name="awb_number" maxlength="60" value="{{ old('awb_number',$job->awb_number) }}" placeholder="Nomor Master AWB"></div>
+        <div class="field"><label for="hawb_number">Nomor HAWB</label><input id="hawb_number" name="hawb_number" maxlength="60" value="{{ old('hawb_number',$job->hawb_number) }}" placeholder="Nomor House AWB"></div>
+    @else
+        <div class="field"><label for="vessel_voyage">Vessel & Voyage</label><input id="vessel_voyage" name="vessel_voyage" maxlength="120" value="{{ old('vessel_voyage',$job->vessel_voyage) }}" placeholder="Nama Kapal / Vessel & Voyage"></div>
+        <div class="field"></div>
+        <div class="field"><label for="bl_number">Nomor BL</label><input id="bl_number" name="bl_number" maxlength="60" value="{{ old('bl_number',$job->bl_number) }}" placeholder="Nomor Master BL"></div>
+        <div class="field"><label for="hbl_number">Nomor HBL</label><input id="hbl_number" name="hbl_number" maxlength="60" value="{{ old('hbl_number',$job->hbl_number) }}" placeholder="Nomor House BL"></div>
+    @endif
 
-    <div class="field"><label for="package_count">Quantity</label><input id="package_count" name="package_count" type="number" min="0" max="999999" value="{{ old('package_count',$job->package_count) }}"></div>
-    <div class="field"><label for="gross_weight">Gross Weight (kg)</label><input id="gross_weight" name="gross_weight" inputmode="decimal" value="{{ old('gross_weight',$job->gross_weight) }}"></div>
-    <div class="field"><label for="volume">Volume (m³ / CBM)</label><input id="volume" name="volume" inputmode="decimal" value="{{ old('volume',$job->volume) }}"></div>
-    <div class="field"><label for="shipment_reference">Referensi Pengiriman</label><input id="shipment_reference" name="shipment_reference" maxlength="100" value="{{ old('shipment_reference',$job->shipment_reference) }}"></div>
+    <div class="field">
+        <label for="package_count">Quantity</label>
+        <input id="package_count" name="package_count" type="number" min="0" max="999999" value="{{ old('package_count',$job->package_count) }}" placeholder="Jumlah kuantitas">
+    </div>
+    <div class="field">
+        <label for="container_type">Satuan / Tipe Kontainer</label>
+        <select id="container_type" name="container_type">
+            <option value="">Pilih satuan (opsional)</option>
+            @foreach($containerUnits ?? \App\Models\ContainerUnit::options() as $value => $label)
+                <option value="{{ $value }}" @selected(old('container_type', $job->container_type) === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="field"><label for="gross_weight">Gross Weight (kg)</label><input id="gross_weight" name="gross_weight" inputmode="decimal" value="{{ old('gross_weight',$job->gross_weight) }}" placeholder="0.00"></div>
+    <div class="field"><label for="volume">Volume (m³ / CBM)</label><input id="volume" name="volume" inputmode="decimal" value="{{ old('volume',$job->volume) }}" placeholder="0.00"></div>
+    <div class="field span-2"><label for="shipment_reference">Referensi Pengiriman</label><input id="shipment_reference" name="shipment_reference" maxlength="100" value="{{ old('shipment_reference',$job->shipment_reference) }}" placeholder="No. Referensi / PO"></div>
 
     <div class="field span-2"><label for="cargo_description">Commodity</label><textarea id="cargo_description" name="cargo_description" rows="3" maxlength="2000">{{ old('cargo_description',$job->cargo_description) }}</textarea></div>
     <div class="field span-2"><label for="operational_notes">Catatan Operasional</label><textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000">{{ old('operational_notes',$job->operational_notes) }}</textarea></div>

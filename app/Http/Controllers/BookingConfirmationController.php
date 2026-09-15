@@ -122,6 +122,11 @@ class BookingConfirmationController extends Controller
 
         $bc = BookingConfirmation::create($validated);
 
+        if ($bc->job_id) {
+            return redirect()->to(route('jobs.show', $bc->job_id).'#tab-booking')
+                ->with('success', 'Booking Confirmation ' . $bc->number . ' berhasil dibuat.');
+        }
+
         return redirect()->route('booking-confirmations.show', $bc)
             ->with('success', 'Booking Confirmation ' . $bc->number . ' berhasil dibuat.');
     }
@@ -187,14 +192,25 @@ class BookingConfirmationController extends Controller
 
         $bookingConfirmation->update($validated);
 
+        if ($bookingConfirmation->job_id) {
+            return redirect()->to(route('jobs.show', $bookingConfirmation->job_id).'#tab-booking')
+                ->with('success', 'Booking Confirmation ' . $bookingConfirmation->number . ' berhasil diperbarui.');
+        }
+
         return redirect()->route('booking-confirmations.show', $bookingConfirmation)
             ->with('success', 'Booking Confirmation ' . $bookingConfirmation->number . ' berhasil diperbarui.');
     }
 
     public function destroy(BookingConfirmation $bookingConfirmation)
     {
+        $jobId = $bookingConfirmation->job_id;
         $number = $bookingConfirmation->number;
         $bookingConfirmation->delete();
+
+        if ($jobId) {
+            return redirect()->to(route('jobs.show', $jobId).'#tab-booking')
+                ->with('success', 'Booking Confirmation ' . $number . ' berhasil dihapus.');
+        }
 
         return redirect()->route('booking-confirmations.index')
             ->with('success', 'Booking Confirmation ' . $number . ' berhasil dihapus.');

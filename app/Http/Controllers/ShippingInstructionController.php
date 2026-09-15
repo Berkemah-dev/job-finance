@@ -120,6 +120,11 @@ class ShippingInstructionController extends Controller
 
         $si = ShippingInstruction::create($validated);
 
+        if ($si->job_id) {
+            return redirect()->to(route('jobs.show', $si->job_id).'#tab-si')
+                ->with('success', 'Shipping Instruction ' . $si->number . ' berhasil diterbitkan.');
+        }
+
         return redirect()->route('shipping-instructions.show', $si)
             ->with('success', 'Shipping Instruction ' . $si->number . ' berhasil diterbitkan.');
     }
@@ -183,14 +188,25 @@ class ShippingInstructionController extends Controller
 
         $shippingInstruction->update($validated);
 
+        if ($shippingInstruction->job_id) {
+            return redirect()->to(route('jobs.show', $shippingInstruction->job_id).'#tab-si')
+                ->with('success', 'Shipping Instruction ' . $shippingInstruction->number . ' berhasil diperbarui.');
+        }
+
         return redirect()->route('shipping-instructions.show', $shippingInstruction)
             ->with('success', 'Shipping Instruction ' . $shippingInstruction->number . ' berhasil diperbarui.');
     }
 
     public function destroy(ShippingInstruction $shippingInstruction)
     {
+        $jobId = $shippingInstruction->job_id;
         $number = $shippingInstruction->number;
         $shippingInstruction->delete();
+
+        if ($jobId) {
+            return redirect()->to(route('jobs.show', $jobId).'#tab-si')
+                ->with('success', 'Shipping Instruction ' . $number . ' berhasil dihapus.');
+        }
 
         return redirect()->route('shipping-instructions.index')
             ->with('success', 'Shipping Instruction ' . $number . ' berhasil dihapus.');

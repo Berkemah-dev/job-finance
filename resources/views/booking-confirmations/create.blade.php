@@ -9,9 +9,21 @@
         "4. This booking confirmation is automatically invalid upon any cases of cargo/documentations problems, including failure of export declaration.\n" .
         "5. This booking confirmation is automatically invalid for following undeclared cargo: LONG LENGTH/OVERWEIGHT/FOODS & BEVERAGES, DUTIABLE/DANGEROUS GOODS/LAW FORBIDDEN/LIVE ANIMALS.\n" .
         "6. This booking confirmation is not valid for any claim.";
+    $backUrl = $selectedJob 
+        ? route('jobs.show', $selectedJob) . '#tab-booking' 
+        : (request()->filled('job_id') 
+            ? route('jobs.show', request('job_id')) . '#tab-booking' 
+            : route('booking-confirmations.index'));
 @endphp
 
-<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Buat Booking Confirmation" description="Terbitkan konfirmasi alokasi ruang kapal/pesawat untuk shipper dan customer." action-url="{{ route('booking-confirmations.index') }}" action-label="← Kembali" action-icon="" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
+        <h1>Buat Booking Confirmation</h1>
+        <p>Terbitkan konfirmasi alokasi ruang kapal/pesawat untuk shipper dan customer.</p>
+    </div>
+    <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
+</div>
 
 <section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('booking-confirmations.store') }}" id="bcForm">
@@ -262,7 +274,7 @@
         </div>
 
         <div class="form-actions">
-            <a class="button button-secondary" href="{{ route('booking-confirmations.index') }}">Batal</a>
+            <a class="button button-secondary" href="{{ $backUrl }}">Batal</a>
             <button class="button button-primary">Simpan Booking Confirmation</button>
         </div>
     </form>

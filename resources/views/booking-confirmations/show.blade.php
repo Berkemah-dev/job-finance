@@ -36,17 +36,20 @@
     }
 @endphp
 
-<x-menu-banner 
-    tag="CUSTOMER SERVICE / OPERASIONAL" 
-    title="{{ $bc->number }}" 
-    description="Customer: {{ $shipperName }} @if($bc->job) · Job Order: {{ $bc->job->number }}@endif" 
-    action-url="{{ route('booking-confirmations.index') }}" 
-    action-label="← Kembali" 
-    action-icon="" 
-    icon="file" 
-    art-title="Booking Space," 
-    art-subtitle="terkonfirmasi." 
-/>
+@php
+    $backUrl = $bc->job_id 
+        ? route('jobs.show', $bc->job_id) . '#tab-booking' 
+        : route('booking-confirmations.index');
+@endphp
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
+        <h1>{{ $bc->number }}</h1>
+        <p>Customer: <strong>{{ $shipperName }}</strong> @if($bc->job) · Job Order: <a class="text-link" href="{{ route('jobs.show', $bc->job) }}">{{ $bc->job->number }}</a>@endif</p>
+    </div>
+    <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
+</div>
 
 {{-- ACTION BUTTONS --}}
 <div class="quote-actions" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
