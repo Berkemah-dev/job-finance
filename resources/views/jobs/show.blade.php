@@ -428,27 +428,6 @@
             </div>
         @endif
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label>
-                <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div>
-            </div>
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label>
-                <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noHbl }}</div>
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Commercial Invoice</label>
-                <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->commercial_invoice_number ?: '—' }} @if($job->commercial_invoice_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->commercial_invoice_date->format('d/m/Y') }})</span>@endif</div>
-            </div>
-            <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Nomor Packing List</label>
-                <div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $job->packing_list_number ?: '—' }} @if($job->packing_list_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $job->packing_list_date->format('d/m/Y') }})</span>@endif</div>
-            </div>
-        </div>
 
         {{-- FORM UPDATE STATUS KEPABEANAN --}}
         @if($job->status === 'open' && auth()->user()->can('update', $job))
