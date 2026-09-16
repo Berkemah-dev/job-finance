@@ -54,8 +54,6 @@
             'KALKULATOR' => [['dashboard.view','calculator','Kalkulator','calculators.index']],
             'OPERASIONAL' => [
                 ['jobs.view','briefcase','Job Order','jobs.index'],
-                ['jobs.view','file','Shipping Instruction','shipping-instructions.index'],
-                ['jobs.view','file-text','Booking Confirmation','booking-confirmations.index'],
                 ['tps.manage','briefcase','Master TPS Air & Sea','tps.index']
             ],
             'MASTER DATA' => [['jobs.manage','database','Data Port','ports.index'],['jobs.manage','file','Data Document','document-types.index'],['jobs.manage','briefcase','Data Service','service-types.index'],['jobs.manage','wallet','Data Cost','charge-types.index'],['jobs.manage','briefcase','Data Unit','container-units.index']],
@@ -80,7 +78,10 @@
                 return $isCostPage;
             } else {
                 $prefix = str_contains((string)$destination, '.') ? substr($destination, 0, strrpos($destination, '.')) : $destination;
-                return request()->routeIs($prefix . '.*') && !($destination === 'jobs.index' && $isCostPage);
+                if ($destination === 'jobs.index') {
+                    return (request()->routeIs('jobs.*', 'shipping-instructions.*', 'booking-confirmations.*')) && !$isCostPage;
+                }
+                return request()->routeIs($prefix . '.*');
             }
         };
         @endphp
