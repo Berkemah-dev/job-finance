@@ -206,6 +206,7 @@ class JobDocumentController extends Controller
             str_contains($text, 'SPJM') => 'spjm',
             str_contains($text, 'BILLING') => 'billing',
             str_contains($text, 'PIB') => 'pib',
+            str_contains($text, 'NPE') => 'npe',
             default => '',
         };
     }

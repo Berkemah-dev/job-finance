@@ -2,7 +2,20 @@
 @section('title', 'Edit Booking Confirmation ' . $bc->number)
 @section('content')
 
-<x-menu-banner tag="CUSTOMER SERVICE / OPERASIONAL" title="Edit Booking Confirmation" description="{{ $bc->number }} · Customer: {{ $bc->customer?->name }}" action-url="{{ route('booking-confirmations.show', $bc) }}" action-label="← Kembali" action-icon="" icon="file" art-title="Alokasi space," art-subtitle="terkonfirmasi." />
+@php
+    $backUrl = $bc->job_id 
+        ? route('jobs.show', $bc->job_id) . '#tab-booking' 
+        : route('booking-confirmations.show', $bc);
+@endphp
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
+        <h1>Edit Booking Confirmation</h1>
+        <p>{{ $bc->number }} · Customer: {{ $bc->customer?->name }}</p>
+    </div>
+    <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
+</div>
 
 <section class="panel form-panel">
     <form class="data-form" method="POST" action="{{ route('booking-confirmations.update', $bc) }}" id="bcForm">
@@ -228,7 +241,7 @@
         </div>
 
         <div class="form-actions">
-            <a class="button button-secondary" href="{{ route('booking-confirmations.show', $bc) }}">Batal</a>
+            <a class="button button-secondary" href="{{ $backUrl }}">Batal</a>
             <button class="button button-primary">Simpan Perubahan</button>
         </div>
     </form>

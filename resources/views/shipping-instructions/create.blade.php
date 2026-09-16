@@ -4,6 +4,11 @@
 
 @php
     $defaultRemarks = "FREIGHT PREPAID\nPLEASE ISSUE ORIGINAL B/L 3/3\nCARGO MUST BE DISPATCHED ACCORDING TO BOOKING SCHEDULE";
+    $backUrl = $selectedJob 
+        ? route('jobs.show', $selectedJob) . '#tab-si' 
+        : (request()->filled('job_id') 
+            ? route('jobs.show', request('job_id')) . '#tab-si' 
+            : route('shipping-instructions.index'));
 @endphp
 
 <div class="page-heading">
@@ -12,7 +17,7 @@
         <h1>Buat Shipping Instruction</h1>
         <p>Instruksi pengapalan muatan kepada Shipping Line / Carrier untuk penerbitan Bill of Lading (B/L).</p>
     </div>
-    <a class="button button-secondary" href="{{ route('shipping-instructions.index') }}">← Kembali</a>
+    <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
 
 <section class="panel form-panel">
@@ -251,7 +256,7 @@
         </div>
 
         <div class="form-actions">
-            <a class="button button-secondary" href="{{ route('shipping-instructions.index') }}">Batal</a>
+            <a class="button button-secondary" href="{{ $backUrl }}">Batal</a>
             <button class="button button-primary">Simpan Shipping Instruction</button>
         </div>
     </form>

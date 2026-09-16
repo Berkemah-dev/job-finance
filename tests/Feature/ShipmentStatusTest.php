@@ -297,4 +297,46 @@ class ShipmentStatusTest extends TestCase
             ->assertSee('SPPB Terbit')
             ->assertSee('SPPB TERBIT');
     }
+
+    public function test_export_peb_customs_form_structure_and_update(): void
+    {
+        $job = $this->openJob();
+        $job->update(['service_type' => 'exp_sea']);
+        $this->actingAs($this->operator);
+
+        // 1. Check GET view: has PEB tab fields, does not have HBL / Commercial Invoice / Packing List in customs tab
+        $response = $this->get('/jobs/'.$job->id);
+        $response->assertOk();
+        $response->assertSee('2. PEB');
+        $response->assertSee('NOPEN PEB');
+        $response->assertSee('Tanggal PEB');
+        $response->assertSee('Nomor NPE');
+        $response->assertSee('Nomor BL / MBL');
+        $response->assertDontSee('commercial_invoice_number_customs');
+        $response->assertDontSee('packing_list_number_customs');
+        $response->assertDontSee('hbl_number_customs');
+
+        // 2. Submit PEB data from form
+        $this->put('/jobs/'.$job->id, [
+            'lock_version' => $job->lock_version,
+            'subject' => $job->subject,
+            'job_date' => $job->job_date->format('Y-m-d'),
+            'booking_reference' => '399308',
+            'peb_number' => '415575',
+            'peb_date' => '2026-09-15',
+            'npe_number' => 'NPE-2026-001',
+            'bl_number' => 'BL-SEA-999',
+            'redirect_tab' => 'customs',
+        ])->assertRedirect(route('jobs.show', $job).'#tab-customs')
+          ->assertSessionHas('success');
+
+        $job->refresh();
+        $this->assertSame('399308', $job->booking_reference);
+        $this->assertSame('415575', $job->peb_number);
+        $this->assertSame('2026-09-15', $job->peb_date->format('Y-m-d'));
+        $this->assertSame('NPE-2026-001', $job->npe_number);
+        $this->assertSame('BL-SEA-999', $job->bl_number);
+        $this->assertTrue($job->hasNpeDocument());
+    }
 }
+
