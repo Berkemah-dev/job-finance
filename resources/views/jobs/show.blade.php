@@ -428,6 +428,15 @@
             </div>
         @endif
 
+        @if(auth()->user()->can('update', $job))
+            <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="margin-bottom: 24px;">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="lock_version" value="{{ old('lock_version', $job->lock_version) }}">
+                <input type="hidden" name="subject" value="{{ old('subject', $job->subject) }}">
+                <input type="hidden" name="job_date" value="{{ old('job_date', $job->job_date?->format('Y-m-d')) }}">
+                <input type="hidden" name="redirect_tab" value="customs">
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div class="field">
                         <label for="{{ $isAir ? 'awb_number_customs' : 'bl_number_customs' }}" style="font-size: 13px; font-weight: 600; color: #475569;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label>
@@ -474,10 +483,6 @@
                 </div>
             </form>
         @else
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No AJU (6 digit terakhir)</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $noAju }}</div></div>
-                <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }} @if($isImport && $job->nopen_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $nopenDate }})</span>@elseif(!$isImport && $job->peb_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $pebDate }})</span>@endif</div></div>
-            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor AWB / MAWB' : 'Nomor BL / MBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noMbl }}</div></div>
                 <div><label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">{{ $isAir ? 'Nomor HAWB' : 'Nomor HBL' }}</label><div style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14.5px; font-weight: 600; color: #0f172a; background: #f8fafc;">{{ $noHbl }}</div></div>
