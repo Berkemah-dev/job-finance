@@ -6,22 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ShippingInstruction extends Model
+class Awb extends Model
 {
     use HasFactory;
 
+    protected $table = 'awbs';
     protected $guarded = ['id'];
 
     protected $casts = [
-        'si_date'          => 'date',
-        'etd'              => 'date',
-        'eta'              => 'date',
-        'is_transhipment'  => 'boolean',
-        'transit_etd'      => 'date',
-        'transit_eta'      => 'date',
-        'gross_weight'     => 'decimal:2',
-        'net_weight'       => 'decimal:2',
-        'measurement'      => 'decimal:3',
+        'awb_date'          => 'date',
+        'etd'               => 'date',
+        'eta'               => 'date',
+        'gross_weight'      => 'decimal:2',
+        'chargeable_weight' => 'decimal:2',
+        'volume'            => 'decimal:3',
     ];
 
     public function job(): BelongsTo
@@ -41,8 +39,8 @@ class ShippingInstruction extends Model
 
     public static function generateNumber(?string $prefix = null): string
     {
-        $prefix = $prefix ?: 'SI-JOB/EXP/' . date('ym');
-        $count = static::whereYear('si_date', date('Y'))->count() + 1;
+        $prefix = $prefix ?: 'AWB/EXP/AIR/' . date('ym');
+        $count = static::whereYear('awb_date', date('Y'))->count() + 1;
         return $prefix . str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 }

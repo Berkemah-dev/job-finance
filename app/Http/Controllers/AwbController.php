@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Awb;
+use App\Models\Customer;
+use App\Models\Job;
+use App\Models\Vendor;
+use Illuminate\Http\Request;
+
+class AwbController extends Controller
+{
+    public function index(Request $request)
+    {
+        $search   = $request->query('search');
+        $status   = $request->query('status');
+        $dateFrom = $request->query('date_from');
+        $dateTo   = $request->query('date_to');
+
+        $query = Awb::with(['customer', 'job', 'creator'])
+            ->latest('awb_date')
+            ->latest('id');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('number', 'like', "%{$search}%")
+                    ->orWhere('airline', 'like', "%{$search}%")
+                    ->orWhere('shipper_name', 'like', "%{$search}%")
+                    ->orWhere('consignee_name', 'like', "%{$search}%")
+                    ->orWhereHas('customer', fn($cq) => $cq->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('job', fn($jq) => $jq->where('number', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($status) $query->where('status', $status);
+        if ($dateFrom) $query->whereDate('awb_date', '>=', $dateFrom);
+        if ($dateTo) $query->whereDate('awb_date', '<=', $dateTo);
+
+        $awbs = $query->paginate(15)->withQueryString();
+
+        return view('awbs.index', compact('awbs', 'search', 'status', 'dateFrom', 'dateTo'));
+    }
+
+    public function create(Request $request)
+    {
+        $selectedJob = null;
+        if ($jobId = $request->query('job_id')) {
+            $selectedJob = Job::with(['customer'])->find($jobId);
+        }
+
+        $jobs      = Job::with('customer')->latest('id')->limit(50)->get();
+        $customers = Customer::orderBy('name')->get();
+        $airlines  = Vendor::orderBy('name')->get();
+
+        $defaultNumber = Awb::generateNumber();
+
+        return view('awbs.create', compact('selectedJob', 'jobs', 'customers', 'airlines', 'defaultNumber'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'number'              => 'required|string|max:60|unique:awbs,number',
+            'awb_date'            => 'required|date',
+            'job_id'              => 'nullable|exists:jobs,id',
+            'customer_id'         => 'nullable|exists:customers,id',
+            'airline'             => 'nullable|string|max:160',
+            'airline_code'        => 'nullable|string|max:20',
+            'flight_number'       => 'nullable|string|max:60',
+            'etd'                 => 'nullable|date',
+            'eta'                 => 'nullable|date',
+            'airport_of_departure'   => 'nullable|string|max:120',
+            'airport_of_destination' => 'nullable|string|max:120',
+            'routing'             => 'nullable|string|max:255',
+            'shipper_name'        => 'nullable|string|max:160',
+            'consignee_name'      => 'nullable|string|max:160',
+            'notify_party'        => 'nullable|string',
+            'commodity'           => 'nullable|string|max:255',
+            'pieces'              => 'nullable|integer|min:0',
+            'gross_weight'        => 'nullable|numeric|min:0',
+            'chargeable_weight'   => 'nullable|numeric|min:0',
+            'volume'              => 'nullable|numeric|min:0',
+            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
+            'shipper_ref'         => 'nullable|string|max:100',
+            'remarks'             => 'nullable|string',
+            'status'              => 'required|string|in:draft,issued,completed,cancelled',
+        ]);
+
+        $validated['created_by'] = auth()->id();
+        $awb = Awb::create($validated);
+
+        if ($awb->job_id) {
+            return redirect()->to(route('jobs.show', $awb->job_id) . '#tab-awb')
+                ->with('success', 'AWB ' . $awb->number . ' berhasil diterbitkan.');
+        }
+
+        return redirect()->route('awbs.show', $awb)
+            ->with('success', 'AWB ' . $awb->number . ' berhasil diterbitkan.');
+    }
+
+    public function show(Awb $awb)
+    {
+        $awb->load(['customer', 'job', 'creator']);
+        return view('awbs.show', compact('awb'));
+    }
+
+    public function edit(Awb $awb)
+    {
+        $jobs      = Job::with('customer')->latest('id')->limit(50)->get();
+        $customers = Customer::orderBy('name')->get();
+        $airlines  = Vendor::orderBy('name')->get();
+
+        return view('awbs.edit', compact('awb', 'jobs', 'customers', 'airlines'));
+    }
+
+    public function update(Request $request, Awb $awb)
+    {
+        $validated = $request->validate([
+            'number'              => 'required|string|max:60|unique:awbs,number,' . $awb->id,
+            'awb_date'            => 'required|date',
+            'job_id'              => 'nullable|exists:jobs,id',
+            'customer_id'         => 'nullable|exists:customers,id',
+            'airline'             => 'nullable|string|max:160',
+            'airline_code'        => 'nullable|string|max:20',
+            'flight_number'       => 'nullable|string|max:60',
+            'etd'                 => 'nullable|date',
+            'eta'                 => 'nullable|date',
+            'airport_of_departure'   => 'nullable|string|max:120',
+            'airport_of_destination' => 'nullable|string|max:120',
+            'routing'             => 'nullable|string|max:255',
+            'shipper_name'        => 'nullable|string|max:160',
+            'consignee_name'      => 'nullable|string|max:160',
+            'notify_party'        => 'nullable|string',
+            'commodity'           => 'nullable|string|max:255',
+            'pieces'              => 'nullable|integer|min:0',
+            'gross_weight'        => 'nullable|numeric|min:0',
+            'chargeable_weight'   => 'nullable|numeric|min:0',
+            'volume'              => 'nullable|numeric|min:0',
+            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
+            'shipper_ref'         => 'nullable|string|max:100',
+            'remarks'             => 'nullable|string',
+            'status'              => 'required|string|in:draft,issued,completed,cancelled',
+        ]);
+
+        $awb->update($validated);
+
+        if ($awb->job_id) {
+            return redirect()->to(route('jobs.show', $awb->job_id) . '#tab-awb')
+                ->with('success', 'AWB ' . $awb->number . ' berhasil diperbarui.');
+        }
+
+        return redirect()->route('awbs.show', $awb)
+            ->with('success', 'AWB ' . $awb->number . ' berhasil diperbarui.');
+    }
+
+    public function destroy(Awb $awb)
+    {
+        $jobId  = $awb->job_id;
+        $number = $awb->number;
+        $awb->delete();
+
+        if ($jobId) {
+            return redirect()->to(route('jobs.show', $jobId) . '#tab-awb')
+                ->with('success', 'AWB ' . $number . ' berhasil dihapus.');
+        }
+
+        return redirect()->route('awbs.index')
+            ->with('success', 'AWB ' . $number . ' berhasil dihapus.');
+    }
+}

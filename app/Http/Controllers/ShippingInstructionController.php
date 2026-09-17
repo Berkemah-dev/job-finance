@@ -91,17 +91,18 @@ class ShippingInstructionController extends Controller
             'number'            => 'required|string|max:60|unique:shipping_instructions,number',
             'si_date'           => 'required|date',
             'job_id'            => 'nullable|exists:jobs,id',
-            'customer_id'       => 'nullable|exists:customers,id',
             'to_carrier'        => 'required|string|max:160',
             'carrier_attn'      => 'nullable|string|max:120',
-            'carrier_contact'   => 'nullable|string|max:120',
             'shipper_name'      => 'required|string|max:160',
-            'shipper_address'   => 'nullable|string',
             'consignee_name'    => 'required|string|max:160',
-            'consignee_address' => 'nullable|string',
             'notify_party'      => 'nullable|string',
             'vessel_voyage'     => 'nullable|string|max:120',
+            // Transhipment
+            'is_transhipment'   => 'nullable|boolean',
+            'transit_port'      => 'nullable|string|max:160',
             'connecting_vessel' => 'nullable|string|max:120',
+            'transit_etd'       => 'nullable|date',
+            'transit_eta'       => 'nullable|date',
             'etd'               => 'nullable|date',
             'eta'               => 'nullable|date',
             'shipment_term'     => 'required|string|in:PREPAID,COLLECT',
@@ -115,6 +116,9 @@ class ShippingInstructionController extends Controller
             'remarks'           => 'nullable|string',
             'status'            => 'required|string|in:draft,submitted,completed,cancelled',
         ]);
+
+        // Checkbox boolean: jika tidak dikirim = false
+        $validated['is_transhipment'] = $request->boolean('is_transhipment');
 
         $validated['created_by'] = auth()->id();
 
@@ -161,17 +165,18 @@ class ShippingInstructionController extends Controller
             'number'            => 'required|string|max:60|unique:shipping_instructions,number,' . $shippingInstruction->id,
             'si_date'           => 'required|date',
             'job_id'            => 'nullable|exists:jobs,id',
-            'customer_id'       => 'nullable|exists:customers,id',
             'to_carrier'        => 'required|string|max:160',
             'carrier_attn'      => 'nullable|string|max:120',
-            'carrier_contact'   => 'nullable|string|max:120',
             'shipper_name'      => 'required|string|max:160',
-            'shipper_address'   => 'nullable|string',
             'consignee_name'    => 'required|string|max:160',
-            'consignee_address' => 'nullable|string',
             'notify_party'      => 'nullable|string',
             'vessel_voyage'     => 'nullable|string|max:120',
+            // Transhipment
+            'is_transhipment'   => 'nullable|boolean',
+            'transit_port'      => 'nullable|string|max:160',
             'connecting_vessel' => 'nullable|string|max:120',
+            'transit_etd'       => 'nullable|date',
+            'transit_eta'       => 'nullable|date',
             'etd'               => 'nullable|date',
             'eta'               => 'nullable|date',
             'shipment_term'     => 'required|string|in:PREPAID,COLLECT',
@@ -185,6 +190,9 @@ class ShippingInstructionController extends Controller
             'remarks'           => 'nullable|string',
             'status'            => 'required|string|in:draft,submitted,completed,cancelled',
         ]);
+
+        // Checkbox boolean: jika tidak dikirim = false
+        $validated['is_transhipment'] = $request->boolean('is_transhipment');
 
         $shippingInstruction->update($validated);
 

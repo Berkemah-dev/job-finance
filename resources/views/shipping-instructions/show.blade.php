@@ -12,7 +12,7 @@
     <div>
         <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL</p>
         <h1>{{ $si->number }}</h1>
-        <p>Carrier: <strong>{{ $si->to_carrier }}</strong> @if($si->job) · Job Order: <a class="text-link" href="{{ route('jobs.show', $si->job) }}">{{ $si->job->number }}</a>@endif @if($si->customer) · Customer: {{ $si->customer->name }}@endif</p>
+        <p>Carrier: <strong>{{ $si->to_carrier }}</strong> @if($si->job) · Job Order: <a class="text-link" href="{{ route('jobs.show', $si->job) }}">{{ $si->job->number }}</a>@endif</p>
     </div>
     <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
@@ -57,9 +57,6 @@
                     </div>
                     <div style="padding: 8px 10px; min-height: 55px;">
                         <strong style="color: #0f172a;">{{ $si->shipper_name }}</strong>
-                        @if($si->shipper_address)
-                            <div style="font-size: 11.5px; color: #475569; margin-top: 2px; white-space: pre-wrap;">{{ $si->shipper_address }}</div>
-                        @endif
                     </div>
                 </td>
                 <td rowspan="3" style="width: 50%; border: 1px solid #000; vertical-align: top; padding: 12px 14px; background: #fff;">
@@ -77,11 +74,6 @@
                             <td style="font-weight: 700; padding: 2px 0;">Attn</td>
                             <td>:</td>
                             <td style="font-weight: 600;">{{ $si->carrier_attn ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 700; padding: 2px 0;">Telp/Fax</td>
-                            <td>:</td>
-                            <td style="font-weight: 600;">{{ $si->carrier_contact ?: '—' }}</td>
                         </tr>
                         <tr>
                             <td style="font-weight: 700; padding: 2px 0;">Date</td>
@@ -103,9 +95,6 @@
                     </div>
                     <div style="padding: 8px 10px; min-height: 55px;">
                         <strong style="color: #0f172a;">{{ $si->consignee_name }}</strong>
-                        @if($si->consignee_address)
-                            <div style="font-size: 11.5px; color: #475569; margin-top: 2px; white-space: pre-wrap;">{{ $si->consignee_address }}</div>
-                        @endif
                     </div>
                 </td>
             </tr>
@@ -139,11 +128,26 @@
                 </td>
             </tr>
 
-            {{-- ROW 5: CONNECTING VESSEL vs LOADING & DISCHARGE --}}
+            {{-- ROW 5: VESSEL (TRANSHIPMENT) vs LOADING & DISCHARGE --}}
             <tr>
                 <td style="border: 1px solid #000; vertical-align: middle; padding: 8px 10px;">
-                    <strong style="color: #334155;">Connecting Vessel :</strong>
-                    <span style="font-weight: 600; color: #0f172a;">{{ $si->connecting_vessel ?: '—' }}</span>
+                    @if($si->is_transhipment)
+                        <div style="display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-bottom:4px;">TRANSHIPMENT</div>
+                        <div style="font-size:12px;">
+                            <strong style="color:#334155;">Transit Port :</strong>
+                            <span style="font-weight:700;color:#0f172a;">{{ $si->transit_port ?: '—' }}</span>
+                        </div>
+                        <div style="font-size:12px;display:flex;gap:16px;margin-top:2px;">
+                            <div><strong style="color:#334155;">ETD Transit :</strong> <span style="font-weight:600;">{{ $si->transit_etd?->format('d/m/Y') ?: '—' }}</span></div>
+                            <div><strong style="color:#334155;">ETA Transit :</strong> <span style="font-weight:600;">{{ $si->transit_eta?->format('d/m/Y') ?: '—' }}</span></div>
+                        </div>
+                        @if($si->connecting_vessel)
+                            <div style="font-size:12px;margin-top:2px;"><strong style="color:#334155;">Connecting Vessel :</strong> <span style="font-weight:600;color:#0f172a;">{{ $si->connecting_vessel }}</span></div>
+                        @endif
+                    @else
+                        <strong style="color: #334155;">Connecting Vessel :</strong>
+                        <span style="font-weight: 600; color: #0f172a;">{{ $si->connecting_vessel ?: '—' }}</span>
+                    @endif
                 </td>
                 <td style="border: 1px solid #000; vertical-align: middle; padding: 0;">
                     <table style="width: 100%; border-collapse: collapse;">

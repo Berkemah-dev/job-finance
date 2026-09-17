@@ -144,8 +144,7 @@
         <td style="width: 50%; height: 60px;">
             <div class="cell-title">SHIPPER</div>
             <div class="cell-content">
-                <strong>{{ $si->shipper_name }}</strong><br>
-                {!! nl2br(e($si->shipper_address)) !!}
+                <strong>{{ $si->shipper_name }}</strong>
             </div>
         </td>
         <td rowspan="3" style="width: 50%;">
@@ -161,11 +160,6 @@
                     <td style="font-weight: 700;">Attn</td>
                     <td>:</td>
                     <td>{{ $si->carrier_attn ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="font-weight: 700;">Telp/Fax</td>
-                    <td>:</td>
-                    <td>{{ $si->carrier_contact ?: '—' }}</td>
                 </tr>
                 <tr>
                     <td style="font-weight: 700;">Date</td>
@@ -184,8 +178,7 @@
         <td style="height: 60px;">
             <div class="cell-title">CONSIGNEE</div>
             <div class="cell-content">
-                <strong>{{ $si->consignee_name }}</strong><br>
-                {!! nl2br(e($si->consignee_address)) !!}
+                <strong>{{ $si->consignee_name }}</strong>
             </div>
         </td>
     </tr>
@@ -229,10 +222,20 @@
         </td>
     </tr>
 
-    {{-- ROW 5: CONNECTING VESSEL vs LOADING & DISCHARGE --}}
+    {{-- ROW 5: TRANSHIPMENT / CONNECTING VESSEL vs LOADING & DISCHARGE --}}
     <tr>
         <td style="vertical-align: middle;">
-            <strong>Connecting Vessel :</strong> {{ $si->connecting_vessel ?: '—' }}
+            @if($si->is_transhipment)
+                <strong style="font-size:8px;background:#fef3c7;padding:1px 4px;border-radius:2px;">TRANSHIPMENT</strong><br>
+                <strong>Transit Port :</strong> {{ $si->transit_port ?: '—' }}<br>
+                <strong>ETD Transit :</strong> {{ $si->transit_etd?->format('d/m/Y') ?: '—' }} &nbsp;
+                <strong>ETA Transit :</strong> {{ $si->transit_eta?->format('d/m/Y') ?: '—' }}
+                @if($si->connecting_vessel)
+                    <br><strong>Connecting Vessel :</strong> {{ $si->connecting_vessel }}
+                @endif
+            @else
+                <strong>Connecting Vessel :</strong> {{ $si->connecting_vessel ?: '—' }}
+            @endif
         </td>
         <td style="padding: 0;">
             <table style="width: 100%; border-collapse: collapse;">

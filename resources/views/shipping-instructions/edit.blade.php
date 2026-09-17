@@ -63,6 +63,7 @@
         </div>
 
         {{-- PENERIMA SI (CARRIER / SHIPPING LINE) --}}
+        {{-- Catatan: field Telp/Fax & Customer Pemilik Muatan dihapus sesuai request client --}}
         <div class="form-section-heading">
             <h2>Penerima SI (Shipping Line / Carrier / Pelayaran)</h2>
             <p>Pihak pelayaran atau agen yang menerima instruksi pengapalan ini.</p>
@@ -83,29 +84,13 @@
                 <label for="carrier_attn">Attn (Nama PIC Pelayaran)</label>
                 <input id="carrier_attn" name="carrier_attn" maxlength="120" value="{{ old('carrier_attn', $si->carrier_attn) }}" placeholder="contoh: Export Booking Dept / Bpk. David">
             </div>
-
-            <div class="field">
-                <label for="carrier_contact">Telp / Fax</label>
-                <input id="carrier_contact" name="carrier_contact" maxlength="120" value="{{ old('carrier_contact', $si->carrier_contact) }}" placeholder="Nomor Telepon atau Fax Pelayaran">
-            </div>
-
-            <div class="field">
-                <label for="customer_id">Customer Pemilik Muatan</label>
-                <select id="customer_id" name="customer_id">
-                    <option value="">Pilih Customer (Opsional)</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id', $si->customer_id) == $c->id)>
-                            {{ $c->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
         </div>
 
         {{-- PARA PIHAK B/L (SHIPPER, CONSIGNEE, NOTIFY PARTY) --}}
+        {{-- Catatan: Alamat Shipper & Alamat Consignee dihapus sesuai request client --}}
         <div class="form-section-heading">
             <h2>Pihak Kargo pada B/L (Shipper, Consignee, Notify Party)</h2>
-            <p>Data identitas yang akan tercetak pada Bill of Lading (B/L).</p>
+            <p>Nama Shipper & Consignee ditarik otomatis dari Job Order. Notify Party diisi secara manual.</p>
         </div>
 
         <div class="form-grid">
@@ -117,16 +102,6 @@
             <div class="field">
                 <label for="consignee_name">Consignee (Penerima) <span class="required">*</span></label>
                 <input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name', $si->consignee_name) }}" required placeholder="Nama Perusahaan Consignee / TO ORDER">
-            </div>
-
-            <div class="field">
-                <label for="shipper_address">Alamat Shipper</label>
-                <textarea id="shipper_address" name="shipper_address" rows="3" placeholder="Alamat lengkap Shipper">{{ old('shipper_address', $si->shipper_address) }}</textarea>
-            </div>
-
-            <div class="field">
-                <label for="consignee_address">Alamat Consignee</label>
-                <textarea id="consignee_address" name="consignee_address" rows="3" placeholder="Alamat lengkap Consignee">{{ old('consignee_address', $si->consignee_address) }}</textarea>
             </div>
 
             <div class="field span-2">
@@ -143,7 +118,7 @@
         {{-- RINCIAN KAPAL & RUTE --}}
         <div class="form-section-heading">
             <h2>Sarana Pengangkut & Rute Pelayaran</h2>
-            <p>Kapal utama, kapal penghubung, jadwal, serta pelabuhan muat dan bongkar.</p>
+            <p>Kapal utama, jadwal, serta pelabuhan muat dan bongkar. Aktifkan Transhipment jika muatan melalui pelabuhan transit.</p>
         </div>
 
         <div class="form-grid">
@@ -152,9 +127,41 @@
                 <input id="vessel_voyage" name="vessel_voyage" maxlength="120" value="{{ old('vessel_voyage', $si->vessel_voyage) }}" placeholder="contoh: MV. WAN HAI 312 V.E215">
             </div>
 
-            <div class="field">
-                <label for="connecting_vessel">Connecting Vessel (Kapal Penghubung / Feeder)</label>
-                <input id="connecting_vessel" name="connecting_vessel" maxlength="120" value="{{ old('connecting_vessel', $si->connecting_vessel) }}" placeholder="Opsional jika ada transhipment">
+            <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:22px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;margin:0;">
+                    <input type="checkbox" id="is_transhipment" name="is_transhipment" value="1"
+                        @checked(old('is_transhipment', $si->is_transhipment))
+                        onchange="toggleTranshipment(this.checked)"
+                        style="width:18px;height:18px;cursor:pointer;">
+                    Transhipment
+                </label>
+                <small style="color:#64748b;">Centang jika muatan melalui pelabuhan transit</small>
+            </div>
+
+            {{-- TRANSHIPMENT FIELDS — toggle tampil jika is_transhipment dicentang --}}
+            <div id="transhipment_fields" class="field span-2" style="{{ old('is_transhipment', $si->is_transhipment) ? '' : 'display:none;' }}">
+                <div class="form-grid" style="margin:0;">
+                    <div class="field">
+                        <label for="transit_port">Transit Port (Pelabuhan Transit)</label>
+                        <input id="transit_port" name="transit_port" maxlength="160"
+                            value="{{ old('transit_port', $si->transit_port) }}"
+                            placeholder="contoh: PORT KLANG, MALAYSIA">
+                    </div>
+                    <div class="field">
+                        <label for="connecting_vessel">Connecting Vessel (Kapal Penghubung / Feeder)</label>
+                        <input id="connecting_vessel" name="connecting_vessel" maxlength="120"
+                            value="{{ old('connecting_vessel', $si->connecting_vessel) }}"
+                            placeholder="Nama kapal feeder / penghubung">
+                    </div>
+                    <div class="field">
+                        <label for="transit_etd">ETD Transit (Keberangkatan dari Transit Port)</label>
+                        <input id="transit_etd" name="transit_etd" type="date" value="{{ old('transit_etd', $si->transit_etd?->format('Y-m-d')) }}">
+                    </div>
+                    <div class="field">
+                        <label for="transit_eta">ETA Transit (Tiba di Transit Port)</label>
+                        <input id="transit_eta" name="transit_eta" type="date" value="{{ old('transit_eta', $si->transit_eta?->format('Y-m-d')) }}">
+                    </div>
+                </div>
             </div>
 
             <div class="field">
@@ -244,5 +251,21 @@
         </div>
     </form>
 </section>
+
+<script>
+// Toggle transhipment fields
+function toggleTranshipment(isChecked) {
+    const fields = document.getElementById('transhipment_fields');
+    if (fields) {
+        fields.style.display = isChecked ? '' : 'none';
+        if (!isChecked) {
+            ['transit_port', 'connecting_vessel', 'transit_etd', 'transit_eta'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+        }
+    }
+}
+</script>
 
 @endsection
