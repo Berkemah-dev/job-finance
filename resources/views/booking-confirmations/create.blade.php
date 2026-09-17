@@ -51,7 +51,8 @@
                             data-pod="{{ $j->pod ?? $j->destination }}"
                             data-etd="{{ $j->etd?->format('Y-m-d') }}"
                             data-eta="{{ $j->eta?->format('Y-m-d') }}"
-                            data-quantity="{{ $j->package_count ? $j->package_count . ' Box' : ($j->container_type ? '1x ' . strtoupper($j->container_type) : '') }}"
+                            data-quantity="{{ $j->package_count }}"
+                            data-unit="{{ $j->container_type }}"
                             data-commodity="{{ $j->cargo_description }}"
                             data-gross-weight="{{ $j->gross_weight }}"
                             data-volume="{{ $j->volume }}"
@@ -222,7 +223,28 @@
         <div class="form-grid">
             <div class="field">
                 <label for="quantity">Quantity (Kuantitas)</label>
-                <input id="quantity" name="quantity" maxlength="100" value="{{ old('quantity', $selectedJob?->package_count ? $selectedJob?->package_count . ' Box' : ($selectedJob?->container_type ? '1x ' . strtoupper($selectedJob?->container_type) : '')) }}" placeholder="contoh: 1x 20GP atau 150 Box">
+                <input id="quantity" name="quantity" maxlength="100" value="{{ old('quantity', $selectedJob?->package_count) }}" placeholder="contoh: 150">
+            </div>
+
+            <div class="field">
+                <label for="package_unit">Satuan (Kemasan / Unit)</label>
+                <select id="package_unit" name="package_unit" data-custom-select data-allow-custom="true" aria-label="Satuan (Kemasan / Unit)">
+                    <option value="">Pilih atau ketik satuan kemasan...</option>
+                    @php
+                        $currentUnit = old('package_unit', $selectedJob?->container_type);
+                        $unitFound = false;
+                        $standardUnits = ['Box', 'Carton', 'Pallet', 'Pcs', 'Package', 'Drum', 'Bags', 'Rolls', 'Crates', 'Unit', '20GP', '40GP', '40HQ', 'LCL'];
+                    @endphp
+                    @foreach($standardUnits as $u)
+                        @if(strcasecmp($currentUnit ?? '', $u) === 0)
+                            @php $unitFound = true; @endphp
+                        @endif
+                        <option value="{{ $u }}" @selected(strcasecmp($currentUnit ?? '', $u) === 0)>{{ $u }}</option>
+                    @endforeach
+                    @if($currentUnit && !$unitFound)
+                        <option value="{{ $currentUnit }}" selected data-custom-option="true">{{ $currentUnit }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
@@ -323,6 +345,7 @@ document.getElementById('job_id')?.addEventListener('change', function() {
     if (opt.dataset.etd) setVal('etd', opt.dataset.etd);
     if (opt.dataset.eta) setVal('eta', opt.dataset.eta);
     if (opt.dataset.quantity) setVal('quantity', opt.dataset.quantity);
+    if (opt.dataset.unit) setVal('package_unit', opt.dataset.unit);
     if (opt.dataset.commodity) setVal('cargo_description', opt.dataset.commodity);
     if (opt.dataset.grossWeight) setVal('gross_weight', opt.dataset.grossWeight);
     if (opt.dataset.volume) setVal('volume', opt.dataset.volume);

@@ -50,16 +50,6 @@
                 <label for="si_date">Tanggal SI <span class="required">*</span></label>
                 <input id="si_date" name="si_date" type="date" value="{{ old('si_date', $si->si_date->format('Y-m-d')) }}" required>
             </div>
-
-            <div class="field">
-                <label for="status">Status</label>
-                <select id="status" name="status" required>
-                    <option value="submitted" @selected(old('status', $si->status) === 'submitted')>Submitted</option>
-                    <option value="draft" @selected(old('status', $si->status) === 'draft')>Draft</option>
-                    <option value="completed" @selected(old('status', $si->status) === 'completed')>Completed</option>
-                    <option value="cancelled" @selected(old('status', $si->status) === 'cancelled')>Cancelled</option>
-                </select>
-            </div>
         </div>
 
         {{-- PENERIMA SI (CARRIER / SHIPPING LINE) --}}
@@ -255,13 +245,39 @@
 
         <div class="form-grid">
             <div class="field">
+                <label for="quantity">Quantity (Kuantitas)</label>
+                <input id="quantity" name="quantity" maxlength="100" value="{{ old('quantity', $si->quantity) }}" placeholder="contoh: 150">
+            </div>
+
+            <div class="field">
+                <label for="package_unit">Satuan (Kemasan / Unit)</label>
+                <select id="package_unit" name="package_unit" data-custom-select data-allow-custom="true" aria-label="Satuan (Kemasan / Unit)">
+                    <option value="">Pilih atau ketik satuan kemasan...</option>
+                    @php
+                        $currentUnit = old('package_unit', $si->package_unit);
+                        $unitFound = false;
+                        $standardUnits = ['Box', 'Carton', 'Pallet', 'Pcs', 'Package', 'Drum', 'Bags', 'Rolls', 'Crates', 'Unit', '20GP', '40GP', '40HQ', 'LCL'];
+                    @endphp
+                    @foreach($standardUnits as $u)
+                        @if(strcasecmp($currentUnit ?? '', $u) === 0)
+                            @php $unitFound = true; @endphp
+                        @endif
+                        <option value="{{ $u }}" @selected(strcasecmp($currentUnit ?? '', $u) === 0)>{{ $u }}</option>
+                    @endforeach
+                    @if($currentUnit && !$unitFound)
+                        <option value="{{ $currentUnit }}" selected data-custom-option="true">{{ $currentUnit }}</option>
+                    @endif
+                </select>
+            </div>
+
+            <div class="field">
                 <label for="marks_numbers">Marks and Number</label>
-                <textarea id="marks_numbers" name="marks_numbers" rows="4" placeholder="Tanda kemasan pada peti/karton">{{ old('marks_numbers', $si->marks_numbers) }}</textarea>
+                <textarea id="marks_numbers" name="marks_numbers" rows="3" placeholder="Tanda kemasan pada peti/karton">{{ old('marks_numbers', $si->marks_numbers) }}</textarea>
             </div>
 
             <div class="field">
                 <label for="cargo_description">Description of Goods <span class="required">*</span></label>
-                <textarea id="cargo_description" name="cargo_description" rows="4" required placeholder="Uraian barang, jenis paket/kontainer">{{ old('cargo_description', $si->cargo_description) }}</textarea>
+                <textarea id="cargo_description" name="cargo_description" rows="3" required placeholder="Uraian barang, jenis paket/kontainer">{{ old('cargo_description', $si->cargo_description) }}</textarea>
             </div>
 
             <div class="field">
@@ -274,7 +290,7 @@
                 <input id="net_weight" name="net_weight" inputmode="decimal" value="{{ old('net_weight', $si->net_weight) }}" placeholder="contoh: 13800.00">
             </div>
 
-            <div class="field">
+            <div class="field span-2">
                 <label for="measurement">MEAS (Measurement / CBM)</label>
                 <input id="measurement" name="measurement" inputmode="decimal" value="{{ old('measurement', $si->measurement) }}" placeholder="contoh: 28.50">
             </div>

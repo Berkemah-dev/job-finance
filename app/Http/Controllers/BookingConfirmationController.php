@@ -70,7 +70,10 @@ class BookingConfirmationController extends Controller
 
         $jobs = Job::with('customer')->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
-        $carriers = Vendor::orderBy('name')->get();
+        $carriers = Vendor::where(function ($q) {
+            $q->where('type', 'shipping_line')
+              ->orWhereHas('categories', fn ($cq) => $cq->where('category', 'shipping_line'));
+        })->orderBy('name')->get();
         $ports = Port::orderBy('name')->get();
 
         $defaultNumber = BookingConfirmation::generateNumber();
@@ -107,6 +110,7 @@ class BookingConfirmationController extends Controller
             'etd'                 => 'nullable|date',
             'eta'                 => 'nullable|date',
             'quantity'            => 'nullable|string|max:100',
+            'package_unit'        => 'nullable|string|max:50',
             'cargo_description'   => 'nullable|string',
             'gross_weight'        => 'nullable|numeric|min:0',
             'volume'              => 'nullable|numeric|min:0',
@@ -125,6 +129,13 @@ class BookingConfirmationController extends Controller
         $validated['created_by'] = auth()->id();
 
         $bc = BookingConfirmation::create($validated);
+
+        if (!empty($validated['vessel_voyage']) && !empty($validated['job_id'])) {
+            $parentJob = Job::find($validated['job_id']);
+            if ($parentJob && empty($parentJob->vessel_voyage)) {
+                $parentJob->update(['vessel_voyage' => $validated['vessel_voyage']]);
+            }
+        }
 
         if ($bc->job_id) {
             return redirect()->to(route('jobs.show', $bc->job_id).'#tab-booking')
@@ -149,7 +160,10 @@ class BookingConfirmationController extends Controller
     {
         $jobs = Job::with('customer')->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
-        $carriers = Vendor::orderBy('name')->get();
+        $carriers = Vendor::where(function ($q) {
+            $q->where('type', 'shipping_line')
+              ->orWhereHas('categories', fn ($cq) => $cq->where('category', 'shipping_line'));
+        })->orderBy('name')->get();
         $ports = Port::orderBy('name')->get();
 
         return view('booking-confirmations.edit', [
@@ -183,6 +197,7 @@ class BookingConfirmationController extends Controller
             'etd'                 => 'nullable|date',
             'eta'                 => 'nullable|date',
             'quantity'            => 'nullable|string|max:100',
+            'package_unit'        => 'nullable|string|max:50',
             'cargo_description'   => 'nullable|string',
             'gross_weight'        => 'nullable|numeric|min:0',
             'volume'              => 'nullable|numeric|min:0',
@@ -199,6 +214,13 @@ class BookingConfirmationController extends Controller
         }
 
         $bookingConfirmation->update($validated);
+
+        if (!empty($validated['vessel_voyage']) && !empty($validated['job_id'])) {
+            $parentJob = Job::find($validated['job_id']);
+            if ($parentJob && empty($parentJob->vessel_voyage)) {
+                $parentJob->update(['vessel_voyage' => $validated['vessel_voyage']]);
+            }
+        }
 
         if ($bookingConfirmation->job_id) {
             return redirect()->to(route('jobs.show', $bookingConfirmation->job_id).'#tab-booking')

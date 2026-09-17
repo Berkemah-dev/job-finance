@@ -275,6 +275,9 @@
             {!! nl2br(e($si->cargo_description)) !!}
         </td>
         <td style="height: 180px; vertical-align: top; font-size: 8.5px; line-height: 1.6;">
+            @if($si->quantity)
+                <strong>QTY :</strong> {{ $si->quantity }} {{ $si->package_unit }}<br>
+            @endif
             <strong>G.W :</strong> {{ $si->gross_weight ? \App\Support\Money::format($si->gross_weight) . ' KGS' : '—' }}<br>
             <strong>N.W :</strong> {{ $si->net_weight ? \App\Support\Money::format($si->net_weight) . ' KGS' : '—' }}<br>
             <strong>MEAS :</strong> {{ $si->measurement ? \App\Support\Money::format($si->measurement) . ' CBM' : '—' }}

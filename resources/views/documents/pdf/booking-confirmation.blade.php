@@ -326,7 +326,7 @@
     </thead>
     <tbody>
         <tr>
-            <td>{{ $bc->quantity ?: '—' }}</td>
+            <td>{{ $bc->quantity ?: '—' }}{{ $bc->package_unit ? ' ' . $bc->package_unit : '' }}</td>
             <td style="white-space: pre-wrap;">{{ $bc->cargo_description ?: 'General Cargo' }}</td>
             <td>{{ $bc->gross_weight ? \App\Support\Money::format($bc->gross_weight) . ' KGS' : '—' }}</td>
             <td>{{ $bc->volume ? \App\Support\Money::format($bc->volume) . ' M3' : '—' }}</td>

@@ -187,6 +187,9 @@
                     {{ $si->cargo_description }}
                 </td>
                 <td style="border: 1px solid #000; vertical-align: top; padding: 10px; font-weight: 600; line-height: 1.8;">
+                    @if($si->quantity)
+                        <div><strong>QTY :</strong> {{ $si->quantity }} {{ $si->package_unit }}</div>
+                    @endif
                     <div><strong>G.W :</strong> {{ $si->gross_weight ? \App\Support\Money::format($si->gross_weight) . ' KGS' : '—' }}</div>
                     <div><strong>N.W :</strong> {{ $si->net_weight ? \App\Support\Money::format($si->net_weight) . ' KGS' : '—' }}</div>
                     <div><strong>MEAS :</strong> {{ $si->measurement ? \App\Support\Money::format($si->measurement) . ' CBM' : '—' }}</div>

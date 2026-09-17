@@ -201,7 +201,28 @@
         <div class="form-grid">
             <div class="field">
                 <label for="quantity">Quantity (Kuantitas)</label>
-                <input id="quantity" name="quantity" maxlength="100" value="{{ old('quantity', $bc->quantity) }}" placeholder="contoh: 1x 20GP atau 150 Box">
+                <input id="quantity" name="quantity" maxlength="100" value="{{ old('quantity', $bc->quantity) }}" placeholder="contoh: 150">
+            </div>
+
+            <div class="field">
+                <label for="package_unit">Satuan (Kemasan / Unit)</label>
+                <select id="package_unit" name="package_unit" data-custom-select data-allow-custom="true" aria-label="Satuan (Kemasan / Unit)">
+                    <option value="">Pilih atau ketik satuan kemasan...</option>
+                    @php
+                        $currentUnit = old('package_unit', $bc->package_unit);
+                        $unitFound = false;
+                        $standardUnits = ['Box', 'Carton', 'Pallet', 'Pcs', 'Package', 'Drum', 'Bags', 'Rolls', 'Crates', 'Unit', '20GP', '40GP', '40HQ', 'LCL'];
+                    @endphp
+                    @foreach($standardUnits as $u)
+                        @if(strcasecmp($currentUnit ?? '', $u) === 0)
+                            @php $unitFound = true; @endphp
+                        @endif
+                        <option value="{{ $u }}" @selected(strcasecmp($currentUnit ?? '', $u) === 0)>{{ $u }}</option>
+                    @endforeach
+                    @if($currentUnit && !$unitFound)
+                        <option value="{{ $currentUnit }}" selected data-custom-option="true">{{ $currentUnit }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">

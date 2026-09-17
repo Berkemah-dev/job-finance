@@ -192,8 +192,8 @@
     </div>
     <dl class="detail-grid">
         <div>
-            <dt>Quantity (Kuantitas)</dt>
-            <dd><strong>{{ $bc->quantity ?: '—' }}</strong></dd>
+            <dt>Quantity (Kuantitas & Satuan)</dt>
+            <dd><strong>{{ $bc->quantity ?: '—' }}{{ $bc->package_unit ? ' ' . $bc->package_unit : '' }}</strong></dd>
         </div>
         <div>
             <dt>Gross Weight (Berat Kotor)</dt>

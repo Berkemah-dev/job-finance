@@ -30,25 +30,45 @@
             <p>Pilih Job Order untuk menarik data Shipper, Consignee, Kapal, dan Muatan secara otomatis.</p>
         </div>
 
+@php
+    $selBc = $selectedJob?->bookingConfirmations?->first();
+    $initVessel = old('vessel_voyage', $selectedJob?->vessel_voyage ?: ($selBc?->vessel_voyage ?? ''));
+    $initCarrier = old('to_carrier', $selBc?->carrier_name ?? '');
+    $initQuantity = old('quantity', $selectedJob?->package_count ?: ($selBc?->quantity ?? ''));
+    $initUnit = old('package_unit', $selectedJob?->container_type ?: ($selBc?->package_unit ?? ''));
+@endphp
+
         <div class="form-grid">
             <div class="field">
                 <label for="job_id">Terkait Job Order</label>
                 <select id="job_id" name="job_id">
                     <option value="">Pilih Job Order (Opsional)</option>
                     @foreach($jobs as $j)
+                        @php
+                            $bcFirst = $j->bookingConfirmations?->first();
+                            $jVessel = $j->vessel_voyage ?: ($bcFirst?->vessel_voyage ?? '');
+                            $jCarrier = $bcFirst?->carrier_name ?? '';
+                            $jQuantity = $j->package_count ?: ($bcFirst?->quantity ?? '');
+                            $jUnit = $j->container_type ?: ($bcFirst?->package_unit ?? '');
+                            $jGw = $j->gross_weight ?: ($bcFirst?->gross_weight ?? '');
+                            $jVol = $j->volume ?: ($bcFirst?->volume ?? '');
+                        @endphp
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
                             data-customer-id="{{ $j->customer_id }}"
                             data-shipper="{{ $j->shipper_name }}"
                             data-consignee="{{ $j->consignee_name }}"
-                            data-vessel="{{ $j->vessel_voyage }}"
+                            data-carrier="{{ $jCarrier }}"
+                            data-vessel="{{ $jVessel }}"
                             data-pol="{{ $j->pol ?? $j->origin }}"
                             data-pod="{{ $j->pod ?? $j->destination }}"
                             data-etd="{{ $j->etd?->format('Y-m-d') }}"
                             data-eta="{{ $j->eta?->format('Y-m-d') }}"
+                            data-quantity="{{ $jQuantity }}"
+                            data-unit="{{ $jUnit }}"
                             data-commodity="{{ $j->cargo_description }}"
-                            data-gross-weight="{{ $j->gross_weight }}"
-                            data-volume="{{ $j->volume }}"
+                            data-gross-weight="{{ $jGw }}"
+                            data-volume="{{ $jVol }}"
                         >
                             {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 30) }})
                         </option>
@@ -65,16 +85,6 @@
                 <label for="si_date">Tanggal SI <span class="required">*</span></label>
                 <input id="si_date" name="si_date" type="date" value="{{ old('si_date', date('Y-m-d')) }}" required>
             </div>
-
-            <div class="field">
-                <label for="status">Status</label>
-                <select id="status" name="status" required>
-                    <option value="submitted" @selected(old('status', 'submitted') === 'submitted')>Submitted</option>
-                    <option value="draft" @selected(old('status') === 'draft')>Draft</option>
-                    <option value="completed" @selected(old('status') === 'completed')>Completed</option>
-                    <option value="cancelled" @selected(old('status') === 'cancelled')>Cancelled</option>
-                </select>
-            </div>
         </div>
 
         {{-- PENERIMA SI (CARRIER / SHIPPING LINE) --}}
@@ -90,7 +100,7 @@
                 <select id="to_carrier" name="to_carrier" data-custom-select data-allow-custom="true" required aria-label="To Carrier / Shipping Line">
                     <option value="">Pilih Shipping Line atau ketik nama pelayaran...</option>
                     @php
-                        $currentCarrier = old('to_carrier');
+                        $currentCarrier = $initCarrier;
                         $carrierFound = false;
                     @endphp
                     @foreach($carriers as $c)
@@ -151,8 +161,8 @@
         <div class="form-grid">
             <div class="field">
                 <label for="vessel_voyage">Vessel Name & Voyage</label>
-                <input id="vessel_voyage" name="vessel_voyage" maxlength="120" value="{{ old('vessel_voyage', $selectedJob?->vessel_voyage) }}" placeholder="contoh: MV. WAN HAI 312 V.E215">
-                <small class="form-help" style="color:#64748b;font-size:12px;">Ditarik otomatis dari Job Order. Dapat diedit jika ada perubahan kapal / nomor voyage.</small>
+                <input id="vessel_voyage" name="vessel_voyage" maxlength="120" value="{{ $initVessel }}" placeholder="contoh: MV. WAN HAI 312 V.E215">
+                <small class="form-help" style="color:#64748b;font-size:12px;">Ditarik otomatis dari Job Order / Booking. Dapat diedit jika ada perubahan kapal / nomor voyage.</small>
             </div>
 
             <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:22px;">
@@ -270,18 +280,43 @@
 
         <div class="form-grid">
             <div class="field">
+                <label for="quantity">Quantity (Kuantitas)</label>
+                <input id="quantity" name="quantity" maxlength="100" value="{{ $initQuantity }}" placeholder="contoh: 150">
+            </div>
+
+            <div class="field">
+                <label for="package_unit">Satuan (Kemasan / Unit)</label>
+                <select id="package_unit" name="package_unit" data-custom-select data-allow-custom="true" aria-label="Satuan (Kemasan / Unit)">
+                    <option value="">Pilih atau ketik satuan kemasan...</option>
+                    @php
+                        $unitFound = false;
+                        $standardUnits = ['Box', 'Carton', 'Pallet', 'Pcs', 'Package', 'Drum', 'Bags', 'Rolls', 'Crates', 'Unit', '20GP', '40GP', '40HQ', 'LCL'];
+                    @endphp
+                    @foreach($standardUnits as $u)
+                        @if(strcasecmp($initUnit ?? '', $u) === 0)
+                            @php $unitFound = true; @endphp
+                        @endif
+                        <option value="{{ $u }}" @selected(strcasecmp($initUnit ?? '', $u) === 0)>{{ $u }}</option>
+                    @endforeach
+                    @if($initUnit && !$unitFound)
+                        <option value="{{ $initUnit }}" selected data-custom-option="true">{{ $initUnit }}</option>
+                    @endif
+                </select>
+            </div>
+
+            <div class="field">
                 <label for="marks_numbers">Marks and Number</label>
-                <textarea id="marks_numbers" name="marks_numbers" rows="4" placeholder="Tanda kemasan pada peti/karton, misal:&#10;PT. ABC LOGISTICS&#10;JAKARTA - INDONESIA&#10;C/NO. 1-100">{{ old('marks_numbers') }}</textarea>
+                <textarea id="marks_numbers" name="marks_numbers" rows="3" placeholder="Tanda kemasan pada peti/karton, misal:&#10;PT. ABC LOGISTICS&#10;JAKARTA - INDONESIA&#10;C/NO. 1-100">{{ old('marks_numbers') }}</textarea>
             </div>
 
             <div class="field">
                 <label for="cargo_description">Description of Goods <span class="required">*</span></label>
-                <textarea id="cargo_description" name="cargo_description" rows="4" required placeholder="Uraian barang, jenis paket/kontainer, misal:&#10;1X20'GP CONTAINER S.T.C:&#10;150 PACKAGES OF ELECTRONIC PARTS">{{ old('cargo_description', $selectedJob?->cargo_description) }}</textarea>
+                <textarea id="cargo_description" name="cargo_description" rows="3" required placeholder="Uraian barang, jenis paket/kontainer, misal:&#10;1X20'GP CONTAINER S.T.C:&#10;150 PACKAGES OF ELECTRONIC PARTS">{{ old('cargo_description', $selectedJob?->cargo_description) }}</textarea>
             </div>
 
             <div class="field">
                 <label for="gross_weight">G.W (Gross Weight - KGS)</label>
-                <input id="gross_weight" name="gross_weight" inputmode="decimal" value="{{ old('gross_weight', $selectedJob?->gross_weight) }}" placeholder="contoh: 14500.00">
+                <input id="gross_weight" name="gross_weight" inputmode="decimal" value="{{ old('gross_weight', $selectedJob?->gross_weight ?: ($selBc?->gross_weight ?? '')) }}" placeholder="contoh: 14500.00">
             </div>
 
             <div class="field">
@@ -289,9 +324,9 @@
                 <input id="net_weight" name="net_weight" inputmode="decimal" value="{{ old('net_weight') }}" placeholder="contoh: 13800.00">
             </div>
 
-            <div class="field">
+            <div class="field span-2">
                 <label for="measurement">MEAS (Measurement / CBM)</label>
-                <input id="measurement" name="measurement" inputmode="decimal" value="{{ old('measurement', $selectedJob?->volume) }}" placeholder="contoh: 28.50">
+                <input id="measurement" name="measurement" inputmode="decimal" value="{{ old('measurement', $selectedJob?->volume ?: ($selBc?->volume ?? '')) }}" placeholder="contoh: 28.50">
             </div>
         </div>
 
@@ -360,11 +395,14 @@ document.getElementById('job_id')?.addEventListener('change', function() {
 
     if (opt.dataset.shipper) setVal('shipper_name', opt.dataset.shipper);
     if (opt.dataset.consignee) setVal('consignee_name', opt.dataset.consignee);
+    if (opt.dataset.carrier) setVal('to_carrier', opt.dataset.carrier);
     if (opt.dataset.vessel) setVal('vessel_voyage', opt.dataset.vessel);
     if (opt.dataset.pol) setVal('pol', opt.dataset.pol);
     if (opt.dataset.pod) setVal('pod', opt.dataset.pod);
     if (opt.dataset.etd) setVal('etd', opt.dataset.etd);
     if (opt.dataset.eta) setVal('eta', opt.dataset.eta);
+    if (opt.dataset.quantity) setVal('quantity', opt.dataset.quantity);
+    if (opt.dataset.unit) setVal('package_unit', opt.dataset.unit);
     if (opt.dataset.commodity) setVal('cargo_description', opt.dataset.commodity);
     if (opt.dataset.grossWeight) {
         setVal('gross_weight', opt.dataset.grossWeight);

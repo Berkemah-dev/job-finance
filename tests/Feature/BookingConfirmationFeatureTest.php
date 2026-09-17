@@ -97,7 +97,9 @@ class BookingConfirmationFeatureTest extends TestCase
             'job_id'        => $job->id,
             'shipper_name'  => $job->shipper_name,
             'consignee_name'=> $job->consignee_name,
-            'vessel_voyage' => $job->vessel_voyage,
+            'vessel_voyage' => 'KM LOGISTIK 01',
+            'quantity'      => '150',
+            'package_unit'  => 'Box',
             'service_term'  => 'CY/CY',
             'status'        => 'confirmed',
         ]);
@@ -109,10 +111,24 @@ class BookingConfirmationFeatureTest extends TestCase
             'shipper_name'  => 'Shipper Asli JO',
             'consignee_name'=> 'Consignee Asli JO',
             'vessel_voyage' => 'KM LOGISTIK 01',
+            'quantity'      => '150',
+            'package_unit'  => 'Box',
         ]);
+
+        // Verify parent job gets synced if empty
+        $emptyJob = Job::factory()->create(['vessel_voyage' => null]);
+        $this->post(route('booking-confirmations.store'), [
+            'number'        => 'BC-TEST-SYNC',
+            'booking_date'  => '2026-09-17',
+            'job_id'        => $emptyJob->id,
+            'vessel_voyage' => 'MV SYNC VESSEL',
+            'service_term'  => 'CY/CY',
+            'status'        => 'confirmed',
+        ]);
+        $this->assertEquals('MV SYNC VESSEL', $emptyJob->fresh()->vessel_voyage);
     }
 
-    public function test_shipping_instruction_can_be_stored_without_shipment_term(): void
+    public function test_shipping_instruction_can_be_stored_without_shipment_term_and_status(): void
     {
         $customer = Customer::factory()->create();
         $job = Job::factory()->create(['customer_id' => $customer->id]);
@@ -127,8 +143,10 @@ class BookingConfirmationFeatureTest extends TestCase
             'vessel_voyage'     => 'MV WAN HAI',
             'pol'               => 'JAKARTA',
             'pod'               => 'SINGAPORE',
+            'quantity'          => '500',
+            'package_unit'      => 'Carton',
             'cargo_description' => 'General Cargo',
-            'status'            => 'submitted',
+            // status omitted to verify it defaults automatically
         ]);
 
         $res->assertRedirect(route('jobs.show', $job->id).'#tab-si');
@@ -136,20 +154,37 @@ class BookingConfirmationFeatureTest extends TestCase
             'number'        => 'SI-TEST-001',
             'shipment_term' => 'PREPAID',
             'vessel_voyage' => 'MV WAN HAI',
+            'quantity'      => '500',
+            'package_unit'  => 'Carton',
+            'status'        => 'submitted',
         ]);
     }
 
-    public function test_shipping_instruction_create_renders_custom_selects_with_job(): void
+    public function test_shipping_instruction_create_renders_custom_selects_and_falls_back_to_bc_vessel(): void
     {
         $job = Job::factory()->create([
-            'vessel_voyage' => 'MV CUSTOM VESSEL 888',
+            'vessel_voyage' => null,
             'pol'           => 'JAKARTA',
             'pod'           => 'SHANGHAI',
+        ]);
+
+        BookingConfirmation::create([
+            'number'        => 'BC-FALLBACK-01',
+            'booking_date'  => '2026-09-17',
+            'job_id'        => $job->id,
+            'vessel_voyage' => 'MV FALLBACK FROM BC',
+            'carrier_name'  => 'EVERGREEN',
+            'quantity'      => '250',
+            'package_unit'  => 'Pallet',
+            'service_term'  => 'CY/CY',
+            'status'        => 'confirmed',
         ]);
 
         $res = $this->get(route('shipping-instructions.create', ['job_id' => $job->id]));
         $res->assertOk();
         $res->assertSee('data-custom-select');
-        $res->assertSee('MV CUSTOM VESSEL 888');
+        $res->assertSee('MV FALLBACK FROM BC');
+        $res->assertSee('250');
+        $res->assertDontSee('<select id="status"', false);
     }
 }
