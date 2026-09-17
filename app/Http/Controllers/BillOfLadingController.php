@@ -49,17 +49,34 @@ class BillOfLadingController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'shippingInstructions'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->find($jobId);
         }
 
-        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
-        $carriers  = Vendor::orderBy('name')->get();
-        $ports     = Port::orderBy('name')->get();
+        $ports = Port::orderBy('name')->get();
+
+        $internationalAgents = Vendor::where(function ($q) {
+            $q->where('type', 'international_agent')
+              ->orWhereHas('categories', fn ($cq) => $cq->where('category', 'international_agent'));
+        })->orderBy('name')->get();
+
+        $shippingLines = Vendor::where(function ($q) {
+            $q->where('type', 'shipping_line')
+              ->orWhereHas('categories', fn ($cq) => $cq->where('category', 'shipping_line'));
+        })->orderBy('name')->get();
 
         $defaultNumber = BillOfLading::generateNumber();
 
-        return view('bills-of-lading.create', compact('selectedJob', 'jobs', 'customers', 'carriers', 'ports', 'defaultNumber'));
+        return view('bills-of-lading.create', compact(
+            'selectedJob',
+            'jobs',
+            'customers',
+            'internationalAgents',
+            'shippingLines',
+            'ports',
+            'defaultNumber'
+        ));
     }
 
     public function store(Request $request)
@@ -85,6 +102,7 @@ class BillOfLadingController extends Controller
             'consignee_name'      => 'nullable|string|max:160',
             'notify_party'        => 'nullable|string',
             'agent_name'          => 'nullable|string|max:160',
+            'is_switch_bl'        => 'nullable|boolean',
             'shipper_switch'      => 'nullable|string|max:160',
             'consignee_switch'    => 'nullable|string|max:160',
             'pre_carriage'        => 'nullable|string|max:160',
@@ -105,8 +123,18 @@ class BillOfLadingController extends Controller
             'net_weight'          => 'nullable|numeric|min:0',
             'measurement'         => 'nullable|numeric|min:0',
             'remarks'             => 'nullable|string',
-            'status'              => 'required|string|in:draft,issued,released,completed,cancelled',
+            'status'              => 'nullable|string|in:draft,issued,released,completed,cancelled',
         ]);
+
+        if (empty($validated['status'])) {
+            $validated['status'] = 'draft';
+        }
+
+        if ($request->has('is_switch_bl') && ! $request->boolean('is_switch_bl')) {
+            $validated['shipper_switch'] = null;
+            $validated['consignee_switch'] = null;
+        }
+        unset($validated['is_switch_bl']);
 
         $validated['created_by'] = auth()->id();
         $bl = BillOfLading::create($validated);
@@ -123,12 +151,28 @@ class BillOfLadingController extends Controller
 
     public function edit(BillOfLading $billOfLading)
     {
-        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
-        $carriers  = Vendor::orderBy('name')->get();
-        $ports     = Port::orderBy('name')->get();
+        $ports = Port::orderBy('name')->get();
 
-        return view('bills-of-lading.edit', ['bl' => $billOfLading, 'jobs' => $jobs, 'customers' => $customers, 'carriers' => $carriers, 'ports' => $ports]);
+        $internationalAgents = Vendor::where(function ($q) {
+            $q->where('type', 'international_agent')
+              ->orWhereHas('categories', fn ($cq) => $cq->where('category', 'international_agent'));
+        })->orderBy('name')->get();
+
+        $shippingLines = Vendor::where(function ($q) {
+            $q->where('type', 'shipping_line')
+              ->orWhereHas('categories', fn ($cq) => $cq->where('category', 'shipping_line'));
+        })->orderBy('name')->get();
+
+        return view('bills-of-lading.edit', [
+            'bl'                  => $billOfLading,
+            'jobs'                => $jobs,
+            'customers'           => $customers,
+            'internationalAgents' => $internationalAgents,
+            'shippingLines'       => $shippingLines,
+            'ports'               => $ports,
+        ]);
     }
 
     public function update(Request $request, BillOfLading $billOfLading)
@@ -154,6 +198,7 @@ class BillOfLadingController extends Controller
             'consignee_name'      => 'nullable|string|max:160',
             'notify_party'        => 'nullable|string',
             'agent_name'          => 'nullable|string|max:160',
+            'is_switch_bl'        => 'nullable|boolean',
             'shipper_switch'      => 'nullable|string|max:160',
             'consignee_switch'    => 'nullable|string|max:160',
             'pre_carriage'        => 'nullable|string|max:160',
@@ -174,8 +219,18 @@ class BillOfLadingController extends Controller
             'net_weight'          => 'nullable|numeric|min:0',
             'measurement'         => 'nullable|numeric|min:0',
             'remarks'             => 'nullable|string',
-            'status'              => 'required|string|in:draft,issued,released,completed,cancelled',
+            'status'              => 'nullable|string|in:draft,issued,released,completed,cancelled',
         ]);
+
+        if (empty($validated['status'])) {
+            $validated['status'] = $billOfLading->status ?? 'draft';
+        }
+
+        if ($request->has('is_switch_bl') && ! $request->boolean('is_switch_bl')) {
+            $validated['shipper_switch'] = null;
+            $validated['consignee_switch'] = null;
+        }
+        unset($validated['is_switch_bl']);
 
         $billOfLading->update($validated);
 
