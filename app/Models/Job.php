@@ -72,6 +72,16 @@ class Job extends Model
         return $this->hasMany(BillOfLading::class);
     }
 
+    public function dnps(): HasMany
+    {
+        return $this->hasMany(Dnp::class);
+    }
+
+    public function dnp(): HasOne
+    {
+        return $this->hasOne(Dnp::class)->latestOfMany();
+    }
+
     protected $guarded = ['id'];
 
     protected function casts(): array

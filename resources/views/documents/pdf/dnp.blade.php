@@ -1,28 +1,33 @@
 @php
-    $customer = $job->customer ?? $quotation?->customer;
+    $dnp = $dnp ?? ($job?->dnp);
+    $customer = $dnp?->customer ?? ($job?->customer ?? $quotation?->customer);
     $snapshot = $quotation?->customer_snapshot ?? [];
-    $customerName = $job->consignee_name ?: ($customer?->name ?? ($snapshot['name'] ?? 'CONSIGNEE'));
-    $customerAddress = $job->consignee_address ?: ($customer?->address ?? ($snapshot['address'] ?? ''));
-    $shipperName = $job->shipper_name ?: ($quotation?->shipper_name ?? 'SHIPPER');
-    $shipperAddress = $job->shipper_address ?: ($quotation?->shipper_address ?? '');
-    $aju = $job->booking_reference ?: ($job->customs_registration_number ?: '');
-    $nopen = $job->nopen ?: '';
-    $nopenDate = $job->nopen_date?->format('d-m-Y') ?? ($job->job_date?->format('d-m-Y') ?? now()->format('d-m-Y'));
-    $commodity = $job->cargo_description ?: ($quotation?->commodity ?? '');
-    $invoiceValue = $quotation?->subtotal ?? $job->quotation_snapshot['totals']['subtotal'] ?? null;
-    $freight = $job->quotation_snapshot['freight'] ?? null;
-    $insurance = $job->quotation_snapshot['insurance'] ?? null;
-    $totalValue = $invoiceValue;
+    $customerName = $dnp?->consignee_name ?: ($job?->consignee_name ?: ($customer?->name ?? ($snapshot['name'] ?? 'CONSIGNEE')));
+    $importerName = $dnp?->importer_name ?: ($customer?->name ?? $customerName);
+    $customerAddress = $job?->consignee_address ?: ($customer?->address ?? ($snapshot['address'] ?? ''));
+    $shipperName = $dnp?->shipper_name ?: ($job?->shipper_name ?: ($quotation?->shipper_name ?? 'SHIPPER'));
+    $shipperAddress = $job?->shipper_address ?: ($quotation?->shipper_address ?? '');
+    $aju = $job?->booking_reference ?: ($job?->customs_registration_number ?: '');
+    $nopen = $job?->nopen ?: '';
+    $nopenDate = $dnp?->dnp_date?->format('d-m-Y') ?? ($job?->nopen_date?->format('d-m-Y') ?? ($job?->job_date?->format('d-m-Y') ?? now()->format('d-m-Y')));
+    $commodity = $job?->cargo_description ?: ($quotation?->commodity ?? '');
+    $currency = $dnp?->currency ?: 'USD';
+    $invoiceValue = $dnp ? $dnp->invoice_value : ($quotation?->subtotal ?? $job?->quotation_snapshot['totals']['subtotal'] ?? null);
+    $freight = $dnp ? $dnp->freight : ($job?->quotation_snapshot['freight'] ?? null);
+    $insurance = $dnp ? $dnp->insurance : ($job?->quotation_snapshot['insurance'] ?? null);
+    $totalValue = $dnp ? $dnp->total_value : ($invoiceValue ? (float)$invoiceValue + (float)($freight ?? 0) + (float)($insurance ?? 0) : null);
+    $isRepeated = $dnp ? (bool)$dnp->is_repeated_transaction : false;
+    $selectedDocs = $dnp?->supporting_documents ?? [1, 2, 3];
     $signName = $customer?->authorizer_name ?: 'Nama Direktur';
     $signTitle = $customer?->authorizer_title ?: 'Direktur';
-    $dateText = $job->job_date?->format('d-m-Y') ?? now()->format('d-m-Y');
-    $money = fn($value) => $value !== null && $value !== '' ? 'Rp '.\App\Support\Money::format($value) : 'MANUAL INPUT';
+    $dateText = $dnp?->dnp_date?->format('d-m-Y') ?? ($job?->job_date?->format('d-m-Y') ?? now()->format('d-m-Y'));
+    $money = fn($value) => $value !== null && $value !== '' ? $currency . ' ' . number_format((float)$value, 2, '.', ',') : '—';
 @endphp
 <!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>DEKLARASI NILAI PABEAN (DNP) - {{ $job->number }}</title>
+    <title>DEKLARASI NILAI PABEAN (DNP) - {{ $dnp?->number ?? $job?->number }}</title>
     <style>
         @page {
             margin: 25px 35px 25px 35px;
@@ -244,7 +249,7 @@
         <tr>
             <td>Nama Importir</td>
             <td>:</td>
-            <td style="font-weight: bold;">{{ $customerName ?: 'CONSIGNEE' }}</td>
+            <td style="font-weight: bold;">{{ $importerName ?: 'CONSIGNEE' }}</td>
             <td colspan="3"></td>
         </tr>
         <tr>
@@ -419,7 +424,7 @@
         <tr>
             <td style="text-align: right; padding-right: 6px; font-weight: bold;">10.</td>
             <td style="font-weight: bold;">Jumlah C dan D</td>
-            <td style="text-align: right;"><span class="cost-line">{{ $totalValue ? 'Rp '.\App\Support\Money::format($totalValue) : 'TOTAL' }}</span></td>
+            <td style="text-align: right;"><span class="cost-line">{{ $money($totalValue) }}</span></td>
         </tr>
     </table>
 
@@ -468,7 +473,7 @@
     <table class="cost-table">
         <tr>
             <td style="font-weight: bold;">Nilai Transaksi, jumlah C ditambah D dikurang E</td>
-            <td style="width: 140px; text-align: right;"><span class="cost-line">{{ $totalValue ? 'Rp '.\App\Support\Money::format($totalValue) : 'TOTAL' }}</span></td>
+            <td style="width: 140px; text-align: right;"><span class="cost-line">{{ $money($totalValue) }}</span></td>
         </tr>
     </table>
 
@@ -476,7 +481,7 @@
 
     <!-- SECTION F -->
     <div style="font-weight: bold; font-size: 8.5px; margin: 4px 0;">
-        F. &nbsp;Apakah Transaksi ini merupakan pengulangan transaksi yang pernah dilakukan sebelumnya atas barang dan terhadap Supplier yang sama? &nbsp;&nbsp;TIDAK
+        F. &nbsp;Apakah Transaksi ini merupakan pengulangan transaksi yang pernah dilakukan sebelumnya atas barang dan terhadap Supplier yang sama? &nbsp;&nbsp;{{ $isRepeated ? 'YA' : 'TIDAK' }}
     </div>
 
     <div class="divider"></div>
@@ -487,65 +492,35 @@
     <div style="font-size: 8px; margin-bottom: 6px;"><strong>Y*</strong> ( divalidasi Pejabat dengan memberi tanda ✔ jika ada)</div>
 
     @php
-        $supportDocs = [
-            ['Invoice', true],
-            ['Packing List', true],
-            ["Kontrak Penjualan (Sale's Contract)", false],
-            ['Purchase Order/Confirmation Order', true],
-            ['L/C', true],
-            ['Rekening Koran yang terkait dengan transaksi tersebu', false],
-            ['Rekening Koran yang terdapat pelunasan transaksi sebelum nya', false],
-            ['Bukti Transfer', true],
-            ['Bukti hutang kepada supplier dalam hal barang belum jatuh tempo', false],
-            ['Bukti negosiasi harga', false],
-            ['Bukti pembayaran atas barang yang sama pada supplier yang sama untuk transaksi yang sama untuk transaksi sebelumnya', false],
-            ['Sales contract untuk transaksi yang telah lalu atas barang yang sama', false],
-            ['Perjanjian penunjukan agen penjual/pembelian/broker', false],
-            ['Kontrak pembuatan pengemasan dan/atau pengepakan', false],
-            ['Kontrak pembuatan barang impor dengan material yang dipasok oleh pembeli dariDaerah Pabean atau dari luar Daerah Pabean (assist', false],
-            ['Perjanjian pembayaran royalty atau lisensi', false],
-            ['Bukti bayar ongkos angkutan dalam hal FOB/exwork/....', false],
-            ['Perjanjian pembayaran Procceds', false],
-            ['Kontrak pengangkutan', false],
-            ['Kontrak Asuransi', false],
-            ['Laporan hasil audit kepabeanan 2 (dua) tahun terakhir', false],
-        ];
+        $supportDocsList = \App\Models\Dnp::defaultSupportingDocuments();
     @endphp
 
-    <table style="width: 100%; border-collapse: collapse;">
-        <tr>
-            <!-- LEFT COLUMN: BULLET LIST -->
-            <td style="width: 80%; vertical-align: top; padding-right: 10px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    @foreach($supportDocs as [$docName, $isChecked])
-                        <tr>
-                            <td style="vertical-align: middle; padding: 1px 0; font-size: 8px; height: 13px; line-height: 1.1;">
-                                • {{ $docName }}
-                            </td>
-                        </tr>
-                    @endforeach
-                </table>
-            </td>
-            <!-- RIGHT COLUMN: YA / TIDAK GRID -->
-            <td style="width: 20%; vertical-align: top;">
-                <table class="grid-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 50%;">YA</th>
-                            <th style="width: 50%;">TIDAK</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($supportDocs as [$docName, $isChecked])
-                            <tr>
-                                <td style="font-weight: bold; font-size: 9px; vertical-align: middle;">{{ $isChecked ? '✔' : '' }}</td>
-                                <td></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </td>
-        </tr>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 2px;">
+        <thead>
+            <tr>
+                <th style="border: none; text-align: left; padding: 0;"></th>
+                <th style="width: 48px; border: 1px solid #000; text-align: center; font-size: 8px; font-weight: bold; padding: 2px 0;">YA</th>
+                <th style="width: 48px; border: 1px solid #000; text-align: center; font-size: 8px; font-weight: bold; padding: 2px 0;">TIDAK</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($supportDocsList as $docNum => $docName)
+                @php
+                    $isChecked = in_array((string)$docNum, array_map('strval', $selectedDocs)) || in_array($docNum, $selectedDocs);
+                @endphp
+                <tr>
+                    <td style="border: none; vertical-align: middle; padding: 1px 8px 1px 0; font-size: 8px; line-height: 1.15;">
+                        • {{ $docName }}
+                    </td>
+                    <td style="border: 1px solid #000; width: 48px; text-align: center; vertical-align: middle; font-weight: bold; font-size: 8.5px; padding: 0;">
+                        {{ $isChecked ? '✔' : '' }}
+                    </td>
+                    <td style="border: 1px solid #000; width: 48px; text-align: center; vertical-align: middle; padding: 0;">
+                        &nbsp;
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
     </table>
 
     <!-- FILL-IN LINES -->
@@ -566,7 +541,7 @@
     <!-- SIGNATURE BLOCK -->
     <div class="signature-section">
         <div class="sign-block">
-            <div style="font-size: 8.5px;">Jakarta, {{ $nopenDate }}</div>
+            <div style="font-size: 8.5px;">Jakarta, {{ $dateText }}</div>
             <div style="font-size: 8px; font-style: italic; margin-top: 4px;">(Cap+TTD+Materai)</div>
             <div class="sign-space"></div>
             <div style="font-weight: bold; font-size: 9px;">{{ $signName }}</div>

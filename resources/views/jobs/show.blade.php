@@ -655,44 +655,70 @@
 {{-- TAB: DEKLARASI NILAI PABEAN (DNP)                                         --}}
 {{-- ========================================================================= --}}
 <div id="tab-dnp" class="job-tab-content" style="display: none;">
-    <section class="panel" style="margin-bottom: 24px;">
-        <div class="panel-heading">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <span class="stat-icon amber"><x-icon name="file"/></span>
+    <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06); margin-bottom: 24px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#fef3c7;color:#d97706;font-size:23px;">📋</div>
                 <div>
-                    <p class="eyebrow" style="margin-bottom:4px;">KEPABEANAN IMPORT</p>
-                    <h2>Deklarasi Nilai Pabean (DNP)</h2>
-                    <p>Dokumen deklarasi nilai pabean resmi untuk pengisian dan pendaftaran PIB.</p>
+                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN KEPABEANAN IMPORT</p>
+                    <h2 style="margin:0 0 4px;">Deklarasi Nilai Pabean (DNP)</h2>
+                    <p style="margin:0;color:#64748b;">Dokumen deklarasi nilai transaksi pabean resmi untuk kelengkapan dokumen PIB.</p>
                 </div>
             </div>
-            <a class="button button-primary" href="{{ route('jobs.dnp.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak DNP</a>
+            <a class="button button-primary" href="{{ route('dnps.create', ['job_id' => $job->id]) }}">+ Buat Deklarasi Nilai Pabean (DNP)</a>
         </div>
 
-        <div style="padding: 0 24px 24px;">
-            <article class="report-card">
-                <div class="report-card-head">
-                    <div class="report-card-title">
-                        <span class="report-icon blue"><x-icon name="briefcase"/></span>
-                        <div>
-                            <h2>Rincian Data Deklarasi Nilai Pabean</h2>
-                            <small>Data utama yang masuk ke dokumen DNP</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="table-scroll" style="margin-top: 16px;">
-                    <table>
-                        <tbody>
-                            <tr><th style="width: 240px;">Nomor Job Order</th><td><strong>{{ $job->number }}</strong></td></tr>
-                            <tr><th>Importir / Consignee</th><td>{{ $job->consignee_name ?? $customerName }}</td></tr>
-                            <tr><th>Pemasok / Shipper</th><td>{{ $job->shipper_name ?? '—' }}</td></tr>
-                            <tr><th>No AJU / PIB</th><td>{{ $noAju }} / {{ $noNopen }}</td></tr>
-                            <tr><th>Komoditas</th><td>{{ $commodityStr }}</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </article>
-        </div>
+        @if($job->dnps->isNotEmpty())
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nomor DNP</th>
+                            <th>Tanggal</th>
+                            <th>Currency</th>
+                            <th>Harga Invoice</th>
+                            <th>Biaya Angkut</th>
+                            <th>Asuransi</th>
+                            <th>Total Nilai (CIF)</th>
+                            <th>Pengulangan (F)</th>
+                            <th>Status</th>
+                            <th style="text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($job->dnps as $dnp)
+                            <tr>
+                                <td><strong>{{ $dnp->number }}</strong></td>
+                                <td>{{ $dnp->dnp_date?->format('d/m/Y') ?? '—' }}</td>
+                                <td><span class="badge-pill">{{ $dnp->currency }}</span></td>
+                                <td>{{ number_format((float)$dnp->invoice_value, 2) }}</td>
+                                <td>{{ number_format((float)$dnp->freight, 2) }}</td>
+                                <td>{{ number_format((float)$dnp->insurance, 2) }}</td>
+                                <td><strong>{{ number_format((float)$dnp->total_value, 2) }}</strong></td>
+                                <td>{{ $dnp->is_repeated_transaction ? 'YA' : 'TIDAK' }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ in_array($dnp->status, ['approved', 'completed']) ? 'approved' : ($dnp->status === 'cancelled' ? 'rejected' : 'draft') }}">
+                                        {{ ucfirst($dnp->status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display:flex; gap:6px; justify-content:center;">
+                                        <a class="button button-secondary button-sm" href="{{ route('dnps.show', $dnp) }}">Detail</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('dnps.edit', $dnp) }}">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#fef3c7;color:#d97706;font-size:25px;">📋</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Deklarasi Nilai Pabean (DNP)</h3>
+                <p style="margin:0;color:#64748b;">Buat dokumen DNP dari tab ini agar seluruh data nilai invoice, freight, asuransi, dan dokumen pendukung terhubung dengan Job Order ini.</p>
+            </div>
+        @endif
     </section>
 </div>@endif
 

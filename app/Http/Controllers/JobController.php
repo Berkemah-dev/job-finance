@@ -48,7 +48,7 @@ class JobController extends Controller
     {
         $job->load([
             'quotation', 'customer', 'sales', 'cs', 'bookingConfirmations', 'shippingInstructions', 
-            'awbs', 'billsOfLading', 'statusHistory.user', 
+            'awbs', 'billsOfLading', 'dnps', 'statusHistory.user', 
             'shipmentStatusHistory.user', 'documents.documentType', 'documents.uploader'
         ]);
         $documentTypes = \App\Models\DocumentType::active()->forService($job->service_type)->orderBy('sort_order')->get();

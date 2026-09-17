@@ -165,9 +165,9 @@ class OperationalDocumentController extends Controller
 
     public function dnpPdf(Request $request, Quotation $quotation, MasterDataService $master)
     {
-        $quotation->load(['job.customer']);
+        $quotation->load(['job.customer', 'job.dnp']);
         abort_unless($quotation->job, 404);
-        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.dnp', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.dnp', ['job' => $quotation->job, 'quotation' => $quotation, 'dnp' => $quotation->job->dnp])->setPaper('a4');
         $filename = 'DNP_'.$quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF DNP '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
@@ -218,8 +218,8 @@ class OperationalDocumentController extends Controller
 
     public function jobDnpPdf(Request $request, Job $job, MasterDataService $master)
     {
-        $job->load(['customer', 'quotation']);
-        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.dnp', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
+        $job->load(['customer', 'quotation', 'dnp']);
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.dnp', ['job' => $job, 'quotation' => $job->quotation, 'dnp' => $job->dnp])->setPaper('a4');
         $filename = 'DNP_'.$job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF DNP '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 

@@ -29,6 +29,7 @@ use App\Http\Controllers\ReimbursementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AwbController;
 use App\Http\Controllers\BillOfLadingController;
+use App\Http\Controllers\DnpController;
 use App\Http\Controllers\ShippingInstructionController;
 use App\Http\Controllers\ServiceTypeController;
 use App\Http\Controllers\StatementOfAccountController;
@@ -123,6 +124,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('awbs', AwbController::class)->middleware('can:jobs.view');
     // Bill of Lading — B/L (Export Sea)
     Route::resource('bills-of-lading', BillOfLadingController::class)->parameters(['bills-of-lading' => 'billOfLading'])->middleware('can:jobs.view');
+    // DNP — Deklarasi Nilai Pabean (Import)
+    Route::resource('dnps', DnpController::class)->middleware('can:jobs.view');
+    Route::get('/dnps/{dnp}/pdf', [DnpController::class, 'previewPdf'])->middleware('can:jobs.view')->name('dnps.pdf');
     Route::resource('jobs', JobController::class)->only(['index', 'show'])->middleware('can:jobs.view');
     Route::resource('jobs', JobController::class)->only(['edit', 'update'])->middleware('can:jobs.manage');
     Route::get('/jobs/{job}/preview', [JobController::class, 'preview'])->middleware('can:jobs.view')->name('jobs.preview');
