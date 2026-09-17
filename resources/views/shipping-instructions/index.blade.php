@@ -44,7 +44,6 @@
                     <th>Shipper & Consignee</th>
                     <th>Vessel & Voyage</th>
                     <th>Rute (POL → POD)</th>
-                    <th>Term</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -82,9 +81,6 @@
                         </td>
                         <td>{{ $si->pol }} → {{ $si->pod }}</td>
                         <td>
-                            <span class="badge-pill" style="font-weight: 700;">{{ $si->shipment_term }}</span>
-                        </td>
-                        <td>
                             <span class="status-badge status-{{ $si->status === 'submitted' || $si->status === 'completed' ? 'approved' : ($si->status === 'draft' ? 'draft' : 'rejected') }}">
                                 {{ ucfirst($si->status) }}
                             </span>
@@ -92,14 +88,14 @@
                         <td>
                             <div class="table-actions">
                                 <a class="btn-action btn-action-primary" href="{{ route('shipping-instructions.show', $si) }}" title="Detail Shipping Instruction" data-tooltip="Detail" aria-label="Detail Shipping Instruction"><x-icon name="eye"/></a>
-                                <a class="btn-action btn-action-purple" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank" title="Cetak PDF SI" data-tooltip="PDF" aria-label="Cetak PDF SI"><x-icon name="printer"/></a>
+                                <a class="btn-action btn-action-purple" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank" title="Preview / Unduh PDF SI" data-tooltip="Preview / Unduh PDF" aria-label="Preview / Unduh PDF SI"><x-icon name="printer"/></a>
                                 <a class="btn-action" href="{{ route('shipping-instructions.edit', $si) }}" title="Edit Shipping Instruction" data-tooltip="Edit" aria-label="Edit Shipping Instruction"><x-icon name="edit"/></a>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9">
+                        <td colspan="8">
                             <div class="empty-state">
                                 <x-icon name="file"/>
                                 <h3>Belum ada Shipping Instruction</h3>

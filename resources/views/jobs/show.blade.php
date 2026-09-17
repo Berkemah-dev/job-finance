@@ -844,8 +844,9 @@
                                 <td>{{ $bc->booking_date?->format('d/m/Y') ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($bc->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;justify-content:center;">
+                                    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                                         <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank" title="Preview / Unduh PDF">Preview / Unduh PDF</a>
                                         <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
                                     </div>
                                 </td>
@@ -885,8 +886,9 @@
                                 <td>{{ $si->si_date?->format('d/m/Y') ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;justify-content:center;">
+                                    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                                         <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank" title="Preview / Unduh PDF">Preview / Unduh PDF</a>
                                         <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
                                     </div>
                                 </td>

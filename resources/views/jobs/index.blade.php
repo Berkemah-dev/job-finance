@@ -134,6 +134,9 @@
                         <a class="btn-action btn-action-success" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}" title="Buat Booking Confirmation Export" data-tooltip="Buat BC" aria-label="Buat Booking Confirmation Export"><x-icon name="clipboard"/></a>
                     @endif
                 @endif
+                @if($job->shippingInstructions->isNotEmpty())
+                    <a class="btn-action btn-action-purple" href="{{ route('shipping-instructions.preview', $job->shippingInstructions->first()) }}" target="_blank" title="Cetak Shipping Instruction ({{ $job->shippingInstructions->first()->number }})" data-tooltip="Cetak SI" aria-label="Cetak Shipping Instruction"><x-icon name="file"/></a>
+                @endif
                 @can('update',$job)
                     <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>
                 @endcan

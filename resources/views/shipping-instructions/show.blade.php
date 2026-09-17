@@ -17,16 +17,24 @@
     <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
 
-<div class="quote-actions" style="margin-bottom: 20px;">
-    <a class="button button-secondary" href="{{ route('shipping-instructions.edit', $si) }}">Edit Shipping Instruction</a>
-    <a class="button button-secondary" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">🖨 Preview PDF</a>
+<div class="quote-actions" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+    <a class="button button-secondary" href="{{ route('shipping-instructions.edit', $si) }}">
+        <x-icon name="pencil"/> Edit Shipping Instruction
+    </a>
+    <a class="button button-secondary" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">
+        <x-icon name="printer"/> Preview / Unduh PDF
+    </a>
     @if($si->job)
-        <a class="button button-secondary" href="{{ route('jobs.show', $si->job) }}">Lihat Job Order</a>
+        <a class="button button-secondary" href="{{ route('jobs.show', $si->job) }}">
+            <x-icon name="briefcase"/> Lihat Job Order
+        </a>
     @endif
     <form method="POST" action="{{ route('shipping-instructions.destroy', $si) }}" data-confirm="Hapus Shipping Instruction {{ $si->number }}?" style="display:inline;">
         @csrf
         @method('DELETE')
-        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444">Hapus</button>
+        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;color:#fff;">
+            <x-icon name="trash"/> Hapus
+        </button>
     </form>
 </div>
 

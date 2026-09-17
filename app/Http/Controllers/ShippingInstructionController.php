@@ -71,6 +71,13 @@ class ShippingInstructionController extends Controller
         $jobs = Job::with('customer')->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $carriers = Vendor::orderBy('name')->get();
+        $shippingLines = Vendor::where('type', 'shipping_line')
+            ->orWhereHas('categories', fn ($q) => $q->where('category', 'shipping_line'))
+            ->orderBy('name')
+            ->get();
+        if ($shippingLines->isEmpty()) {
+            $shippingLines = $carriers;
+        }
         $ports = Port::orderBy('name')->get();
 
         $defaultNumber = ShippingInstruction::generateNumber();
@@ -80,6 +87,7 @@ class ShippingInstructionController extends Controller
             'jobs'          => $jobs,
             'customers'     => $customers,
             'carriers'      => $carriers,
+            'shippingLines' => $shippingLines,
             'ports'         => $ports,
             'defaultNumber' => $defaultNumber,
         ]);
@@ -105,7 +113,7 @@ class ShippingInstructionController extends Controller
             'transit_eta'       => 'nullable|date',
             'etd'               => 'nullable|date',
             'eta'               => 'nullable|date',
-            'shipment_term'     => 'required|string|in:PREPAID,COLLECT',
+            'shipment_term'     => 'nullable|string|max:40',
             'pol'               => 'required|string|max:120',
             'pod'               => 'required|string|max:120',
             'marks_numbers'     => 'nullable|string',
@@ -119,6 +127,7 @@ class ShippingInstructionController extends Controller
 
         // Checkbox boolean: jika tidak dikirim = false
         $validated['is_transhipment'] = $request->boolean('is_transhipment');
+        $validated['shipment_term'] = $validated['shipment_term'] ?? 'PREPAID';
 
         $validated['created_by'] = auth()->id();
 
@@ -148,14 +157,22 @@ class ShippingInstructionController extends Controller
         $jobs = Job::with('customer')->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $carriers = Vendor::orderBy('name')->get();
+        $shippingLines = Vendor::where('type', 'shipping_line')
+            ->orWhereHas('categories', fn ($q) => $q->where('category', 'shipping_line'))
+            ->orderBy('name')
+            ->get();
+        if ($shippingLines->isEmpty()) {
+            $shippingLines = $carriers;
+        }
         $ports = Port::orderBy('name')->get();
 
         return view('shipping-instructions.edit', [
-            'si'        => $shippingInstruction,
-            'jobs'      => $jobs,
-            'customers' => $customers,
-            'carriers'  => $carriers,
-            'ports'     => $ports,
+            'si'            => $shippingInstruction,
+            'jobs'          => $jobs,
+            'customers'     => $customers,
+            'carriers'      => $carriers,
+            'shippingLines' => $shippingLines,
+            'ports'         => $ports,
         ]);
     }
 
@@ -179,7 +196,7 @@ class ShippingInstructionController extends Controller
             'transit_eta'       => 'nullable|date',
             'etd'               => 'nullable|date',
             'eta'               => 'nullable|date',
-            'shipment_term'     => 'required|string|in:PREPAID,COLLECT',
+            'shipment_term'     => 'nullable|string|max:40',
             'pol'               => 'required|string|max:120',
             'pod'               => 'required|string|max:120',
             'marks_numbers'     => 'nullable|string',
@@ -193,6 +210,7 @@ class ShippingInstructionController extends Controller
 
         // Checkbox boolean: jika tidak dikirim = false
         $validated['is_transhipment'] = $request->boolean('is_transhipment');
+        $validated['shipment_term'] = $validated['shipment_term'] ?? $shippingInstruction->shipment_term ?? 'PREPAID';
 
         $shippingInstruction->update($validated);
 

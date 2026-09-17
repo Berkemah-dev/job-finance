@@ -44,10 +44,8 @@
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
                             data-customer-id="{{ $j->customer_id }}"
-                            data-shipper="{{ $j->customer?->name ?? $j->shipper_name }}"
-                            data-consignee="{{ $j->consignee_name ?? $j->customer?->consignees?->first()?->name }}"
-                            data-consignee-address="{{ $j->consignee_address ?? $j->customer?->consignees?->first()?->address }}"
-                            data-consignee-contact="{{ $j->consignee_contact ?? ($j->customer?->consignees?->first()?->contact_name ?? $j->customer?->consignees?->first()?->phone) }}"
+                            data-shipper="{{ $j->shipper_name ?: $j->customer?->name }}"
+                            data-consignee="{{ $j->consignee_name }}"
                             data-vessel="{{ $j->vessel_voyage }}"
                             data-pol="{{ $j->pol ?? $j->origin }}"
                             data-pod="{{ $j->pod ?? $j->destination }}"
@@ -85,57 +83,26 @@
             </div>
         </div>
 
-        {{-- PIHAK TERKAIT (CONSIGNEE & SHIPPER) --}}
+        {{-- PIHAK TERKAIT (SHIPPER & CONSIGNEE) --}}
         <div class="form-section-heading">
-            <h2>Penerima (Consignee) & Pengirim (Shipper)</h2>
-            <p>Untuk dokumen export: Penerima adalah Consignee luar negeri, dan Pengirim (Shipper) mengambil data Master Customer.</p>
+            <h2>Pengirim (Shipper) & Penerima (Consignee)</h2>
+            <p>Data Pengirim dan Penerima barang secara otomatis mengikuti Job Order awal.</p>
         </div>
 
         <div class="form-grid">
             <div class="field">
-                <label for="customer_id">Master Customer (Shipper) <span class="required">*</span></label>
-                <select id="customer_id" name="customer_id" required>
-                    <option value="">Pilih Customer</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}"
-                            @selected(old('customer_id', $selectedJob?->customer_id) == $c->id)
-                            data-name="{{ $c->name }}"
-                            data-address="{{ $c->address }}"
-                            data-tax="{{ $c->tax_number }}"
-                            data-consignee-name="{{ $c->consignees?->first()?->name }}"
-                            data-consignee-address="{{ $c->consignees?->first()?->address }}"
-                            data-consignee-contact="{{ $c->consignees?->first()?->contact_name ?: $c->consignees?->first()?->phone }}"
-                        >
-                            {{ $c->name }}
-                        </option>
-                    @endforeach
-                </select>
+                <label for="shipper_name">Shipper (Pengirim) <span class="required">*</span></label>
+                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $selectedJob?->shipper_name ?? $selectedJob?->customer?->name) }}" required placeholder="Nama Shipper (Mengikuti Job Order)">
             </div>
 
             <div class="field">
-                <label for="shipper_name">Nama Shipper</label>
-                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $selectedJob?->customer?->name ?? $selectedJob?->shipper_name) }}" placeholder="Nama Shipper (Otomatis Master Customer)">
-            </div>
-
-            <div class="field">
-                <label for="consignee_name">To (Nama Consignee)</label>
-                <input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name', $selectedJob?->consignee_name ?? $selectedJob?->customer?->consignees?->first()?->name) }}" placeholder="Nama Consignee / Penerima">
-            </div>
-
-            <div class="field">
-                <label for="contact_person">Contact Person PIC (Consignee)</label>
-                <input id="contact_person" name="contact_person" maxlength="120" value="{{ old('contact_person', $selectedJob?->customer?->consignees?->first()?->contact_name ?? $selectedJob?->customer?->consignees?->first()?->phone) }}" placeholder="Otomatis dari master consignee">
-                <small class="form-help">Terisi otomatis dari data kontak Master Consignee.</small>
+                <label for="consignee_name">Consignee (Penerima) <span class="required">*</span></label>
+                <input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name', $selectedJob?->consignee_name) }}" required placeholder="Nama Consignee (Mengikuti Job Order)">
             </div>
 
             <div class="field span-2">
-                <label for="consignee_address">Alamat Consignee</label>
-                <input id="consignee_address" name="consignee_address" value="{{ old('consignee_address', $selectedJob?->consignee_address ?? $selectedJob?->customer?->consignees?->first()?->address) }}" placeholder="Alamat lengkap Consignee">
-            </div>
-
-            <div class="field">
                 <label for="customer_ref">Customer Ref (PO / Booking Ref)</label>
-                <input id="customer_ref" name="customer_ref" maxlength="100" value="{{ old('customer_ref') }}" placeholder="Nomor PO / Ref dari Customer">
+                <input id="customer_ref" name="customer_ref" maxlength="100" value="{{ old('customer_ref') }}" placeholder="Nomor PO / Ref dari Customer (Opsional)">
             </div>
         </div>
 
@@ -148,12 +115,24 @@
         <div class="form-grid">
             <div class="field">
                 <label for="carrier_name">Carrier Booking (Shipping Lines / Maskapai)</label>
-                <input id="carrier_name" name="carrier_name" list="carrier_list" maxlength="160" value="{{ old('carrier_name') }}" placeholder="Pilih atau ketik nama shipping line">
-                <datalist id="carrier_list">
+                <select id="carrier_name" name="carrier_name" data-custom-select data-allow-custom="true" aria-label="Carrier Booking (Shipping Lines / Maskapai)">
+                    <option value="">Pilih atau ketik nama shipping line / maskapai...</option>
+                    @php
+                        $currentCarrier = old('carrier_name');
+                        $carrierFound = false;
+                    @endphp
                     @foreach($carriers as $carrier)
-                        <option value="{{ $carrier->name }}">{{ $carrier->code ? '['.$carrier->code.'] ' : '' }}{{ $carrier->name }}</option>
+                        @if($currentCarrier === $carrier->name)
+                            @php $carrierFound = true; @endphp
+                        @endif
+                        <option value="{{ $carrier->name }}" @selected($currentCarrier === $carrier->name)>
+                            {{ $carrier->code ? '['.$carrier->code.'] ' : '' }}{{ $carrier->name }}
+                        </option>
                     @endforeach
-                </datalist>
+                    @if($currentCarrier && !$carrierFound)
+                        <option value="{{ $currentCarrier }}" selected data-custom-option="true">{{ $currentCarrier }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
@@ -179,12 +158,46 @@
 
             <div class="field">
                 <label for="pol">Port of Loading (POL)</label>
-                <select id="pol" name="pol" data-custom-select aria-label="Port of Loading (POL)"><option value="">Pilih Port of Loading (POL)</option>@foreach($ports as $p)<option value="{{ $p->name }}" @selected(old('pol', $selectedJob?->pol ?? $selectedJob?->origin)===$p->name)>{{ $p->code ? $p->code.' - ' : '' }}{{ $p->name }}</option>@endforeach</select>
+                <select id="pol" name="pol" data-custom-select data-allow-custom="true" aria-label="Port of Loading (POL)">
+                    <option value="">Pilih Port of Loading (POL)...</option>
+                    @php
+                        $currentPol = old('pol', $selectedJob?->pol ?? $selectedJob?->origin);
+                        $polFound = false;
+                    @endphp
+                    @foreach($ports as $p)
+                        @if($currentPol === $p->name)
+                            @php $polFound = true; @endphp
+                        @endif
+                        <option value="{{ $p->name }}" @selected($currentPol === $p->name)>
+                            {{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}
+                        </option>
+                    @endforeach
+                    @if($currentPol && !$polFound)
+                        <option value="{{ $currentPol }}" selected data-custom-option="true">{{ $currentPol }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
                 <label for="pod">Port of Discharge (POD)</label>
-                <select id="pod" name="pod" data-custom-select aria-label="Port of Discharge (POD)"><option value="">Pilih Port of Discharge (POD)</option>@foreach($ports as $p)<option value="{{ $p->name }}" @selected(old('pod', $selectedJob?->pod ?? $selectedJob?->destination)===$p->name)>{{ $p->code ? $p->code.' - ' : '' }}{{ $p->name }}</option>@endforeach</select>
+                <select id="pod" name="pod" data-custom-select data-allow-custom="true" aria-label="Port of Discharge (POD)">
+                    <option value="">Pilih Port of Discharge (POD)...</option>
+                    @php
+                        $currentPod = old('pod', $selectedJob?->pod ?? $selectedJob?->destination);
+                        $podFound = false;
+                    @endphp
+                    @foreach($ports as $p)
+                        @if($currentPod === $p->name)
+                            @php $podFound = true; @endphp
+                        @endif
+                        <option value="{{ $p->name }}" @selected($currentPod === $p->name)>
+                            {{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}
+                        </option>
+                    @endforeach
+                    @if($currentPod && !$podFound)
+                        <option value="{{ $currentPod }}" selected data-custom-option="true">{{ $currentPod }}</option>
+                    @endif
+                </select>
             </div>
 
 
@@ -287,18 +300,23 @@ document.getElementById('job_id')?.addEventListener('change', function() {
 
     const setVal = (id, val) => {
         const el = document.getElementById(id);
-        if (el && val) el.value = val;
+        if (!el || val === undefined) return;
+        if (el.tagName === 'SELECT' && val) {
+            let match = Array.from(el.options).find(o => o.value === val);
+            if (!match && el.dataset.allowCustom === 'true') {
+                const newOpt = document.createElement('option');
+                newOpt.value = val;
+                newOpt.textContent = val;
+                newOpt.dataset.customOption = 'true';
+                el.appendChild(newOpt);
+            }
+        }
+        el.value = val;
+        el.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
-    if (opt.dataset.customerId) {
-        setVal('customer_id', opt.dataset.customerId);
-        // trigger customer change to pull master consignee if needed
-        document.getElementById('customer_id')?.dispatchEvent(new Event('change'));
-    }
     if (opt.dataset.shipper) setVal('shipper_name', opt.dataset.shipper);
     if (opt.dataset.consignee) setVal('consignee_name', opt.dataset.consignee);
-    if (opt.dataset.consigneeAddress) setVal('consignee_address', opt.dataset.consigneeAddress);
-    if (opt.dataset.consigneeContact) setVal('contact_person', opt.dataset.consigneeContact);
     if (opt.dataset.vessel) setVal('vessel_voyage', opt.dataset.vessel);
     if (opt.dataset.pol) setVal('pol', opt.dataset.pol);
     if (opt.dataset.pod) setVal('pod', opt.dataset.pod);
@@ -309,21 +327,6 @@ document.getElementById('job_id')?.addEventListener('change', function() {
     if (opt.dataset.grossWeight) setVal('gross_weight', opt.dataset.grossWeight);
     if (opt.dataset.volume) setVal('volume', opt.dataset.volume);
     if (opt.dataset.bookingRef) setVal('carrier_booking_no', opt.dataset.bookingRef);
-});
-
-document.getElementById('customer_id')?.addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    if (!opt || !opt.value) return;
-
-    const setVal = (id, val) => {
-        const el = document.getElementById(id);
-        if (el && val) el.value = val;
-    };
-
-    if (opt.dataset.name) setVal('shipper_name', opt.dataset.name);
-    if (opt.dataset.consigneeName) setVal('consignee_name', opt.dataset.consigneeName);
-    if (opt.dataset.consigneeAddress) setVal('consignee_address', opt.dataset.consigneeAddress);
-    if (opt.dataset.consigneeContact) setVal('contact_person', opt.dataset.consigneeContact);
 });
 </script>
 

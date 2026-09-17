@@ -62,47 +62,26 @@
         </div>
 
         {{-- PIHAK TERKAIT (CONSIGNEE & SHIPPER) --}}
+        {{-- PIHAK TERKAIT (SHIPPER & CONSIGNEE) --}}
         <div class="form-section-heading">
-            <h2>Penerima (Consignee) & Pengirim (Shipper)</h2>
-            <p>Untuk dokumen export: Penerima adalah Consignee luar negeri, dan Pengirim (Shipper) mengambil data Master Customer.</p>
+            <h2>Pengirim (Shipper) & Penerima (Consignee)</h2>
+            <p>Data Pengirim dan Penerima barang sesuai Job Order awal.</p>
         </div>
 
         <div class="form-grid">
             <div class="field">
-                <label for="customer_id">Master Customer (Shipper) <span class="required">*</span></label>
-                <select id="customer_id" name="customer_id" required>
-                    <option value="">Pilih Customer</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id', $bc->customer_id) == $c->id)>
-                            {{ $c->name }}
-                        </option>
-                    @endforeach
-                </select>
+                <label for="shipper_name">Shipper (Pengirim) <span class="required">*</span></label>
+                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $bc->shipper_name) }}" required placeholder="Nama Shipper (Mengikuti Job Order)">
             </div>
 
             <div class="field">
-                <label for="shipper_name">Nama Shipper</label>
-                <input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name', $bc->shipper_name) }}" placeholder="Nama Shipper (Master Customer)">
-            </div>
-
-            <div class="field">
-                <label for="consignee_name">To (Nama Consignee)</label>
-                <input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name', $bc->consignee_name) }}" placeholder="Nama Consignee / Penerima">
-            </div>
-
-            <div class="field">
-                <label for="contact_person">Contact Person PIC (Consignee)</label>
-                <input id="contact_person" name="contact_person" maxlength="120" value="{{ old('contact_person', $bc->contact_person) }}" placeholder="Otomatis dari master consignee">
+                <label for="consignee_name">Consignee (Penerima) <span class="required">*</span></label>
+                <input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name', $bc->consignee_name) }}" required placeholder="Nama Consignee (Mengikuti Job Order)">
             </div>
 
             <div class="field span-2">
-                <label for="consignee_address">Alamat Consignee</label>
-                <input id="consignee_address" name="consignee_address" value="{{ old('consignee_address', $bc->consignee_address) }}" placeholder="Alamat lengkap Consignee">
-            </div>
-
-            <div class="field">
                 <label for="customer_ref">Customer Ref (PO / Booking Ref)</label>
-                <input id="customer_ref" name="customer_ref" maxlength="100" value="{{ old('customer_ref', $bc->customer_ref) }}" placeholder="Nomor PO / Ref dari Customer">
+                <input id="customer_ref" name="customer_ref" maxlength="100" value="{{ old('customer_ref', $bc->customer_ref) }}" placeholder="Nomor PO / Ref dari Customer (Opsional)">
             </div>
         </div>
 
@@ -115,12 +94,24 @@
         <div class="form-grid">
             <div class="field">
                 <label for="carrier_name">Carrier Booking (Shipping Lines / Maskapai)</label>
-                <input id="carrier_name" name="carrier_name" list="carrier_list" maxlength="160" value="{{ old('carrier_name', $bc->carrier_name) }}" placeholder="Pilih atau ketik nama shipping line">
-                <datalist id="carrier_list">
+                <select id="carrier_name" name="carrier_name" data-custom-select data-allow-custom="true" aria-label="Carrier Booking (Shipping Lines / Maskapai)">
+                    <option value="">Pilih atau ketik nama shipping line / maskapai...</option>
+                    @php
+                        $currentCarrier = old('carrier_name', $bc->carrier_name);
+                        $carrierFound = false;
+                    @endphp
                     @foreach($carriers as $carrier)
-                        <option value="{{ $carrier->name }}">{{ $carrier->code ? '['.$carrier->code.'] ' : '' }}{{ $carrier->name }}</option>
+                        @if($currentCarrier === $carrier->name)
+                            @php $carrierFound = true; @endphp
+                        @endif
+                        <option value="{{ $carrier->name }}" @selected($currentCarrier === $carrier->name)>
+                            {{ $carrier->code ? '['.$carrier->code.'] ' : '' }}{{ $carrier->name }}
+                        </option>
                     @endforeach
-                </datalist>
+                    @if($currentCarrier && !$carrierFound)
+                        <option value="{{ $currentCarrier }}" selected data-custom-option="true">{{ $currentCarrier }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
@@ -146,12 +137,46 @@
 
             <div class="field">
                 <label for="pol">Port of Loading (POL)</label>
-                <select id="pol" name="pol" data-custom-select aria-label="Port of Loading (POL)"><option value="">Pilih Port of Loading (POL)</option>@foreach($ports as $p)<option value="{{ $p->name }}" @selected(old('pol', $bc->pol)===$p->name)>{{ $p->code ? $p->code.' - ' : '' }}{{ $p->name }}</option>@endforeach</select>
+                <select id="pol" name="pol" data-custom-select data-allow-custom="true" aria-label="Port of Loading (POL)">
+                    <option value="">Pilih Port of Loading (POL)...</option>
+                    @php
+                        $currentPol = old('pol', $bc->pol);
+                        $polFound = false;
+                    @endphp
+                    @foreach($ports as $p)
+                        @if($currentPol === $p->name)
+                            @php $polFound = true; @endphp
+                        @endif
+                        <option value="{{ $p->name }}" @selected($currentPol === $p->name)>
+                            {{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}
+                        </option>
+                    @endforeach
+                    @if($currentPol && !$polFound)
+                        <option value="{{ $currentPol }}" selected data-custom-option="true">{{ $currentPol }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
                 <label for="pod">Port of Discharge (POD)</label>
-                <select id="pod" name="pod" data-custom-select aria-label="Port of Discharge (POD)"><option value="">Pilih Port of Discharge (POD)</option>@foreach($ports as $p)<option value="{{ $p->name }}" @selected(old('pod', $bc->pod)===$p->name)>{{ $p->code ? $p->code.' - ' : '' }}{{ $p->name }}</option>@endforeach</select>
+                <select id="pod" name="pod" data-custom-select data-allow-custom="true" aria-label="Port of Discharge (POD)">
+                    <option value="">Pilih Port of Discharge (POD)...</option>
+                    @php
+                        $currentPod = old('pod', $bc->pod);
+                        $podFound = false;
+                    @endphp
+                    @foreach($ports as $p)
+                        @if($currentPod === $p->name)
+                            @php $podFound = true; @endphp
+                        @endif
+                        <option value="{{ $p->name }}" @selected($currentPod === $p->name)>
+                            {{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}
+                        </option>
+                    @endforeach
+                    @if($currentPod && !$podFound)
+                        <option value="{{ $currentPod }}" selected data-custom-option="true">{{ $currentPod }}</option>
+                    @endif
+                </select>
             </div>
 
 

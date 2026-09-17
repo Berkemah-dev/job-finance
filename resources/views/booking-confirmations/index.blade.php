@@ -55,7 +55,7 @@
                             <small>{{ $bc->booking_date->format('d/m/Y') }}</small>
                         </td>
                         <td>
-                            <strong>{{ $bc->customer?->name ?? '—' }}</strong>
+                            <strong>{{ $bc->shipper_name ?: ($bc->customer?->name ?? '—') }}</strong>
                             @if($bc->customer_ref)
                                 <br><small class="muted-cell">Ref: {{ $bc->customer_ref }}</small>
                             @endif
@@ -67,16 +67,21 @@
                                 —
                             @endif
                         </td>
-                        <td>{{ $bc->shipper_name ?? '—' }}</td>
+                        <td>
+                            <strong>{{ Str::limit($bc->shipper_name ?: ($bc->customer?->name ?? '—'), 22) }}</strong>
+                            @if($bc->consignee_name)
+                                <br><small class="muted-cell">To: {{ Str::limit($bc->consignee_name, 22) }}</small>
+                            @endif
+                        </td>
                         <td>
                             <strong>{{ $bc->carrier_name ?? '—' }}</strong>
                             @if($bc->vessel_voyage)
-                                <br><small>{{ $bc->vessel_voyage }}</small>
+                                <br><small class="muted-cell">{{ $bc->vessel_voyage }}</small>
                             @endif
                         </td>
                         <td>
                             {{ $bc->pol ?? '—' }} → {{ $bc->pod ?? '—' }}
-                            @if($bc->etd || $bc->eta)
+                            @if($bc->etd)
                                 <br><small class="muted-cell">ETD: {{ $bc->etd?->format('d/m/Y') ?? '—' }}</small>
                             @endif
                         </td>
@@ -88,7 +93,7 @@
                         <td>
                             <div class="table-actions">
                                 <a class="btn-action btn-action-primary" href="{{ route('booking-confirmations.show', $bc) }}" title="Detail Booking Confirmation" data-tooltip="Detail" aria-label="Detail Booking Confirmation"><x-icon name="eye"/></a>
-                                <a class="btn-action btn-action-purple" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank" title="Cetak PDF BC" data-tooltip="PDF" aria-label="Cetak PDF BC"><x-icon name="printer"/></a>
+                                <a class="btn-action btn-action-purple" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank" title="Preview / Unduh PDF BC" data-tooltip="Preview / Unduh PDF" aria-label="Preview / Unduh PDF BC"><x-icon name="printer"/></a>
                                 <a class="btn-action" href="{{ route('booking-confirmations.edit', $bc) }}" title="Edit Booking Confirmation" data-tooltip="Edit" aria-label="Edit Booking Confirmation"><x-icon name="edit"/></a>
                             </div>
                         </td>

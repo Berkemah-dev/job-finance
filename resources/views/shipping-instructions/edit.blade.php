@@ -72,12 +72,24 @@
         <div class="form-grid">
             <div class="field">
                 <label for="to_carrier">To (Shipping Line / Pelayaran) <span class="required">*</span></label>
-                <input id="to_carrier" name="to_carrier" list="carrier_list" maxlength="160" value="{{ old('to_carrier', $si->to_carrier) }}" required placeholder="contoh: ONE / Maersk / CMA CGM">
-                <datalist id="carrier_list">
+                <select id="to_carrier" name="to_carrier" data-custom-select data-allow-custom="true" required aria-label="To Carrier / Shipping Line">
+                    <option value="">Pilih Shipping Line atau ketik nama pelayaran...</option>
+                    @php
+                        $currentCarrier = old('to_carrier', $si->to_carrier);
+                        $carrierFound = false;
+                    @endphp
                     @foreach($carriers as $c)
-                        <option value="{{ $c->name }}">{{ $c->code ? '['.$c->code.'] ' : '' }}{{ $c->name }}</option>
+                        @if($currentCarrier === $c->name)
+                            @php $carrierFound = true; @endphp
+                        @endif
+                        <option value="{{ $c->name }}" @selected($currentCarrier === $c->name)>
+                            {{ $c->code ? '['.$c->code.'] ' : '' }}{{ $c->name }}
+                        </option>
                     @endforeach
-                </datalist>
+                    @if($currentCarrier && !$carrierFound)
+                        <option value="{{ $currentCarrier }}" selected data-custom-option="true">{{ $currentCarrier }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
@@ -125,6 +137,7 @@
             <div class="field">
                 <label for="vessel_voyage">Vessel Name & Voyage</label>
                 <input id="vessel_voyage" name="vessel_voyage" maxlength="120" value="{{ old('vessel_voyage', $si->vessel_voyage) }}" placeholder="contoh: MV. WAN HAI 312 V.E215">
+                <small class="form-help" style="color:#64748b;font-size:12px;">Nama kapal & nomor voyage pengapalan.</small>
             </div>
 
             <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:22px;">
@@ -143,9 +156,24 @@
                 <div class="form-grid" style="margin:0;">
                     <div class="field">
                         <label for="transit_port">Transit Port (Pelabuhan Transit)</label>
-                        <input id="transit_port" name="transit_port" maxlength="160"
-                            value="{{ old('transit_port', $si->transit_port) }}"
-                            placeholder="contoh: PORT KLANG, MALAYSIA">
+                        <select id="transit_port" name="transit_port" data-custom-select data-allow-custom="true" aria-label="Transit Port">
+                            <option value="">Pilih Port Transit atau ketik...</option>
+                            @php
+                                $currentTransit = old('transit_port', $si->transit_port);
+                                $transitFound = false;
+                            @endphp
+                            @foreach($ports as $p)
+                                @if($currentTransit === $p->name)
+                                    @php $transitFound = true; @endphp
+                                @endif
+                                <option value="{{ $p->name }}" @selected($currentTransit === $p->name)>
+                                    {{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}
+                                </option>
+                            @endforeach
+                            @if($currentTransit && !$transitFound)
+                                <option value="{{ $currentTransit }}" selected data-custom-option="true">{{ $currentTransit }}</option>
+                            @endif
+                        </select>
                     </div>
                     <div class="field">
                         <label for="connecting_vessel">Connecting Vessel (Kapal Penghubung / Feeder)</label>
@@ -175,28 +203,48 @@
             </div>
 
             <div class="field">
-                <label for="shipment_term">Shipment Term <span class="required">*</span></label>
-                <select id="shipment_term" name="shipment_term" required>
-                    <option value="PREPAID" @selected(old('shipment_term', $si->shipment_term) === 'PREPAID')>PREPAID (Ongkir Dibayar di Pelabuhan Asal)</option>
-                    <option value="COLLECT" @selected(old('shipment_term', $si->shipment_term) === 'COLLECT')>COLLECT (Ongkir Dibayar di Pelabuhan Tujuan)</option>
+                <label for="pol">LOADING (Port of Loading) <span class="required">*</span></label>
+                <select id="pol" name="pol" data-custom-select data-allow-custom="true" required aria-label="Port of Loading">
+                    <option value="">Pilih Port of Loading (POL)...</option>
+                    @php
+                        $currentPol = old('pol', $si->pol);
+                        $polFound = false;
+                    @endphp
+                    @foreach($ports as $p)
+                        @if($currentPol === $p->name)
+                            @php $polFound = true; @endphp
+                        @endif
+                        <option value="{{ $p->name }}" @selected($currentPol === $p->name)>
+                            {{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}
+                        </option>
+                    @endforeach
+                    @if($currentPol && !$polFound)
+                        <option value="{{ $currentPol }}" selected data-custom-option="true">{{ $currentPol }}</option>
+                    @endif
                 </select>
             </div>
 
             <div class="field">
-                <label for="pol">LOADING (Port of Loading) <span class="required">*</span></label>
-                <input id="pol" name="pol" list="port_list" maxlength="120" value="{{ old('pol', $si->pol) }}" required placeholder="Ketik nama atau kode port..." autocomplete="off" class="port-autocomplete-field">
-            </div>
-
-            <div class="field">
                 <label for="pod">DISCHARGE (Port of Discharge) <span class="required">*</span></label>
-                <input id="pod" name="pod" list="port_list" maxlength="120" value="{{ old('pod', $si->pod) }}" required placeholder="Pelabuhan Bongkar">
+                <select id="pod" name="pod" data-custom-select data-allow-custom="true" required aria-label="Port of Discharge">
+                    <option value="">Pilih Port of Discharge (POD)...</option>
+                    @php
+                        $currentPod = old('pod', $si->pod);
+                        $podFound = false;
+                    @endphp
+                    @foreach($ports as $p)
+                        @if($currentPod === $p->name)
+                            @php $podFound = true; @endphp
+                        @endif
+                        <option value="{{ $p->name }}" @selected($currentPod === $p->name)>
+                            {{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}
+                        </option>
+                    @endforeach
+                    @if($currentPod && !$podFound)
+                        <option value="{{ $currentPod }}" selected data-custom-option="true">{{ $currentPod }}</option>
+                    @endif
+                </select>
             </div>
-
-            <datalist id="port_list">
-                @foreach($ports as $p)
-                    <option value="{{ $p->name }}">{{ $p->code ? '['.$p->code.'] ' : '' }}{{ $p->name }}</option>
-                @endforeach
-            </datalist>
         </div>
 
         {{-- TABEL KARGO (FORMAT 3 KOLOM B/L) --}}

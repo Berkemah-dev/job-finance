@@ -56,11 +56,8 @@
     <a class="button button-secondary" href="{{ route('booking-confirmations.edit', $bc) }}">
         <x-icon name="pencil"/> Edit Booking Confirmation
     </a>
-    <a class="button button-primary" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">
-        <x-icon name="eye"/> Preview PDF
-    </a>
-    <a class="button button-secondary" href="{{ route('booking-confirmations.pdf', ['bookingConfirmation' => $bc, 'mode' => 'download']) }}">
-        <x-icon name="download"/> Unduh PDF
+    <a class="button button-secondary" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">
+        <x-icon name="printer"/> Preview / Unduh PDF
     </a>
     @if($bc->job)
         <a class="button button-secondary" href="{{ route('jobs.show', $bc->job) }}">

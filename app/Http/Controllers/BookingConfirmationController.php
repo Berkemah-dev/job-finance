@@ -91,7 +91,7 @@ class BookingConfirmationController extends Controller
             'number'              => 'required|string|max:60|unique:booking_confirmations,number',
             'booking_date'        => 'required|date',
             'job_id'              => 'nullable|exists:jobs,id',
-            'customer_id'         => 'required|exists:customers,id',
+            'customer_id'         => 'nullable|exists:customers,id',
             'contact_person'      => 'nullable|string|max:120',
             'customer_ref'        => 'nullable|string|max:100',
             'shipper_name'        => 'nullable|string|max:160',
@@ -117,6 +117,10 @@ class BookingConfirmationController extends Controller
             'status'              => 'required|string|in:draft,confirmed,cancelled',
             'notes'               => 'nullable|string',
         ]);
+
+        if (empty($validated['customer_id']) && !empty($validated['job_id'])) {
+            $validated['customer_id'] = Job::find($validated['job_id'])?->customer_id;
+        }
 
         $validated['created_by'] = auth()->id();
 
@@ -163,7 +167,7 @@ class BookingConfirmationController extends Controller
             'number'              => 'required|string|max:60|unique:booking_confirmations,number,' . $bookingConfirmation->id,
             'booking_date'        => 'required|date',
             'job_id'              => 'nullable|exists:jobs,id',
-            'customer_id'         => 'required|exists:customers,id',
+            'customer_id'         => 'nullable|exists:customers,id',
             'contact_person'      => 'nullable|string|max:120',
             'customer_ref'        => 'nullable|string|max:100',
             'shipper_name'        => 'nullable|string|max:160',
@@ -189,6 +193,10 @@ class BookingConfirmationController extends Controller
             'status'              => 'required|string|in:draft,confirmed,cancelled',
             'notes'               => 'nullable|string',
         ]);
+
+        if (empty($validated['customer_id']) && !empty($validated['job_id'])) {
+            $validated['customer_id'] = Job::find($validated['job_id'])?->customer_id ?? $bookingConfirmation->customer_id;
+        }
 
         $bookingConfirmation->update($validated);
 
