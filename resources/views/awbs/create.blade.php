@@ -39,6 +39,16 @@
 </div>
 
 <section class="panel form-panel">
+    @if($errors->any())
+        <div style="margin-bottom: 20px; padding: 14px 18px; border-radius: 8px; background: #fef2f2; border: 1px solid #f87171; color: #991b1b; font-size: 13px;">
+            <strong style="display: block; margin-bottom: 6px; font-size: 14px;">⚠️ Periksa kembali isian form Anda:</strong>
+            <ul style="margin: 0; padding-left: 20px;">
+                @foreach($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <form class="data-form" method="POST" action="{{ route('awbs.store') }}" id="awbForm">
         @csrf
 
@@ -304,8 +314,8 @@
                 <label for="gross_weight">Gross Weight</label>
                 <div style="display:flex; gap:8px; align-items:center; width:100%;">
                     <input id="gross_weight" name="gross_weight" inputmode="decimal"
-                        value="{{ old('gross_weight', $selectedJob?->gross_weight) }}" placeholder="contoh: 72.00" style="flex: 1 1 0%; min-width: 0;">
-                    <select id="gross_weight_unit" name="gross_weight_unit" style="flex: 0 0 95px; width: 95px; max-width: 95px;">
+                        value="{{ old('gross_weight', $selectedJob?->gross_weight) }}" placeholder="0.00" style="flex: 1 1 auto; width: 100%; min-width: 0;">
+                    <select id="gross_weight_unit" name="gross_weight_unit" data-native-select style="flex: 0 0 85px; width: 85px; min-width: 85px; max-width: 85px; padding-left: 10px; padding-right: 26px; cursor: pointer; text-align: center; font-weight: 600;">
                         <option value="KGS" @selected(old('gross_weight_unit', 'KGS') === 'KGS')>KGS</option>
                         <option value="LBS" @selected(old('gross_weight_unit') === 'LBS')>LBS</option>
                     </select>

@@ -39,6 +39,16 @@
 </div>
 
 <section class="panel form-panel">
+    @if($errors->any())
+        <div style="margin-bottom: 20px; padding: 14px 18px; border-radius: 8px; background: #fef2f2; border: 1px solid #f87171; color: #991b1b; font-size: 13px;">
+            <strong style="display: block; margin-bottom: 6px; font-size: 14px;">⚠️ Periksa kembali isian form Anda:</strong>
+            <ul style="margin: 0; padding-left: 20px;">
+                @foreach($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <form class="data-form" method="POST" action="{{ route('bills-of-lading.store') }}" id="blForm">
         @csrf
 
@@ -342,8 +352,8 @@
                 <label for="package_count">Qty</label>
                 <div style="display:flex; gap:8px; align-items:center; width:100%;">
                     <input id="package_count" name="package_count" type="number" min="0"
-                        value="{{ old('package_count', $selectedJob?->package_count) }}" placeholder="Jumlah" style="flex: 1 1 0%; min-width: 0;">
-                    <select id="package_unit" name="package_unit" style="flex: 0 0 120px; width: 120px; max-width: 120px;">
+                        value="{{ old('package_count', $selectedJob?->package_count) }}" placeholder="Jumlah" style="flex: 1 1 auto; width: 100%; min-width: 0;">
+                    <select id="package_unit" name="package_unit" data-native-select style="flex: 0 0 115px; width: 115px; min-width: 115px; max-width: 115px; padding-left: 10px; padding-right: 26px; cursor: pointer; text-align: center; font-weight: 600;">
                         <option value="Package" @selected(old('package_unit') === 'Package')>Package</option>
                         <option value="Box" @selected(old('package_unit') === 'Box')>Box</option>
                         <option value="Pallet" @selected(old('package_unit') === 'Pallet')>Pallet</option>

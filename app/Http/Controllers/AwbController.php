@@ -61,8 +61,15 @@ class AwbController extends Controller
 
     public function store(Request $request)
     {
+        $decimalFields = ['exchange_rate', 'gross_weight', 'chargeable_weight', 'volume'];
+        foreach ($decimalFields as $field) {
+            if ($request->has($field) && is_string($request->input($field))) {
+                $request->merge([$field => str_replace(',', '.', trim($request->input($field)))]);
+            }
+        }
+
         $validated = $request->validate([
-            'number'                 => 'required|string|max:60|unique:awbs,number',
+            'number'                 => 'nullable|string|max:60|unique:awbs,number',
             'awb_date'               => 'required|date',
             'job_id'                 => 'nullable|exists:jobs,id',
             'customer_id'            => 'nullable|exists:customers,id',
@@ -96,10 +103,14 @@ class AwbController extends Controller
             'gross_weight_unit'      => 'nullable|string|max:20',
             'chargeable_weight'      => 'nullable|numeric|min:0',
             'volume'                 => 'nullable|numeric|min:0',
-            'commodity'              => 'nullable|string|max:255',
+            'commodity'              => 'nullable|string',
             'remarks'                => 'nullable|string',
             'status'                 => 'required|string|in:draft,issued,completed,cancelled',
         ]);
+
+        if (empty($validated['number'])) {
+            $validated['number'] = Awb::generateNumber();
+        }
 
         $validated['created_by'] = auth()->id();
         $awb = Awb::create($validated);
@@ -130,6 +141,13 @@ class AwbController extends Controller
 
     public function update(Request $request, Awb $awb)
     {
+        $decimalFields = ['exchange_rate', 'gross_weight', 'chargeable_weight', 'volume'];
+        foreach ($decimalFields as $field) {
+            if ($request->has($field) && is_string($request->input($field))) {
+                $request->merge([$field => str_replace(',', '.', trim($request->input($field)))]);
+            }
+        }
+
         $validated = $request->validate([
             'number'                 => 'required|string|max:60|unique:awbs,number,' . $awb->id,
             'awb_date'               => 'required|date',
@@ -165,17 +183,12 @@ class AwbController extends Controller
             'gross_weight_unit'      => 'nullable|string|max:20',
             'chargeable_weight'      => 'nullable|numeric|min:0',
             'volume'                 => 'nullable|numeric|min:0',
-            'commodity'              => 'nullable|string|max:255',
+            'commodity'              => 'nullable|string',
             'remarks'                => 'nullable|string',
             'status'                 => 'required|string|in:draft,issued,completed,cancelled',
         ]);
 
         $awb->update($validated);
-
-        if ($awb->job_id) {
-            return redirect()->to(route('jobs.show', $awb->job_id) . '#tab-awb')
-                ->with('success', 'AWB ' . $awb->number . ' berhasil diperbarui.');
-        }
 
         return redirect()->route('awbs.show', $awb)
             ->with('success', 'AWB ' . $awb->number . ' berhasil diperbarui.');
