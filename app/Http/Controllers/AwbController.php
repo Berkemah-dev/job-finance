@@ -115,11 +115,6 @@ class AwbController extends Controller
         $validated['created_by'] = auth()->id();
         $awb = Awb::create($validated);
 
-        if ($awb->job_id) {
-            return redirect()->to(route('jobs.show', $awb->job_id) . '#tab-awb')
-                ->with('success', 'AWB ' . $awb->number . ' berhasil diterbitkan.');
-        }
-
         return redirect()->route('awbs.show', $awb)
             ->with('success', 'AWB ' . $awb->number . ' berhasil diterbitkan.');
     }

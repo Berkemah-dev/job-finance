@@ -20,10 +20,6 @@ export function initCustomSelects() {
         // Create wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'custom-select-wrapper';
-        if (select.style.flex) wrapper.style.flex = select.style.flex;
-        if (select.style.width && select.style.width !== '100%') wrapper.style.width = select.style.width;
-        if (select.style.minWidth) wrapper.style.minWidth = select.style.minWidth;
-        if (select.style.maxWidth) wrapper.style.maxWidth = select.style.maxWidth;
 
         // Insert wrapper before select and move select into wrapper
         select.parentNode.insertBefore(wrapper, select);

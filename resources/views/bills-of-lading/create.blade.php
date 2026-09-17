@@ -256,7 +256,7 @@
 
             <div class="field">
                 <label for="consignee_switch">Consignee (Switch)</label>
-                <input id="consignee_switch" name="consignee_switch" maxlength="160"
+                <input id="consignee_switch" name="consignee_switch" list="customer_switch_list" maxlength="160"
                     value="{{ old('consignee_switch') }}" placeholder="Consignee pengganti (Switch BL)">
             </div>
         </div>

@@ -801,7 +801,33 @@
             <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
         </div>
         @if($job->bookingConfirmations->isNotEmpty())
-            <div class="table-scroll"><table><thead><tr><th>Nomor</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@foreach($job->bookingConfirmations as $bc)<tr><td><strong>{{ $bc->number }}</strong></td><td>{{ $bc->booking_date?->format('d/m/Y') ?? '—' }}</td><td><span class="status-badge">{{ ucfirst($bc->status ?? 'Draft') }}</span></td><td><a class="button button-secondary button-sm" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">Preview PDF</a> <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a></td></tr>@endforeach</tbody></table></div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nomor</th>
+                            <th>Tanggal</th>
+                            <th>Status</th>
+                            <th style="text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($job->bookingConfirmations as $bc)
+                            <tr>
+                                <td><strong>{{ $bc->number }}</strong></td>
+                                <td>{{ $bc->booking_date?->format('d/m/Y') ?? '—' }}</td>
+                                <td><span class="status-badge">{{ ucfirst($bc->status ?? 'Draft') }}</span></td>
+                                <td>
+                                    <div style="display:flex;gap:6px;justify-content:center;">
+                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @else
             <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3><p style="margin:0;color:#64748b;">Buat dokumen BC dari tab ini agar tetap terhubung dengan Job Order.</p></div>
         @endif
@@ -814,7 +840,35 @@
             <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
         </div>
         @if($job->shippingInstructions->isNotEmpty())
-            <div class="table-scroll"><table><thead><tr><th>Nomor</th><th>Carrier</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@foreach($job->shippingInstructions as $si)<tr><td><strong>{{ $si->number }}</strong></td><td>{{ $si->to_carrier ?? '—' }}</td><td>{{ $si->si_date?->format('d/m/Y') ?? '—' }}</td><td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td><td><a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">Preview PDF</a> <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a></td></tr>@endforeach</tbody></table></div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nomor</th>
+                            <th>Carrier</th>
+                            <th>Tanggal</th>
+                            <th>Status</th>
+                            <th style="text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($job->shippingInstructions as $si)
+                            <tr>
+                                <td><strong>{{ $si->number }}</strong></td>
+                                <td>{{ $si->to_carrier ?? '—' }}</td>
+                                <td>{{ $si->si_date?->format('d/m/Y') ?? '—' }}</td>
+                                <td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td>
+                                <td>
+                                    <div style="display:flex;gap:6px;justify-content:center;">
+                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @else
             <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3><p style="margin:0;color:#64748b;">Buat dokumen SI dari tab ini agar seluruh data operasional tersusun dalam satu Job Order.</p></div>
         @endif
@@ -848,7 +902,7 @@
                             <th>HBL No.</th>
                             <th>MBL No.</th>
                             <th>Status</th>
-                            <th>Aksi</th>
+                            <th style="text-align:center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -862,7 +916,7 @@
                                 <td>{{ $bl->mbl_number ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($bl->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;">
+                                    <div style="display:flex;gap:6px;justify-content:center;">
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.show', $bl) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.edit', $bl) }}">Edit</a>
                                     </div>
@@ -909,7 +963,7 @@
                             <th>HAWB No.</th>
                             <th>MAWB No.</th>
                             <th>Status</th>
-                            <th>Aksi</th>
+                            <th style="text-align:center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -923,7 +977,7 @@
                                 <td>{{ $awb->mawb_number ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($awb->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;">
+                                    <div style="display:flex;gap:6px;justify-content:center;">
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.show', $awb) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.edit', $awb) }}">Edit</a>
                                     </div>

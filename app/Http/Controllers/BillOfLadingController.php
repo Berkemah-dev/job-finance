@@ -111,11 +111,6 @@ class BillOfLadingController extends Controller
         $validated['created_by'] = auth()->id();
         $bl = BillOfLading::create($validated);
 
-        if ($bl->job_id) {
-            return redirect()->to(route('jobs.show', $bl->job_id) . '#tab-bl')
-                ->with('success', 'B/L ' . $bl->number . ' berhasil diterbitkan.');
-        }
-
         return redirect()->route('bills-of-lading.show', $bl)
             ->with('success', 'B/L ' . $bl->number . ' berhasil diterbitkan.');
     }
@@ -183,11 +178,6 @@ class BillOfLadingController extends Controller
         ]);
 
         $billOfLading->update($validated);
-
-        if ($billOfLading->job_id) {
-            return redirect()->to(route('jobs.show', $billOfLading->job_id) . '#tab-bl')
-                ->with('success', 'B/L ' . $billOfLading->number . ' berhasil diperbarui.');
-        }
 
         return redirect()->route('bills-of-lading.show', $billOfLading)
             ->with('success', 'B/L ' . $billOfLading->number . ' berhasil diperbarui.');
