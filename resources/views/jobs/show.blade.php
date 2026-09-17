@@ -132,13 +132,22 @@
         <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Deklarasi Nilai Pabean</button>
         <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>
         <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Biaya & Profit</button>
-    @elseif($isExportSea || $isExportAir)
+    @elseif($isExportSea)
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
         <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
         <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Biaya & Profit</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. Biaya & Profit</button>
+    @elseif($isExportAir)
+        <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. Biaya & Profit</button>
     @else
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. Document Upload</button>
         <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Surat Jalan / Tanda Terima</button>
@@ -808,6 +817,128 @@
             <div class="table-scroll"><table><thead><tr><th>Nomor</th><th>Carrier</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>@foreach($job->shippingInstructions as $si)<tr><td><strong>{{ $si->number }}</strong></td><td>{{ $si->to_carrier ?? '—' }}</td><td>{{ $si->si_date?->format('d/m/Y') ?? '—' }}</td><td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td><td><a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">Preview PDF</a> <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a></td></tr>@endforeach</tbody></table></div>
         @else
             <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3><p style="margin:0;color:#64748b;">Buat dokumen SI dari tab ini agar seluruh data operasional tersusun dalam satu Job Order.</p></div>
+        @endif
+    </section>
+</div>
+@endif
+
+@if($isExportSea)
+<div id="tab-bl" class="job-tab-content" style="display: none;">
+    <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#e0f2fe;color:#0284c7;font-size:23px;">🚢</div>
+                <div>
+                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL EXPORT SEA</p>
+                    <h2 style="margin:0 0 4px;">Bill of Lading (B/L)</h2>
+                    <p style="margin:0;color:#64748b;">Dokumen kepemilikan muatan laut yang terhubung dengan Job Order ini.</p>
+                </div>
+            </div>
+            <a class="button button-primary" href="{{ route('bills-of-lading.create', ['job_id' => $job->id]) }}">+ Buat Bill of Lading (B/L)</a>
+        </div>
+        @if($job->billsOfLading->isNotEmpty())
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nomor B/L</th>
+                            <th>Tanggal</th>
+                            <th>Carrier</th>
+                            <th>Vessel / Voyage</th>
+                            <th>HBL No.</th>
+                            <th>MBL No.</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($job->billsOfLading as $bl)
+                            <tr>
+                                <td><strong>{{ $bl->number }}</strong></td>
+                                <td>{{ $bl->bl_date?->format('d/m/Y') ?? '—' }}</td>
+                                <td>{{ $bl->carrier ?? '—' }}</td>
+                                <td>{{ $bl->vessel_voyage ?? '—' }}</td>
+                                <td>{{ $bl->hbl_number ?? '—' }}</td>
+                                <td>{{ $bl->mbl_number ?? '—' }}</td>
+                                <td><span class="status-badge">{{ ucfirst($bl->status ?? 'Draft') }}</span></td>
+                                <td>
+                                    <div style="display:flex;gap:6px;">
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.show', $bl) }}">Detail</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.edit', $bl) }}">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0f2fe;color:#0284c7;font-size:25px;">🚢</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Bill of Lading (B/L)</h3>
+                <p style="margin:0;color:#64748b;">Buat dokumen B/L dari tab ini agar seluruh data kapal dan muatan otomatis terisi.</p>
+            </div>
+        @endif
+    </section>
+</div>
+@endif
+
+@if($isExportAir)
+<div id="tab-awb" class="job-tab-content" style="display: none;">
+    <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#ede9fe;color:#7c3aed;font-size:23px;">✈️</div>
+                <div>
+                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL EXPORT AIR</p>
+                    <h2 style="margin:0 0 4px;">Air Waybill (AWB)</h2>
+                    <p style="margin:0;color:#64748b;">Dokumen pengangkutan udara yang terhubung dengan Job Order ini.</p>
+                </div>
+            </div>
+            <a class="button button-primary" href="{{ route('awbs.create', ['job_id' => $job->id]) }}">+ Buat Air Waybill (AWB)</a>
+        </div>
+        @if($job->awbs->isNotEmpty())
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nomor AWB</th>
+                            <th>Tanggal</th>
+                            <th>Airlines</th>
+                            <th>Flight</th>
+                            <th>HAWB No.</th>
+                            <th>MAWB No.</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($job->awbs as $awb)
+                            <tr>
+                                <td><strong>{{ $awb->number }}</strong></td>
+                                <td>{{ $awb->awb_date?->format('d/m/Y') ?? '—' }}</td>
+                                <td>{{ $awb->airline ?? '—' }}</td>
+                                <td>{{ $awb->flight_number ?? '—' }}</td>
+                                <td>{{ $awb->hawb_number ?? '—' }}</td>
+                                <td>{{ $awb->mawb_number ?? '—' }}</td>
+                                <td><span class="status-badge">{{ ucfirst($awb->status ?? 'Draft') }}</span></td>
+                                <td>
+                                    <div style="display:flex;gap:6px;">
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.show', $awb) }}">Detail</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.edit', $awb) }}">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#ede9fe;color:#7c3aed;font-size:25px;">✈️</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Air Waybill (AWB)</h3>
+                <p style="margin:0;color:#64748b;">Buat dokumen AWB dari tab ini agar seluruh data penerbangan dan kargo otomatis terisi.</p>
+            </div>
         @endif
     </section>
 </div>

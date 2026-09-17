@@ -18,7 +18,7 @@
 <div class="quote-actions" style="margin-bottom:20px;">
     <a class="button button-secondary" href="{{ route('bills-of-lading.edit', $bl) }}">Edit B/L</a>
     @if($bl->job)
-        <a class="button button-secondary" href="{{ route('jobs.show', $bl->job) }}">Lihat Job Order</a>
+        <a class="button button-secondary" href="{{ route('jobs.show', $bl->job) . '#tab-bl' }}">Lihat Job Order</a>
     @endif
     <form method="POST" action="{{ route('bills-of-lading.destroy', $bl) }}" data-confirm="Hapus B/L {{ $bl->number }}?" style="display:inline;">
         @csrf @method('DELETE')
@@ -48,41 +48,80 @@
     <div style="padding:16px;">
         {{-- TABEL B/L FORMAT DOKUMEN --}}
         <table style="width:100%;border-collapse:collapse;border:1.5px solid #000;font-size:12.5px;line-height:1.4;">
-            {{-- ROW 1: SHIPPER vs TO CARRIER HEADER --}}
+            {{-- ROW 1: SHIPPER vs HEADER INFO --}}
             <tr>
                 <td style="width:50%;border:1px solid #000;vertical-align:top;padding:0;">
                     <div style="background:#f1f5f9;padding:5px 10px;font-weight:800;border-bottom:1px solid #000;">SHIPPER</div>
-                    <div style="padding:8px 10px;min-height:55px;"><strong>{{ $bl->shipper_name ?: '—' }}</strong></div>
+                    <div style="padding:8px 10px;min-height:55px;">
+                        <strong>{{ $bl->shipper_name ?: '—' }}</strong>
+                        @if($bl->shipper_switch)
+                            <div style="font-size:11px;color:#64748b;margin-top:4px;">Switch Shipper: {{ $bl->shipper_switch }}</div>
+                        @endif
+                    </div>
                 </td>
                 <td rowspan="3" style="width:50%;border:1px solid #000;vertical-align:top;padding:12px 14px;">
                     <table style="width:100%;border-collapse:collapse;font-size:12px;">
                         <tr>
-                            <td style="width:30%;font-weight:700;padding:2px 0;">Carrier</td>
+                            <td style="width:38%;font-weight:700;padding:2px 0;">B/L Date</td>
                             <td style="width:3%;">:</td>
+                            <td style="font-weight:700;color:#0f172a;">{{ $bl->bl_date->format('d/m/Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;padding:2px 0;">HBL No.</td>
+                            <td>:</td>
+                            <td style="font-weight:600;">{{ $bl->hbl_number ?: '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;padding:2px 0;">MBL No.</td>
+                            <td>:</td>
+                            <td style="font-weight:600;">{{ $bl->mbl_number ?: '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;padding:2px 0;">No. of Original BL</td>
+                            <td>:</td>
+                            <td style="font-weight:600;">{{ $bl->original_bl_count ?? 3 }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;padding:2px 0;">Place / Date of Issue</td>
+                            <td>:</td>
+                            <td style="font-weight:600;">{{ $bl->place_of_issue ?: 'JAKARTA' }} / {{ $bl->date_of_issue?->format('d/m/Y') ?: $bl->bl_date->format('d/m/Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;padding:2px 0;">Freight Payable at</td>
+                            <td>:</td>
+                            <td style="font-weight:600;">{{ $bl->freight_payable_at ?: 'JAKARTA' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:700;padding:2px 0;">Carrier / Line</td>
+                            <td>:</td>
                             <td style="font-weight:700;color:#0f172a;">{{ $bl->carrier ?: '—' }}</td>
                         </tr>
+                        @if($bl->carrier_bl_number)
                         <tr>
                             <td style="font-weight:700;padding:2px 0;">Carrier B/L No.</td>
                             <td>:</td>
-                            <td>{{ $bl->carrier_bl_number ?: '—' }}</td>
+                            <td>{{ $bl->carrier_bl_number }}</td>
                         </tr>
+                        @endif
+                        @if($bl->customer_ref_number)
                         <tr>
-                            <td style="font-weight:700;padding:2px 0;">Vessel & Voyage</td>
+                            <td style="font-weight:700;padding:2px 0;">Customer Ref No.</td>
                             <td>:</td>
-                            <td style="font-weight:600;">{{ $bl->vessel_voyage ?: '—' }}</td>
+                            <td>{{ $bl->customer_ref_number }}</td>
                         </tr>
-                        <tr>
-                            <td style="font-weight:700;padding:2px 0;">Date</td>
-                            <td>:</td>
-                            <td>{{ $bl->bl_date->format('d/m/Y') }}</td>
-                        </tr>
+                        @endif
                     </table>
                 </td>
             </tr>
             <tr>
                 <td style="border:1px solid #000;vertical-align:top;padding:0;">
                     <div style="background:#f1f5f9;padding:5px 10px;font-weight:800;border-bottom:1px solid #000;">CONSIGNEE</div>
-                    <div style="padding:8px 10px;min-height:55px;"><strong>{{ $bl->consignee_name ?: '—' }}</strong></div>
+                    <div style="padding:8px 10px;min-height:55px;">
+                        <strong>{{ $bl->consignee_name ?: '—' }}</strong>
+                        @if($bl->consignee_switch)
+                            <div style="font-size:11px;color:#64748b;margin-top:4px;">Switch Consignee: {{ $bl->consignee_switch }}</div>
+                        @endif
+                    </div>
                 </td>
             </tr>
             <tr>
@@ -94,26 +133,42 @@
             {{-- VESSEL & ROUTE ROW --}}
             <tr>
                 <td style="border:1px solid #000;vertical-align:middle;padding:8px 10px;">
-                    <div><strong>Vessel :</strong> {{ $bl->vessel_voyage ?: '—' }}</div>
+                    <div><strong>Pre Carriage :</strong> {{ $bl->pre_carriage ?: '—' }}</div>
+                    <div><strong>Vessel / Voyage :</strong> {{ $bl->vessel_voyage ?: '—' }}</div>
                     <div style="display:flex;gap:20px;font-size:12px;margin-top:2px;">
                         <div><strong>ETD :</strong> {{ $bl->etd?->format('d/m/Y') ?: '—' }}</div>
                         <div><strong>ETA :</strong> {{ $bl->eta?->format('d/m/Y') ?: '—' }}</div>
                     </div>
+                    @if($bl->shipped_on_board_date)
+                        <div style="margin-top:2px;"><strong>Shipped on Board :</strong> {{ $bl->shipped_on_board_date->format('d/m/Y') }}</div>
+                    @endif
                 </td>
                 <td style="border:1px solid #000;vertical-align:middle;padding:0;">
                     <table style="width:100%;border-collapse:collapse;">
+                        @if($bl->place_of_receipt)
                         <tr style="border-bottom:1px solid #000;">
-                            <td style="width:32%;padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;">LOADING</td>
+                            <td style="width:32%;padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;">RECEIPT</td>
+                            <td style="padding:6px 10px;font-weight:700;">{{ $bl->place_of_receipt }}</td>
+                        </tr>
+                        @endif
+                        <tr style="border-bottom:1px solid #000;">
+                            <td style="width:32%;padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;">PORT OF LOADING</td>
                             <td style="padding:6px 10px;font-weight:700;">{{ $bl->pol ?: '—' }}</td>
                         </tr>
                         <tr>
-                            <td style="padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;">DISCHARGE</td>
+                            <td style="padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;">PORT OF DISCHARGE</td>
                             <td style="padding:6px 10px;font-weight:700;">{{ $bl->pod ?: '—' }}</td>
                         </tr>
                         @if($bl->place_of_delivery)
                         <tr>
-                            <td style="padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;border-top:1px solid #000;">DELIVERY</td>
+                            <td style="padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;border-top:1px solid #000;">PLACE OF DELIVERY</td>
                             <td style="padding:6px 10px;font-weight:700;border-top:1px solid #000;">{{ $bl->place_of_delivery }}</td>
+                        </tr>
+                        @endif
+                        @if($bl->final_destination)
+                        <tr>
+                            <td style="padding:6px 10px;font-weight:800;background:#f8fafc;border-right:1px solid #000;border-top:1px solid #000;">DESTINATION</td>
+                            <td style="padding:6px 10px;font-weight:700;border-top:1px solid #000;">{{ $bl->final_destination }}</td>
                         </tr>
                         @endif
                     </table>
@@ -121,31 +176,46 @@
             </tr>
             {{-- CARGO HEADERS --}}
             <tr style="background:#e2e8f0;font-weight:800;font-size:12px;">
-                <td style="border:1px solid #000;padding:6px 10px;">MARKS AND NUMBER</td>
-                <td style="border:1px solid #000;padding:6px 10px;">DESCRIPTION / GW / MEAS</td>
+                <td style="border:1px solid #000;padding:6px 10px;">MARKS AND NUMBER / QTY</td>
+                <td style="border:1px solid #000;padding:6px 10px;">DESCRIPTION OF GOODS / GW / MEAS</td>
             </tr>
             {{-- CARGO CONTENT --}}
             <tr>
-                <td style="border:1px solid #000;vertical-align:top;padding:10px;min-height:120px;font-size:12px;white-space:pre-wrap;">{{ $bl->marks_numbers ?: "N/M\n(NO MARKS)" }}</td>
+                <td style="border:1px solid #000;vertical-align:top;padding:10px;min-height:120px;font-size:12px;">
+                    <div style="white-space:pre-wrap;margin-bottom:10px;">{{ $bl->marks_numbers ?: "N/M\n(NO MARKS)" }}</div>
+                    @if($bl->package_count)
+                        <div><strong>Quantity :</strong> {{ $bl->package_count }} {{ $bl->package_unit ?: 'Package' }}</div>
+                    @endif
+                    @if($bl->party)
+                        <div><strong>Party :</strong> {{ $bl->party }}</div>
+                    @endif
+                </td>
                 <td style="border:1px solid #000;vertical-align:top;padding:10px;font-size:12px;">
-                    <div style="white-space:pre-wrap;margin-bottom:8px;">{{ $bl->cargo_description ?: '—' }}</div>
-                    <div><strong>G.W :</strong> {{ $bl->gross_weight ? number_format($bl->gross_weight, 2) . ' KGS' : '—' }}</div>
-                    <div><strong>N.W :</strong> {{ $bl->net_weight ? number_format($bl->net_weight, 2) . ' KGS' : '—' }}</div>
-                    <div><strong>MEAS :</strong> {{ $bl->measurement ? number_format($bl->measurement, 3) . ' CBM' : '—' }}</div>
+                    <div style="white-space:pre-wrap;margin-bottom:10px;">{{ $bl->cargo_description ?: '—' }}</div>
+                    <div><strong>Gross Weight :</strong> {{ $bl->gross_weight ? number_format($bl->gross_weight, 2) . ' KGS' : '—' }}</div>
+                    @if($bl->net_weight)
+                        <div><strong>Net Weight :</strong> {{ number_format($bl->net_weight, 2) }} KGS</div>
+                    @endif
+                    <div><strong>Measurement :</strong> {{ $bl->measurement ? number_format($bl->measurement, 3) . ' M3' : '—' }}</div>
                 </td>
             </tr>
-            {{-- REMARKS --}}
+            {{-- AGENT & REMARKS --}}
+            @if($bl->agent_name)
+            <tr>
+                <td colspan="2" style="border:1px solid #000;padding:8px 10px;background:#f8fafc;">
+                    <strong>Delivery Agent at Port of Discharge:</strong> {{ $bl->agent_name }}
+                </td>
+            </tr>
+            @endif
+            @if($bl->remarks)
             <tr>
                 <td colspan="2" style="border:1px solid #000;padding:0;">
                     <div style="background:#f1f5f9;padding:5px 10px;font-weight:800;border-bottom:1px solid #000;">REMARKS</div>
-                    <div style="padding:10px;min-height:50px;font-size:12px;white-space:pre-wrap;">{{ $bl->remarks ?: '—' }}</div>
+                    <div style="padding:8px 10px;white-space:pre-wrap;font-size:12px;">{{ $bl->remarks }}</div>
                 </td>
             </tr>
+            @endif
         </table>
-
-        <div style="margin-top:12px;font-size:12px;color:#64748b;">
-            Dibuat oleh: {{ $bl->creator?->name ?? '—' }} · Tanggal B/L: {{ $bl->bl_date->format('d/m/Y') }}
-        </div>
     </div>
 </section>
 

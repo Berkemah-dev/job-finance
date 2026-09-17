@@ -62,6 +62,16 @@ class Job extends Model
         return $this->hasMany(ShippingInstruction::class);
     }
 
+    public function awbs(): HasMany
+    {
+        return $this->hasMany(Awb::class);
+    }
+
+    public function billsOfLading(): HasMany
+    {
+        return $this->hasMany(BillOfLading::class);
+    }
+
     protected $guarded = ['id'];
 
     protected function casts(): array

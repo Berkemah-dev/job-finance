@@ -6,13 +6,34 @@
     $backUrl = $selectedJob
         ? route('jobs.show', $selectedJob) . '#tab-awb'
         : route('awbs.index');
+
+    $firstSi = $selectedJob?->shippingInstructions?->first();
+    $defaultNotify = $firstSi?->notify_party ?: 'SAME AS CONSIGNEE';
 @endphp
+
+<style>
+.form-grid .field {
+    display: flex;
+    flex-direction: column;
+}
+.form-grid .field label {
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #334155;
+    line-height: 1.3;
+}
+</style>
 
 <div class="page-heading">
     <div>
         <p class="eyebrow">CUSTOMER SERVICE / OPERASIONAL — EXPORT AIR</p>
         <h1>Buat Air Waybill (AWB)</h1>
-        <p>Dokumen pengapalan udara untuk pengiriman export via maskapai penerbangan.</p>
+        <p>Dokumen pengangkutan udara untuk pengiriman Export Air.</p>
     </div>
     <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
@@ -21,45 +42,86 @@
     <form class="data-form" method="POST" action="{{ route('awbs.store') }}" id="awbForm">
         @csrf
 
-        {{-- INFORMASI DASAR --}}
+        {{-- 1. INFORMASI JOB ORDER & IDENTITAS AWB --}}
         <div class="form-section-heading">
-            <h2>Informasi Dasar & Job Order</h2>
-            <p>Pilih Job Order untuk menarik data pengapalan secara otomatis.</p>
+            <h2>Data AWB & Job Order</h2>
+            <p>Pilih Job Order untuk menarik data secara otomatis.</p>
         </div>
 
         <div class="form-grid">
-            <div class="field">
-                <label for="job_id">Terkait Job Order</label>
+            <div class="field span-2">
+                <label for="job_id">Job No. <span class="required">*</span></label>
                 <select id="job_id" name="job_id">
-                    <option value="">Pilih Job Order (Opsional)</option>
+                    <option value="">-- Pilih Job Order --</option>
                     @foreach($jobs as $j)
+                        @php
+                            $si = $j->shippingInstructions?->first();
+                        @endphp
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
                             data-customer-id="{{ $j->customer_id }}"
-                            data-shipper="{{ $j->shipper_name ?? $j->customer?->name }}"
+                            data-shipper="{{ $j->shipper_name }}"
                             data-consignee="{{ $j->consignee_name }}"
-                            data-vessel="{{ $j->vessel_voyage }}"
-                            data-pol="{{ $j->pol ?? $j->origin }}"
-                            data-pod="{{ $j->pod ?? $j->destination }}"
+                            data-notify="{{ $si?->notify_party ?: 'SAME AS CONSIGNEE' }}"
+                            data-hawb="{{ $j->hawb_number }}"
+                            data-mawb="{{ $j->awb_number }}"
+                            data-flight="{{ $j->flight_number }}"
+                            data-aol="{{ $j->pol ?? $j->origin }}"
+                            data-aod="{{ $j->pod ?? $j->destination }}"
                             data-etd="{{ $j->etd?->format('Y-m-d') }}"
                             data-eta="{{ $j->eta?->format('Y-m-d') }}"
                             data-commodity="{{ $j->cargo_description }}"
+                            data-pieces="{{ $j->package_count }}"
                             data-gross-weight="{{ $j->gross_weight }}"
+                            data-volume="{{ $j->volume }}"
                         >
-                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 30) }})
+                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 35) }})
                         </option>
                     @endforeach
                 </select>
             </div>
 
             <div class="field">
-                <label for="number">Nomor AWB <span class="required">*</span></label>
+                <label for="number">Nomor AWB (Internal) <span class="required">*</span></label>
                 <input id="number" name="number" maxlength="60" value="{{ old('number', $defaultNumber) }}" required>
             </div>
 
             <div class="field">
-                <label for="awb_date">Tanggal AWB <span class="required">*</span></label>
+                <label for="awb_date">AWB Date <span class="required">*</span></label>
                 <input id="awb_date" name="awb_date" type="date" value="{{ old('awb_date', date('Y-m-d')) }}" required>
+            </div>
+
+            <div class="field">
+                <label for="hawb_number">HAWB No.</label>
+                <input id="hawb_number" name="hawb_number" maxlength="100" value="{{ old('hawb_number', $selectedJob?->hawb_number) }}" placeholder="House Air Waybill No. (dari Job Order)">
+            </div>
+
+            <div class="field">
+                <label for="mawb_number">MAWB No.</label>
+                <input id="mawb_number" name="mawb_number" maxlength="100" value="{{ old('mawb_number', $selectedJob?->awb_number) }}" placeholder="Master Air Waybill No. (dari Job Order)">
+            </div>
+
+            <div class="field">
+                <label for="freight_term">Freight <span class="required">*</span></label>
+                <select id="freight_term" name="freight_term" required>
+                    <option value="PREPAID" @selected(old('freight_term', 'PREPAID') === 'PREPAID')>PREPAID</option>
+                    <option value="COLLECT" @selected(old('freight_term') === 'COLLECT')>COLLECT</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="currency">Currency</label>
+                <select id="currency" name="currency">
+                    <option value="USD" @selected(old('currency', 'USD') === 'USD')>USD</option>
+                    <option value="IDR" @selected(old('currency') === 'IDR')>IDR</option>
+                    <option value="SGD" @selected(old('currency') === 'SGD')>SGD</option>
+                    <option value="EUR" @selected(old('currency') === 'EUR')>EUR</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="exchange_rate">Exc. Rate (Kurs)</label>
+                <input id="exchange_rate" name="exchange_rate" inputmode="decimal" value="{{ old('exchange_rate', '1.0000') }}" placeholder="1.0000">
             </div>
 
             <div class="field">
@@ -72,39 +134,127 @@
                 </select>
             </div>
 
-            <div class="field">
-                <label for="customer_id">Customer (Shipper)</label>
+            <div class="field span-2">
+                <label for="customer_id">Customer (Pemilik Muatan)</label>
                 <select id="customer_id" name="customer_id">
                     <option value="">Pilih Customer (Opsional)</option>
                     @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id', $selectedJob?->customer_id) == $c->id)
-                            data-name="{{ $c->name }}">
-                            {{ $c->name }}
-                        </option>
+                        <option value="{{ $c->id }}" @selected(old('customer_id', $selectedJob?->customer_id) == $c->id)>{{ $c->name }}</option>
                     @endforeach
-                </select>
-            </div>
-
-            <div class="field">
-                <label for="freight_term">Freight Term <span class="required">*</span></label>
-                <select id="freight_term" name="freight_term" required>
-                    <option value="PREPAID" @selected(old('freight_term', 'PREPAID') === 'PREPAID')>PREPAID</option>
-                    <option value="COLLECT" @selected(old('freight_term') === 'COLLECT')>COLLECT</option>
                 </select>
             </div>
         </div>
 
-        {{-- INFORMASI MASKAPAI & PENERBANGAN --}}
+        {{-- 2. PARTIES (PARA PIHAK SESUAI SISTEM LAMA) --}}
         <div class="form-section-heading">
-            <h2>Maskapai & Rute Penerbangan</h2>
-            <p>Nama maskapai, nomor penerbangan, dan rute penerbangan.</p>
+            <h2>Parties (Shipper & Consignee HAWB/MAWB)</h2>
+            <p>Pihak pengirim, penerima, dan agen pengangkutan udara.</p>
         </div>
 
         <div class="form-grid">
             <div class="field">
-                <label for="airline">Airline (Maskapai) <span class="required">*</span></label>
+                <label for="shipper_on_hawb">Shipper on HAWB</label>
+                <input id="shipper_on_hawb" name="shipper_on_hawb" maxlength="160"
+                    value="{{ old('shipper_on_hawb', $selectedJob?->shipper_name) }}" placeholder="Shipper pada House AWB (Default Job Order)">
+            </div>
+
+            <div class="field">
+                <label for="shipper_on_mawb">Shipper on MAWB</label>
+                <input id="shipper_on_mawb" name="shipper_on_mawb" maxlength="160"
+                    value="{{ old('shipper_on_mawb') }}" placeholder="Forwarder / Shipper pada Master AWB">
+            </div>
+
+            <div class="field">
+                <label for="consignee_on_hawb">Consignee on HAWB</label>
+                <input id="consignee_on_hawb" name="consignee_on_hawb" maxlength="160"
+                    value="{{ old('consignee_on_hawb', $selectedJob?->consignee_name) }}" placeholder="Consignee pada House AWB (Default Job Order)">
+            </div>
+
+            <div class="field">
+                <label for="consignee_on_mawb">Consignee on MAWB</label>
+                <input id="consignee_on_mawb" name="consignee_on_mawb" maxlength="160"
+                    value="{{ old('consignee_on_mawb') }}" placeholder="Agent Tujuan pada Master AWB">
+            </div>
+
+            <div class="field">
+                <label for="notify_party">Notify Party</label>
+                <input id="notify_party" name="notify_party" maxlength="255"
+                    value="{{ old('notify_party', $defaultNotify) }}" placeholder="Pihak yang dinotifikasi">
+            </div>
+
+            <div class="field">
+                <label for="agent_name">Agent (Destination Agent)</label>
+                <input id="agent_name" name="agent_name" list="agent_list" maxlength="160"
+                    value="{{ old('agent_name') }}" placeholder="Nama Agent di Bandara Tujuan">
+                <datalist id="agent_list">
+                    @foreach($airlines as $agent)
+                        <option value="{{ $agent->name }}">{{ $agent->name }}</option>
+                    @endforeach
+                </datalist>
+            </div>
+        </div>
+
+        {{-- 3. FLIGHT & ROUTING --}}
+        <div class="form-section-heading">
+            <h2>Flight & Routing Information</h2>
+            <p>Jadwal penerbangan, bandara asal, transit, dan tujuan.</p>
+        </div>
+
+        <div class="form-grid">
+            <div class="field">
+                <label for="flight_number">Flight (No. Penerbangan 1)</label>
+                <input id="flight_number" name="flight_number" maxlength="60"
+                    value="{{ old('flight_number', $selectedJob?->flight_number) }}" placeholder="contoh: SQ 957">
+            </div>
+
+            <div class="field">
+                <label for="flight_date">Date (Tgl Penerbangan 1)</label>
+                <input id="flight_date" name="flight_date" type="date" value="{{ old('flight_date', $selectedJob?->etd?->format('Y-m-d')) }}">
+            </div>
+
+            <div class="field">
+                <label for="connecting_flight">Conn. Flight (Penerbangan Lanjutan)</label>
+                <input id="connecting_flight" name="connecting_flight" maxlength="60"
+                    value="{{ old('connecting_flight') }}" placeholder="contoh: SQ 802">
+            </div>
+
+            <div class="field">
+                <label for="connecting_flight_date">Date (Tgl Penerbangan Lanjutan)</label>
+                <input id="connecting_flight_date" name="connecting_flight_date" type="date" value="{{ old('connecting_flight_date') }}">
+            </div>
+
+            <div class="field">
+                <label for="etd">ETD (Keberangkatan)</label>
+                <input id="etd" name="etd" type="date" value="{{ old('etd', $selectedJob?->etd?->format('Y-m-d')) }}">
+            </div>
+
+            <div class="field">
+                <label for="eta">ETA (Kedatangan)</label>
+                <input id="eta" name="eta" type="date" value="{{ old('eta', $selectedJob?->eta?->format('Y-m-d')) }}">
+            </div>
+
+            <div class="field">
+                <label for="airport_of_departure">AOL (Airport of Loading)</label>
+                <input id="airport_of_departure" name="airport_of_departure" maxlength="120"
+                    value="{{ old('airport_of_departure', $selectedJob?->pol ?? $selectedJob?->origin) }}" placeholder="Bandara Keberangkatan (contoh: CGK / JAKARTA)">
+            </div>
+
+            <div class="field">
+                <label for="airport_of_destination">AOD (Airport of Destination)</label>
+                <input id="airport_of_destination" name="airport_of_destination" maxlength="120"
+                    value="{{ old('airport_of_destination', $selectedJob?->pod ?? $selectedJob?->destination) }}" placeholder="Bandara Tujuan (contoh: TPE / KAOHSIUNG)">
+            </div>
+
+            <div class="field">
+                <label for="transit_airport">Transit (Bandara Transit)</label>
+                <input id="transit_airport" name="transit_airport" maxlength="120"
+                    value="{{ old('transit_airport') }}" placeholder="Bandara Transit jika ada (contoh: SIN / SINGAPORE)">
+            </div>
+
+            <div class="field">
+                <label for="airline">Airlines (Maskapai)</label>
                 <input id="airline" name="airline" list="airline_list" maxlength="160"
-                    value="{{ old('airline') }}" placeholder="contoh: Garuda Indonesia / Singapore Airlines">
+                    value="{{ old('airline') }}" placeholder="Nama Maskapai Penerbangan">
                 <datalist id="airline_list">
                     @foreach($airlines as $a)
                         <option value="{{ $a->name }}">{{ $a->name }}</option>
@@ -113,142 +263,82 @@
             </div>
 
             <div class="field">
-                <label for="airline_code">Kode IATA Maskapai</label>
+                <label for="airline_code">IATA Code</label>
                 <input id="airline_code" name="airline_code" maxlength="20"
-                    value="{{ old('airline_code') }}" placeholder="contoh: GA / SQ / EK">
+                    value="{{ old('airline_code') }}" placeholder="contoh: SQ / GA / CI">
             </div>
 
             <div class="field">
-                <label for="flight_number">No. Penerbangan (Flight Number)</label>
-                <input id="flight_number" name="flight_number" maxlength="60"
-                    value="{{ old('flight_number') }}" placeholder="contoh: GA-724 / SQ-957">
+                <label for="account_number">Account Number</label>
+                <input id="account_number" name="account_number" maxlength="100"
+                    value="{{ old('account_number') }}" placeholder="Nomor Akun Maskapai / IATA">
             </div>
 
             <div class="field">
-                <label for="routing">Routing / Via</label>
-                <input id="routing" name="routing" maxlength="255"
-                    value="{{ old('routing') }}" placeholder="contoh: JKT – SIN – PVG">
+                <label for="value_of_carriage">Value of Carriage</label>
+                <input id="value_of_carriage" name="value_of_carriage" maxlength="60"
+                    value="{{ old('value_of_carriage', 'N.V.D.') }}" placeholder="N.V.D. (No Value Declared)">
             </div>
 
             <div class="field">
-                <label for="airport_of_departure">Airport of Departure (Bandara Keberangkatan)</label>
-                <input id="airport_of_departure" name="airport_of_departure" maxlength="120"
-                    value="{{ old('airport_of_departure', $selectedJob ? ($selectedJob->pol ?? $selectedJob->origin) : '') }}"
-                    placeholder="contoh: JAKARTA / CGK">
-            </div>
-
-            <div class="field">
-                <label for="airport_of_destination">Airport of Destination (Bandara Tujuan)</label>
-                <input id="airport_of_destination" name="airport_of_destination" maxlength="120"
-                    value="{{ old('airport_of_destination', $selectedJob ? ($selectedJob->pod ?? $selectedJob->destination) : '') }}"
-                    placeholder="contoh: SHANGHAI / PVG">
-            </div>
-
-            <div class="field">
-                <label for="etd">ETD (Tanggal Keberangkatan)</label>
-                <input id="etd" name="etd" type="date" value="{{ old('etd', $selectedJob?->etd?->format('Y-m-d')) }}">
-            </div>
-
-            <div class="field">
-                <label for="eta">ETA (Tanggal Kedatangan)</label>
-                <input id="eta" name="eta" type="date" value="{{ old('eta', $selectedJob?->eta?->format('Y-m-d')) }}">
+                <label for="value_of_customs">Value of Customs</label>
+                <input id="value_of_customs" name="value_of_customs" maxlength="60"
+                    value="{{ old('value_of_customs', 'N.C.V.') }}" placeholder="N.C.V. (No Customs Value)">
             </div>
         </div>
 
-        {{-- PIHAK PENGAPALAN --}}
+        {{-- 4. CARGO DETAILS --}}
         <div class="form-section-heading">
-            <h2>Pihak Pengapalan (Shipper & Consignee)</h2>
-            <p>Identitas pengirim dan penerima yang tercetak pada AWB.</p>
+            <h2>Data Muatan Kargo (Cargo Details)</h2>
+            <p>Rincian jumlah koli, berat, dan dimensi muatan udara.</p>
         </div>
 
         <div class="form-grid">
             <div class="field">
-                <label for="shipper_name">Shipper (Pengirim)</label>
-                <input id="shipper_name" name="shipper_name" maxlength="160"
-                    value="{{ old('shipper_name', $selectedJob?->shipper_name ?? $selectedJob?->customer?->name) }}"
-                    placeholder="Nama Perusahaan Shipper">
-            </div>
-
-            <div class="field">
-                <label for="consignee_name">Consignee (Penerima)</label>
-                <input id="consignee_name" name="consignee_name" maxlength="160"
-                    value="{{ old('consignee_name', $selectedJob?->consignee_name) }}"
-                    placeholder="Nama Perusahaan Consignee">
-            </div>
-
-            <div class="field span-2">
-                <label for="notify_party">Notify Party</label>
-                <input id="notify_party" name="notify_party" maxlength="255"
-                    value="{{ old('notify_party') }}"
-                    placeholder="Pihak yang dinotifikasi (opsional)">
-            </div>
-
-            <div class="field">
-                <label for="shipper_ref">Shipper Reference (PO / Booking Ref)</label>
-                <input id="shipper_ref" name="shipper_ref" maxlength="100"
-                    value="{{ old('shipper_ref') }}"
-                    placeholder="Nomor referensi shipper">
-            </div>
-        </div>
-
-        {{-- DETAIL KARGO --}}
-        <div class="form-section-heading">
-            <h2>Detail Kargo</h2>
-            <p>Deskripsi barang, jumlah koli, berat, dan kubikasi muatan.</p>
-        </div>
-
-        <div class="form-grid">
-            <div class="field span-2">
-                <label for="commodity">Commodity / Description of Goods</label>
-                <input id="commodity" name="commodity" maxlength="255"
-                    value="{{ old('commodity', $selectedJob?->cargo_description) }}"
-                    placeholder="Deskripsi barang / komoditas">
-            </div>
-
-            <div class="field">
-                <label for="pieces">Jumlah Koli (Pieces)</label>
+                <label for="pieces">No. of Pieces</label>
                 <input id="pieces" name="pieces" type="number" min="0"
-                    value="{{ old('pieces') }}" placeholder="contoh: 10">
+                    value="{{ old('pieces', $selectedJob?->package_count) }}" placeholder="Jumlah Pieces / Koli">
             </div>
 
             <div class="field">
-                <label for="gross_weight">Gross Weight (KGS)</label>
-                <input id="gross_weight" name="gross_weight" inputmode="decimal"
-                    value="{{ old('gross_weight', $selectedJob?->gross_weight) }}"
-                    placeholder="contoh: 250.00">
+                <label for="gross_weight">Gross Weight</label>
+                <div style="display:flex; gap:8px; align-items:center; width:100%;">
+                    <input id="gross_weight" name="gross_weight" inputmode="decimal"
+                        value="{{ old('gross_weight', $selectedJob?->gross_weight) }}" placeholder="contoh: 72.00" style="flex: 1 1 0%; min-width: 0;">
+                    <select id="gross_weight_unit" name="gross_weight_unit" style="flex: 0 0 95px; width: 95px; max-width: 95px;">
+                        <option value="KGS" @selected(old('gross_weight_unit', 'KGS') === 'KGS')>KGS</option>
+                        <option value="LBS" @selected(old('gross_weight_unit') === 'LBS')>LBS</option>
+                    </select>
+                </div>
             </div>
 
             <div class="field">
                 <label for="chargeable_weight">Chargeable Weight (KGS)</label>
                 <input id="chargeable_weight" name="chargeable_weight" inputmode="decimal"
-                    value="{{ old('chargeable_weight') }}"
-                    placeholder="contoh: 300.00">
+                    value="{{ old('chargeable_weight', $selectedJob?->gross_weight) }}" placeholder="contoh: 72.00">
             </div>
 
             <div class="field">
-                <label for="volume">Volume (CBM)</label>
+                <label for="volume">Measurement / Volume (CBM)</label>
                 <input id="volume" name="volume" inputmode="decimal"
-                    value="{{ old('volume', $selectedJob?->volume) }}"
-                    placeholder="contoh: 2.50">
+                    value="{{ old('volume', $selectedJob?->volume) }}" placeholder="contoh: 0.50">
             </div>
-        </div>
 
-        {{-- REMARKS --}}
-        <div class="form-section-heading">
-            <h2>Remarks / Catatan</h2>
-            <p>Catatan atau instruksi khusus untuk maskapai.</p>
-        </div>
-
-        <div class="form-grid">
             <div class="field span-2">
-                <label for="remarks">Remarks</label>
-                <textarea id="remarks" name="remarks" rows="3">{{ old('remarks') }}</textarea>
+                <label for="commodity">Nature and Quantity of Goods (Commodity)</label>
+                <textarea id="commodity" name="commodity" rows="3"
+                    placeholder="Uraian barang komoditas">{{ old('commodity', $selectedJob?->cargo_description) }}</textarea>
+            </div>
+
+            <div class="field span-2">
+                <label for="remarks">Handling Information / Remarks</label>
+                <textarea id="remarks" name="remarks" rows="2" placeholder="Instruksi penanganan khusus">{{ old('remarks') }}</textarea>
             </div>
         </div>
 
         <div class="form-actions">
             <a class="button button-secondary" href="{{ $backUrl }}">Batal</a>
-            <button class="button button-primary">Simpan AWB</button>
+            <button class="button button-primary">Simpan Air Waybill</button>
         </div>
     </form>
 </section>
@@ -257,23 +347,29 @@
 document.getElementById('job_id')?.addEventListener('change', function() {
     const opt = this.options[this.selectedIndex];
     if (!opt || !opt.value) return;
-    const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+
     if (opt.dataset.customerId) setVal('customer_id', opt.dataset.customerId);
-    if (opt.dataset.shipper) setVal('shipper_name', opt.dataset.shipper);
-    if (opt.dataset.consignee) setVal('consignee_name', opt.dataset.consignee);
-    if (opt.dataset.pol) setVal('airport_of_departure', opt.dataset.pol);
-    if (opt.dataset.pod) setVal('airport_of_destination', opt.dataset.pod);
-    if (opt.dataset.etd) setVal('etd', opt.dataset.etd);
+    if (opt.dataset.shipper) setVal('shipper_on_hawb', opt.dataset.shipper);
+    if (opt.dataset.consignee) setVal('consignee_on_hawb', opt.dataset.consignee);
+    if (opt.dataset.notify) setVal('notify_party', opt.dataset.notify);
+    if (opt.dataset.hawb) setVal('hawb_number', opt.dataset.hawb);
+    if (opt.dataset.mawb) setVal('mawb_number', opt.dataset.mawb);
+    if (opt.dataset.flight) setVal('flight_number', opt.dataset.flight);
+    if (opt.dataset.aol) setVal('airport_of_departure', opt.dataset.aol);
+    if (opt.dataset.aod) setVal('airport_of_destination', opt.dataset.aod);
+    if (opt.dataset.etd) {
+        setVal('etd', opt.dataset.etd);
+        setVal('flight_date', opt.dataset.etd);
+    }
     if (opt.dataset.eta) setVal('eta', opt.dataset.eta);
     if (opt.dataset.commodity) setVal('commodity', opt.dataset.commodity);
-    if (opt.dataset.grossWeight) setVal('gross_weight', opt.dataset.grossWeight);
-});
-
-document.getElementById('customer_id')?.addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    if (!opt || !opt.value) return;
-    const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-    if (opt.dataset.name) setVal('shipper_name', opt.dataset.name);
+    if (opt.dataset.pieces) setVal('pieces', opt.dataset.pieces);
+    if (opt.dataset.grossWeight) {
+        setVal('gross_weight', opt.dataset.grossWeight);
+        setVal('chargeable_weight', opt.dataset.grossWeight);
+    }
+    if (opt.dataset.volume) setVal('volume', opt.dataset.volume);
 });
 </script>
 

@@ -14,12 +14,15 @@ class Awb extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'awb_date'          => 'date',
-        'etd'               => 'date',
-        'eta'               => 'date',
-        'gross_weight'      => 'decimal:2',
-        'chargeable_weight' => 'decimal:2',
-        'volume'            => 'decimal:3',
+        'awb_date'               => 'date',
+        'flight_date'            => 'date',
+        'connecting_flight_date' => 'date',
+        'etd'                    => 'date',
+        'eta'                    => 'date',
+        'exchange_rate'          => 'decimal:4',
+        'gross_weight'           => 'decimal:2',
+        'chargeable_weight'      => 'decimal:2',
+        'volume'                 => 'decimal:3',
     ];
 
     public function job(): BelongsTo

@@ -18,7 +18,7 @@
 <div class="quote-actions" style="margin-bottom: 20px;">
     <a class="button button-secondary" href="{{ route('awbs.edit', $awb) }}">Edit AWB</a>
     @if($awb->job)
-        <a class="button button-secondary" href="{{ route('jobs.show', $awb->job) }}">Lihat Job Order</a>
+        <a class="button button-secondary" href="{{ route('jobs.show', $awb->job) . '#tab-awb' }}">Lihat Job Order</a>
     @endif
     <form method="POST" action="{{ route('awbs.destroy', $awb) }}" data-confirm="Hapus AWB {{ $awb->number }}?" style="display:inline;">
         @csrf @method('DELETE')
@@ -38,85 +38,114 @@
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
             <span class="status-badge status-{{ in_array($awb->status, ['issued','completed']) ? 'approved' : ($awb->status === 'cancelled' ? 'rejected' : 'draft') }}">
-                Status: {{ ucfirst($awb->status) }}
+                {{ ucfirst($awb->status) }}
             </span>
             <span class="badge-pill" style="font-weight:700;">{{ $awb->freight_term }}</span>
+            <span class="badge-pill">{{ $awb->currency }} (Kurs: {{ number_format($awb->exchange_rate ?? 1, 2) }})</span>
         </div>
     </div>
 
-    <div style="padding:20px;">
+    <div style="padding:16px;">
+        {{-- SUMMARY HEADER GRID --}}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-            {{-- SHIPPER --}}
+            {{-- SHIPPER BOX --}}
             <div style="border:1px solid #000;padding:0;">
-                <div style="background:#f1f5f9;padding:5px 12px;font-weight:800;border-bottom:1px solid #000;">SHIPPER</div>
-                <div style="padding:10px 12px;min-height:50px;">
-                    <strong>{{ $awb->shipper_name ?: '—' }}</strong>
+                <div style="background:#f1f5f9;padding:6px 12px;font-weight:800;border-bottom:1px solid #000;">SHIPPER</div>
+                <div style="padding:10px 12px;min-height:70px;font-size:12.5px;">
+                    <div><strong>Shipper on HAWB:</strong> {{ $awb->shipper_on_hawb ?: '—' }}</div>
+                    @if($awb->shipper_on_mawb)
+                        <div style="margin-top:4px;color:#64748b;"><strong>Shipper on MAWB:</strong> {{ $awb->shipper_on_mawb }}</div>
+                    @endif
                 </div>
             </div>
-            {{-- CONSIGNEE --}}
+
+            {{-- CONSIGNEE BOX --}}
             <div style="border:1px solid #000;padding:0;">
-                <div style="background:#f1f5f9;padding:5px 12px;font-weight:800;border-bottom:1px solid #000;">CONSIGNEE</div>
-                <div style="padding:10px 12px;min-height:50px;">
-                    <strong>{{ $awb->consignee_name ?: '—' }}</strong>
+                <div style="background:#f1f5f9;padding:6px 12px;font-weight:800;border-bottom:1px solid #000;">CONSIGNEE & NOTIFY</div>
+                <div style="padding:10px 12px;min-height:70px;font-size:12.5px;">
+                    <div><strong>Consignee on HAWB:</strong> {{ $awb->consignee_on_hawb ?: '—' }}</div>
+                    @if($awb->consignee_on_mawb)
+                        <div style="margin-top:4px;color:#64748b;"><strong>Consignee on MAWB:</strong> {{ $awb->consignee_on_mawb }}</div>
+                    @endif
+                    @if($awb->notify_party)
+                        <div style="margin-top:4px;"><strong>Notify Party:</strong> {{ $awb->notify_party }}</div>
+                    @endif
                 </div>
             </div>
         </div>
 
-        {{-- FLIGHT DETAILS --}}
-        <table style="width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:16px;font-size:13px;">
+        {{-- FLIGHT & ROUTING TABLE --}}
+        <table style="width:100%;border-collapse:collapse;border:1px solid #000;margin-bottom:16px;font-size:12px;">
             <thead>
-                <tr style="background:#e2e8f0;">
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:left;">Airline</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:left;">Flight No.</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:left;">From</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:left;">To</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:left;">ETD</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:left;">ETA</th>
+                <tr style="background:#e2e8f0;font-weight:800;">
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">AWB Date</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">HAWB No.</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">MAWB No.</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">Airlines</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">Flight 1 & Date</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">Conn. Flight</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">AOL &rarr; AOD</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="padding:8px 12px;border:1px solid #000;font-weight:700;">{{ $awb->airline ?: '—' }} {{ $awb->airline_code ? '('.$awb->airline_code.')' : '' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;">{{ $awb->flight_number ?: '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;font-weight:600;">{{ $awb->airport_of_departure ?: '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;font-weight:600;">{{ $awb->airport_of_destination ?: '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;">{{ $awb->etd?->format('d/m/Y') ?: '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;">{{ $awb->eta?->format('d/m/Y') ?: '—' }}</td>
+                    <td style="padding:8px 10px;border:1px solid #000;">{{ $awb->awb_date->format('d/m/Y') }}</td>
+                    <td style="padding:8px 10px;border:1px solid #000;font-weight:600;">{{ $awb->hawb_number ?: '—' }}</td>
+                    <td style="padding:8px 10px;border:1px solid #000;font-weight:600;">{{ $awb->mawb_number ?: '—' }}</td>
+                    <td style="padding:8px 10px;border:1px solid #000;font-weight:700;">{{ $awb->airline ?: '—' }} {{ $awb->airline_code ? '('.$awb->airline_code.')' : '' }}</td>
+                    <td style="padding:8px 10px;border:1px solid #000;">{{ $awb->flight_number ?: '—' }} @if($awb->flight_date)<br><small>{{ $awb->flight_date->format('d/m/Y') }}</small>@endif</td>
+                    <td style="padding:8px 10px;border:1px solid #000;">{{ $awb->connecting_flight ?: '—' }} @if($awb->connecting_flight_date)<br><small>{{ $awb->connecting_flight_date->format('d/m/Y') }}</small>@endif</td>
+                    <td style="padding:8px 10px;border:1px solid #000;font-weight:600;">
+                        {{ $awb->airport_of_departure ?: '—' }}
+                        @if($awb->transit_airport) &rarr; <span style="color:#2563eb;">{{ $awb->transit_airport }}</span> @endif
+                        &rarr; {{ $awb->airport_of_destination ?: '—' }}
+                    </td>
                 </tr>
             </tbody>
         </table>
 
-        {{-- CARGO DETAILS --}}
-        <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:13px;">
+        {{-- CARGO & VALUATION TABLE --}}
+        <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:12px;">
             <thead>
-                <tr style="background:#e2e8f0;">
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:left;">Commodity</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:center;">Pieces</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:center;">G.W (KGS)</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:center;">Chg. Weight</th>
-                    <th style="padding:8px 12px;border:1px solid #000;text-align:center;">Volume (CBM)</th>
+                <tr style="background:#e2e8f0;font-weight:800;">
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:left;">Nature & Quantity of Goods (Commodity)</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:center;">Pieces</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:center;">Gross Weight</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:center;">Chg. Weight</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:center;">Volume (CBM)</th>
+                    <th style="padding:7px 10px;border:1px solid #000;text-align:center;">Declared Value</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="padding:8px 12px;border:1px solid #000;">{{ $awb->commodity ?: '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;text-align:center;">{{ $awb->pieces ?: '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;text-align:center;">{{ $awb->gross_weight ? number_format($awb->gross_weight, 2) : '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;text-align:center;">{{ $awb->chargeable_weight ? number_format($awb->chargeable_weight, 2) : '—' }}</td>
-                    <td style="padding:8px 12px;border:1px solid #000;text-align:center;">{{ $awb->volume ? number_format($awb->volume, 3) : '—' }}</td>
+                    <td style="padding:10px;border:1px solid #000;white-space:pre-wrap;">{{ $awb->commodity ?: '—' }}</td>
+                    <td style="padding:10px;border:1px solid #000;text-align:center;font-weight:600;">{{ $awb->pieces ?: '—' }}</td>
+                    <td style="padding:10px;border:1px solid #000;text-align:center;font-weight:600;">{{ $awb->gross_weight ? number_format($awb->gross_weight, 2) . ' ' . ($awb->gross_weight_unit ?: 'KGS') : '—' }}</td>
+                    <td style="padding:10px;border:1px solid #000;text-align:center;font-weight:600;">{{ $awb->chargeable_weight ? number_format($awb->chargeable_weight, 2) . ' KGS' : '—' }}</td>
+                    <td style="padding:10px;border:1px solid #000;text-align:center;">{{ $awb->volume ? number_format($awb->volume, 3) : '—' }}</td>
+                    <td style="padding:10px;border:1px solid #000;font-size:11px;">
+                        <div>Carriage: {{ $awb->value_of_carriage ?: 'N.V.D.' }}</div>
+                        <div>Customs: {{ $awb->value_of_customs ?: 'N.C.V.' }}</div>
+                    </td>
                 </tr>
             </tbody>
         </table>
+
+        @if($awb->agent_name)
+        <div style="margin-top:12px;padding:8px 12px;background:#f8fafc;border:1px solid #000;font-size:12px;">
+            <strong>Destination Agent:</strong> {{ $awb->agent_name }}
+        </div>
+        @endif
 
         @if($awb->remarks)
-        <div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;">
-            <div style="font-weight:700;font-size:12px;color:#475569;margin-bottom:4px;">REMARKS</div>
-            <div style="white-space:pre-wrap;font-size:13px;">{{ $awb->remarks }}</div>
+        <div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border:1px solid #000;font-size:12px;">
+            <div style="font-weight:800;margin-bottom:4px;">HANDLING INFORMATION / REMARKS</div>
+            <div style="white-space:pre-wrap;">{{ $awb->remarks }}</div>
         </div>
         @endif
 
         <div style="margin-top:16px;font-size:12px;color:#64748b;">
-            Dibuat oleh: {{ $awb->creator?->name ?? '—' }} · Tanggal AWB: {{ $awb->awb_date->format('d/m/Y') }}
+            Diterbitkan oleh: {{ $awb->creator?->name ?? '—' }} · Tanggal AWB: {{ $awb->awb_date->format('d/m/Y') }}
         </div>
     </div>
 </section>

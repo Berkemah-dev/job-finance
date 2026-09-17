@@ -25,8 +25,10 @@ class AwbController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
                     ->orWhere('airline', 'like', "%{$search}%")
-                    ->orWhere('shipper_name', 'like', "%{$search}%")
-                    ->orWhere('consignee_name', 'like', "%{$search}%")
+                    ->orWhere('hawb_number', 'like', "%{$search}%")
+                    ->orWhere('mawb_number', 'like', "%{$search}%")
+                    ->orWhere('shipper_on_hawb', 'like', "%{$search}%")
+                    ->orWhere('consignee_on_hawb', 'like', "%{$search}%")
                     ->orWhereHas('customer', fn($cq) => $cq->where('name', 'like', "%{$search}%"))
                     ->orWhereHas('job', fn($jq) => $jq->where('number', 'like', "%{$search}%"));
             });
@@ -45,10 +47,10 @@ class AwbController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'shippingInstructions'])->find($jobId);
         }
 
-        $jobs      = Job::with('customer')->latest('id')->limit(50)->get();
+        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $airlines  = Vendor::orderBy('name')->get();
 
@@ -60,30 +62,43 @@ class AwbController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'number'              => 'required|string|max:60|unique:awbs,number',
-            'awb_date'            => 'required|date',
-            'job_id'              => 'nullable|exists:jobs,id',
-            'customer_id'         => 'nullable|exists:customers,id',
-            'airline'             => 'nullable|string|max:160',
-            'airline_code'        => 'nullable|string|max:20',
-            'flight_number'       => 'nullable|string|max:60',
-            'etd'                 => 'nullable|date',
-            'eta'                 => 'nullable|date',
+            'number'                 => 'required|string|max:60|unique:awbs,number',
+            'awb_date'               => 'required|date',
+            'job_id'                 => 'nullable|exists:jobs,id',
+            'customer_id'            => 'nullable|exists:customers,id',
+            'hawb_number'            => 'nullable|string|max:100',
+            'mawb_number'            => 'nullable|string|max:100',
+            'freight_term'           => 'required|string|in:PREPAID,COLLECT',
+            'currency'               => 'nullable|string|max:10',
+            'exchange_rate'          => 'nullable|numeric|min:0',
+            'shipper_on_hawb'        => 'nullable|string|max:160',
+            'shipper_on_mawb'        => 'nullable|string|max:160',
+            'consignee_on_hawb'      => 'nullable|string|max:160',
+            'consignee_on_mawb'      => 'nullable|string|max:160',
+            'notify_party'           => 'nullable|string',
+            'agent_name'             => 'nullable|string|max:160',
+            'flight_number'          => 'nullable|string|max:60',
+            'flight_date'            => 'nullable|date',
+            'connecting_flight'      => 'nullable|string|max:60',
+            'connecting_flight_date' => 'nullable|date',
+            'etd'                    => 'nullable|date',
+            'eta'                    => 'nullable|date',
             'airport_of_departure'   => 'nullable|string|max:120',
+            'transit_airport'        => 'nullable|string|max:120',
             'airport_of_destination' => 'nullable|string|max:120',
-            'routing'             => 'nullable|string|max:255',
-            'shipper_name'        => 'nullable|string|max:160',
-            'consignee_name'      => 'nullable|string|max:160',
-            'notify_party'        => 'nullable|string',
-            'commodity'           => 'nullable|string|max:255',
-            'pieces'              => 'nullable|integer|min:0',
-            'gross_weight'        => 'nullable|numeric|min:0',
-            'chargeable_weight'   => 'nullable|numeric|min:0',
-            'volume'              => 'nullable|numeric|min:0',
-            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
-            'shipper_ref'         => 'nullable|string|max:100',
-            'remarks'             => 'nullable|string',
-            'status'              => 'required|string|in:draft,issued,completed,cancelled',
+            'airline'                => 'nullable|string|max:160',
+            'airline_code'           => 'nullable|string|max:20',
+            'account_number'         => 'nullable|string|max:100',
+            'value_of_carriage'      => 'nullable|string|max:60',
+            'value_of_customs'       => 'nullable|string|max:60',
+            'pieces'                 => 'nullable|integer|min:0',
+            'gross_weight'           => 'nullable|numeric|min:0',
+            'gross_weight_unit'      => 'nullable|string|max:20',
+            'chargeable_weight'      => 'nullable|numeric|min:0',
+            'volume'                 => 'nullable|numeric|min:0',
+            'commodity'              => 'nullable|string|max:255',
+            'remarks'                => 'nullable|string',
+            'status'                 => 'required|string|in:draft,issued,completed,cancelled',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -106,7 +121,7 @@ class AwbController extends Controller
 
     public function edit(Awb $awb)
     {
-        $jobs      = Job::with('customer')->latest('id')->limit(50)->get();
+        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $airlines  = Vendor::orderBy('name')->get();
 
@@ -116,30 +131,43 @@ class AwbController extends Controller
     public function update(Request $request, Awb $awb)
     {
         $validated = $request->validate([
-            'number'              => 'required|string|max:60|unique:awbs,number,' . $awb->id,
-            'awb_date'            => 'required|date',
-            'job_id'              => 'nullable|exists:jobs,id',
-            'customer_id'         => 'nullable|exists:customers,id',
-            'airline'             => 'nullable|string|max:160',
-            'airline_code'        => 'nullable|string|max:20',
-            'flight_number'       => 'nullable|string|max:60',
-            'etd'                 => 'nullable|date',
-            'eta'                 => 'nullable|date',
+            'number'                 => 'required|string|max:60|unique:awbs,number,' . $awb->id,
+            'awb_date'               => 'required|date',
+            'job_id'                 => 'nullable|exists:jobs,id',
+            'customer_id'            => 'nullable|exists:customers,id',
+            'hawb_number'            => 'nullable|string|max:100',
+            'mawb_number'            => 'nullable|string|max:100',
+            'freight_term'           => 'required|string|in:PREPAID,COLLECT',
+            'currency'               => 'nullable|string|max:10',
+            'exchange_rate'          => 'nullable|numeric|min:0',
+            'shipper_on_hawb'        => 'nullable|string|max:160',
+            'shipper_on_mawb'        => 'nullable|string|max:160',
+            'consignee_on_hawb'      => 'nullable|string|max:160',
+            'consignee_on_mawb'      => 'nullable|string|max:160',
+            'notify_party'           => 'nullable|string',
+            'agent_name'             => 'nullable|string|max:160',
+            'flight_number'          => 'nullable|string|max:60',
+            'flight_date'            => 'nullable|date',
+            'connecting_flight'      => 'nullable|string|max:60',
+            'connecting_flight_date' => 'nullable|date',
+            'etd'                    => 'nullable|date',
+            'eta'                    => 'nullable|date',
             'airport_of_departure'   => 'nullable|string|max:120',
+            'transit_airport'        => 'nullable|string|max:120',
             'airport_of_destination' => 'nullable|string|max:120',
-            'routing'             => 'nullable|string|max:255',
-            'shipper_name'        => 'nullable|string|max:160',
-            'consignee_name'      => 'nullable|string|max:160',
-            'notify_party'        => 'nullable|string',
-            'commodity'           => 'nullable|string|max:255',
-            'pieces'              => 'nullable|integer|min:0',
-            'gross_weight'        => 'nullable|numeric|min:0',
-            'chargeable_weight'   => 'nullable|numeric|min:0',
-            'volume'              => 'nullable|numeric|min:0',
-            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
-            'shipper_ref'         => 'nullable|string|max:100',
-            'remarks'             => 'nullable|string',
-            'status'              => 'required|string|in:draft,issued,completed,cancelled',
+            'airline'                => 'nullable|string|max:160',
+            'airline_code'           => 'nullable|string|max:20',
+            'account_number'         => 'nullable|string|max:100',
+            'value_of_carriage'      => 'nullable|string|max:60',
+            'value_of_customs'       => 'nullable|string|max:60',
+            'pieces'                 => 'nullable|integer|min:0',
+            'gross_weight'           => 'nullable|numeric|min:0',
+            'gross_weight_unit'      => 'nullable|string|max:20',
+            'chargeable_weight'      => 'nullable|numeric|min:0',
+            'volume'                 => 'nullable|numeric|min:0',
+            'commodity'              => 'nullable|string|max:255',
+            'remarks'                => 'nullable|string',
+            'status'                 => 'required|string|in:draft,issued,completed,cancelled',
         ]);
 
         $awb->update($validated);

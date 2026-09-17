@@ -14,12 +14,14 @@ class BillOfLading extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'bl_date'      => 'date',
-        'etd'          => 'date',
-        'eta'          => 'date',
-        'gross_weight' => 'decimal:2',
-        'net_weight'   => 'decimal:2',
-        'measurement'  => 'decimal:3',
+        'bl_date'               => 'date',
+        'date_of_issue'         => 'date',
+        'shipped_on_board_date' => 'date',
+        'etd'                   => 'date',
+        'eta'                   => 'date',
+        'gross_weight'          => 'decimal:2',
+        'net_weight'            => 'decimal:2',
+        'measurement'           => 'decimal:3',
     ];
 
     public function job(): BelongsTo

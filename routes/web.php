@@ -122,7 +122,7 @@ Route::middleware('auth')->group(function () {
     // AWB — Air Waybill (Export Air)
     Route::resource('awbs', AwbController::class)->middleware('can:jobs.view');
     // Bill of Lading — B/L (Export Sea)
-    Route::resource('bills-of-lading', BillOfLadingController::class)->middleware('can:jobs.view');
+    Route::resource('bills-of-lading', BillOfLadingController::class)->parameters(['bills-of-lading' => 'billOfLading'])->middleware('can:jobs.view');
     Route::resource('jobs', JobController::class)->only(['index', 'show'])->middleware('can:jobs.view');
     Route::resource('jobs', JobController::class)->only(['edit', 'update'])->middleware('can:jobs.manage');
     Route::get('/jobs/{job}/preview', [JobController::class, 'preview'])->middleware('can:jobs.view')->name('jobs.preview');

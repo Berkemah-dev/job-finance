@@ -29,6 +29,8 @@ class BillOfLadingController extends Controller
                     ->orWhere('shipper_name', 'like', "%{$search}%")
                     ->orWhere('consignee_name', 'like', "%{$search}%")
                     ->orWhere('vessel_voyage', 'like', "%{$search}%")
+                    ->orWhere('hbl_number', 'like', "%{$search}%")
+                    ->orWhere('mbl_number', 'like', "%{$search}%")
                     ->orWhereHas('customer', fn($cq) => $cq->where('name', 'like', "%{$search}%"))
                     ->orWhereHas('job', fn($jq) => $jq->where('number', 'like', "%{$search}%"));
             });
@@ -47,10 +49,10 @@ class BillOfLadingController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'shippingInstructions'])->find($jobId);
         }
 
-        $jobs      = Job::with('customer')->latest('id')->limit(50)->get();
+        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $carriers  = Vendor::orderBy('name')->get();
         $ports     = Port::orderBy('name')->get();
@@ -67,24 +69,41 @@ class BillOfLadingController extends Controller
             'bl_date'             => 'required|date',
             'job_id'              => 'nullable|exists:jobs,id',
             'customer_id'         => 'nullable|exists:customers,id',
+            'hbl_number'          => 'nullable|string|max:100',
+            'mbl_number'          => 'nullable|string|max:100',
             'bl_type'             => 'required|string|in:original,telex,seaway',
+            'original_bl_count'   => 'nullable|integer|min:0',
+            'place_of_issue'      => 'nullable|string|max:60',
+            'date_of_issue'       => 'nullable|date',
+            'shipped_on_board_date' => 'nullable|date',
+            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
+            'freight_payable_at'  => 'nullable|string|max:60',
+            'customer_ref_number' => 'nullable|string|max:100',
             'carrier'             => 'nullable|string|max:160',
             'carrier_bl_number'   => 'nullable|string|max:100',
+            'shipper_name'        => 'nullable|string|max:160',
+            'consignee_name'      => 'nullable|string|max:160',
+            'notify_party'        => 'nullable|string',
+            'agent_name'          => 'nullable|string|max:160',
+            'shipper_switch'      => 'nullable|string|max:160',
+            'consignee_switch'    => 'nullable|string|max:160',
+            'pre_carriage'        => 'nullable|string|max:160',
             'vessel_voyage'       => 'nullable|string|max:120',
             'etd'                 => 'nullable|date',
             'eta'                 => 'nullable|date',
             'pol'                 => 'nullable|string|max:120',
+            'place_of_receipt'    => 'nullable|string|max:120',
             'pod'                 => 'nullable|string|max:120',
             'place_of_delivery'   => 'nullable|string|max:120',
-            'shipper_name'        => 'nullable|string|max:160',
-            'consignee_name'      => 'nullable|string|max:160',
-            'notify_party'        => 'nullable|string',
+            'final_destination'   => 'nullable|string|max:120',
+            'party'               => 'nullable|string|max:100',
+            'package_count'       => 'nullable|integer|min:0',
+            'package_unit'        => 'nullable|string|max:50',
             'marks_numbers'       => 'nullable|string',
             'cargo_description'   => 'nullable|string',
             'gross_weight'        => 'nullable|numeric|min:0',
             'net_weight'          => 'nullable|numeric|min:0',
             'measurement'         => 'nullable|numeric|min:0',
-            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
             'remarks'             => 'nullable|string',
             'status'              => 'required|string|in:draft,issued,released,completed,cancelled',
         ]);
@@ -109,7 +128,7 @@ class BillOfLadingController extends Controller
 
     public function edit(BillOfLading $billOfLading)
     {
-        $jobs      = Job::with('customer')->latest('id')->limit(50)->get();
+        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $carriers  = Vendor::orderBy('name')->get();
         $ports     = Port::orderBy('name')->get();
@@ -124,24 +143,41 @@ class BillOfLadingController extends Controller
             'bl_date'             => 'required|date',
             'job_id'              => 'nullable|exists:jobs,id',
             'customer_id'         => 'nullable|exists:customers,id',
+            'hbl_number'          => 'nullable|string|max:100',
+            'mbl_number'          => 'nullable|string|max:100',
             'bl_type'             => 'required|string|in:original,telex,seaway',
+            'original_bl_count'   => 'nullable|integer|min:0',
+            'place_of_issue'      => 'nullable|string|max:60',
+            'date_of_issue'       => 'nullable|date',
+            'shipped_on_board_date' => 'nullable|date',
+            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
+            'freight_payable_at'  => 'nullable|string|max:60',
+            'customer_ref_number' => 'nullable|string|max:100',
             'carrier'             => 'nullable|string|max:160',
             'carrier_bl_number'   => 'nullable|string|max:100',
+            'shipper_name'        => 'nullable|string|max:160',
+            'consignee_name'      => 'nullable|string|max:160',
+            'notify_party'        => 'nullable|string',
+            'agent_name'          => 'nullable|string|max:160',
+            'shipper_switch'      => 'nullable|string|max:160',
+            'consignee_switch'    => 'nullable|string|max:160',
+            'pre_carriage'        => 'nullable|string|max:160',
             'vessel_voyage'       => 'nullable|string|max:120',
             'etd'                 => 'nullable|date',
             'eta'                 => 'nullable|date',
             'pol'                 => 'nullable|string|max:120',
+            'place_of_receipt'    => 'nullable|string|max:120',
             'pod'                 => 'nullable|string|max:120',
             'place_of_delivery'   => 'nullable|string|max:120',
-            'shipper_name'        => 'nullable|string|max:160',
-            'consignee_name'      => 'nullable|string|max:160',
-            'notify_party'        => 'nullable|string',
+            'final_destination'   => 'nullable|string|max:120',
+            'party'               => 'nullable|string|max:100',
+            'package_count'       => 'nullable|integer|min:0',
+            'package_unit'        => 'nullable|string|max:50',
             'marks_numbers'       => 'nullable|string',
             'cargo_description'   => 'nullable|string',
             'gross_weight'        => 'nullable|numeric|min:0',
             'net_weight'          => 'nullable|numeric|min:0',
             'measurement'         => 'nullable|numeric|min:0',
-            'freight_term'        => 'required|string|in:PREPAID,COLLECT',
             'remarks'             => 'nullable|string',
             'status'              => 'required|string|in:draft,issued,released,completed,cancelled',
         ]);

@@ -47,7 +47,8 @@ class JobController extends Controller
     public function show(Job $job, JobCostService $costs)
     {
         $job->load([
-            'quotation', 'customer', 'sales', 'cs', 'bookingConfirmations', 'shippingInstructions', 'statusHistory.user', 
+            'quotation', 'customer', 'sales', 'cs', 'bookingConfirmations', 'shippingInstructions', 
+            'awbs', 'billsOfLading', 'statusHistory.user', 
             'shipmentStatusHistory.user', 'documents.documentType', 'documents.uploader'
         ]);
         $documentTypes = \App\Models\DocumentType::active()->forService($job->service_type)->orderBy('sort_order')->get();
