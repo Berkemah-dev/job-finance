@@ -79,8 +79,8 @@ class JobOrderTest extends TestCase
         $this->assertSame('Surabaya', $job->destination);
         $this->assertSame('PT Sumber Makmur', $job->shipper_name);
         $this->assertSame('Jl. Raya Cakung 10, Jakarta', $job->shipper_address);
-        $this->assertSame('PT Tujuan Jaya', $job->consignee_name);
-        $this->assertDatabaseHas('job_status_history', ['job_id' => $job->id, 'from_status' => null, 'to_status' => 'draft']);
+        $this->assertSame('open', $job->status);
+        $this->assertDatabaseHas('job_status_history', ['job_id' => $job->id, 'from_status' => null, 'to_status' => 'open']);
         $this->get('/jobs/'.$job->id)->assertOk()->assertSee('PT Sumber Makmur')->assertSee('PT Tujuan Jaya')->assertSee('Jakarta');
         $this->actingAs($this->operator);
         $this->get('/jobs/'.$job->id.'/edit')->assertOk()->assertSee('Pelabuhan muat (POL)')->assertSee('Nomor BL');

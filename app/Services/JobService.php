@@ -130,7 +130,7 @@ class JobService
         }, 3);
     }
 
-    private function seedQuotationCharges(Job $job, User $actor): void
+    public function seedQuotationCharges(Job $job, User $actor): void
     {
         $snapshot = $job->quotation_snapshot;
         $items = $snapshot['items'] ?? [];

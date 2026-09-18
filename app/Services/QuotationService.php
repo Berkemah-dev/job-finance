@@ -163,7 +163,9 @@ class QuotationService
                 'quotation_id' => $quotation->id,
                 'customer_id' => $quotation->customer_id,
                 'subject' => $quotation->subject,
-                'status' => 'draft',
+                'status' => 'open',
+                'opened_by' => $actor->id,
+                'opened_at' => now(),
                 'job_date' => now()->toDateString(),
                 'quotation_snapshot' => $snapshot,
                 'service_type' => $quotation->service_type,
@@ -185,7 +187,8 @@ class QuotationService
                 'created_by' => $actor->id,
                 'updated_by' => $actor->id,
             ]);
-            $job->statusHistory()->create(['from_status' => null, 'to_status' => 'draft', 'note' => 'Job dibuat dari quotation '.$quotation->number, 'user_id' => $actor->id, 'created_at' => now()]);
+            $job->statusHistory()->create(['from_status' => null, 'to_status' => 'open', 'note' => 'Job dibuat dan dibuka otomatis dari quotation '.$quotation->number, 'user_id' => $actor->id, 'created_at' => now()]);
+            app(JobService::class)->seedQuotationCharges($job, $actor);
             $from = $quotation->status;
             $quotation->status = QuotationStatus::Converted;
             $quotation->converted_by = $actor->id;

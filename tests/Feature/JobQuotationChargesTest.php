@@ -65,7 +65,6 @@ class JobQuotationChargesTest extends TestCase
             ['description' => 'Dokumen', 'type' => 'temporary', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '5000000', 'unit_price' => '5000000'],
             ['description' => 'Ongkir laut', 'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '2', 'unit_cost' => '3000000', 'unit_price' => '4500000'],
         ]);
-        $this->post('/jobs/'.$job->id.'/open', ['lock_version' => 0])->assertSessionHasNoErrors();
 
         $rows = $job->costs()->get();
         $this->assertCount(2, $rows);
@@ -92,7 +91,7 @@ class JobQuotationChargesTest extends TestCase
         foreach ($rows as $row) {
             $this->assertStringStartsWith('CST-', $row->number);
         }
-        $this->assertDatabaseHas('activity_logs', ['action' => 'job.costs.seeded', 'user_id' => $this->operator->id]);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job.costs.seeded', 'user_id' => $this->manager->id]);
         $this->assertCount(2, ActivityLog::where('action', 'job_cost.created')->get());
 
         $this->actingAs($this->finance);
@@ -107,7 +106,6 @@ class JobQuotationChargesTest extends TestCase
         $job = $this->convertedJob([
             ['description' => 'Agen luar negeri', 'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '1500', 'unit_price' => '1600', 'currency' => 'USD'],
         ]);
-        $this->post('/jobs/'.$job->id.'/open', ['lock_version' => 0])->assertSessionHasNoErrors();
 
         $row = $job->costs()->sole();
         $this->assertSame('Agen luar negeri', $row->description);

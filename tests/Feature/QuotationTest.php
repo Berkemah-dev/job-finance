@@ -105,7 +105,7 @@ class QuotationTest extends TestCase
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
         $this->actingAs($this->actor);
         $job = Job::firstOrFail();
-        $this->assertSame('draft', $job->status);
+        $this->assertSame('open', $job->status);
         $this->assertSame($q->id, $job->quotation_id);
         $this->assertSame('9500000.00', $job->quotation_snapshot['totals']['subtotal']);
         $this->assertCount(2, $job->quotation_snapshot['items']);

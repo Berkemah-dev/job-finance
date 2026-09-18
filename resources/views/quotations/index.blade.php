@@ -99,7 +99,7 @@
                                 </a>
                                 @can('convert', $quotation)
                                     @if(!$quotation->job)
-                                        <form method="POST" action="{{ route('quotations.convert', $quotation) }}" data-confirm="Buat Job Order Draft dari quotation ini?">
+                                        <form method="POST" action="{{ route('quotations.convert', $quotation) }}" data-confirm="Konversi quotation ini ke Job Order? Status job akan langsung Open.">
                                             @csrf
                                             <input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}">
                                             <button class="btn-action btn-action-success" title="Buat Job" data-tooltip="Buat Job" aria-label="Buat Job">

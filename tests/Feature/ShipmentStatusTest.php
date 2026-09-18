@@ -58,12 +58,9 @@ class ShipmentStatusTest extends TestCase
         $this->actingAs($this->manager);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
-        $this->actingAs($this->operator);
-        $job = Job::firstOrFail();
-        $this->post('/jobs/'.$job->id.'/open', ['lock_version' => $job->lock_version])->assertSessionHasNoErrors();
         $this->actingAs($this->sales);
 
-        return $job->fresh();
+        return Job::firstOrFail();
     }
 
     public function test_operator_updates_shipment_status_records_history_and_audit(): void
@@ -76,7 +73,7 @@ class ShipmentStatusTest extends TestCase
         $this->assertSame('booked', $job->shipment_status);
         $this->assertNotNull($job->shipment_status_at);
         $this->assertSame($this->operator->id, $job->shipment_status_by);
-        $this->assertSame(2, $job->lock_version);
+        $this->assertSame(1, $job->lock_version);
         $history = $job->shipmentStatusHistory()->orderBy('id')->get()->firstWhere('to_status', 'booked');
         $this->assertNotNull($history);
         $this->assertNull($history->from_status);

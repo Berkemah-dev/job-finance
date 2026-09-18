@@ -190,6 +190,6 @@ class QuotationController extends Controller
     {
         $job = $service->convert($quotation, $request->validated(), $request->user());
 
-        return redirect()->route('jobs.show', $job)->with('success', 'Quotation berhasil dikonversi menjadi Job Order Draft.');
+        return redirect()->route('jobs.show', $job)->with('success', 'Quotation berhasil dikonversi menjadi Job Order (Status: Open). Finance dapat langsung mengisi biaya operasional.');
     }
 }
