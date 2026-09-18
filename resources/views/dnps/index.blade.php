@@ -14,14 +14,6 @@
 <section class="panel">
     <form class="filter-bar" method="GET" action="{{ route('dnps.index') }}">
         <input type="search" name="search" value="{{ $search }}" placeholder="Cari nomor DNP, pembeli, penjual, job..." aria-label="Cari DNP">
-        <select name="status" aria-label="Status DNP">
-            <option value="">Semua Status</option>
-            <option value="draft" @selected($status === 'draft')>Draft</option>
-            <option value="submitted" @selected($status === 'submitted')>Submitted</option>
-            <option value="approved" @selected($status === 'approved')>Approved</option>
-            <option value="completed" @selected($status === 'completed')>Completed</option>
-            <option value="cancelled" @selected($status === 'cancelled')>Cancelled</option>
-        </select>
         <input type="date" name="date_from" value="{{ $dateFrom }}" aria-label="Dari Tanggal">
         <input type="date" name="date_to" value="{{ $dateTo }}" aria-label="Sampai Tanggal">
         <button class="button button-primary" type="submit">Filter</button>
@@ -42,7 +34,6 @@
                         <th>Harga Invoice</th>
                         <th>Biaya Angkut</th>
                         <th>Total CIF</th>
-                        <th>Status</th>
                         <th style="text-align:center;">Aksi</th>
                     </tr>
                 </thead>
@@ -64,11 +55,6 @@
                             <td>{{ number_format((float)$dnp->invoice_value, 2) }}</td>
                             <td>{{ number_format((float)$dnp->freight, 2) }}</td>
                             <td><strong>{{ number_format((float)$dnp->total_value, 2) }}</strong></td>
-                            <td>
-                                <span class="status-badge status-{{ in_array($dnp->status, ['approved', 'completed']) ? 'approved' : ($dnp->status === 'cancelled' ? 'rejected' : 'draft') }}">
-                                    {{ ucfirst($dnp->status) }}
-                                </span>
-                            </td>
                             <td>
                                 <div style="display:flex; gap:6px; justify-content:center;">
                                     <a class="button button-secondary button-sm" href="{{ route('dnps.show', $dnp) }}">Detail</a>

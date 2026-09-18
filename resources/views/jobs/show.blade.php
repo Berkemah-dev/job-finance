@@ -620,8 +620,8 @@
             </div>
         </div>
 
-        <div class="report-grid" style="padding: 0 24px 24px;">
-            <article class="report-card">
+        <div class="report-grid" style="padding: 0 24px 24px; align-items: start; gap: 24px;">
+            <article class="report-card" style="align-self: start;">
                 <div class="report-card-head">
                     <div class="report-card-title">
                         <span class="report-icon blue"><x-icon name="file"/></span>
@@ -635,18 +635,113 @@
                 <a class="button button-primary" href="{{ route('jobs.sk-do.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak SK DO</a>
             </article>
 
-            <article class="report-card">
-                <div class="report-card-head">
-                    <div class="report-card-title">
-                        <span class="report-icon purple"><x-icon name="file"/></span>
-                        <div>
-                            <h2>Surat Kuasa Kepabeanan (SK Pabean)</h2>
-                            <small>Pengurusan dokumen & fisik Bea Cukai</small>
+            <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div class="report-card-head">
+                        <div class="report-card-title">
+                            <span class="report-icon purple"><x-icon name="file"/></span>
+                            <div>
+                                <h2>Surat Kuasa Kepabeanan (SK Pabean)</h2>
+                                <small>Pengurusan dokumen & fisik Bea Cukai</small>
+                            </div>
                         </div>
                     </div>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.7; margin: 12px 0 16px;">Surat kuasa kepabeanan untuk proses pengeluaran barang impor di kantor pelayanan Bea dan Cukai.</p>
+
+                    @if(auth()->user()->can('update', $job))
+                        <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="lock_version" value="{{ old('lock_version', $job->lock_version) }}">
+                            <input type="hidden" name="subject" value="{{ old('subject', $job->subject) }}">
+                            <input type="hidden" name="job_date" value="{{ old('job_date', $job->job_date?->format('Y-m-d')) }}">
+                            <input type="hidden" name="redirect_tab" value="sk">
+
+                            <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                                <x-icon name="file" style="width: 14px; height: 14px; color: #7c3aed;"/>
+                                <span>Input Data SK Pabean (Manual)</span>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div class="field">
+                                    <label for="commercial_invoice_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Invoice</label>
+                                    <input type="text" name="commercial_invoice_number" id="commercial_invoice_number" maxlength="60" value="{{ old('commercial_invoice_number', $job->commercial_invoice_number) }}" placeholder="No. Invoice" style="font-size: 12.5px;">
+                                </div>
+                                <div class="field">
+                                    <label for="commercial_invoice_date" style="font-size: 11.5px; font-weight: 600; color: #475569;">Tanggal Invoice</label>
+                                    <input type="date" name="commercial_invoice_date" id="commercial_invoice_date" value="{{ old('commercial_invoice_date', $job->commercial_invoice_date?->format('Y-m-d')) }}" style="font-size: 12.5px;">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div class="field">
+                                    <label for="packing_list_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Packing List</label>
+                                    <input type="text" name="packing_list_number" id="packing_list_number" maxlength="60" value="{{ old('packing_list_number', $job->packing_list_number) }}" placeholder="No. Packing List" style="font-size: 12.5px;">
+                                </div>
+                                <div class="field">
+                                    <label for="packing_list_date" style="font-size: 11.5px; font-weight: 600; color: #475569;">Tanggal Packing List</label>
+                                    <input type="date" name="packing_list_date" id="packing_list_date" value="{{ old('packing_list_date', $job->packing_list_date?->format('Y-m-d')) }}" style="font-size: 12.5px;">
+                                </div>
+                            </div>
+
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="invoice_issuer" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nama Penerbit Invoice</label>
+                                <input type="text" name="invoice_issuer" id="invoice_issuer" maxlength="160" value="{{ old('invoice_issuer', $job->invoice_issuer ?: $job->shipper_name) }}" placeholder="Nama perusahaan shipper/penerbit invoice" style="font-size: 12.5px;">
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; margin-bottom: 14px;">
+                                <div class="field">
+                                    <label for="incoterm" style="font-size: 11.5px; font-weight: 600; color: #475569;">Incoterm</label>
+                                    @php
+                                        $curIncoterm = strtoupper(old('incoterm', $job->incoterm ?: ($job->quotation?->incoterm ?? 'CIF')));
+                                    @endphp
+                                    <select name="incoterm" id="incoterm" style="font-size: 12.5px;">
+                                        <option value="CIF" @selected($curIncoterm === 'CIF')>CIF</option>
+                                        <option value="FOB" @selected($curIncoterm === 'FOB')>FOB</option>
+                                        <option value="EXW" @selected($curIncoterm === 'EXW')>EXW</option>
+                                        <option value="DDP" @selected($curIncoterm === 'DDP')>DDP</option>
+                                        <option value="CFR" @selected($curIncoterm === 'CFR' || $curIncoterm === 'C&F')>CFR / C&F</option>
+                                        <option value="FCA" @selected($curIncoterm === 'FCA')>FCA</option>
+                                        <option value="CPT" @selected($curIncoterm === 'CPT')>CPT</option>
+                                        <option value="CIP" @selected($curIncoterm === 'CIP')>CIP</option>
+                                        <option value="DAP" @selected($curIncoterm === 'DAP')>DAP</option>
+                                        <option value="DPU" @selected($curIncoterm === 'DPU')>DPU</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="invoice_amount" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nilai Invoice</label>
+                                    <input type="text" name="invoice_amount" id="invoice_amount" maxlength="100" value="{{ old('invoice_amount', $job->invoice_amount) }}" placeholder="contoh: USD 25,000 / Rp 150.000.000" style="font-size: 12.5px;">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="button button-primary" style="font-size: 12px; padding: 7px 16px;">
+                                    <x-icon name="check"/> Simpan Data SK Pabean
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 16px; font-size: 12px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div><span style="color: #64748b;">No. Invoice:</span> <strong>{{ $job->commercial_invoice_number ?: '-' }}</strong></div>
+                                <div><span style="color: #64748b;">No. Packing List:</span> <strong>{{ $job->packing_list_number ?: '-' }}</strong></div>
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <span style="color: #64748b;">Penerbit Invoice:</span> <strong>{{ $job->invoice_issuer ?: ($job->shipper_name ?: '-') }}</strong>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <div><span style="color: #64748b;">Incoterm:</span> <strong>{{ $job->incoterm ?: ($job->quotation?->incoterm ?? 'CIF') }}</strong></div>
+                                <div><span style="color: #64748b;">Nilai Invoice:</span> <strong>{{ $job->invoice_amount ?: '-' }}</strong></div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
-                <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Surat kuasa kepabeanan untuk proses pengeluaran barang impor di kantor pelayanan Bea dan Cukai.</p>
-                <a class="button button-primary" href="{{ route('jobs.sk-pabean.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak SK Pabean</a>
+
+                <div style="padding-top: 6px;">
+                    <a class="button button-primary" href="{{ route('jobs.sk-pabean.pdf', $job) }}" target="_blank" style="width: 100%; justify-content: center;">
+                        <x-icon name="file"/> Preview / Cetak SK Pabean
+                    </a>
+                </div>
             </article>
         </div>
     </section>
@@ -681,7 +776,6 @@
                             <th>Asuransi</th>
                             <th>Total Nilai (CIF)</th>
                             <th>Pengulangan (F)</th>
-                            <th>Status</th>
                             <th style="text-align:center;">Aksi</th>
                         </tr>
                     </thead>
@@ -696,11 +790,6 @@
                                 <td>{{ number_format((float)$dnp->insurance, 2) }}</td>
                                 <td><strong>{{ number_format((float)$dnp->total_value, 2) }}</strong></td>
                                 <td>{{ $dnp->is_repeated_transaction ? 'YA' : 'TIDAK' }}</td>
-                                <td>
-                                    <span class="status-badge status-{{ in_array($dnp->status, ['approved', 'completed']) ? 'approved' : ($dnp->status === 'cancelled' ? 'rejected' : 'draft') }}">
-                                        {{ ucfirst($dnp->status) }}
-                                    </span>
-                                </td>
                                 <td>
                                     <div style="display:flex; gap:6px; justify-content:center;">
                                         <a class="button button-secondary button-sm" href="{{ route('dnps.show', $dnp) }}">Detail</a>
@@ -824,7 +913,13 @@
     <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
         <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
             <div style="display:flex; align-items:center; gap:15px;"><div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">▣</div><div><p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL</p><h2 style="margin:0 0 4px;">Booking Confirmation</h2><p style="margin:0;color:#64748b;">Konfirmasi booking yang terhubung dengan Job Order ini.</p></div></div>
-            <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+            @if($job->bookingConfirmations->isEmpty())
+                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+            @else
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
+                    ✓ Dokumen Dibuat (Maks 1x)
+                </span>
+            @endif
         </div>
         @if($job->bookingConfirmations->isNotEmpty())
             <div class="table-scroll">
@@ -864,7 +959,13 @@
     <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
         <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
             <div style="display:flex; align-items:center; gap:15px;"><div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">▤</div><div><p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL</p><h2 style="margin:0 0 4px;">Shipping Instruction</h2><p style="margin:0;color:#64748b;">Instruksi pengiriman yang terhubung dengan Job Order ini.</p></div></div>
-            <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+            @if($job->shippingInstructions->isEmpty())
+                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+            @else
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
+                    ✓ Dokumen Dibuat (Maks 1x)
+                </span>
+            @endif
         </div>
         @if($job->shippingInstructions->isNotEmpty())
             <div class="table-scroll">
@@ -923,11 +1024,10 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Nomor B/L</th>
+                            <th>HBL No.</th>
                             <th>Tanggal</th>
                             <th>Carrier</th>
                             <th>Vessel / Voyage</th>
-                            <th>HBL No.</th>
                             <th>MBL No.</th>
                             <th>Status</th>
                             <th style="text-align:center;">Aksi</th>
@@ -940,7 +1040,6 @@
                                 <td>{{ $bl->bl_date?->format('d/m/Y') ?? '—' }}</td>
                                 <td>{{ $bl->carrier ?? '—' }}</td>
                                 <td>{{ $bl->vessel_voyage ?? '—' }}</td>
-                                <td>{{ $bl->hbl_number ?? '—' }}</td>
                                 <td>{{ $bl->mbl_number ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($bl->status ?? 'Draft') }}</span></td>
                                 <td>

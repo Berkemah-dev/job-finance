@@ -34,9 +34,6 @@
         <div style="font-weight:700; font-size:15px; color:#1e293b; display:flex; align-items:center; gap:8px;">
             <span>📋</span> Data Deklarasi Nilai Pabean
         </div>
-        <span class="status-badge status-{{ in_array($dnp->status, ['approved', 'completed']) ? 'approved' : ($dnp->status === 'cancelled' ? 'rejected' : 'draft') }}">
-            {{ ucfirst($dnp->status) }}
-        </span>
     </div>
 
     <div style="padding:24px;">

@@ -101,18 +101,13 @@
             </div>
 
             <div class="field">
-                <label for="number">Nomor B/L (Internal) <span class="required">*</span></label>
-                <input id="number" name="number" maxlength="60" value="{{ old('number', $defaultNumber) }}" required>
+                <label for="number">HBL No. <span class="required">*</span></label>
+                <input id="number" name="number" maxlength="60" value="{{ old('number', $selectedJob?->hbl_number ?: $defaultNumber) }}" required placeholder="Contoh: RDXL26090001">
             </div>
 
             <div class="field">
                 <label for="bl_date">BL Date <span class="required">*</span></label>
                 <input id="bl_date" name="bl_date" type="date" value="{{ old('bl_date', date('Y-m-d')) }}" required>
-            </div>
-
-            <div class="field">
-                <label for="hbl_number">HBL No.</label>
-                <input id="hbl_number" name="hbl_number" maxlength="100" value="{{ old('hbl_number', $selectedJob?->hbl_number) }}" placeholder="Nomor House B/L (dari Job Order)">
             </div>
 
             <div class="field">
@@ -176,15 +171,6 @@
                 <input id="customer_ref_number" name="customer_ref_number" maxlength="100" value="{{ old('customer_ref_number') }}" placeholder="No PO / Ref Customer">
             </div>
 
-            <div class="field span-2">
-                <label for="customer_id">Customer (Pemilik Muatan)</label>
-                <select id="customer_id" name="customer_id">
-                    <option value="">Pilih Customer (Opsional)</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id', $selectedJob?->customer_id) == $c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
-            </div>
         </div>
 
         {{-- 2. PARTIES (PARA PIHAK) --}}
@@ -534,7 +520,7 @@ document.getElementById('job_id')?.addEventListener('change', function() {
     if (opt.dataset.shipper) setVal('shipper_name', opt.dataset.shipper);
     if (opt.dataset.consignee) setVal('consignee_name', opt.dataset.consignee);
     if (opt.dataset.notify) setVal('notify_party', opt.dataset.notify);
-    if (opt.dataset.hbl) setVal('hbl_number', opt.dataset.hbl);
+    if (opt.dataset.hbl) setVal('number', opt.dataset.hbl);
     if (opt.dataset.mbl) setVal('mbl_number', opt.dataset.mbl);
     if (opt.dataset.carrier) setCustomSelectVal('carrier', opt.dataset.carrier);
     if (opt.dataset.vessel) setVal('vessel_voyage', opt.dataset.vessel);

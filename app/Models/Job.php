@@ -57,9 +57,19 @@ class Job extends Model
         return $this->hasMany(BookingConfirmation::class);
     }
 
+    public function bookingConfirmation(): HasOne
+    {
+        return $this->hasOne(BookingConfirmation::class)->latestOfMany();
+    }
+
     public function shippingInstructions(): HasMany
     {
         return $this->hasMany(ShippingInstruction::class);
+    }
+
+    public function shippingInstruction(): HasOne
+    {
+        return $this->hasOne(ShippingInstruction::class)->latestOfMany();
     }
 
     public function awbs(): HasMany

@@ -41,7 +41,7 @@ class BillOfLading extends Model
 
     public static function generateNumber(?string $prefix = null): string
     {
-        $prefix = $prefix ?: 'BL/EXP/SEA/' . date('ym');
+        $prefix = $prefix ?: 'RDXL' . date('ym');
         $count = static::whereYear('bl_date', date('Y'))->count() + 1;
         return $prefix . str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }

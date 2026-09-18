@@ -6,6 +6,7 @@ use App\Models\BookingConfirmation;
 use App\Models\Customer;
 use App\Models\CustomerContact;
 use App\Models\Job;
+use App\Models\ShippingInstruction;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -186,5 +187,71 @@ class BookingConfirmationFeatureTest extends TestCase
         $res->assertSee('MV FALLBACK FROM BC');
         $res->assertSee('250');
         $res->assertDontSee('<select id="status"', false);
+    }
+
+    public function test_cannot_create_duplicate_booking_confirmation_for_same_job(): void
+    {
+        $job = Job::factory()->create();
+        BookingConfirmation::create([
+            'number'        => 'BC-FIRST-001',
+            'booking_date'  => '2026-09-17',
+            'job_id'        => $job->id,
+            'service_term'  => 'CY/CY',
+            'status'        => 'confirmed',
+        ]);
+
+        // Direct create page access should redirect to job order
+        $createRes = $this->get(route('booking-confirmations.create', ['job_id' => $job->id]));
+        $createRes->assertRedirect(route('jobs.show', $job->id).'#tab-booking');
+        $createRes->assertSessionHas('warning');
+
+        // Storing another BC for same job_id must fail validation
+        $storeRes = $this->post(route('booking-confirmations.store'), [
+            'number'        => 'BC-SECOND-002',
+            'booking_date'  => '2026-09-18',
+            'job_id'        => $job->id,
+            'service_term'  => 'CY/CY',
+            'status'        => 'confirmed',
+        ]);
+        $storeRes->assertSessionHasErrors(['job_id']);
+        $this->assertDatabaseMissing('booking_confirmations', ['number' => 'BC-SECOND-002']);
+    }
+
+    public function test_cannot_create_duplicate_shipping_instruction_for_same_job(): void
+    {
+        $job = Job::factory()->create();
+        ShippingInstruction::create([
+            'number'            => 'SI-FIRST-001',
+            'si_date'           => '2026-09-17',
+            'job_id'            => $job->id,
+            'to_carrier'        => 'ONE LINE',
+            'shipper_name'      => 'PT Shipper',
+            'consignee_name'    => 'PT Consignee',
+            'pol'               => 'JAKARTA',
+            'pod'               => 'SINGAPORE',
+            'cargo_description' => 'General Cargo',
+            'status'            => 'submitted',
+        ]);
+
+        // Direct create page access should redirect to job order
+        $createRes = $this->get(route('shipping-instructions.create', ['job_id' => $job->id]));
+        $createRes->assertRedirect(route('jobs.show', $job->id).'#tab-si');
+        $createRes->assertSessionHas('warning');
+
+        // Storing another SI for same job_id must fail validation
+        $storeRes = $this->post(route('shipping-instructions.store'), [
+            'number'            => 'SI-SECOND-002',
+            'si_date'           => '2026-09-18',
+            'job_id'            => $job->id,
+            'to_carrier'        => 'EVERGREEN',
+            'shipper_name'      => 'PT Shipper',
+            'consignee_name'    => 'PT Consignee',
+            'pol'               => 'JAKARTA',
+            'pod'               => 'SINGAPORE',
+            'cargo_description' => 'General Cargo',
+            'status'            => 'submitted',
+        ]);
+        $storeRes->assertSessionHasErrors(['job_id']);
+        $this->assertDatabaseMissing('shipping_instructions', ['number' => 'SI-SECOND-002']);
     }
 }

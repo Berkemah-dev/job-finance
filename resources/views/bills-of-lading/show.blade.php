@@ -69,7 +69,7 @@
                         <tr>
                             <td style="font-weight:700;padding:2px 0;">HBL No.</td>
                             <td>:</td>
-                            <td style="font-weight:600;">{{ $bl->hbl_number ?: '—' }}</td>
+                            <td style="font-weight:600;">{{ $bl->hbl_number ?: $bl->number }}</td>
                         </tr>
                         <tr>
                             <td style="font-weight:700;padding:2px 0;">MBL No.</td>

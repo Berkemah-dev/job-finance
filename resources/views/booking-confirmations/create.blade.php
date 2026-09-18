@@ -41,8 +41,12 @@
                 <select id="job_id" name="job_id">
                     <option value="">Pilih Job Order (Opsional)</option>
                     @foreach($jobs as $j)
+                        @php
+                            $hasBc = $j->bookingConfirmations?->isNotEmpty();
+                        @endphp
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
+                            @disabled($hasBc && old('job_id', $selectedJob?->id) != $j->id)
                             data-customer-id="{{ $j->customer_id }}"
                             data-shipper="{{ $j->shipper_name ?: $j->customer?->name }}"
                             data-consignee="{{ $j->consignee_name }}"
@@ -58,7 +62,7 @@
                             data-volume="{{ $j->volume }}"
                             data-booking-ref="{{ $j->booking_reference }}"
                         >
-                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 30) }})
+                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 30) }}){{ $hasBc ? ' [Sudah Ada BC]' : '' }}
                         </option>
                     @endforeach
                 </select>

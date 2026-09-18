@@ -65,10 +65,14 @@ class BookingConfirmationController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'quotation'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'quotation', 'bookingConfirmations'])->find($jobId);
+            if ($selectedJob && $selectedJob->bookingConfirmations->isNotEmpty()) {
+                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-booking')
+                    ->with('warning', 'Job Order ini sudah memiliki Booking Confirmation (' . $selectedJob->bookingConfirmations->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
         }
 
-        $jobs = Job::with('customer')->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'bookingConfirmations'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $carriers = Vendor::where(function ($q) {
             $q->where('type', 'shipping_line')
@@ -121,6 +125,15 @@ class BookingConfirmationController extends Controller
             'status'              => 'required|string|in:draft,confirmed,cancelled',
             'notes'               => 'nullable|string',
         ]);
+
+        if (!empty($validated['job_id'])) {
+            $existingBc = BookingConfirmation::where('job_id', $validated['job_id'])->first();
+            if ($existingBc) {
+                return back()->withInput()->withErrors([
+                    'job_id' => 'Job Order ini sudah memiliki Booking Confirmation (' . $existingBc->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.',
+                ]);
+            }
+        }
 
         if (empty($validated['customer_id']) && !empty($validated['job_id'])) {
             $validated['customer_id'] = Job::find($validated['job_id'])?->customer_id;

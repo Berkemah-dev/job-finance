@@ -97,4 +97,41 @@ class OperationalDocumentTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
     }
+
+    public function test_sk_pabean_manual_fields_can_be_saved_and_rendered_in_pdf(): void
+    {
+        $quotation = $this->approvedQuotation();
+        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
+        $this->post('/quotations/'.$quotation->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
+        $this->actingAs($this->actor);
+        $job = Job::firstOrFail();
+        $job->update(['service_type' => 'imp_sea']);
+
+        $response = $this->put(route('jobs.update', $job), [
+            'lock_version' => $job->lock_version,
+            'subject' => $job->subject,
+            'job_date' => $job->job_date->format('Y-m-d'),
+            'redirect_tab' => 'sk',
+            'commercial_invoice_number' => 'INV-TEST-2026-001',
+            'commercial_invoice_date' => '2026-09-15',
+            'packing_list_number' => 'PL-TEST-2026-001',
+            'packing_list_date' => '2026-09-15',
+            'invoice_issuer' => 'SHANGHAI TRADING CO., LTD',
+            'invoice_amount' => 'USD 45,000',
+            'incoterm' => 'FOB',
+        ]);
+
+        $response->assertRedirect(route('jobs.show', $job).'#tab-sk');
+
+        $job->refresh();
+        $this->assertSame('INV-TEST-2026-001', $job->commercial_invoice_number);
+        $this->assertSame('PL-TEST-2026-001', $job->packing_list_number);
+        $this->assertSame('SHANGHAI TRADING CO., LTD', $job->invoice_issuer);
+        $this->assertSame('USD 45,000', $job->invoice_amount);
+        $this->assertSame('FOB', $job->incoterm);
+
+        $pdfResponse = $this->get(route('jobs.sk-pabean.pdf', $job));
+        $pdfResponse->assertOk();
+        $pdfResponse->assertHeader('content-type', 'application/pdf');
+    }
 }

@@ -46,6 +46,7 @@
                     @foreach($jobs as $j)
                         @php
                             $bcFirst = $j->bookingConfirmations?->first();
+                            $hasSi = $j->shippingInstructions?->isNotEmpty();
                             $jVessel = $j->vessel_voyage ?: ($bcFirst?->vessel_voyage ?? '');
                             $jCarrier = $bcFirst?->carrier_name ?? '';
                             $jQuantity = $j->package_count ?: ($bcFirst?->quantity ?? '');
@@ -55,6 +56,7 @@
                         @endphp
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
+                            @disabled($hasSi && old('job_id', $selectedJob?->id) != $j->id)
                             data-customer-id="{{ $j->customer_id }}"
                             data-shipper="{{ $j->shipper_name }}"
                             data-consignee="{{ $j->consignee_name }}"
@@ -70,7 +72,7 @@
                             data-gross-weight="{{ $jGw }}"
                             data-volume="{{ $jVol }}"
                         >
-                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 30) }})
+                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 30) }}){{ $hasSi ? ' [Sudah Ada SI]' : '' }}
                         </option>
                     @endforeach
                 </select>

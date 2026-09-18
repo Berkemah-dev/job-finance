@@ -79,7 +79,12 @@ class JobController extends Controller
     {
         $service->update($job, $request->validated(), $request->user());
 
-        $tab = $request->input('redirect_tab') === 'customs' ? '#tab-customs' : '#tab-shipping';
+        $redirectTab = $request->input('redirect_tab');
+        $tab = match ($redirectTab) {
+            'customs' => '#tab-customs',
+            'sk' => '#tab-sk',
+            default => '#tab-shipping',
+        };
 
         return redirect()->to(route('jobs.show', $job).$tab)->with('success', 'Data operasional berhasil diperbarui.');
     }

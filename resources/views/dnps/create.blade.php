@@ -172,17 +172,6 @@
                 </select>
             </div>
 
-            <div class="field">
-                <label for="status">Status</label>
-                <select id="status" name="status" required>
-                    <option value="draft" @selected(old('status', 'draft') === 'draft')>Draft</option>
-                    <option value="submitted" @selected(old('status') === 'submitted')>Submitted</option>
-                    <option value="approved" @selected(old('status') === 'approved')>Approved</option>
-                    <option value="completed" @selected(old('status') === 'completed')>Completed</option>
-                    <option value="cancelled" @selected(old('status') === 'cancelled')>Cancelled</option>
-                </select>
-            </div>
-
             <input type="hidden" name="number" value="{{ old('number', $defaultNumber) }}">
             <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id', $selectedJob?->customer_id) }}">
         </div>

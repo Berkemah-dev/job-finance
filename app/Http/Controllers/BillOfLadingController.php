@@ -130,6 +130,16 @@ class BillOfLadingController extends Controller
             $validated['status'] = 'draft';
         }
 
+        if (empty($validated['customer_id']) && !empty($validated['job_id'])) {
+            $validated['customer_id'] = Job::find($validated['job_id'])?->customer_id;
+        }
+
+        if (empty($validated['hbl_number']) && !empty($validated['number'])) {
+            $validated['hbl_number'] = $validated['number'];
+        } elseif (empty($validated['number']) && !empty($validated['hbl_number'])) {
+            $validated['number'] = $validated['hbl_number'];
+        }
+
         if ($request->has('is_switch_bl') && ! $request->boolean('is_switch_bl')) {
             $validated['shipper_switch'] = null;
             $validated['consignee_switch'] = null;
@@ -138,6 +148,13 @@ class BillOfLadingController extends Controller
 
         $validated['created_by'] = auth()->id();
         $bl = BillOfLading::create($validated);
+
+        if (!empty($validated['job_id']) && !empty($bl->number)) {
+            $parentJob = Job::find($validated['job_id']);
+            if ($parentJob && empty($parentJob->hbl_number)) {
+                $parentJob->update(['hbl_number' => $bl->number]);
+            }
+        }
 
         return redirect()->route('bills-of-lading.show', $bl)
             ->with('success', 'B/L ' . $bl->number . ' berhasil diterbitkan.');
@@ -226,6 +243,16 @@ class BillOfLadingController extends Controller
             $validated['status'] = $billOfLading->status ?? 'draft';
         }
 
+        if (empty($validated['customer_id']) && !empty($validated['job_id'])) {
+            $validated['customer_id'] = Job::find($validated['job_id'])?->customer_id;
+        }
+
+        if (empty($validated['hbl_number']) && !empty($validated['number'])) {
+            $validated['hbl_number'] = $validated['number'];
+        } elseif (empty($validated['number']) && !empty($validated['hbl_number'])) {
+            $validated['number'] = $validated['hbl_number'];
+        }
+
         if ($request->has('is_switch_bl') && ! $request->boolean('is_switch_bl')) {
             $validated['shipper_switch'] = null;
             $validated['consignee_switch'] = null;
@@ -233,6 +260,13 @@ class BillOfLadingController extends Controller
         unset($validated['is_switch_bl']);
 
         $billOfLading->update($validated);
+
+        if (!empty($validated['job_id']) && !empty($billOfLading->number)) {
+            $parentJob = Job::find($validated['job_id']);
+            if ($parentJob && empty($parentJob->hbl_number)) {
+                $parentJob->update(['hbl_number' => $billOfLading->number]);
+            }
+        }
 
         return redirect()->route('bills-of-lading.show', $billOfLading)
             ->with('success', 'B/L ' . $billOfLading->number . ' berhasil diperbarui.');

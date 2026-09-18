@@ -71,18 +71,13 @@
             </div>
 
             <div class="field">
-                <label for="number">Nomor B/L (Internal) <span class="required">*</span></label>
-                <input id="number" name="number" maxlength="60" value="{{ old('number', $bl->number) }}" required>
+                <label for="number">HBL No. <span class="required">*</span></label>
+                <input id="number" name="number" maxlength="60" value="{{ old('number', $bl->number ?: $bl->hbl_number) }}" required placeholder="Contoh: RDXL26090001">
             </div>
 
             <div class="field">
                 <label for="bl_date">BL Date <span class="required">*</span></label>
                 <input id="bl_date" name="bl_date" type="date" value="{{ old('bl_date', $bl->bl_date?->format('Y-m-d')) }}" required>
-            </div>
-
-            <div class="field">
-                <label for="hbl_number">HBL No.</label>
-                <input id="hbl_number" name="hbl_number" maxlength="100" value="{{ old('hbl_number', $bl->hbl_number) }}" placeholder="Nomor House B/L">
             </div>
 
             <div class="field">
@@ -146,15 +141,6 @@
                 <input id="customer_ref_number" name="customer_ref_number" maxlength="100" value="{{ old('customer_ref_number', $bl->customer_ref_number) }}" placeholder="No PO / Ref Customer">
             </div>
 
-            <div class="field span-2">
-                <label for="customer_id">Customer (Pemilik Muatan)</label>
-                <select id="customer_id" name="customer_id">
-                    <option value="">Pilih Customer (Opsional)</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id', $bl->customer_id) == $c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
-            </div>
         </div>
 
         {{-- 2. PARTIES --}}

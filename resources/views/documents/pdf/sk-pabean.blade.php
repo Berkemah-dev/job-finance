@@ -13,10 +13,13 @@
     $hblNumber = $job->hbl_number ?: ($job->hawb_number ?: ($blNumber ?: ''));
     $blDate = $job->job_date?->format('d/m/Y') ?: '';
     
-    $shipperName = $job->shipper_name ?: ($quotation?->shipper_name ?? '');
-    $incoterm = $quotation?->incoterm ?? 'CIF';
-    $invoiceAmount = $quotation?->subtotal ?? $job->quotation_snapshot['totals']['subtotal'] ?? null;
-    $priceText = $invoiceAmount ? $incoterm . ' / Rp ' . \App\Support\Money::format($invoiceAmount) : $incoterm;
+    $shipperName = $job->invoice_issuer ?: ($job->shipper_name ?: ($quotation?->shipper_name ?? ''));
+    $incoterm = $job->incoterm ?: ($quotation?->incoterm ?? 'CIF');
+    $priceText = $job->invoice_amount 
+        ? ($incoterm . ' / ' . $job->invoice_amount) 
+        : (($invoiceAmount = $quotation?->subtotal ?? $job->quotation_snapshot['totals']['subtotal'] ?? null) 
+            ? $incoterm . ' / Rp ' . \App\Support\Money::format($invoiceAmount) 
+            : $incoterm);
 
     // Commercial Invoice
     $invoiceNo = $job->commercial_invoice_number;

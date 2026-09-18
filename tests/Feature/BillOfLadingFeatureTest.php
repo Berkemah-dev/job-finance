@@ -115,6 +115,10 @@ class BillOfLadingFeatureTest extends TestCase
         $response->assertDontSee('id="port_list"', false); // No native ugly datalist
         // Point 7: Carrier BL number field removed
         $response->assertDontSee('name="carrier_bl_number"', false);
+        // Point 8: Nomor B/L (Internal) and Customer (Pemilik Muatan) removed
+        $response->assertDontSee('Nomor B/L (Internal)');
+        $response->assertDontSee('Customer (Pemilik Muatan)');
+        $response->assertSee('HBL No.');
     }
 
     public function test_bl_can_be_stored_without_status_and_defaults_to_draft(): void
@@ -226,6 +230,29 @@ class BillOfLadingFeatureTest extends TestCase
         $this->assertEquals('MBL-UPDATED-999', $bl->mbl_number);
         $this->assertEquals('Updated Commodities', $bl->cargo_description);
         $this->assertEquals('draft', $bl->status);
+    }
+
+    public function test_bl_generates_rdxl_hbl_number_and_auto_assigns_customer_from_job(): void
+    {
+        $this->assertStringStartsWith('RDXL' . date('ym'), BillOfLading::generateNumber());
+
+        $postData = [
+            'number'            => 'RDXL26090001',
+            'bl_date'           => '2026-09-17',
+            'job_id'            => $this->job->id,
+            'bl_type'           => 'original',
+            'freight_term'      => 'PREPAID',
+            'pol'               => $this->polPort->name,
+            'pod'               => $this->podPort->name,
+            'cargo_description' => 'Garments',
+        ];
+
+        $response = $this->post(route('bills-of-lading.store'), $postData);
+        $response->assertSessionHasNoErrors();
+
+        $bl = BillOfLading::where('number', 'RDXL26090001')->firstOrFail();
+        $this->assertEquals($this->customer->id, $bl->customer_id);
+        $this->assertEquals('RDXL26090001', $bl->hbl_number);
     }
 }
 

@@ -77,15 +77,16 @@ class DnpController extends Controller
             'insurance'               => 'nullable|numeric|min:0',
             'is_repeated_transaction' => 'nullable|boolean',
             'supporting_documents'    => 'nullable|array',
-            'status'                  => 'required|string|in:draft,submitted,approved,completed,cancelled',
+            'status'                  => 'nullable|string|in:draft,submitted,approved,completed,cancelled',
             'notes'                   => 'nullable|string',
         ]);
 
+        $validated['status'] = $validated['status'] ?? 'draft';
         $validated['is_repeated_transaction'] = $request->boolean('is_repeated_transaction');
         $validated['total_value'] = (float)($validated['invoice_value'] ?? 0)
                                   + (float)($validated['freight'] ?? 0)
                                   + (float)($validated['insurance'] ?? 0);
-        $validated['created_by'] = auth()->id();
+        $validated['created_by'] = $request->user()->id;
 
         $dnp = Dnp::create($validated);
 
@@ -132,10 +133,11 @@ class DnpController extends Controller
             'insurance'               => 'nullable|numeric|min:0',
             'is_repeated_transaction' => 'nullable|boolean',
             'supporting_documents'    => 'nullable|array',
-            'status'                  => 'required|string|in:draft,submitted,approved,completed,cancelled',
+            'status'                  => 'nullable|string|in:draft,submitted,approved,completed,cancelled',
             'notes'                   => 'nullable|string',
         ]);
 
+        $validated['status'] = $validated['status'] ?? ($dnp->status ?? 'draft');
         $validated['is_repeated_transaction'] = $request->boolean('is_repeated_transaction');
         $validated['total_value'] = (float)($validated['invoice_value'] ?? 0)
                                   + (float)($validated['freight'] ?? 0)

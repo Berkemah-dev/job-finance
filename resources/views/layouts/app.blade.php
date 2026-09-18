@@ -143,6 +143,9 @@
             @if(session('error'))
                 <div class="app-toast error" role="alert" data-toast><span class="app-toast-icon">!</span><div><strong>Gagal</strong><p>{{ session('error') }}</p></div><button class="app-toast-close" type="button" aria-label="Tutup">×</button></div>
             @endif
+            @if(session('warning'))
+                <div class="app-toast error" role="alert" data-toast style="background:#fffbeb;border-color:#fde68a;color:#92400e;"><span class="app-toast-icon" style="background:#fef3c7;color:#b45309;">⚠</span><div><strong>Perhatian</strong><p>{{ session('warning') }}</p></div><button class="app-toast-close" type="button" aria-label="Tutup">×</button></div>
+            @endif
             @if(session('status'))
                 <div class="app-toast success" role="status" data-toast><span class="app-toast-icon">✓</span><div><strong>Info</strong><p>{{ session('status') }}</p></div><button class="app-toast-close" type="button" aria-label="Tutup">×</button></div>
             @endif

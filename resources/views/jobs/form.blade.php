@@ -67,6 +67,35 @@
     <div class="field"><label for="volume">Volume (m³ / CBM)</label><input id="volume" name="volume" inputmode="decimal" value="{{ old('volume',$job->volume) }}" placeholder="0.00"></div>
     <div class="field span-2"><label for="shipment_reference">Referensi Pengiriman</label><input id="shipment_reference" name="shipment_reference" maxlength="100" value="{{ old('shipment_reference',$job->shipment_reference) }}" placeholder="No. Referensi / PO"></div>
 
+    <div class="field span-2 form-section-heading" style="margin-top: 15px;">
+        <h2>Dokumen Komersial & SK Pabean</h2>
+        <p>Data invoice dan packing list untuk kelengkapan Surat Kuasa Kepabeanan.</p>
+    </div>
+    <div class="field"><label for="commercial_invoice_number">Nomor Invoice</label><input id="commercial_invoice_number" name="commercial_invoice_number" maxlength="60" value="{{ old('commercial_invoice_number',$job->commercial_invoice_number) }}" placeholder="Nomor Commercial Invoice"></div>
+    <div class="field"><label for="commercial_invoice_date">Tanggal Invoice</label><input id="commercial_invoice_date" name="commercial_invoice_date" type="date" value="{{ old('commercial_invoice_date',$job->commercial_invoice_date?->format('Y-m-d')) }}"></div>
+    <div class="field"><label for="packing_list_number">Nomor Packing List</label><input id="packing_list_number" name="packing_list_number" maxlength="60" value="{{ old('packing_list_number',$job->packing_list_number) }}" placeholder="Nomor Packing List"></div>
+    <div class="field"><label for="packing_list_date">Tanggal Packing List</label><input id="packing_list_date" name="packing_list_date" type="date" value="{{ old('packing_list_date',$job->packing_list_date?->format('Y-m-d')) }}"></div>
+    <div class="field span-2"><label for="invoice_issuer">Nama Penerbit Invoice</label><input id="invoice_issuer" name="invoice_issuer" maxlength="160" value="{{ old('invoice_issuer',$job->invoice_issuer) }}" placeholder="Nama perusahaan shipper/penerbit invoice"></div>
+    <div class="field">
+        <label for="incoterm">Incoterm</label>
+        @php
+            $curIncoterm = strtoupper(old('incoterm', $job->incoterm ?: ($job->quotation?->incoterm ?? 'CIF')));
+        @endphp
+        <select id="incoterm" name="incoterm">
+            <option value="CIF" @selected($curIncoterm === 'CIF')>CIF (Cost, Insurance & Freight)</option>
+            <option value="FOB" @selected($curIncoterm === 'FOB')>FOB (Free On Board)</option>
+            <option value="EXW" @selected($curIncoterm === 'EXW')>EXW (Ex Works)</option>
+            <option value="DDP" @selected($curIncoterm === 'DDP')>DDP (Delivered Duty Paid)</option>
+            <option value="CFR" @selected($curIncoterm === 'CFR' || $curIncoterm === 'C&F')>CFR / C&F (Cost and Freight)</option>
+            <option value="FCA" @selected($curIncoterm === 'FCA')>FCA (Free Carrier)</option>
+            <option value="CPT" @selected($curIncoterm === 'CPT')>CPT (Carriage Paid To)</option>
+            <option value="CIP" @selected($curIncoterm === 'CIP')>CIP (Carriage & Insurance Paid)</option>
+            <option value="DAP" @selected($curIncoterm === 'DAP')>DAP (Delivered at Place)</option>
+            <option value="DPU" @selected($curIncoterm === 'DPU')>DPU (Delivered at Place Unloaded)</option>
+        </select>
+    </div>
+    <div class="field"><label for="invoice_amount">Nilai Invoice</label><input id="invoice_amount" name="invoice_amount" maxlength="100" value="{{ old('invoice_amount',$job->invoice_amount) }}" placeholder="contoh: USD 25,000 atau Rp 150.000.000"></div>
+
     <div class="field span-2"><label for="cargo_description">Commodity</label><textarea id="cargo_description" name="cargo_description" rows="3" maxlength="2000">{{ old('cargo_description',$job->cargo_description) }}</textarea></div>
     <div class="field span-2"><label for="operational_notes">Catatan Operasional</label><textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000">{{ old('operational_notes',$job->operational_notes) }}</textarea></div>
 </div>

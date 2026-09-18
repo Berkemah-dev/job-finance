@@ -65,10 +65,14 @@ class ShippingInstructionController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'quotation', 'bookingConfirmations'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'quotation', 'bookingConfirmations', 'shippingInstructions'])->find($jobId);
+            if ($selectedJob && $selectedJob->shippingInstructions->isNotEmpty()) {
+                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-si')
+                    ->with('warning', 'Job Order ini sudah memiliki Shipping Instruction (' . $selectedJob->shippingInstructions->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
         }
 
-        $jobs = Job::with(['customer', 'bookingConfirmations'])->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'bookingConfirmations', 'shippingInstructions'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $shippingLines = Vendor::where(function ($q) {
             $q->where('type', 'shipping_line')
@@ -122,6 +126,15 @@ class ShippingInstructionController extends Controller
             'remarks'           => 'nullable|string',
             'status'            => 'nullable|string|in:draft,submitted,completed,cancelled',
         ]);
+
+        if (!empty($validated['job_id'])) {
+            $existingSi = ShippingInstruction::where('job_id', $validated['job_id'])->first();
+            if ($existingSi) {
+                return back()->withInput()->withErrors([
+                    'job_id' => 'Job Order ini sudah memiliki Shipping Instruction (' . $existingSi->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.',
+                ]);
+            }
+        }
 
         $validated['status'] = $validated['status'] ?? 'submitted';
         // Checkbox boolean: jika tidak dikirim = false

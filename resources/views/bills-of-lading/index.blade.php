@@ -42,7 +42,7 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>No. B/L</th>
+                    <th>HBL No.</th>
                     <th>Tanggal</th>
                     <th>Tipe B/L</th>
                     <th>Carrier</th>
