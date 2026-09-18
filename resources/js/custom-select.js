@@ -1,4 +1,5 @@
 export function initCustomSelects() {
+    window.initCustomSelects = initCustomSelects;
     const selects = document.querySelectorAll('select:not([data-native-select])');
 
     selects.forEach((select) => {

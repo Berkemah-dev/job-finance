@@ -311,7 +311,7 @@ class ShipmentStatusTest extends TestCase
         $response->assertSee('NOPEN PEB');
         $response->assertSee('Tanggal PEB');
         $response->assertSee('Nomor NPE');
-        $response->assertSee('Nomor BL / MBL');
+        $response->assertDontSee('bl_number_customs');
         $response->assertDontSee('commercial_invoice_number_customs');
         $response->assertDontSee('packing_list_number_customs');
         $response->assertDontSee('hbl_number_customs');

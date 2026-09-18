@@ -65,7 +65,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load(['contacts', 'documents.uploader', 'approver']);
+        $customer->load(['contacts', 'documents.uploader', 'approver', 'addresses']);
 
         return view('customers.show', compact('customer'));
     }

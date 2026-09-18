@@ -835,14 +835,133 @@
                             <span class="report-icon blue"><x-icon name="file"/></span>
                             <div>
                                 <h2>Surat Jalan</h2>
-                                <small>Delivery order untuk pengantaran barang</small>
+                                <small>Delivery order pengantaran barang (Import Sea / Laut)</small>
                             </div>
                         </div>
                     </div>
-                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak dokumen pengantar barang berisi penerima, rute, deskripsi barang, quantity, dan area tanda tangan.</p>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.7; margin: 12px 0 16px;">Pengisian data armada, nomor container fisik, supir, dan alamat tujuan dari master alamat customer.</p>
+
+                    @if(auth()->user()->can('update', $job))
+                        <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="lock_version" value="{{ old('lock_version', $job->lock_version) }}">
+                            <input type="hidden" name="subject" value="{{ old('subject', $job->subject) }}">
+                            <input type="hidden" name="job_date" value="{{ old('job_date', $job->job_date?->format('Y-m-d')) }}">
+                            <input type="hidden" name="redirect_tab" value="delivery">
+
+                            <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                                <x-icon name="file" style="width: 14px; height: 14px; color: #2563eb;"/>
+                                <span>Input Data Surat Jalan (Import Sea / Delivery)</span>
+                            </div>
+
+                            {{-- 1. Nomor Container Manual --}}
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="container_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Container (Manual)</label>
+                                <input type="text" name="container_number" id="container_number" maxlength="120" value="{{ old('container_number', $job->container_number) }}" placeholder="contoh: TCLU 582910-1 / 40HC atau 2x20ft" style="font-size: 12.5px;">
+                            </div>
+
+                            {{-- 2. Master Alamat Pengiriman --}}
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="customer_address_id" style="font-size: 11.5px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center;">
+                                    <span>Pilih Master Alamat Tujuan</span>
+                                    @if($job->customer_id)
+                                        <a href="{{ route('customer-addresses.index', ['customer_id' => $job->customer_id]) }}" target="_blank" style="color: #2563eb; font-size: 11px; text-decoration: none; font-weight: 500;">+ Kelola Master Alamat</a>
+                                    @endif
+                                </label>
+                                <select name="customer_address_id" id="customer_address_id" style="font-size: 12.5px;" onchange="onDeliveryAddressSelected(this)">
+                                    <option value="">— Gunakan Alamat Standar Consignee / Manual —</option>
+                                    @foreach($customerAddresses as $ca)
+                                        <option value="{{ $ca->id }}" data-address="{{ $ca->address }}" @selected(old('customer_address_id', $job->customer_address_id) == $ca->id)>
+                                            {{ $ca->location_name }} — {{ \Illuminate\Support\Str::limit($ca->address, 50) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="delivery_address" style="font-size: 11.5px; font-weight: 600; color: #475569;">Alamat Lengkap Tujuan Pengiriman</label>
+                                <textarea name="delivery_address" id="delivery_address" rows="2" placeholder="Alamat lengkap lokasi bongkar..." style="font-size: 12px;">{{ old('delivery_address', $job->delivery_address ?: ($job->deliveryAddressLocation?->address ?: $job->consignee_address)) }}</textarea>
+                            </div>
+
+                            {{-- 3. Vendor Trucking & Supir / Plat Nomor --}}
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="vendor_trucking_id" style="font-size: 11.5px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center;">
+                                    <span>Vendor Trucking</span>
+                                    <a href="{{ route('vendors.index') }}" target="_blank" style="color: #2563eb; font-size: 11px; text-decoration: none; font-weight: 500;">Lihat Vendor</a>
+                                </label>
+                                <select name="vendor_trucking_id" id="vendor_trucking_id" style="font-size: 12.5px;" onchange="onVendorTruckingSelected(this)">
+                                    <option value="">— Pilih Vendor Trucking —</option>
+                                    @foreach($truckingVendors as $tv)
+                                        <option value="{{ $tv->id }}" @selected(old('vendor_trucking_id', $job->vendor_trucking_id) == $tv->id)>
+                                            {{ $tv->name }} ({{ $tv->code }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="vendor_truck_id" style="font-size: 11.5px; font-weight: 600; color: #475569;">Pilih Supir & Plat Nomor dari Vendor</label>
+                                <select name="vendor_truck_id" id="vendor_truck_id" style="font-size: 12.5px;" onchange="onVendorTruckSelected(this)">
+                                    <option value="">— Pilih Armada / Supir —</option>
+                                    @if($job->vendorTrucking && $job->vendorTrucking->trucks)
+                                        @foreach($job->vendorTrucking->trucks as $trk)
+                                            <option value="{{ $trk->id }}" data-plate="{{ $trk->plate_number }}" data-driver="{{ $trk->driver_name }}" data-phone="{{ $trk->driver_phone }}" data-type="{{ $trk->vehicle_type }}" @selected(old('vendor_truck_id', $job->vendor_truck_id) == $trk->id)>
+                                                {{ $trk->plate_number }} — {{ $trk->driver_name }} ({{ $trk->vehicle_type ?: 'Truk' }})
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div class="field">
+                                    <label for="truck_plate_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Truk (Plat Nomor)</label>
+                                    <input type="text" name="truck_plate_number" id="truck_plate_number" maxlength="30" value="{{ old('truck_plate_number', $job->truck_plate_number ?: $job->vendorTruck?->plate_number) }}" placeholder="contoh: B 9123 UE" style="font-size: 12.5px; text-transform: uppercase;">
+                                </div>
+                                <div class="field">
+                                    <label for="vehicle_type" style="font-size: 11.5px; font-weight: 600; color: #475569;">Jenis Kendaraan</label>
+                                    <input type="text" name="vehicle_type" id="vehicle_type" maxlength="60" value="{{ old('vehicle_type', $job->vehicle_type ?: $job->vendorTruck?->vehicle_type) }}" placeholder="Trailer 20ft / Trailer 40ft" style="font-size: 12.5px;">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                                <div class="field">
+                                    <label for="driver_name" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nama Supir</label>
+                                    <input type="text" name="driver_name" id="driver_name" maxlength="160" value="{{ old('driver_name', $job->driver_name ?: $job->vendorTruck?->driver_name) }}" placeholder="Nama supir" style="font-size: 12.5px;">
+                                </div>
+                                <div class="field">
+                                    <label for="driver_phone" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Telepon Supir</label>
+                                    <input type="text" name="driver_phone" id="driver_phone" maxlength="50" value="{{ old('driver_phone', $job->driver_phone ?: $job->vendorTruck?->driver_phone) }}" placeholder="08..." style="font-size: 12.5px;">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end;">
+                                <button type="submit" class="button button-primary" style="font-size: 12px; padding: 7px 16px;">
+                                    <x-icon name="check"/> Simpan Data Surat Jalan
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 16px; font-size: 12px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div><span style="color: #64748b;">No. Container:</span> <strong>{{ $job->container_number ?: '-' }}</strong></div>
+                                <div><span style="color: #64748b;">No. Truk / Plat:</span> <strong>{{ $job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '-') }}</strong></div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div><span style="color: #64748b;">Nama Supir:</span> <strong>{{ $job->driver_name ?: ($job->vendorTruck?->driver_name ?: '-') }}</strong></div>
+                                <div><span style="color: #64748b;">No. Telepon Supir:</span> <strong>{{ $job->driver_phone ?: ($job->vendorTruck?->driver_phone ?: '-') }}</strong></div>
+                            </div>
+                            <div>
+                                <span style="color: #64748b;">Tujuan Pengiriman:</span> <strong>{{ $job->delivery_address ?: ($job->consignee_address ?: '-') }}</strong>
+                            </div>
+                        </div>
+                    @endif
                 </div>
-                <div>
-                    <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak Surat Jalan</a>
+                <div style="padding-top: 6px;">
+                    <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank" style="width: 100%; justify-content: center;">
+                        <x-icon name="file"/> Preview / Cetak Surat Jalan
+                    </a>
                 </div>
             </article>
 
@@ -1252,6 +1371,63 @@ document.querySelectorAll('.job-tab-btn').forEach(btn => {
 const requestedJobTab = window.location.hash.replace('#', '');
 if (requestedJobTab) {
     activateJobTab(requestedJobTab, false);
+}
+
+function onDeliveryAddressSelected(selectEl) {
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    const fullAddress = selectedOption ? selectedOption.dataset.address : '';
+    const deliveryAddressField = document.getElementById('delivery_address');
+    if (fullAddress && deliveryAddressField) {
+        deliveryAddressField.value = fullAddress;
+    }
+}
+
+function onVendorTruckingSelected(selectEl) {
+    const vendorId = selectEl.value;
+    const truckSelect = document.getElementById('vendor_truck_id');
+    if (!truckSelect) return;
+
+    truckSelect.innerHTML = '<option value="">— Memuat armada... —</option>';
+
+    if (!vendorId) {
+        truckSelect.innerHTML = '<option value="">— Pilih Armada / Supir —</option>';
+        return;
+    }
+
+    fetch(`/api/vendors/${vendorId}/trucks`)
+        .then(response => response.json())
+        .then(data => {
+            truckSelect.innerHTML = '<option value="">— Pilih Armada / Supir —</option>';
+            data.forEach(truck => {
+                const opt = document.createElement('option');
+                opt.value = truck.id;
+                opt.textContent = `${truck.plate_number} — ${truck.driver_name} (${truck.vehicle_type || 'Truk'})`;
+                opt.dataset.plate = truck.plate_number;
+                opt.dataset.driver = truck.driver_name;
+                opt.dataset.phone = truck.driver_phone || '';
+                opt.dataset.type = truck.vehicle_type || '';
+                truckSelect.appendChild(opt);
+            });
+        })
+        .catch(err => {
+            console.error('Gagal mengambil daftar armada:', err);
+            truckSelect.innerHTML = '<option value="">— Gagal memuat data armada —</option>';
+        });
+}
+
+function onVendorTruckSelected(selectEl) {
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    if (!selectedOption || !selectedOption.value) return;
+
+    const plateField = document.getElementById('truck_plate_number');
+    const driverField = document.getElementById('driver_name');
+    const phoneField = document.getElementById('driver_phone');
+    const typeField = document.getElementById('vehicle_type');
+
+    if (plateField && selectedOption.dataset.plate) plateField.value = selectedOption.dataset.plate;
+    if (driverField && selectedOption.dataset.driver) driverField.value = selectedOption.dataset.driver;
+    if (phoneField && selectedOption.dataset.phone !== undefined) phoneField.value = selectedOption.dataset.phone;
+    if (typeField && selectedOption.dataset.type !== undefined) typeField.value = selectedOption.dataset.type;
 }
 </script>
 

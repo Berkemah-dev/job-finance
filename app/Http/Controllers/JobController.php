@@ -47,11 +47,16 @@ class JobController extends Controller
     public function show(Job $job, JobCostService $costs)
     {
         $job->load([
-            'quotation', 'customer', 'sales', 'cs', 'bookingConfirmations', 'shippingInstructions', 
-            'awbs', 'billsOfLading', 'dnps', 'statusHistory.user', 
-            'shipmentStatusHistory.user', 'documents.documentType', 'documents.uploader'
+            'quotation', 'customer.addresses', 'sales', 'cs', 'bookingConfirmations', 'shippingInstructions', 
+            'awbs', 'billsOfLading', 'dnps', 'vendorTrucking.trucks', 'vendorTruck', 'deliveryAddressLocation',
+            'statusHistory.user', 'shipmentStatusHistory.user', 'documents.documentType', 'documents.uploader'
         ]);
         $documentTypes = \App\Models\DocumentType::active()->forService($job->service_type)->orderBy('sort_order')->get();
+        $truckingVendors = \App\Models\Vendor::where(function ($q) {
+            $q->where('type', 'trucking')->orWhereHas('categories', fn ($cq) => $cq->where('category', 'trucking'));
+        })->with(['trucks' => fn ($tq) => $tq->where('is_active', true)])->orderBy('name')->get(['id', 'name', 'code']);
+        $customerAddresses = $job->customer_id ? \App\Models\CustomerAddress::where('customer_id', $job->customer_id)->where('is_active', true)->orderByDesc('is_default')->get() : collect();
+
         $summary = [];
 
         if (Gate::allows('financial.view')) {
@@ -63,7 +68,13 @@ class JobController extends Controller
             $job->quotation_snapshot = $snapshot;
         }
 
-        return view('jobs.show', ['job' => $job, 'summary' => $summary, 'documentTypes' => $documentTypes]);
+        return view('jobs.show', [
+            'job' => $job,
+            'summary' => $summary,
+            'documentTypes' => $documentTypes,
+            'truckingVendors' => $truckingVendors,
+            'customerAddresses' => $customerAddresses,
+        ]);
     }
 
     public function edit(Job $job)
@@ -83,6 +94,7 @@ class JobController extends Controller
         $tab = match ($redirectTab) {
             'customs' => '#tab-customs',
             'sk' => '#tab-sk',
+            'delivery' => '#tab-delivery',
             default => '#tab-shipping',
         };
 

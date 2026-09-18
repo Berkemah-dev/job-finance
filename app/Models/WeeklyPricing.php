@@ -10,7 +10,7 @@ class WeeklyPricing extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['week', 'effective_date', 'effective_until', 'currency', 'exchange_rate', 'service', 'notes', 'is_active'];
+    protected $fillable = ['week', 'effective_date', 'effective_until', 'currency', 'exchange_rate', 'service', 'notes', 'is_active', 'created_by', 'updated_by'];
 
     protected function casts(): array
     {

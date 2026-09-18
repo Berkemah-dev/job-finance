@@ -11,7 +11,7 @@ class TruckingPrice extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'selling_price', 'currency', 'effective_date', 'effective_until', 'is_active'];
+    protected $fillable = ['port_origin', 'destination', 'overweight', 'container_type', 'vendor_id', 'price', 'selling_price', 'currency', 'effective_date', 'effective_until', 'is_active', 'created_by', 'updated_by'];
 
     protected function casts(): array
     {

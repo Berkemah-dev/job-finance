@@ -36,6 +36,8 @@ use App\Http\Controllers\StatementOfAccountController;
 use App\Http\Controllers\TpsController;
 use App\Http\Controllers\TruckingPriceController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\VendorTruckController;
+use App\Http\Controllers\CustomerAddressController;
 use App\Http\Controllers\WeeklyPricingController;
 use Illuminate\Support\Facades\Route;
 
@@ -195,6 +197,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/customer-contacts/{customerContact}', [CustomerContactController::class, 'update'])->middleware('can:customers.manage')->name('customer-contacts.update');
     Route::delete('/customer-contacts/{customerContact}', [CustomerContactController::class, 'destroy'])->middleware('can:customers.manage')->name('customer-contacts.destroy');
     Route::get('/api/customer-contacts/{customer}', [CustomerContactController::class, 'forCustomer'])->middleware('can:customers.view')->name('api.customer-contacts');
+    Route::get('/customer-addresses', [CustomerAddressController::class, 'index'])->middleware('can:customers.view')->name('customer-addresses.index');
+    Route::post('/customer-addresses', [CustomerAddressController::class, 'store'])->middleware('can:customers.manage')->name('customer-addresses.store');
+    Route::put('/customer-addresses/{address}', [CustomerAddressController::class, 'update'])->middleware('can:customers.manage')->name('customer-addresses.update');
+    Route::delete('/customer-addresses/{address}', [CustomerAddressController::class, 'destroy'])->middleware('can:customers.manage')->name('customer-addresses.destroy');
+    Route::get('/api/customers/{customer}/addresses', [CustomerAddressController::class, 'apiList'])->middleware('can:jobs.view')->name('api.customers.addresses');
     Route::get('/vendors', [VendorController::class, 'index'])->middleware('can:vendors.manage')->name('vendors.index');
     Route::get('/vendors/create', [VendorController::class, 'create'])->middleware('can:vendors.manage')->name('vendors.create');
     Route::post('/vendors', [VendorController::class, 'store'])->middleware('can:vendors.manage')->name('vendors.store');
@@ -204,6 +211,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/vendors/{vendor}/toggle', [VendorController::class, 'toggle'])->middleware('can:vendors.manage')->name('vendors.toggle');
     Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->middleware('can:vendors.manage')->name('vendors.destroy');
     Route::post('/vendors/{vendor}/restore', [VendorController::class, 'restore'])->middleware('can:vendors.manage')->name('vendors.restore');
+    Route::post('/vendors/{vendor}/trucks', [VendorTruckController::class, 'store'])->middleware('can:vendors.manage')->name('vendors.trucks.store');
+    Route::put('/vendors/{vendor}/trucks/{truck}', [VendorTruckController::class, 'update'])->middleware('can:vendors.manage')->name('vendors.trucks.update');
+    Route::delete('/vendors/{vendor}/trucks/{truck}', [VendorTruckController::class, 'destroy'])->middleware('can:vendors.manage')->name('vendors.trucks.destroy');
+    Route::get('/api/vendors/{vendor}/trucks', [VendorTruckController::class, 'apiList'])->middleware('can:jobs.view')->name('api.vendors.trucks');
     Route::middleware('can:pricing.view')->prefix('pricing')->name('pricing.')->group(function () {
         Route::get('/weekly', [WeeklyPricingController::class, 'index'])->name('weekly.index');
         Route::get('/trucking', [TruckingPriceController::class, 'index'])->name('trucking.index');

@@ -228,27 +228,27 @@
         <tr>
             <td class="col-label">Nomor Truk</td>
             <td class="col-sep">:</td>
-            <td></td>
+            <td>{{ $job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '') }}</td>
         </tr>
         <tr>
             <td class="col-label">Nomor Container</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->container_type ? strtoupper($job->container_type) : '' }}</td>
+            <td>{{ $job->container_number ?: ($job->container_type ? strtoupper($job->container_type) : '') }}</td>
         </tr>
         <tr>
             <td class="col-label">Nama Supir</td>
             <td class="col-sep">:</td>
-            <td></td>
+            <td>{{ $job->driver_name ?: ($job->vendorTruck?->driver_name ?: '') }}</td>
         </tr>
         <tr>
             <td class="col-label">Nomor Telepon Supir</td>
             <td class="col-sep">:</td>
-            <td></td>
+            <td>{{ $job->driver_phone ?: ($job->vendorTruck?->driver_phone ?: '') }}</td>
         </tr>
         <tr>
             <td class="col-label">Jenis Kendaraan</td>
             <td class="col-sep">:</td>
-            <td></td>
+            <td>{{ $job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: '') }}</td>
         </tr>
         <tr>
             <td class="col-label">Dari Gudang</td>
@@ -258,7 +258,7 @@
         <tr>
             <td class="col-label">Tujuan Pengiriman</td>
             <td class="col-sep">:</td>
-            <td>{{ $consigneeAddress }}</td>
+            <td>{{ $job->delivery_address ?: $consigneeAddress }}</td>
         </tr>
     </table>
 

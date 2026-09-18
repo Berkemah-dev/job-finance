@@ -119,6 +119,26 @@ class Job extends Model
         return $this->belongsTo(Customer::class)->withTrashed();
     }
 
+    public function vendorTrucking(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_trucking_id');
+    }
+
+    public function vendorTruck(): BelongsTo
+    {
+        return $this->belongsTo(VendorTruck::class, 'vendor_truck_id');
+    }
+
+    public function deliveryAddressLocation(): BelongsTo
+    {
+        return $this->belongsTo(CustomerAddress::class, 'customer_address_id');
+    }
+
+    public function customerAddress(): BelongsTo
+    {
+        return $this->belongsTo(CustomerAddress::class, 'customer_address_id');
+    }
+
     public function etaApproaching(): bool
     {
         if (! $this->eta) {

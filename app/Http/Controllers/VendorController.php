@@ -55,7 +55,7 @@ class VendorController extends Controller
 
     public function show(Vendor $vendor)
     {
-        $vendor->load(['truckingPrices', 'categories']);
+        $vendor->load(['truckingPrices', 'categories', 'trucks']);
 
         return view('vendors.show', compact('vendor'));
     }

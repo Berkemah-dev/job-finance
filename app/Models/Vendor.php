@@ -26,6 +26,8 @@ class Vendor extends Model
         'pic',
         'notes',
         'is_active',
+        'created_by',
+        'updated_by',
     ];
 
     protected function casts(): array
@@ -52,5 +54,19 @@ class Vendor extends Model
     public function truckingPrices(): HasMany
     {
         return $this->hasMany(TruckingPrice::class);
+    }
+
+    public function trucks(): HasMany
+    {
+        return $this->hasMany(VendorTruck::class);
+    }
+
+    public function isTrucking(): bool
+    {
+        if ($this->type === 'trucking') {
+            return true;
+        }
+
+        return $this->categories()->where('category', 'trucking')->exists();
     }
 }

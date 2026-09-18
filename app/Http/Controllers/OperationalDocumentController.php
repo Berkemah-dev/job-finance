@@ -131,7 +131,7 @@ class OperationalDocumentController extends Controller
 
     public function suratJalanPdf(Request $request, Quotation $quotation, MasterDataService $master)
     {
-        $quotation->load(['job.customer']);
+        $quotation->load(['job.customer', 'job.vendorTrucking', 'job.vendorTruck', 'job.customerAddress']);
         abort_unless($quotation->job, 404);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.surat-jalan', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
         $filename = 'Surat_Jalan_'.$quotation->job->number.'.pdf';
@@ -187,7 +187,7 @@ class OperationalDocumentController extends Controller
 
     public function jobSuratJalanPdf(Request $request, Job $job, MasterDataService $master)
     {
-        $job->load(['customer', 'quotation']);
+        $job->load(['customer', 'quotation', 'vendorTrucking', 'vendorTruck', 'customerAddress']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.surat-jalan', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
         $filename = 'Surat_Jalan_'.$job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF Surat Jalan '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);

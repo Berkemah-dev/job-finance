@@ -69,4 +69,9 @@ class Customer extends Model
     {
         return $this->hasMany(CustomerContact::class)->where('type', 'consignee');
     }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(CustomerAddress::class);
+    }
 }

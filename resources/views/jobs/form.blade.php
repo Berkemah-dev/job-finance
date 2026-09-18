@@ -96,6 +96,17 @@
     </div>
     <div class="field"><label for="invoice_amount">Nilai Invoice</label><input id="invoice_amount" name="invoice_amount" maxlength="100" value="{{ old('invoice_amount',$job->invoice_amount) }}" placeholder="contoh: USD 25,000 atau Rp 150.000.000"></div>
 
+    <div class="field span-2 form-section-heading" style="margin-top: 15px;">
+        <h2>Surat Jalan & Pengiriman (Delivery)</h2>
+        <p>Data armada, nomor container fisik, supir, dan alamat pengiriman.</p>
+    </div>
+    <div class="field"><label for="container_number">Nomor Container (Manual)</label><input id="container_number" name="container_number" maxlength="120" value="{{ old('container_number',$job->container_number) }}" placeholder="contoh: TCLU 582910-1 / 40HC"></div>
+    <div class="field"><label for="truck_plate_number">Nomor Truk (Plat Nomor)</label><input id="truck_plate_number" name="truck_plate_number" maxlength="30" value="{{ old('truck_plate_number',$job->truck_plate_number) }}" placeholder="contoh: B 9123 UE" style="text-transform: uppercase;"></div>
+    <div class="field"><label for="driver_name">Nama Supir</label><input id="driver_name" name="driver_name" maxlength="160" value="{{ old('driver_name',$job->driver_name) }}" placeholder="Nama supir armada"></div>
+    <div class="field"><label for="driver_phone">Nomor Telepon Supir</label><input id="driver_phone" name="driver_phone" maxlength="50" value="{{ old('driver_phone',$job->driver_phone) }}" placeholder="08..."></div>
+    <div class="field"><label for="vehicle_type">Jenis Kendaraan</label><input id="vehicle_type" name="vehicle_type" maxlength="60" value="{{ old('vehicle_type',$job->vehicle_type) }}" placeholder="Trailer 20ft / Trailer 40ft / Tronton"></div>
+    <div class="field span-2"><label for="delivery_address">Tujuan Pengiriman (Alamat Lengkap)</label><textarea id="delivery_address" name="delivery_address" rows="2" maxlength="5000" placeholder="Alamat lengkap lokasi bongkar...">{{ old('delivery_address',$job->delivery_address) }}</textarea></div>
+
     <div class="field span-2"><label for="cargo_description">Commodity</label><textarea id="cargo_description" name="cargo_description" rows="3" maxlength="2000">{{ old('cargo_description',$job->cargo_description) }}</textarea></div>
     <div class="field span-2"><label for="operational_notes">Catatan Operasional</label><textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000">{{ old('operational_notes',$job->operational_notes) }}</textarea></div>
 </div>

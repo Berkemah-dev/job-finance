@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\BookingConfirmation;
 use App\Models\Customer;
+use App\Models\CustomerAddress;
 use App\Models\CustomerContact;
 use App\Models\Job;
 use App\Models\Reimbursement;
@@ -14,6 +15,7 @@ use App\Models\TruckingPrice;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorCategory;
+use App\Models\VendorTruck;
 use App\Models\WeeklyPricing;
 use App\Services\JobClosingService;
 use App\Services\JobCostService;
@@ -29,9 +31,9 @@ class DemoDataSeeder extends Seeder
     {
         DB::transaction(function () {
             $users = $this->users();
-            $customers = $this->customers();
-            $vendors = $this->vendors();
-            $this->pricing($vendors['trucking']);
+            $customers = $this->customers($users);
+            $vendors = $this->vendors($users);
+            $this->pricing($vendors['trucking'], $users);
             $this->tps();
 
             $jobs = $this->jobs($customers, $users);
@@ -67,7 +69,7 @@ class DemoDataSeeder extends Seeder
         return $result;
     }
 
-    private function customers(): array
+    private function customers(array $users): array
     {
         $rows = [
             'sea' => ['DEMO-SEA', 'PT Nusantara Logistik', 'Budi Santoso', 'finance@nusantara.test', 'Jakarta Utara', 'net_30'],
@@ -90,6 +92,8 @@ class DemoDataSeeder extends Seeder
                     'authorizer_title' => 'Direktur Operasional',
                     'tax_number' => '0'.random_int(100000000000000, 999999999999999),
                     'default_payment_terms' => $terms,
+                    'created_by' => $users['sales']->id,
+                    'updated_by' => $users['sales']->id,
                 ]
             );
             $this->contacts($customer);
@@ -110,9 +114,18 @@ class DemoDataSeeder extends Seeder
                 ['company' => $company, 'email' => strtolower(str_replace(' ', '.', $name)).'@demo.test', 'phone' => '0812-555-0101', 'address' => $customer->address, 'country' => 'Indonesia', 'is_active' => true]
             );
         }
+
+        CustomerAddress::updateOrCreate(
+            ['customer_id' => $customer->id, 'location_name' => 'Gudang Pusat '.$customer->name],
+            ['address' => $customer->address, 'pic_name' => $customer->contact_name, 'pic_phone' => $customer->phone, 'is_default' => true, 'is_active' => true]
+        );
+        CustomerAddress::updateOrCreate(
+            ['customer_id' => $customer->id, 'location_name' => 'Depo Cikarang '.$customer->name],
+            ['address' => 'Kawasan Industri GIIC Blok C-12, Cikarang, Bekasi', 'pic_name' => 'Pak Joko', 'pic_phone' => '0812-3344-5566', 'is_default' => false, 'is_active' => true]
+        );
     }
 
-    private function vendors(): array
+    private function vendors(array $users): array
     {
         $rows = [
             'trucking' => ['VND-DEMO-TRK', 'PT Demo Trucking Indonesia', 'trucking', 'Jakarta', 'BCA', 'Demo Trucking'],
@@ -136,16 +149,29 @@ class DemoDataSeeder extends Seeder
                     'bank_account_name' => $accountName,
                     'pic' => 'PIC '.$accountName,
                     'is_active' => true,
+                    'created_by' => $users['admin']->id,
+                    'updated_by' => $users['admin']->id,
                 ]
             );
             VendorCategory::firstOrCreate(['vendor_id' => $vendor->id, 'category' => $type]);
             $result[$key] = $vendor;
         }
 
+        if (isset($result['trucking'])) {
+            VendorTruck::updateOrCreate(
+                ['vendor_id' => $result['trucking']->id, 'plate_number' => 'B 9210 UE'],
+                ['driver_name' => 'Bambang Supriyadi', 'driver_phone' => '0812-8877-6655', 'vehicle_type' => 'Trailer 40ft', 'notes' => 'Armada Utama', 'is_active' => true]
+            );
+            VendorTruck::updateOrCreate(
+                ['vendor_id' => $result['trucking']->id, 'plate_number' => 'B 9554 TX'],
+                ['driver_name' => 'Joko Purwanto', 'driver_phone' => '0813-1122-3344', 'vehicle_type' => 'Trailer 20ft', 'notes' => 'Armada Cadangan', 'is_active' => true]
+            );
+        }
+
         return $result;
     }
 
-    private function pricing(Vendor $truckingVendor): void
+    private function pricing(Vendor $truckingVendor, array $users): void
     {
         foreach ([
             ['WEEK-DEMO-IDR', today()->startOfWeek(), 'IDR', '1.00', null],
@@ -154,7 +180,7 @@ class DemoDataSeeder extends Seeder
         ] as [$week, $date, $currency, $rate, $service]) {
             WeeklyPricing::updateOrCreate(
                 ['week' => $week, 'currency' => $currency, 'service' => $service],
-                ['effective_date' => $date, 'effective_until' => null, 'exchange_rate' => $rate, 'notes' => 'Demo rate', 'is_active' => true]
+                ['effective_date' => $date, 'effective_until' => null, 'exchange_rate' => $rate, 'notes' => 'Demo rate', 'is_active' => true, 'created_by' => $users['admin']->id, 'updated_by' => $users['admin']->id]
             );
         }
 
@@ -165,7 +191,7 @@ class DemoDataSeeder extends Seeder
         ] as [$origin, $destination, $container, $overweight, $cost, $sell]) {
             TruckingPrice::updateOrCreate(
                 ['port_origin' => $origin, 'destination' => $destination, 'container_type' => $container, 'overweight' => $overweight, 'vendor_id' => $truckingVendor->id],
-                ['price' => $cost, 'selling_price' => $sell, 'currency' => 'IDR', 'effective_date' => today()->subDays(10), 'effective_until' => null, 'is_active' => true]
+                ['price' => $cost, 'selling_price' => $sell, 'currency' => 'IDR', 'effective_date' => today()->subDays(10), 'effective_until' => null, 'is_active' => true, 'created_by' => $users['admin']->id, 'updated_by' => $users['admin']->id]
             );
         }
     }
