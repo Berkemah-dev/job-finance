@@ -60,7 +60,7 @@ export function initCustomSelects() {
 
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
-        searchInput.placeholder = allowCustomValue ? 'Ketik atau pilih...' : 'Ketik untuk cari...';
+        searchInput.placeholder = select.dataset.searchPlaceholder || 'Ketik untuk cari...';
         searchInput.autocomplete = 'off';
         searchContainer.appendChild(searchInput);
         dropdown.appendChild(searchContainer);

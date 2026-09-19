@@ -80,10 +80,21 @@ class JobController extends Controller
     public function edit(Job $job)
     {
         Gate::authorize('update', $job);
+        $ports = \App\Models\Port::where('is_active', true)->orderBy('name')->get(['code', 'name']);
+        $masterShippers = \App\Models\CustomerContact::where('type', 'shipper')->where('is_active', true)->orderBy('name')->get();
+        $masterConsignees = \App\Models\CustomerContact::where('type', 'consignee')->where('is_active', true)->orderBy('name')->get();
 
-        return view('jobs.form', ['job' => $job->load(['sales', 'cs']), 'serviceTypes' => ServiceType::options(), 'containerUnits' => ContainerUnit::options(), 'assignees' => User::whereHas('role', function ($q) {
-            $q->whereIn('name', ['sales', 'sales-manager', 'customer-service']);
-        })->orderBy('name')->get(['id', 'name'])]);
+        return view('jobs.form', [
+            'job' => $job->load(['sales', 'cs', 'customer.contacts', 'quotation']),
+            'serviceTypes' => ServiceType::options(),
+            'containerUnits' => ContainerUnit::options(),
+            'ports' => $ports,
+            'masterShippers' => $masterShippers,
+            'masterConsignees' => $masterConsignees,
+            'assignees' => User::whereHas('role', function ($q) {
+                $q->whereIn('name', ['sales', 'sales-manager', 'customer-service']);
+            })->orderBy('name')->get(['id', 'name'])
+        ]);
     }
 
     public function update(JobRequest $request, Job $job, JobService $service)

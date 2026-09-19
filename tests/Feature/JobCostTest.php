@@ -267,4 +267,42 @@ class JobCostTest extends TestCase
         $this->assertNull($cost->fresh()->finalized_at);
         $this->assertSame($version, $this->job->fresh()->lock_version);
     }
+
+    public function test_cost_form_supports_categories_vendors_and_charge_types(): void
+    {
+        $vendor = \App\Models\Vendor::factory()->create(['name' => 'ONE Line', 'type' => 'shipping_line']);
+        \App\Models\ChargeType::firstOrCreate(['name' => 'OCEAN FREIGHT SPECIAL'], ['is_active' => true]);
+
+        $this->get('/jobs/'.$this->job->id.'/costs/create')
+            ->assertOk()
+            ->assertSee('OCEAN FREIGHT SPECIAL')
+            ->assertSee('ONE Line')
+            ->assertSee('Non Reimburse')
+            ->assertSee('Reimburse')
+            ->assertSee('Payment Request')
+            ->assertSee('Debit Note')
+            ->assertSee('Credit Note');
+
+        $data = $this->data([
+            'description' => 'OCEAN FREIGHT SPECIAL',
+            'type' => 'provision',
+            'cost_category' => 'debit_note',
+            'vendor_id' => $vendor->id,
+            'payee' => 'ONE Line',
+        ]);
+
+        $response = $this->post('/jobs/'.$this->job->id.'/costs', $data);
+        $response->assertSessionHasNoErrors()->assertRedirect();
+
+        $cost = JobCost::where('job_id', $this->job->id)->firstOrFail();
+        $this->assertSame('debit_note', $cost->cost_category);
+        $this->assertSame($vendor->id, $cost->vendor_id);
+        $this->assertSame('ONE Line', $cost->payee);
+        $this->assertSame('OCEAN FREIGHT SPECIAL', $cost->description);
+
+        $this->get('/jobs/'.$this->job->id.'/costs/'.$cost->id)
+            ->assertOk()
+            ->assertSee('Debit Note')
+            ->assertSee('ONE Line');
+    }
 }

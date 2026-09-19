@@ -12,7 +12,7 @@
         default => 'DOMESTIC / TRUCKING' 
     }; 
 @endphp
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / JOB ORDER · {{ $serviceCategoryTitle }}</p><h1>Edit Data Pengapalan</h1><p>{{ $job->number }} · Perbarui informasi operasional pengiriman.</p></div><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">← Kembali</a></div>
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL · {{ $serviceCategoryTitle }}</p><h1>JOB ORDER</h1><p>{{ $job->number }} · Perbarui informasi operasional pengiriman.</p></div><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">← Kembali</a></div>
 <section class="panel form-panel">
 <form class="data-form" method="POST" action="{{ route('jobs.update',$job) }}">
 @csrf
@@ -25,15 +25,77 @@
 
 <div class="form-section-heading"><h2>Data Operasional & Routing</h2><p>Lengkapi informasi pengiriman, pelabuhan, dan muatan.</p></div>
 <div class="form-grid">
-    <div class="field"><label for="shipper_name">Shipper</label><input id="shipper_name" name="shipper_name" maxlength="160" value="{{ old('shipper_name',$job->shipper_name) }}"></div>
-    <div class="field"><label for="consignee_name">Consignee</label><input id="consignee_name" name="consignee_name" maxlength="160" value="{{ old('consignee_name',$job->consignee_name) }}"></div>
-    <div class="field"><label for="shipper_address">Alamat Shipper</label><input id="shipper_address" name="shipper_address" maxlength="5000" value="{{ old('shipper_address',$job->shipper_address) }}"></div>
-    <div class="field"><label for="consignee_address">Alamat Consignee</label><input id="consignee_address" name="consignee_address" maxlength="5000" value="{{ old('consignee_address',$job->consignee_address) }}"></div>
-    
-    <div class="field"><label for="origin">Asal (Origin)</label><input id="origin" name="origin" maxlength="255" value="{{ old('origin',$job->origin) }}"></div>
-    <div class="field"><label for="destination">Tujuan (Destination)</label><input id="destination" name="destination" maxlength="255" value="{{ old('destination',$job->destination) }}"></div>
-    <div class="field"><label for="pol">Pelabuhan muat (POL)</label><input id="pol" name="pol" maxlength="120" value="{{ old('pol',$job->pol) }}"></div>
-    <div class="field"><label for="pod">Pelabuhan bongkar (POD)</label><input id="pod" name="pod" maxlength="120" value="{{ old('pod',$job->pod) }}"></div>
+    @php
+        $isImport = str_contains($serviceTypeRaw, 'imp');
+    @endphp
+    <div class="field">
+        <label for="shipper_name">Shipper @if($isImport)<span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">Master Shipper Import</span>@endif</label>
+        <select id="shipper_name" name="shipper_name" data-custom-select data-allow-custom="true" aria-label="Shipper">
+            <option value="">{{ $isImport ? 'Pilih dari Master Shipper Import / ketik...' : 'Pilih atau ketik Shipper...' }}</option>
+            @foreach($masterShippers ?? [] as $sContact)
+                <option value="{{ $sContact->name }}" data-address="{{ $sContact->address }}" @selected(old('shipper_name',$job->shipper_name) === $sContact->name)>{{ $sContact->name }} @if($sContact->country)({{ $sContact->country }})@endif</option>
+            @endforeach
+            @if($curShipper = old('shipper_name', $job->shipper_name))
+                @if(!collect($masterShippers ?? [])->contains('name', $curShipper))
+                    <option value="{{ $curShipper }}" selected>{{ $curShipper }}</option>
+                @endif
+            @endif
+        </select>
+        <input type="hidden" id="shipper_address" name="shipper_address" value="{{ old('shipper_address',$job->shipper_address) }}">
+        <p class="form-help" id="shipper_address_display" style="font-size: 11px; color: #64748b;">Alamat: {{ \Illuminate\Support\Str::limit(old('shipper_address',$job->shipper_address) ?: 'Tersambung otomatis dari Master Shipper', 60) }}</p>
+    </div>
+
+    <div class="field">
+        <label for="consignee_name">Consignee</label>
+        <select id="consignee_name" name="consignee_name" data-custom-select data-allow-custom="true" aria-label="Consignee">
+            <option value="">Pilih atau ketik Consignee...</option>
+            @if($job->customer)
+                <option value="{{ $job->customer->name }}" data-address="{{ $job->customer->address }}" @selected(old('consignee_name',$job->consignee_name) === $job->customer->name)>{{ $job->customer->name }} (Customer)</option>
+            @endif
+            @foreach($masterConsignees ?? [] as $cContact)
+                <option value="{{ $cContact->name }}" data-address="{{ $cContact->address }}" @selected(old('consignee_name',$job->consignee_name) === $cContact->name)>{{ $cContact->name }} @if($cContact->country)({{ $cContact->country }})@endif</option>
+            @endforeach
+            @if($curConsignee = old('consignee_name', $job->consignee_name))
+                @if((!$job->customer || $job->customer->name !== $curConsignee) && !collect($masterConsignees ?? [])->contains('name', $curConsignee))
+                    <option value="{{ $curConsignee }}" selected>{{ $curConsignee }}</option>
+                @endif
+            @endif
+        </select>
+        <input type="hidden" id="consignee_address" name="consignee_address" value="{{ old('consignee_address',$job->consignee_address) }}">
+        <p class="form-help" id="consignee_address_display" style="font-size: 11px; color: #64748b;">Alamat: {{ \Illuminate\Support\Str::limit(old('consignee_address',$job->consignee_address) ?: 'Tersambung otomatis dari Master Consignee/Customer', 60) }}</p>
+    </div>
+
+    {{-- Cuman ada 1 baris dan default dari Quote: Port of Loading & Port of Discharge --}}
+    @php
+        $defaultPol = old('pol', $job->pol ?: ($job->origin ?: $job->quotation?->origin));
+        $defaultPod = old('pod', $job->pod ?: ($job->destination ?: $job->quotation?->destination));
+    @endphp
+    <div class="field">
+        <label for="pol">Port of Loading (POL) / Pelabuhan muat (POL)</label>
+        <select id="pol" name="pol" data-custom-select data-allow-custom="true" aria-label="Port of Loading (POL)">
+            <option value="">Port of Loading (POL)</option>
+            @foreach($ports ?? [] as $port)
+                <option value="{{ $port->name }}" @selected($defaultPol === $port->name || $defaultPol === $port->code)>{{ $port->name }}</option>
+            @endforeach
+            @if($defaultPol && !collect($ports ?? [])->contains('name', $defaultPol) && !collect($ports ?? [])->contains('code', $defaultPol))
+                <option value="{{ $defaultPol }}" selected>{{ $defaultPol }}</option>
+            @endif
+        </select>
+    </div>
+    <div class="field">
+        <label for="pod">Port of Discharge (POD) / Pelabuhan bongkar (POD)</label>
+        <select id="pod" name="pod" data-custom-select data-allow-custom="true" aria-label="Port of Discharge (POD)">
+            <option value="">Port of Discharge (POD)</option>
+            @foreach($ports ?? [] as $port)
+                <option value="{{ $port->name }}" @selected($defaultPod === $port->name || $defaultPod === $port->code)>{{ $port->name }}</option>
+            @endforeach
+            @if($defaultPod && !collect($ports ?? [])->contains('name', $defaultPod) && !collect($ports ?? [])->contains('code', $defaultPod))
+                <option value="{{ $defaultPod }}" selected>{{ $defaultPod }}</option>
+            @endif
+        </select>
+    </div>
+    <input type="hidden" id="origin" name="origin" value="{{ old('origin', $job->origin ?: $defaultPol) }}">
+    <input type="hidden" id="destination" name="destination" value="{{ old('destination', $job->destination ?: $defaultPod) }}">
     
     <div class="field"><label for="etd">ETD</label><input id="etd" name="etd" type="date" value="{{ old('etd',$job->etd?->format('Y-m-d')) }}"></div>
     <div class="field"><label for="eta">ETA</label><input id="eta" name="eta" type="date" value="{{ old('eta',$job->eta?->format('Y-m-d')) }}"></div>
@@ -113,4 +175,55 @@
 <div class="form-actions"><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">Batal</a><button class="button button-primary">Simpan operasional</button></div>
 </form>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Sync POL with origin, POD with destination
+    const polSelect = document.getElementById('pol');
+    const podSelect = document.getElementById('pod');
+    const originInput = document.getElementById('origin');
+    const destinationInput = document.getElementById('destination');
+
+    if (polSelect && originInput) {
+        polSelect.addEventListener('change', () => { originInput.value = polSelect.value; });
+    }
+    if (podSelect && destinationInput) {
+        podSelect.addEventListener('change', () => { destinationInput.value = podSelect.value; });
+    }
+
+    // 2. Auto-populate Shipper Address from Master Shipper
+    const shipperSelect = document.getElementById('shipper_name');
+    const shipperAddressInput = document.getElementById('shipper_address');
+    const shipperAddressDisplay = document.getElementById('shipper_address_display');
+
+    if (shipperSelect && shipperAddressInput) {
+        shipperSelect.addEventListener('change', function() {
+            const opt = shipperSelect.options[shipperSelect.selectedIndex];
+            if (opt && opt.dataset.address) {
+                shipperAddressInput.value = opt.dataset.address;
+                if (shipperAddressDisplay) {
+                    shipperAddressDisplay.textContent = 'Alamat: ' + opt.dataset.address.substring(0, 60) + (opt.dataset.address.length > 60 ? '...' : '');
+                }
+            }
+        });
+    }
+
+    // 3. Auto-populate Consignee Address from Master Consignee
+    const consigneeSelect = document.getElementById('consignee_name');
+    const consigneeAddressInput = document.getElementById('consignee_address');
+    const consigneeAddressDisplay = document.getElementById('consignee_address_display');
+
+    if (consigneeSelect && consigneeAddressInput) {
+        consigneeSelect.addEventListener('change', function() {
+            const opt = consigneeSelect.options[consigneeSelect.selectedIndex];
+            if (opt && opt.dataset.address) {
+                consigneeAddressInput.value = opt.dataset.address;
+                if (consigneeAddressDisplay) {
+                    consigneeAddressDisplay.textContent = 'Alamat: ' + opt.dataset.address.substring(0, 60) + (opt.dataset.address.length > 60 ? '...' : '');
+                }
+            }
+        });
+    }
+});
+</script>
 @endsection

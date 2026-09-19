@@ -62,7 +62,18 @@ class JobCostService
             if ($data['type'] === 'temporary' && ! $unitCost->isEqualTo($unitPrice)) {
                 throw ValidationException::withMessages(['unit_price' => 'Nilai jual Temporary harus sama dengan modal karena ditagihkan kembali tanpa profit.']);
             }
-            $cost->fill(Arr::only($data, ['description', 'type', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'payee', 'reference', 'notes']));
+            if (! empty($data['vendor_id']) && empty($data['payee'])) {
+                $vendor = \App\Models\Vendor::find($data['vendor_id']);
+                if ($vendor) {
+                    $data['payee'] = $vendor->name;
+                }
+            }
+            $costCategory = $data['cost_category'] ?? ($data['type'] === 'temporary' ? 'reimbursement' : 'payment_request');
+            if ($data['type'] === 'temporary') {
+                $costCategory = 'reimbursement';
+            }
+            $data['cost_category'] = $costCategory;
+            $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'payee', 'vendor_id', 'reference', 'notes']));
             $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->updated_by = $actor->id;
@@ -70,7 +81,7 @@ class JobCostService
             $cost->save();
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
             $this->touchJob($job, $actor);
-            $after = $cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
+            $after = $cost->only(['description', 'type', 'cost_category', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
             $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => $new ? null : $before, 'after' => $after]);
 
             return $cost;
