@@ -1032,9 +1032,7 @@
     <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
         <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
             <div style="display:flex; align-items:center; gap:15px;"><div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">▣</div><div><p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL</p><h2 style="margin:0 0 4px;">Booking Confirmation</h2><p style="margin:0;color:#64748b;">Konfirmasi booking yang terhubung dengan Job Order ini.</p></div></div>
-            @if($job->bookingConfirmations->isEmpty())
-                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
-            @else
+            @if($job->bookingConfirmations->isNotEmpty())
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
@@ -1059,9 +1057,9 @@
                                 <td><span class="status-badge">{{ ucfirst($bc->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
-                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank" title="Preview / Unduh PDF">Preview / Unduh PDF</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">View</a>
                                         <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">Print</a>
                                     </div>
                                 </td>
                             </tr>
@@ -1070,7 +1068,7 @@
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3><p style="margin:0;color:#64748b;">Buat dokumen BC dari tab ini agar tetap terhubung dengan Job Order.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3><p style="margin:0;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p></div>
         @endif
     </section>
 </div>
@@ -1078,9 +1076,7 @@
     <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
         <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
             <div style="display:flex; align-items:center; gap:15px;"><div style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-size:23px;">▤</div><div><p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL</p><h2 style="margin:0 0 4px;">Shipping Instruction</h2><p style="margin:0;color:#64748b;">Instruksi pengiriman yang terhubung dengan Job Order ini.</p></div></div>
-            @if($job->shippingInstructions->isEmpty())
-                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
-            @else
+            @if($job->shippingInstructions->isNotEmpty())
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
@@ -1107,9 +1103,9 @@
                                 <td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
-                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank" title="Preview / Unduh PDF">Preview / Unduh PDF</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">View</a>
                                         <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">Print</a>
                                     </div>
                                 </td>
                             </tr>
@@ -1118,7 +1114,7 @@
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3><p style="margin:0;color:#64748b;">Buat dokumen SI dari tab ini agar seluruh data operasional tersusun dalam satu Job Order.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3><p style="margin:0;color:#64748b;">Dokumen SI yang terhubung dengan Job Order akan tampil di sini.</p></div>
         @endif
     </section>
 </div>

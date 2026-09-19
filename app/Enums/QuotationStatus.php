@@ -14,7 +14,7 @@ enum QuotationStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Draft => 'Draft',self::Submitted => 'Diajukan',self::Revision => 'Revisi',self::Approved => 'Disetujui',self::Rejected => 'Ditolak',self::Converted => 'Dikonversi'
+            self::Draft => 'Draft',self::Submitted => 'Submitted',self::Revision => 'Revision',self::Approved => 'Accept',self::Rejected => 'Reject',self::Converted => 'Converted'
         };
     }
 }
