@@ -112,8 +112,12 @@ class ClosingPaymentTest extends TestCase
 
     public function test_closing_requires_final_costs_open_job_and_current_version(): void
     {
-        JobCost::factory()->create(['job_id' => $this->job->id, 'status' => 'draft']);
-        $this->post('/closing/'.$this->job->id, $this->closingData())->assertSessionHasErrors('costs');
+        // Job without any costs should fail validation
+        $emptyJob = Job::factory()->open()->create(['quotation_snapshot' => ['customer' => ['name' => 'Demo Customer'], 'items' => []]]);
+        $this->post('/closing/'.$emptyJob->id, array_replace($this->closingData(), ['lock_version' => $emptyJob->lock_version]))->assertSessionHasErrors('costs');
+
+        // Job with draft costs auto-finalizes and succeeds directly
+        $draftCost = JobCost::factory()->create(['job_id' => $this->job->id, 'status' => 'draft', 'type' => 'temporary', 'total_cost' => '1000000', 'total_price' => '1000000', 'unit_cost' => '1000000', 'unit_price' => '1000000']);
         $this->job->increment('lock_version');
         $this->post('/closing/'.$this->job->id, $this->closingData(['lock_version' => 0]))->assertSessionHasErrors('lock_version');
         $this->assertDatabaseCount('invoices', 0);

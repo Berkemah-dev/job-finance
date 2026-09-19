@@ -178,6 +178,7 @@ class QuotationService
                 'consignee_name' => $quotation->consignee_name,
                 'consignee_address' => $quotation->consignee_address,
                 'sales_id' => $quotation->sales_id,
+                'cs_id' => $actor->id,
                 'cargo_description' => $quotation->commodity,
                 'container_type' => $containerType,
                 'gross_weight' => $grossWeight,

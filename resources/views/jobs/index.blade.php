@@ -31,11 +31,10 @@
 <table>
 <thead>
     <tr>
-        <th>No. Job</th>
-        <th>Customer & Remark Quote</th>
-        <th>BL & Kepabeanan</th>
-        <th>Service</th>
-        <th>No. Quote & Sales</th>
+        <th>Nomor / Tanggal</th>
+        <th>Customer Remarks</th>
+        <th>MBL/HBL (Sea) · MAWB/HAWB (Air)</th>
+        <th>Service POL – POD</th>
         <th>CS PIC</th>
         <th>Status</th>
         <th>Aksi</th>
@@ -55,17 +54,23 @@
             @endif
         </td>
         <td>
-            @if($job->bl_number)
-                <div><small class="muted-cell">BL:</small> <strong>{{ $job->bl_number }}</strong></div>
-            @endif
-            @if($job->hbl_number)
-                <div><small class="muted-cell">HBL:</small> {{ $job->hbl_number }}</div>
-            @endif
-            @if($job->awb_number)
-                <div><small class="muted-cell">AWB:</small> <strong>{{ $job->awb_number }}</strong></div>
-            @endif
-            @if($job->hawb_number)
-                <div><small class="muted-cell">HAWB:</small> {{ $job->hawb_number }}</div>
+            @php
+                $isAir = str_contains(strtolower($job->service_type ?? ''), 'air') || $job->awb_number || $job->hawb_number;
+            @endphp
+            @if($isAir)
+                @if($job->awb_number)
+                    <div><small class="muted-cell">MAWB:</small> <strong>{{ $job->awb_number }}</strong></div>
+                @endif
+                @if($job->hawb_number)
+                    <div><small class="muted-cell">HAWB:</small> {{ $job->hawb_number }}</div>
+                @endif
+            @else
+                @if($job->bl_number)
+                    <div><small class="muted-cell">MBL:</small> <strong>{{ $job->bl_number }}</strong></div>
+                @endif
+                @if($job->hbl_number)
+                    <div><small class="muted-cell">HBL:</small> {{ $job->hbl_number }}</div>
+                @endif
             @endif
             @if($job->booking_reference)
                 <div style="color: #c2410c;"><small class="muted-cell" style="color: #ea580c;">AJU:</small> <strong>{{ $job->booking_reference }}</strong></div>
@@ -89,15 +94,14 @@
             @endif
         </td>
         <td>
-            @if($job->quotation)
-                <strong>{{ $job->quotation->number }}</strong><br>
-            @endif
-            <small class="muted-cell">Sales: {{ $job->sales?->name ?? '—' }}</small>
-        </td>
-        <td>
-            @if($job->cs)
-                <strong>{{ $job->cs->name }}</strong>
-                <br><small class="muted-cell">ID CS: #{{ $job->cs_id }}</small>
+            @php
+                $csUser = $job->cs ?? $job->openedBy ?? $job->createdBy;
+            @endphp
+            @if($csUser)
+                <strong>{{ $csUser->name }}</strong>
+                @if($job->quotation)
+                    <br><small class="muted-cell" title="Quotation Asal: {{ $job->quotation->number }}">{{ $job->quotation->number }}</small>
+                @endif
             @else
                 <span class="muted-cell">Belum dipilih</span>
             @endif
@@ -123,29 +127,16 @@
         <td>
             <div class="table-actions">
                 <a class="btn-action btn-action-primary" href="{{ route('jobs.show',$job) }}" title="Detail Job" data-tooltip="Detail" aria-label="Detail Job"><x-icon name="eye"/></a>
-                <a class="btn-action btn-action-purple" href="{{ route('jobs.preview',$job) }}" target="_blank" title="Cetak PDF Job" data-tooltip="PDF" aria-label="Cetak PDF Job"><x-icon name="printer"/></a>
-                @php
-                    $isExportJob = str_contains(strtolower($job->service_type ?? ''), 'exp') || $job->service_type === 'export' || $job->bookingConfirmations->isNotEmpty();
-                @endphp
-                @if($isExportJob)
-                    @if($job->bookingConfirmations->isNotEmpty())
-                        <a class="btn-action btn-action-success" href="{{ route('booking-confirmations.preview', $job->bookingConfirmations->first()) }}" target="_blank" title="Cetak Booking Confirmation Export ({{ $job->bookingConfirmations->first()->number }})" data-tooltip="Booking Confirmation" aria-label="Booking Confirmation"><x-icon name="clipboard"/></a>
-                    @else
-                        <a class="btn-action btn-action-success" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}" title="Buat Booking Confirmation Export" data-tooltip="Buat BC" aria-label="Buat Booking Confirmation Export"><x-icon name="clipboard"/></a>
-                    @endif
-                @endif
-                @if($job->shippingInstructions->isNotEmpty())
-                    <a class="btn-action btn-action-purple" href="{{ route('shipping-instructions.preview', $job->shippingInstructions->first()) }}" target="_blank" title="Cetak Shipping Instruction ({{ $job->shippingInstructions->first()->number }})" data-tooltip="Cetak SI" aria-label="Cetak Shipping Instruction"><x-icon name="file"/></a>
-                @endif
                 @can('update',$job)
                     <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>
                 @endcan
+                <a class="btn-action btn-action-purple" href="{{ route('jobs.preview',$job) }}" target="_blank" title="Cetak PDF Job" data-tooltip="Cetak" aria-label="Cetak PDF Job"><x-icon name="printer"/></a>
             </div>
         </td>
     </tr>
 @empty
     <tr>
-        <td colspan="8">
+        <td colspan="7">
             <div class="empty-state">
                 <x-icon name="briefcase"/>
                 <h3>Belum ada Job Order yang sesuai</h3>

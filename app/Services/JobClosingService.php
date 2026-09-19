@@ -31,11 +31,19 @@ class JobClosingService
             if (! $job->customer()->withTrashed()->exists()) {
                 throw ValidationException::withMessages(['customer' => 'Customer job tidak tersedia.']);
             }
+            if ($job->costs()->count() === 0 && ! empty($job->quotation_snapshot['items'])) {
+                app(JobService::class)->seedQuotationCharges($job, $actor);
+            }
             if ($job->costs()->count() === 0) {
                 throw ValidationException::withMessages(['costs' => 'Job belum memiliki detail biaya.']);
             }
-            if ($job->costs()->where('status', '!=', 'final')->exists()) {
-                throw ValidationException::withMessages(['costs' => 'Semua biaya harus Final sebelum closing.']);
+            // Auto-finalize any draft costs so closing can proceed directly with job costs
+            $draftCosts = $job->costs()->where('status', 'draft')->lockForUpdate()->get();
+            foreach ($draftCosts as $draftCost) {
+                $draftCost->status = 'final';
+                $draftCost->finalized_by = $actor->id;
+                $draftCost->finalized_at = now();
+                $draftCost->save();
             }
             $rows = $job->costs()->orderBy('id')->lockForUpdate()->get();
             $summary = $this->costs->summary($job)['final'];

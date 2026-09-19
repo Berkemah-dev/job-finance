@@ -109,6 +109,16 @@ class Job extends Model
         return $this->belongsTo(User::class, 'cs_id');
     }
 
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function openedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'opened_by');
+    }
+
     public function quotation(): BelongsTo
     {
         return $this->belongsTo(Quotation::class);

@@ -31,7 +31,16 @@ class ClosingController extends Controller
     {
         Gate::authorize('jobs.close');
 
-        return view('closing.create', ['job' => $job, 'summary' => $service->summary($job)['final']]);
+        $costs = $job->costs()->orderBy('id')->get();
+        $summary = $service->summary($job);
+
+        return view('closing.create', [
+            'job' => $job,
+            'summary' => $summary['all'],
+            'costs' => $costs,
+            'draftCount' => $summary['draft']['count'],
+            'finalCount' => $summary['final']['count'],
+        ]);
     }
 
     public function store(ClosingRequest $request, Job $job, JobClosingService $service)

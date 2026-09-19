@@ -23,6 +23,7 @@ class CustomerController extends Controller
         $onlyTrashed = $status === 'inactive';
         $pending = $status === 'pending';
         $customers = Customer::query()
+            ->with('approver')
             ->when($onlyTrashed, fn ($q) => $q->onlyTrashed())
             ->when(! $onlyTrashed && $pending, fn ($q) => $q->where('approval_status', 'pending'))
             ->when(! $onlyTrashed && ! $pending, fn ($q) => $q->where('approval_status', 'approved'))

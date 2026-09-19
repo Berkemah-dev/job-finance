@@ -54,12 +54,11 @@
             <thead>
                 <tr>
                     <th>Nomor / Tanggal</th>
-                    <th>Customer / Penawaran</th>
+                    <th>Customer + Remarks</th>
                     <th>Layanan</th>
-                    <th>Asal → Tujuan</th>
+                    <th>POL</th>
+                    <th>POD</th>
                     <th>Sales</th>
-                    <th>Mata uang</th>
-                    <th class="money">Total sebelum pajak</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -69,27 +68,26 @@
                     <tr>
                         <td>
                             <strong>{{ $quotation->number }}</strong><br>
-                            <small>{{ $quotation->quotation_date->format('d/m/Y') }}</small>
+                            <small class="muted-cell">{{ $quotation->quotation_date->format('d/m/Y') }}</small>
                         </td>
                         <td>
-                            {{ $quotation->customer_snapshot['name'] }}<br>
-                            <small>{{ Str::limit($quotation->subject, 45) }}</small>
-                        </td>
-                        <td>{{ \App\Models\ServiceType::label($quotation->service_type) }}</td>
-                        <td>
-                            @if($quotation->origin || $quotation->destination)
-                                {{ $quotation->origin ?? '—' }} → {{ $quotation->destination ?? '—' }}
-                            @else
-                                —
+                            <strong>{{ $quotation->customer_snapshot['name'] ?? $quotation->customer?->name ?? '—' }}</strong>
+                            @if($quotation->notes || $quotation->subject)
+                                <br><small class="muted-cell" title="{{ $quotation->notes ?? $quotation->subject }}">{{ Str::limit($quotation->notes ?? $quotation->subject, 45) }}</small>
                             @endif
                         </td>
+                        <td>
+                            <span class="badge-pill" style="font-weight: 600;">
+                                {{ \App\Models\ServiceType::label($quotation->service_type) }}
+                            </span>
+                        </td>
+                        <td>{{ $quotation->origin ?? '—' }}</td>
+                        <td>{{ $quotation->destination ?? '—' }}</td>
                         <td>{{ $quotation->sales?->name ?? $quotation->creator?->name ?? '—' }}</td>
-                        <td>{{ $quotation->currency }}</td>
-                        <td class="money">Rp {{ \App\Support\Money::format($quotation->subtotal) }}</td>
                         <td>
                             <span class="status-badge status-{{ $quotation->status->value }}">{{ $quotation->status->label() }}</span>
                             @if($quotation->status === \App\Enums\QuotationStatus::Approved && !$quotation->job)
-                                <br><small class="subtle">Siap dibuat Job</small>
+                                <br><small class="subtle" style="color: #16a34a; font-weight: 600;">Siap dibuat Job</small>
                             @endif
                         </td>
                         <td>
@@ -113,7 +111,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9">
+                        <td colspan="8">
                             <div class="empty-state">
                                 <x-icon name="file"/>
                                 <h3>Belum ada quotation yang sesuai</h3>
