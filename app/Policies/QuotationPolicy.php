@@ -33,7 +33,20 @@ class QuotationPolicy
 
     public function update(User $user, Quotation $quotation): bool
     {
-        return $this->view($user, $quotation) && in_array($quotation->status, [QuotationStatus::Draft, QuotationStatus::Revision], true);
+        if (! $this->view($user, $quotation)) {
+            return false;
+        }
+
+        if (in_array($quotation->status, [QuotationStatus::Draft, QuotationStatus::Revision], true)) {
+            return true;
+        }
+
+        // Sales Manager / Admin can re-edit an approved or converted quotation if the job is not yet created or has been cancelled
+        if (in_array($quotation->status, [QuotationStatus::Approved, QuotationStatus::Converted], true) && ($user->hasRole(['sales-manager', 'super-admin', 'admin']) || $user->hasPermission('quotations.approve'))) {
+            return ! $quotation->job || $quotation->job->status === 'cancelled';
+        }
+
+        return false;
     }
 
     public function submit(User $user, Quotation $quotation): bool
@@ -58,6 +71,13 @@ class QuotationPolicy
 
     public function convert(User $user, Quotation $quotation): bool
     {
-        return $this->viewAny($user) && $user->hasPermission('jobs.manage') && $quotation->status === QuotationStatus::Approved;
+        if ($user->hasRole(['sales', 'sales-manager']) && ! $user->hasRole(['super-admin', 'admin', 'customer-service', 'operational'])) {
+            return false;
+        }
+
+        return $this->viewAny($user) 
+            && $user->hasPermission('jobs.manage') 
+            && in_array($quotation->status, [QuotationStatus::Approved, QuotationStatus::Converted], true)
+            && (! $quotation->job || $quotation->job->status === 'cancelled');
     }
 }

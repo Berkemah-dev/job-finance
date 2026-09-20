@@ -120,7 +120,59 @@
     @elseif($job->do_confirmed_at)
         <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
     @endif
+    @can('cancel', $job)
+        <button type="button" class="button button-danger" onclick="document.getElementById('modal-cancel-job').showModal()">
+            <x-icon name="x"/> Batalkan Job
+        </button>
+    @endcan
 </div>
+
+@can('cancel', $job)
+<dialog id="modal-cancel-job" class="modal-dialog" style="max-width: 520px !important;">
+    <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-top-left-radius: 18px; border-top-right-radius: 18px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #fee2e2; color: #e11d48; font-size: 20px; box-shadow: 0 2px 6px rgba(225,29,72,0.15);">
+                ⚠️
+            </div>
+            <div>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #9f1239;">Pembatalan Job Order</h3>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #be123c;">Batalkan pekerjaan ini jika terjadi revisi penawaran.</p>
+            </div>
+        </div>
+        <button type="button" onclick="document.getElementById('modal-cancel-job').close()" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #fecdd3; background: #fff; color: #be123c; display: grid; place-items: center; cursor: pointer; font-size: 14px; transition: all .15s ease;">✕</button>
+    </div>
+
+    <form method="POST" action="{{ route('jobs.cancel', $job) }}" style="padding: 20px 24px;">
+        @csrf
+        <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
+        <p style="color: #475569; font-size: 13.5px; line-height: 1.5; margin-top: 0;">
+            Apakah Anda yakin ingin membatalkan Job Order <strong>{{ $job->number }}</strong>?
+            Setelah dibatalkan, Sales Manager dapat mengedit kembali Quotation terkait.
+        </p>
+        <div style="margin: 16px 0;">
+            <label for="cancel_reason" style="display: block; font-weight: 700; font-size: 12.5px; margin-bottom: 6px; color: #334155;">Alasan Pembatalan <span style="color: #e11d48;">*</span></label>
+            <textarea id="cancel_reason" name="reason" rows="3" required placeholder="Jelaskan alasan pembatalan Job Order..." style="width: 100%; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 13.5px; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
+            <button type="button" class="button button-secondary" onclick="document.getElementById('modal-cancel-job').close()">Batal</button>
+            <button type="submit" class="button button-danger">Ya, Batalkan Job</button>
+        </div>
+    </form>
+</dialog>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelModal = document.getElementById('modal-cancel-job');
+    if (cancelModal) {
+        cancelModal.addEventListener('click', function(e) {
+            const rect = cancelModal.getBoundingClientRect();
+            const inDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height && rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+            if (!inDialog) cancelModal.close();
+        });
+    }
+});
+</script>
+@endcan
 
 {{-- HORIZONTAL PILL TABS MENU KE KANAN (SESUAI REQUEST & SCREENSHOT CLIENT) --}}
 <nav class="job-pill-tabs-nav" style="display: flex; gap: 8px; background: #e2e8f0; padding: 6px; border-radius: 9999px; margin-bottom: 24px; overflow-x: auto;">

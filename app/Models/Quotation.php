@@ -46,7 +46,12 @@ class Quotation extends Model
 
     public function job(): HasOne
     {
-        return $this->hasOne(Job::class);
+        return $this->hasOne(Job::class)->latestOfMany();
+    }
+
+    public function jobs(): HasMany
+    {
+        return $this->hasMany(Job::class);
     }
 
     public function creator(): BelongsTo

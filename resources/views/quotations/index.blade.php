@@ -87,7 +87,13 @@
                         <td>
                             <span class="status-badge status-{{ $quotation->status->value }}">{{ $quotation->status->label() }}</span>
                             @if($quotation->status === \App\Enums\QuotationStatus::Approved && !$quotation->job)
-                                <br><small class="subtle" style="color: #16a34a; font-weight: 600;">Siap dibuat Job</small>
+                                @can('convert', $quotation)
+                                    <br><small class="subtle" style="color: #16a34a; font-weight: 600;">Siap dibuat Job</small>
+                                @else
+                                    <br><small class="subtle" style="color: #0284c7; font-weight: 600;">Menunggu CS</small>
+                                @endcan
+                            @elseif($quotation->job && $quotation->job->status === 'cancelled')
+                                <br><small class="subtle" style="color: #e11d48; font-weight: 600;">Job Dibatalkan</small>
                             @endif
                         </td>
                         <td>
