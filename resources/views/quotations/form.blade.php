@@ -139,9 +139,10 @@
             <div class="field"><label for="input_trucking_container_type">Tipe Armada <span class="required">*</span></label><select id="input_trucking_container_type">@foreach($containerUnits ?? \App\Models\ContainerUnit::options() as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
             <div class="field"><label for="input_trucking_overweight">Kategori <span class="required">*</span></label><select id="input_trucking_overweight"><option value="0">Normal</option><option value="1">Overweight</option></select></div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px;">
             <button type="button" class="button button-secondary" id="btn_fetch_trucking" style="padding: 7px 14px;">Ambil harga trucking</button>
             <span id="trucking_pricing_status" style="font-size:12px; color:#64748b;">Isi asal, tujuan, dan tipe armada. Harga akan dicari otomatis.</span>
+            <span id="trucking_pricing_vendor" style="display:none; font-size:12px; font-weight:700; color:#1e40af; background:#dbeafe; padding:4px 10px; border-radius:6px; border:1px solid #93c5fd; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"></span>
         </div>
     </div>
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
+use App\Models\Journal;
 use App\Models\User;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
@@ -109,6 +110,82 @@ class JobClosingService
             $this->master->log($actor, 'job.closed', $job->number.' → '.$invoice->number, ['module' => 'job_closing', 'record_id' => $snapshot->id, 'after' => ['invoice' => $invoice->number, 'currency' => $currency, 'exchange_rate' => $invoice->exchange_rate, 'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => $invoice->total, 'profit' => $summary['profit'], 'margin' => $summary['margin']]]);
 
             return $invoice;
+        }, 3);
+    }
+
+    public function reopen(Job $job, array $data, User $actor): Job
+    {
+        return DB::transaction(function () use ($job, $data, $actor) {
+            $job = Job::lockForUpdate()->findOrFail($job->id);
+            Gate::forUser($actor)->authorize('jobs.close');
+            $this->master->checkVersion($job, $data);
+
+            if ($job->status !== 'closed') {
+                throw ValidationException::withMessages(['job' => 'Hanya job dengan status Closed yang dapat dibuka kembali.']);
+            }
+
+            $invoice = $job->invoice()->lockForUpdate()->first();
+            if ($invoice) {
+                if ($invoice->payments()->exists() || (float) $invoice->paid_amount > 0) {
+                    throw ValidationException::withMessages(['job' => 'Job tidak dapat dibuka kembali karena invoice telah memiliki riwayat pembayaran. Hapus atau batalkan pembayaran terlebih dahulu.']);
+                }
+            }
+
+            $journals = Journal::where('source_type', Job::class)
+                ->where('source_id', $job->id)
+                ->whereIn('type', ['job_closing', 'job_cost_capitalization'])
+                ->whereNull('reversal_of_id')
+                ->get();
+
+            $reversalDate = now()->toDateString();
+            $reason = ! empty($data['reason']) ? $data['reason'] : 'Undo / Buka Kembali Job '.$job->number;
+
+            foreach ($journals as $journal) {
+                if (! $journal->reversal()->exists()) {
+                    $revDate = $reversalDate >= $journal->journal_date->format('Y-m-d')
+                        ? $reversalDate
+                        : $journal->journal_date->format('Y-m-d');
+
+                    $this->journals->reverse($journal, [
+                        'reversal_date' => $revDate,
+                        'reason' => $reason,
+                        'lock_version' => $journal->lock_version,
+                    ], $actor);
+                }
+            }
+
+            if ($invoice) {
+                $invoice->items()->delete();
+                $invoice->delete();
+            }
+
+            $snapshot = $job->closingSnapshot()->lockForUpdate()->first();
+            if ($snapshot) {
+                $snapshot->delete();
+            }
+
+            $job->status = 'open';
+            $job->closed_by = null;
+            $job->closed_at = null;
+            $job->updated_by = $actor->id;
+            $job->lock_version++;
+            $job->save();
+
+            $job->statusHistory()->create([
+                'from_status' => 'closed',
+                'to_status' => 'open',
+                'note' => 'Buka Kembali Job: '.$reason,
+                'user_id' => $actor->id,
+                'created_at' => now(),
+            ]);
+
+            $this->master->log($actor, 'job.reopened', 'Membuka kembali job '.$job->number, [
+                'module' => 'job_closing',
+                'record_id' => $job->id,
+                'reason' => $reason,
+            ]);
+
+            return $job;
         }, 3);
     }
 }

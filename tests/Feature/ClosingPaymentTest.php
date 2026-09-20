@@ -180,4 +180,88 @@ class ClosingPaymentTest extends TestCase
             $this->get('/payments')->assertForbidden();
         }
     }
+
+    public function test_payment_with_pph23_records_journal_to_pph23_dimuka(): void
+    {
+        $invoice = $this->close();
+        $this->post('/invoices/'.$invoice->id.'/payments', [
+            'lock_version' => 0,
+            'payment_date' => today()->toDateString(),
+            'amount' => '10000000',
+            'pph23_amount' => '200000',
+            'deposit_account' => 'bank',
+            'method' => 'transfer',
+            'reference' => 'TRX-PPH23',
+        ])->assertSessionHasNoErrors();
+
+        $invoice->refresh();
+        $this->assertSame('10200000.00', $invoice->paid_amount);
+        $this->assertSame('250000.00', $invoice->balance);
+        $this->assertSame('partially_paid', $invoice->status);
+
+        $payment = Payment::firstOrFail();
+        $this->assertSame('200000.00', $payment->pph23_amount);
+
+        $journal = Journal::where('type', 'customer_payment')->where('source_id', $payment->id)->firstOrFail();
+        $entries = $journal->entries()->with('account')->get();
+
+        $bankEntry = $entries->first(fn ($e) => (float) $e->debit == 10000000);
+        $pphEntry = $entries->first(fn ($e) => (float) $e->debit == 200000);
+        $receivableEntry = $entries->first(fn ($e) => (float) $e->credit == 10200000);
+
+        $this->assertNotNull($bankEntry);
+        $this->assertNotNull($pphEntry);
+        $this->assertNotNull($receivableEntry);
+        $this->assertSame('11192', $pphEntry->account->code);
+    }
+
+    public function test_reopen_job_reverses_closing_journals_and_removes_invoice(): void
+    {
+        $invoice = $this->close();
+        $this->assertSame('closed', $this->job->fresh()->status);
+        $this->assertDatabaseCount('invoices', 1);
+        $this->assertDatabaseCount('job_closing_snapshots', 1);
+
+        $closingJournals = Journal::where('source_type', Job::class)->where('source_id', $this->job->id)->get();
+        $this->assertCount(2, $closingJournals);
+
+        $this->post('/jobs/'.$this->job->id.'/reopen', [
+            'lock_version' => $this->job->fresh()->lock_version,
+            'reason' => 'Salah alokasi biaya',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('open', $this->job->fresh()->status);
+        $this->assertNull($this->job->fresh()->closed_at);
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertDatabaseCount('job_closing_snapshots', 0);
+
+        foreach ($closingJournals as $cj) {
+            $cj->refresh();
+            $this->assertNotNull($cj->reversed_at);
+            $this->assertTrue($cj->reversal()->exists());
+        }
+
+        $this->assertDatabaseCount('journals', 4);
+        $reversals = Journal::where('type', 'journal_reversal')->get();
+        $this->assertCount(2, $reversals);
+    }
+
+    public function test_reopen_job_fails_if_invoice_has_payments(): void
+    {
+        $invoice = $this->close();
+        $this->post('/invoices/'.$invoice->id.'/payments', [
+            'lock_version' => 0,
+            'payment_date' => today()->toDateString(),
+            'amount' => '1000000',
+            'deposit_account' => 'bank',
+            'method' => 'transfer',
+        ])->assertSessionHasNoErrors();
+
+        $this->post('/jobs/'.$this->job->id.'/reopen', [
+            'lock_version' => $this->job->fresh()->lock_version,
+        ])->assertSessionHasErrors('job');
+
+        $this->assertSame('closed', $this->job->fresh()->status);
+        $this->assertDatabaseCount('invoices', 1);
+    }
 }

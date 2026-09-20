@@ -96,7 +96,28 @@ class PricingService
     {
         $date = $date ? Carbon::parse($date) : today();
 
-        return TruckingPrice::where('port_origin', $portOrigin)->where('destination', $destination)
+        $exact = TruckingPrice::with('vendor')
+            ->where('port_origin', $portOrigin)->where('destination', $destination)
+            ->where('container_type', $containerType)->where('overweight', $overweight)
+            ->where('is_active', true)->where('effective_date', '<=', $date->toDateString())
+            ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', $date->toDateString()))
+            ->when($vendorId, fn ($q, $id) => $q->where('vendor_id', $id))
+            ->orderByDesc('effective_date')->orderByDesc('id')->first();
+
+        if ($exact) {
+            return $exact;
+        }
+
+        // Fallback pencarian fleksibel jika tidak ada exact match (misal: "PRIOK" cocok dengan "TANJUNG PRIOK, INDONESIA")
+        return TruckingPrice::with('vendor')
+            ->where(function ($q) use ($portOrigin) {
+                $q->where('port_origin', 'like', '%'.$portOrigin.'%')
+                    ->orWhereRaw('? LIKE CONCAT("%", port_origin, "%")', [$portOrigin]);
+            })
+            ->where(function ($q) use ($destination) {
+                $q->where('destination', 'like', '%'.$destination.'%')
+                    ->orWhereRaw('? LIKE CONCAT("%", destination, "%")', [$destination]);
+            })
             ->where('container_type', $containerType)->where('overweight', $overweight)
             ->where('is_active', true)->where('effective_date', '<=', $date->toDateString())
             ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', $date->toDateString()))

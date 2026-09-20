@@ -9,6 +9,7 @@ use App\Models\Job;
 use App\Models\ServiceType;
 use App\Models\ContainerUnit;
 use App\Models\User;
+use App\Services\JobClosingService;
 use App\Services\JobCostService;
 use App\Services\JobService;
 use App\Services\MasterDataService;
@@ -124,6 +125,21 @@ class JobController extends Controller
         $service->transition($job, 'cancel', $request->validated(), $request->user());
 
         return redirect()->route('jobs.show', $job)->with('success', 'Job berhasil dibatalkan.');
+    }
+
+    public function reopen(Request $request, Job $job, JobClosingService $service)
+    {
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:255'],
+            'lock_version' => ['nullable', 'integer'],
+        ]);
+        if (! isset($data['lock_version'])) {
+            $data['lock_version'] = $job->lock_version;
+        }
+
+        $service->reopen($job, $data, $request->user());
+
+        return redirect()->route('jobs.show', $job)->with('success', 'Job berhasil dibuka kembali. Jurnal closing dan invoice telah dibatalkan.');
     }
 
     public function confirmDo(Request $request, Job $job, JobService $service)

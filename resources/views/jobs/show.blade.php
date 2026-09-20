@@ -103,6 +103,10 @@
     @can('jobs.close')
         @if($job->status==='open')
             <a class="button button-primary" href="{{ route('closing.create',$job) }}">Closing Job</a>
+        @elseif($job->status==='closed' && (!$job->invoice || ($job->invoice->payments()->doesntExist() && (float)$job->invoice->paid_amount == 0)))
+            <button type="button" class="button button-secondary" style="color:#dc2626; border-color:#fca5a5;" onclick="document.getElementById('modal-reopen-job').showModal()">
+                ↺ Undo / Buka Kembali Job
+            </button>
         @endif
     @endcan
     @can('invoices.manage')
@@ -172,6 +176,40 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+@endcan
+
+@can('jobs.close')
+    @if($job->status === 'closed' && (!$job->invoice || ($job->invoice->payments()->doesntExist() && (float)$job->invoice->paid_amount == 0)))
+    <dialog id="modal-reopen-job" class="modal-dialog" style="max-width: 500px !important; border: none; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+        <form method="POST" action="{{ route('jobs.reopen', $job) }}">
+            @csrf
+            <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
+            <div style="padding: 18px 24px; border-bottom: 1px solid #fee2e2; display: flex; justify-content: space-between; align-items: center; background: #fef2f2; border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">↺</span>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #991b1b;">Undo / Buka Kembali Job</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('modal-reopen-job').close()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #991b1b;">✕</button>
+            </div>
+            <div style="padding: 20px 24px;">
+                <p style="font-size: 13px; color: #374151; margin-top: 0; line-height: 1.5;">
+                    Apakah Anda yakin ingin membuka kembali job <strong>{{ $job->number }}</strong>?
+                </p>
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px; font-size: 12px; color: #92400e; margin-bottom: 16px; line-height: 1.5;">
+                    ⚠️ Tindakan ini akan mengembalikan status Job ke <strong>Open</strong>, membatalkan/menghapus invoice {{ $job->invoice?->number }}, dan me-reverse jurnal penutupan akuntansi secara otomatis.
+                </div>
+                <div class="field">
+                    <label for="reopen_reason_job" style="font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 4px; display: block;">Alasan Buka Kembali (opsional)</label>
+                    <input type="text" id="reopen_reason_job" name="reason" placeholder="cth: Salah input biaya aktual / revisi operasional" style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; font-size: 13px; box-sizing: border-box;">
+                </div>
+            </div>
+            <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <button type="button" class="button button-secondary" onclick="document.getElementById('modal-reopen-job').close()">Batal</button>
+                <button type="submit" class="button button-danger" style="background: #dc2626; border-color: #dc2626;">Ya, Buka Kembali Job</button>
+            </div>
+        </form>
+    </dialog>
+    @endif
 @endcan
 
 {{-- HORIZONTAL PILL TABS MENU KE KANAN (SESUAI REQUEST & SCREENSHOT CLIENT) --}}

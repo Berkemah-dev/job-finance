@@ -14,6 +14,17 @@ class PaymentRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['lock_version' => ['required', 'integer', 'min:0'], 'payment_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:'.$this->route('invoice')->invoice_date->format('Y-m-d'), 'before_or_equal:today'], 'amount' => ['required', 'regex:/^\\d{1,16}(\\.\\d{1,2})?$/', 'numeric', 'min:0.01'], 'deposit_account' => ['required', Rule::in(['cash', 'bank'])], 'method' => ['required', Rule::in(['transfer', 'cash', 'giro', 'other'])], 'reference' => ['nullable', 'string', 'max:100'], 'notes' => ['nullable', 'string', 'max:2000']];
+        return [
+            'lock_version' => ['required', 'integer', 'min:0'],
+            'payment_date' => ['required', 'date', 'after_or_equal:'.$this->route('invoice')->invoice_date->format('Y-m-d'), 'before_or_equal:today'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'regex:/^\d{1,16}(\.\d{1,2})?$/'],
+            'pph23_amount' => ['nullable', 'numeric', 'min:0', 'regex:/^\d{1,16}(\.\d{1,2})?$/'],
+            'currency' => ['nullable', 'string', 'max:3'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0.0001'],
+            'deposit_account' => ['required', 'string'],
+            'method' => ['nullable', 'string', 'max:50'],
+            'reference' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ];
     }
 }

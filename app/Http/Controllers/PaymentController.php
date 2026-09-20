@@ -28,7 +28,21 @@ class PaymentController extends Controller
 
     public function create(Invoice $invoice)
     {
-        return view('payments.create', compact('invoice'));
+        $bankAccounts = \App\Models\ChartOfAccount::query()
+            ->where('type', 'asset')
+            ->where(function ($q) {
+                $q->whereIn('code', ['11100', '11101', '11120', '11121', '11122', '11123'])
+                    ->orWhere('code', 'like', '1110%')
+                    ->orWhere('code', 'like', '1112%')
+                    ->orWhere('name', 'like', '%Bank%')
+                    ->orWhere('name', 'like', '%Cash%')
+                    ->orWhere('name', 'like', '%Kas%');
+            })
+            ->where('code', '!=', '1103')
+            ->orderBy('code')
+            ->get();
+
+        return view('payments.create', compact('invoice', 'bankAccounts'));
     }
 
     public function store(PaymentRequest $request, Invoice $invoice, PaymentService $service)
