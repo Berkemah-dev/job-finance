@@ -64,6 +64,13 @@
                             @if(!$customer->trashed())
                                 <a class="btn-action btn-action-primary" href="{{ route('customers.show', $customer) }}" title="Detail Customer" data-tooltip="Detail" aria-label="Detail Customer"><x-icon name="eye"/></a>
                                 <a class="btn-action" href="{{ route('customers.edit', $customer) }}" title="Edit Customer" data-tooltip="Edit" aria-label="Edit Customer"><x-icon name="edit"/></a>
+                                @if(($customer->approval_status ?? 'approved') === 'pending' && auth()->user()?->hasRole(['finance-manager', 'finance', 'super-admin', 'admin']))
+                                    <form method="POST" action="{{ route('customers.approve', $customer) }}" data-confirm="Setujui customer {{ $customer->name }} ({{ $customer->code }})?">
+                                        @csrf
+                                        <input type="hidden" name="lock_version" value="{{ $customer->lock_version }}">
+                                        <button class="btn-action btn-action-success" title="Approve Customer" data-tooltip="Approve" aria-label="Approve Customer"><x-icon name="check"/></button>
+                                    </form>
+                                @endif
                             @else
                                 <form method="POST" action="{{ route('customers.restore', $customer) }}" data-confirm="Aktifkan kembali customer ini?">
                                     @csrf

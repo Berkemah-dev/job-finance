@@ -22,6 +22,17 @@ class User extends Authenticatable
             return true;
         }
 
+        $roleName = $this->role?->name;
+        if (! $roleName) {
+            return false;
+        }
+
+        // If role permissions are configured in jobfinance config, use that configuration as source of truth
+        $roleConfig = config("jobfinance.roles.{$roleName}.permissions");
+        if (is_array($roleConfig)) {
+            return in_array('*', $roleConfig, true) || in_array($permission, $roleConfig, true);
+        }
+
         return $this->role?->permissions->contains('name', $permission) ?? false;
     }
 

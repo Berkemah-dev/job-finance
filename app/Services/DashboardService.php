@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
@@ -188,6 +189,8 @@ class DashboardService
             $overdue = Invoice::where('balance', '>', 0)->where('due_date', '<', today());
             $out['overdueReceivables'] = ['count' => (clone $overdue)->count(), 'amount' => (string) (clone $overdue)->sum('balance')];
             $out['pendingReimbursements'] = Reimbursement::where('status', 'pending')->count();
+            $out['pendingCustomers'] = Customer::where('approval_status', 'pending')->count();
+            $out['pendingCustomerList'] = Customer::where('approval_status', 'pending')->with('creator')->latest('id')->limit(5)->get();
             $out['journalsThisMonth'] = Journal::where('status', 'posted')->where('journal_date', '>=', today()->startOfMonth())->count();
             $out['topJobs'] = Job::whereHas('closingSnapshot')
                 ->with('closingSnapshot')

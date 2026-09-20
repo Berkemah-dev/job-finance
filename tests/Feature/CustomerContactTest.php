@@ -18,7 +18,7 @@ class CustomerContactTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
-        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
+        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
     }
 
     public function test_contact_create_works_with_optimistic_locking_defaults(): void

@@ -30,6 +30,53 @@
     <div><span>Temporary</span><strong>Rp {{ \App\Support\Money::format($temporaryBalance) }}</strong></div>
 </div>
 
+@if(isset($widgets['pendingCustomerList']) && $widgets['pendingCustomerList']->isNotEmpty())
+<section class="panel" style="margin-bottom:20px; border-left: 4px solid #f59e0b;">
+    <div class="panel-heading">
+        <div>
+            <h2><x-icon name="users" style="width:16px;height:16px;margin-right:6px;display:inline-block;vertical-align:middle;color:#d97706;"/> Customer Menunggu Approval</h2>
+            <p>Customer baru yang dibuat oleh tim Sales dan memerlukan verifikasi Finance Manager.</p>
+        </div>
+        <a class="button button-secondary button-sm" href="{{ route('customers.index', ['status' => 'pending']) }}">Lihat Semua ({{ $widgets['pendingCustomers'] ?? $widgets['pendingCustomerList']->count() }})</a>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Customer</th>
+                    <th>PIC / Telepon</th>
+                    <th>Sales Pembuat</th>
+                    <th>Tanggal Dibuat</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($widgets['pendingCustomerList'] as $pendingCust)
+                <tr>
+                    <td><strong>{{ $pendingCust->code }}</strong></td>
+                    <td><strong>{{ $pendingCust->name }}</strong></td>
+                    <td>{{ $pendingCust->contact_name ?? '—' }} @if($pendingCust->phone)<br><small class="muted-cell">{{ $pendingCust->phone }}</small>@endif</td>
+                    <td>{{ $pendingCust->creator?->name ?? 'Sales' }}</td>
+                    <td>{{ $pendingCust->created_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                    <td>
+                        <div class="table-actions">
+                            <a class="btn-action btn-action-primary" href="{{ route('customers.show', $pendingCust) }}" title="Review Customer" data-tooltip="Review" aria-label="Review Customer"><x-icon name="eye"/></a>
+                            <form method="POST" action="{{ route('customers.approve', $pendingCust) }}" data-confirm="Setujui customer {{ $pendingCust->name }} ({{ $pendingCust->code }})?">
+                                @csrf
+                                <input type="hidden" name="lock_version" value="{{ $pendingCust->lock_version }}">
+                                <button class="btn-action btn-action-success" title="Approve Langsung" data-tooltip="Approve" aria-label="Approve Langsung"><x-icon name="check"/></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</section>
+@endif
+
 @if(isset($widgets['topJobs']) && $widgets['topJobs']->isNotEmpty())
 <section class="panel" style="margin-bottom:20px">
     <div class="panel-heading"><div><h2>Job paling menguntungkan</h2><p>Berdasarkan profit closing.</p></div><a class="text-link" href="{{ route('reports.profit-per-job') }}">Profit per Job</a></div>

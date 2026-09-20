@@ -109,7 +109,7 @@ class WorkspaceTest extends TestCase
         $user->update(['password' => 'ChangedPassword!']);
         $hash = $user->password;
         $this->seed(DatabaseSeeder::class);
-        $this->assertDatabaseCount('users', 8);
+        $this->assertDatabaseCount('users', 15);
         $this->assertDatabaseCount('roles', 8);
         $this->assertSame($hash, $user->fresh()->password);
     }

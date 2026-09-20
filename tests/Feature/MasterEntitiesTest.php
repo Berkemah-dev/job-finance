@@ -27,7 +27,7 @@ class MasterEntitiesTest extends TestCase
 
     public function test_ports_crud_and_toggle(): void
     {
-        $this->login('operational');
+        $this->login('sales-manager');
 
         // 1. Index page
         $this->get('/ports')->assertOk()->assertSee('Data Port');
@@ -62,7 +62,7 @@ class MasterEntitiesTest extends TestCase
 
     public function test_charge_types_crud_and_toggle(): void
     {
-        $this->login('operational');
+        $this->login('sales-manager');
 
         // 1. Index page
         $this->get('/charge-types')->assertOk()->assertSee('Jenis Biaya');
@@ -94,7 +94,7 @@ class MasterEntitiesTest extends TestCase
 
     public function test_container_units_crud_and_toggle(): void
     {
-        $this->login('operational');
+        $this->login('sales-manager');
 
         // 1. Index page
         $this->get('/container-units')->assertOk()->assertSee('Satuan (Unit)');

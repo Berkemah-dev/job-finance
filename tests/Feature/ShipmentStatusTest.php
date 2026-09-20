@@ -118,7 +118,7 @@ class ShipmentStatusTest extends TestCase
         $this->actingAs($this->operator);
         $this->post('/jobs/'.$job->id.'/shipment-status', ['lock_version' => $job->lock_version, 'shipment_status' => 'booked'])
             ->assertSessionHasNoErrors();
-        $this->actingAs($this->sales);
+        $this->actingAs($this->operator);
         $this->get('/jobs?shipment_status=booked')->assertOk()->assertSee($job->number);
         $this->get('/jobs?shipment_status=completed')->assertDontSee($job->number);
     }

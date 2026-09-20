@@ -118,6 +118,7 @@ class QuotationTest extends TestCase
         $this->customer->update(['name' => 'Changed master']);
         $this->assertSame($original, $job->fresh()->quotation_snapshot['customer']['name']);
         $this->customer->delete();
+        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
         $this->get('/quotations/'.$q->id)->assertOk()->assertSee($original)->assertSee('Diarsipkan');
         $this->get('/jobs/'.$job->id)->assertOk()->assertSee('9.500.000,00');
         $this->get('/jobs')->assertOk()->assertSee($job->number);
@@ -353,7 +354,7 @@ class QuotationTest extends TestCase
         $trucking = TruckingPrice::factory()->create(['port_origin' => 'Jakarta', 'destination' => 'Surabaya', 'container_type' => '40ft', 'currency' => 'USD', 'price' => '1800.00', 'effective_date' => '2026-09-01', 'is_active' => true]);
         $this->actingAs(User::where('email', 'finance@jobfinance.test')->firstOrFail());
         $this->getJson('/api/pricing/suggest-trucking?port_origin=Jakarta&destination=Surabaya&container_type=40ft')->assertForbidden();
-        $this->actingAs($this->actor);
+        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
 
         $json = $this->getJson('/api/pricing/suggest-trucking?port_origin=Jakarta&destination=Surabaya&container_type=40ft&date=2026-09-08')
             ->assertOk()->assertJsonPath('found', true)->assertJsonPath('pricing_id', $trucking->id)->json();

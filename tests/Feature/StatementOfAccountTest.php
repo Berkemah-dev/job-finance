@@ -146,7 +146,7 @@ class StatementOfAccountTest extends TestCase
     public function test_archived_customer_statement_still_opens_for_historical_accounting(): void
     {
         $invoice = $this->invoice(today()->subDays(5)->toDateString(), today()->addDays(25)->toDateString());
-        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
+        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
         $this->delete('/customers/'.$this->customer->id, ['lock_version' => (int) $this->customer->lock_version])->assertSessionHasNoErrors();
         $this->assertSoftDeleted($this->customer);
 

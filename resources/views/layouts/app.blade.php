@@ -52,13 +52,26 @@
         <a class="nav-item {{ $isActive ? 'active' : '' }}" href="{{ route($dashboardRoute) }}" title="{{ $dashboardLabel }}"><x-icon name="grid"/><span>{{ $dashboardLabel }}</span></a>
         @endforeach
         @php
+        $pendingCustomerCount = auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin'])
+            ? \App\Models\Customer::where('approval_status', 'pending')->count()
+            : 0;
+
+        $salesCustomerItems = [
+            ['quotations.manage','file','Quotation','quotations.index'],
+            ['customers.view','users','Customer','customers.index'],
+        ];
+        if (auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin'])) {
+            $salesCustomerItems[] = ['customers.view','clipboard-check','Approval Customer','customers.index?status=pending', $pendingCustomerCount];
+        }
+        $salesCustomerItems[] = ['vendors.manage','users','Vendor','vendors.index'];
+
         $groups = [
-            'SALES & CUSTOMER' => [['quotations.manage','file','Quotation','quotations.index'],['customers.manage','users','Customer','customers.index'],['vendors.manage','users','Vendor','vendors.index']],
+            'SALES & CUSTOMER' => $salesCustomerItems,
             'PRICING' => [['pricing.view','chart','Pricing Mingguan','pricing.weekly.index'],['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']],
             'KALKULATOR' => [['dashboard.view','calculator','Kalkulator','calculators.index']],
             'OPERASIONAL' => [
                 ['jobs.view','briefcase','Job Order','jobs.index'],
-                ['tps.manage','briefcase','Master TPS Air & Sea','tps.index']
+                ['jobs.manage','briefcase','Master TPS Air & Sea','tps.index']
             ],
             'MASTER DATA' => [['master-data.manage','database','Data Port','ports.index'],['master-data.manage','file','Data Document','document-types.index'],['master-data.manage','briefcase','Data Service','service-types.index'],['master-data.manage','wallet','Data Cost','charge-types.index'],['master-data.manage','briefcase','Data Unit','container-units.index']],
             'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index'],['reimbursements.manage','wallet','Reimbursement','reimbursements.index']],
@@ -70,8 +83,18 @@
         $isCostPage = request()->routeIs('jobs.costs.*','costs.*');
         $checkItemActive = function ($item) use ($isCostPage) {
             $permission = $item[0];
-            $destination = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
-            if (!$destination) return false;
+            $destRaw = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.view'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
+            if (!$destRaw) return false;
+
+            if ($destRaw === 'customers.index?status=pending') {
+                return request()->routeIs('customers.index') && request('status') === 'pending';
+            }
+            if ($destRaw === 'customers.index') {
+                return request()->routeIs('customers.*') && request('status') !== 'pending';
+            }
+
+            $destination = str_contains((string)$destRaw, '?') ? strstr((string)$destRaw, '?', true) : $destRaw;
+
             if (str_starts_with((string)$destination, 'reports.')) {
                 return request()->routeIs($destination, $destination.'.*');
             } elseif ($destination === 'accounts.mappings') {
@@ -97,13 +120,24 @@
             @foreach($items as $item)
                 @php
                     [$permission, $icon, $label] = $item;
+                    $badge = $item[4] ?? null;
                 @endphp
                 @can($permission)
                     @php
-                    $destination = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.manage'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
+                    $destRaw = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.view'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
                     $active = $checkItemActive($item);
+                    $targetUrl = null;
+                    if ($destRaw) {
+                        if (str_contains($destRaw, '?')) {
+                            [$routeName, $queryStr] = explode('?', $destRaw, 2);
+                            parse_str($queryStr, $queryParams);
+                            $targetUrl = route($routeName, $queryParams);
+                        } else {
+                            $targetUrl = route($destRaw);
+                        }
+                    }
                     @endphp
-                    @if(!$destination)
+                    @if(!$destRaw)
                         <span class="nav-item upcoming" aria-disabled="true" title="{{ $label }} (Segera)"><x-icon :name="$icon"/><span>{{ $label }}</span><small>Segera</small></span>
                     @elseif($label === 'Data Document')
                         <details class="nav-subgroup" {{ request()->routeIs('document-types.*') ? 'open' : '' }}>
@@ -114,7 +148,13 @@
                             @endforeach
                         </details>
                     @else
-                        <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ route($destination) }}" title="{{ $label }}"><x-icon :name="$icon"/><span>{{ $label }}</span></a>
+                        <a class="nav-item {{ $active ? 'active' : '' }}" href="{{ $targetUrl }}" title="{{ $label }}">
+                            <x-icon :name="$icon"/>
+                            <span>{{ $label }}</span>
+                            @if(!empty($badge))
+                                <span class="badge" style="margin-left:auto;background:#ea580c;color:#ffffff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700;">{{ $badge }}</span>
+                            @endif
+                        </a>
                     @endif
                 @endcan
             @endforeach

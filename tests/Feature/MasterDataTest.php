@@ -28,7 +28,7 @@ class MasterDataTest extends TestCase
 
     public function test_customer_crud_search_archive_and_unique_code(): void
     {
-        $this->login('operational');
+        $this->login('sales-manager');
         $this->post('/customers', ['name' => 'PT Pelanggan', 'email' => 'contact@example.test'])->assertSessionHasNoErrors()->assertRedirect('/customers/1');
         $customer = Customer::firstOrFail();
         $this->assertMatchesRegularExpression('/^CUS-'.now()->year.'-\d{5}$/', $customer->code);
@@ -60,7 +60,7 @@ class MasterDataTest extends TestCase
         $this->post('/customers', ['name' => 'Blocked'])->assertForbidden();
         $this->put('/customers/'.$customer->id, ['name' => 'Blocked', 'lock_version' => 0])->assertForbidden();
         $this->delete('/customers/'.$customer->id, ['lock_version' => 0])->assertForbidden();
-        $this->login('operational');
+        $this->login('sales-manager');
         $this->post('/customers', ['name' => '', 'email' => 'wrong'])->assertSessionHasErrors(['name', 'email']);
     }
 

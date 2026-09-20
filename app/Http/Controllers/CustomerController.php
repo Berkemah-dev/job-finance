@@ -113,7 +113,7 @@ class CustomerController extends Controller
             $service->log($request->user(), 'customer.approved', 'Approve customer '.$customer->code.' · '.$customer->name, ['module' => 'customer', 'record_id' => $customer->id]);
         }, 3);
 
-        return redirect()->route('customers.show', $customer)->with('success', 'Customer sudah disetujui dan bisa dipakai transaksi.');
+        return back()->with('success', 'Customer '.$customer->code.' sudah disetujui dan bisa dipakai transaksi.');
     }
 
     public function destroy(VersionRequest $request, Customer $customer, MasterDataService $service)
