@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         ✓ {{ $checklist['status_summary'] }}
                     </span>
                 @else
-                    <span class="status-badge" style="background: #f1f5f9; color: #475569; font-weight: 600;">
+                    <span class="status-badge" style="background: #fee2e2; color: #b91c1c; font-weight: 600; border: 1px solid #fca5a5;">
                         {{ $checklist['status_summary'] }}
                     </span>
                 @endif
@@ -235,12 +235,27 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
             @foreach($checklist['items'] as $item)
-                <div style="padding: 10px 14px; border-radius: 8px; border: 1px solid {{ $item['completed'] ? '#bbf7d0' : ($item['active'] ?? false ? '#fca5a5' : '#e2e8f0') }}; background: {{ $item['completed'] ? '#f0fdf4' : ($item['active'] ?? false ? '#fef2f2' : '#f8fafc') }}; display: flex; justify-content: space-between; align-items: center;">
+                @php
+                    $isRed = !$item['completed'] && ($item['badge_bg'] === '#fee2e2' || ($item['active'] ?? false));
+                    $boxBorder = $item['completed'] ? '#bbf7d0' : ($isRed ? '#fca5a5' : '#e2e8f0');
+                    $boxBg = $item['completed'] ? '#f0fdf4' : ($isRed ? '#fff5f5' : '#f8fafc');
+                    $badgeBorder = $item['completed'] ? '#86efac' : ($isRed ? '#fca5a5' : '#cbd5e1');
+                @endphp
+                <div style="padding: 10px 14px; border-radius: 8px; border: 1px solid {{ $boxBorder }}; background: {{ $boxBg }}; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                     <div>
-                        <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">{{ $item['label'] }}</div>
+                        <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                            @if($item['completed'])
+                                <span style="color: #16a34a; font-size: 12px;">●</span>
+                            @elseif($isRed)
+                                <span style="color: #dc2626; font-size: 12px;">●</span>
+                            @else
+                                <span style="color: #94a3b8; font-size: 12px;">●</span>
+                            @endif
+                            {{ $item['label'] }}
+                        </div>
                         <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">{{ $item['sublabel'] }}</div>
                     </div>
-                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $item['badge_bg'] }}; color: {{ $item['badge_color'] }};">
+                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $item['badge_bg'] }}; color: {{ $item['badge_color'] }}; border: 1px solid {{ $badgeBorder }}; white-space: nowrap;">
                         {{ $item['badge_text'] }}
                     </span>
                 </div>
@@ -1036,21 +1051,68 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="report-card-title">
                         <span class="report-icon amber"><x-icon name="briefcase"/></span>
                         <div>
-                            <h2>Status Delivery Order (DO)</h2>
-                            <small>Status penyelesaian pengantaran</small>
+                            <h2>Status Delivery Order (DO) & Penyelesaian Pengantaran</h2>
+                            <small>Konfirmasi pengantaran selesai & verifikasi berkas Surat Jalan</small>
                         </div>
                     </div>
                 </div>
                 <strong class="report-value {{ $job->do_confirmed_at ? 'positive' : 'negative' }}" style="font-size: 18px;">
                     {{ $job->do_confirmed_at ? 'Selesai Dikonfirmasi' : 'Menunggu Penyelesaian Pengantaran' }}
                 </strong>
+
+                @php
+                    $suratJalanDoc = $job->getSuratJalanDocument();
+                @endphp
+
+                @if($suratJalanDoc)
+                    <div style="margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: #f0fdf4; border: 1px solid #86efac; font-size: 13px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <strong>✓ Berkas Surat Jalan Terupload:</strong>
+                            <span style="font-weight: 600;">{{ $suratJalanDoc->original_name }}</span>
+                            <small style="color: #64748b; margin-left: 6px;">({{ $suratJalanDoc->created_at->format('d/m/Y H:i') }})</small>
+                        </div>
+                        <a class="button button-secondary button-sm" href="{{ route('jobs.documents.download', [$job, $suratJalanDoc]) }}" target="_blank" style="font-size: 12px; padding: 4px 10px;">
+                            <x-icon name="download"/> Unduh Berkas
+                        </a>
+                    </div>
+                @else
+                    <div style="margin-top: 14px; padding: 14px 16px; border-radius: 8px; background: #fff5f5; border: 1.5px solid #fca5a5; font-size: 13px; color: #991b1b; line-height: 1.6;">
+                        <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; margin-bottom: 6px;">
+                            <span style="font-size: 16px;">⚠️</span> Berkas Surat Jalan Wajib Diunggah
+                        </div>
+                        <p style="margin: 0 0 10px; color: #7f1d1d; font-size: 12.5px;">
+                            Wajib mengunggah (upload) berkas Surat Jalan (scan/foto bertanda tangan atau stempel penerima) sebelum mengonfirmasi penyelesaian job.
+                        </p>
+                        @can('update', $job)
+                            <form method="POST" action="{{ route('jobs.surat-jalan.upload', $job) }}" enctype="multipart/form-data" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                @csrf
+                                <input type="file" name="surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <button type="submit" class="button button-primary button-sm" style="font-size: 12px; padding: 7px 14px;">
+                                    <x-icon name="upload"/> Upload Berkas Sekarang
+                                </button>
+                            </form>
+                        @endcan
+                    </div>
+                @endif
+
                 @if($job->do_confirmed_at)
                     <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 10px;">Dikonfirmasi pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.</p>
                 @elseif($job->status === 'open')
                     @can('jobs.confirm-do')
-                        <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?" style="margin-top: 16px;">
+                        <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" enctype="multipart/form-data" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai dan barang telah diterima?" style="margin-top: 16px; padding: 14px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0;">
                             @csrf
-                            <button class="button button-primary" style="background:#16a34a;border-color:#16a34a"><x-icon name="check"/> Konfirmasi DO Selesai</button>
+                            @if(!$suratJalanDoc)
+                                <div class="field" style="margin-bottom: 12px;">
+                                    <label for="confirm_surat_jalan_file" style="font-size: 12.5px; font-weight: 700; color: #991b1b; display: block; margin-bottom: 4px;">
+                                        Upload Berkas Surat Jalan (Wajib) <span class="required">*</span>
+                                    </label>
+                                    <input type="file" name="surat_jalan_file" id="confirm_surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #fca5a5; border-radius: 6px; background: #fff; width: 100%;">
+                                    <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">Lampirkan berkas scan/foto Surat Jalan yang telah ditandatangani.</small>
+                                </div>
+                            @endif
+                            <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">
+                                <x-icon name="check"/> Konfirmasi DO Selesai
+                            </button>
                         </form>
                     @endcan
                 @elseif($job->status === 'draft')

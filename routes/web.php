@@ -144,6 +144,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/jobs/{job}/'.$action, [JobController::class, $action])->middleware('can:jobs.manage')->name('jobs.'.$action);
     }
     Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.confirm-do')->name('jobs.confirm-do');
+    Route::post('/jobs/{job}/upload-surat-jalan', [JobController::class, 'uploadSuratJalan'])->middleware('can:jobs.view')->name('jobs.surat-jalan.upload');
     // Job Documents
     Route::post('/jobs/{job}/documents', [JobDocumentController::class, 'store'])->middleware('can:jobs.view')->name('jobs.documents.store');
     Route::get('/jobs/{job}/documents/{document}/download', [JobDocumentController::class, 'download'])->middleware('can:jobs.view')->name('jobs.documents.download');

@@ -170,7 +170,7 @@ class SuratJalanImportSeaTest extends TestCase
     public function test_surat_jalan_import_sea_can_be_saved_and_rendered_in_pdf(): void
     {
         $quotation = $this->approvedQuotation();
-        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
+        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
         $this->post('/quotations/'.$quotation->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
 
         $this->actingAs($this->actor);

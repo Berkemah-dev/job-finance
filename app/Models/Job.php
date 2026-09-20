@@ -219,9 +219,36 @@ class Job extends Model
         });
     }
 
+    public function hasSuratJalanDocument(): bool
+    {
+        return $this->getSuratJalanDocument() !== null;
+    }
+
+    public function getSuratJalanDocument(): ?JobDocument
+    {
+        return $this->documents->first(function (JobDocument $doc) {
+            $code = strtoupper((string) ($doc->documentType?->code ?? ''));
+            $name = strtoupper((string) ($doc->documentType?->name ?? ''));
+            $notes = strtoupper((string) ($doc->notes ?? ''));
+            $orig = strtoupper((string) ($doc->original_name ?? ''));
+
+            return str_contains($code, 'SJ') ||
+                   str_contains($code, 'SURAT_JALAN') ||
+                   str_contains($name, 'SURAT JALAN') ||
+                   str_contains($name, 'SURAT_JALAN') ||
+                   str_contains($notes, 'SURAT JALAN') ||
+                   str_contains($orig, 'SURAT_JALAN') ||
+                   str_contains($orig, 'SURAT JALAN');
+        });
+    }
+
     public function hasDoChecklist(): bool
     {
         if ($this->do_confirmed_at !== null) {
+            return true;
+        }
+
+        if ($this->hasSuratJalanDocument()) {
             return true;
         }
 
@@ -347,8 +374,8 @@ class Job extends Model
                         'sublabel' => 'House BL / Master BL',
                         'completed' => $hasBl,
                         'badge_text' => $hasBl ? 'BL Checklist ✓' : 'Belum Upload BL',
-                        'badge_color' => $hasBl ? '#166534' : '#64748b',
-                        'badge_bg' => $hasBl ? '#dcfce7' : '#f1f5f9',
+                        'badge_color' => $hasBl ? '#166534' : '#b91c1c',
+                        'badge_bg' => $hasBl ? '#dcfce7' : '#fee2e2',
                     ],
                     [
                         'key' => 'customs',
@@ -356,8 +383,8 @@ class Job extends Model
                         'sublabel' => 'Nota Pelayanan Ekspor (NPE)',
                         'completed' => $hasNpe,
                         'badge_text' => $hasNpe ? 'Customs Checklist (NPE) ✓' : 'Menunggu NPE',
-                        'badge_color' => $hasNpe ? '#3730a3' : '#64748b',
-                        'badge_bg' => $hasNpe ? '#e0e7ff' : '#f1f5f9',
+                        'badge_color' => $hasNpe ? '#3730a3' : '#b91c1c',
+                        'badge_bg' => $hasNpe ? '#e0e7ff' : '#fee2e2',
                     ],
                 ],
             ];
@@ -379,8 +406,8 @@ class Job extends Model
                         'sublabel' => 'House AWB / Master AWB',
                         'completed' => $hasAwb,
                         'badge_text' => $hasAwb ? 'AWB Checklist ✓' : 'Belum Upload AWB',
-                        'badge_color' => $hasAwb ? '#166534' : '#64748b',
-                        'badge_bg' => $hasAwb ? '#dcfce7' : '#f1f5f9',
+                        'badge_color' => $hasAwb ? '#166534' : '#b91c1c',
+                        'badge_bg' => $hasAwb ? '#dcfce7' : '#fee2e2',
                     ],
                     [
                         'key' => 'customs',
@@ -388,8 +415,8 @@ class Job extends Model
                         'sublabel' => 'Nota Pelayanan Ekspor (NPE)',
                         'completed' => $hasNpe,
                         'badge_text' => $hasNpe ? 'Customs Checklist (NPE) ✓' : 'Menunggu NPE',
-                        'badge_color' => $hasNpe ? '#3730a3' : '#64748b',
-                        'badge_bg' => $hasNpe ? '#e0e7ff' : '#f1f5f9',
+                        'badge_color' => $hasNpe ? '#3730a3' : '#b91c1c',
+                        'badge_bg' => $hasNpe ? '#e0e7ff' : '#fee2e2',
                     ],
                 ],
             ];
@@ -427,8 +454,8 @@ class Job extends Model
                         'sublabel'     => 'Otomatis hijau setelah BL, Invoice, Packing List lengkap',
                         'completed'    => $hasPib,
                         'badge_text'   => $hasPib ? 'PIB Diajukan ✓' : 'Menunggu BL/Invoice/PL',
-                        'badge_color'  => $hasPib ? '#166534' : '#64748b',
-                        'badge_bg'     => $hasPib ? '#dcfce7' : '#f1f5f9',
+                        'badge_color'  => $hasPib ? '#166534' : '#b91c1c',
+                        'badge_bg'     => $hasPib ? '#dcfce7' : '#fee2e2',
                     ],
                     [
                         'key'          => 'spjm',
@@ -447,8 +474,8 @@ class Job extends Model
                         'completed'    => $hasBehandle || ($hasSppb && ! $hasSpjm),
                         'active'       => $hasBehandle && ! $hasSppb,
                         'badge_text'   => $hasBehandle ? 'Behandle aktif' : ($hasSppb && ! $hasSpjm ? 'Dilewati' : 'Menunggu SLIM'),
-                        'badge_color'  => $hasBehandle ? '#92400e' : ($hasSppb && ! $hasSpjm ? '#166534' : '#64748b'),
-                        'badge_bg'     => $hasBehandle ? '#fef3c7' : ($hasSppb && ! $hasSpjm ? '#dcfce7' : '#f1f5f9'),
+                        'badge_color'  => $hasBehandle ? '#92400e' : ($hasSppb && ! $hasSpjm ? '#166534' : ($hasSpjm ? '#b91c1c' : '#64748b')),
+                        'badge_bg'     => $hasBehandle ? '#fef3c7' : ($hasSppb && ! $hasSpjm ? '#dcfce7' : ($hasSpjm ? '#fee2e2' : '#f1f5f9')),
                     ],
                     [
                         'key'          => 'sppb',
@@ -456,8 +483,8 @@ class Job extends Model
                         'sublabel'     => 'Ujung alur customs',
                         'completed'    => $hasSppb,
                         'badge_text'   => $hasSppb ? 'SPPB TERBIT' : 'Menunggu SPPB',
-                        'badge_color'  => $hasSppb ? '#166534' : '#64748b',
-                        'badge_bg'     => $hasSppb ? '#dcfce7' : '#f1f5f9',
+                        'badge_color'  => $hasSppb ? '#166534' : '#b91c1c',
+                        'badge_bg'     => $hasSppb ? '#dcfce7' : '#fee2e2',
                     ],
                 ],
             ];
@@ -495,8 +522,8 @@ class Job extends Model
                         'sublabel'     => 'Otomatis hijau setelah AWB, Invoice, Packing List lengkap',
                         'completed'    => $hasPib,
                         'badge_text'   => $hasPib ? 'PIB Diajukan ✓' : 'Menunggu AWB/Invoice/PL',
-                        'badge_color'  => $hasPib ? '#166534' : '#64748b',
-                        'badge_bg'     => $hasPib ? '#dcfce7' : '#f1f5f9',
+                        'badge_color'  => $hasPib ? '#166534' : '#b91c1c',
+                        'badge_bg'     => $hasPib ? '#dcfce7' : '#fee2e2',
                     ],
                     [
                         'key'          => 'spjm',
@@ -515,8 +542,8 @@ class Job extends Model
                         'completed'    => $hasBehandle || ($hasSppb && ! $hasSpjm),
                         'active'       => $hasBehandle && ! $hasSppb,
                         'badge_text'   => $hasBehandle ? 'Behandle aktif' : ($hasSppb && ! $hasSpjm ? 'Dilewati' : 'Menunggu SLIM'),
-                        'badge_color'  => $hasBehandle ? '#92400e' : ($hasSppb && ! $hasSpjm ? '#166534' : '#64748b'),
-                        'badge_bg'     => $hasBehandle ? '#fef3c7' : ($hasSppb && ! $hasSpjm ? '#dcfce7' : '#f1f5f9'),
+                        'badge_color'  => $hasBehandle ? '#92400e' : ($hasSppb && ! $hasSpjm ? '#166534' : ($hasSpjm ? '#b91c1c' : '#64748b')),
+                        'badge_bg'     => $hasBehandle ? '#fef3c7' : ($hasSppb && ! $hasSpjm ? '#dcfce7' : ($hasSpjm ? '#fee2e2' : '#f1f5f9')),
                     ],
                     [
                         'key'          => 'sppb',
@@ -524,8 +551,8 @@ class Job extends Model
                         'sublabel'     => 'Ujung alur customs',
                         'completed'    => $hasSppb,
                         'badge_text'   => $hasSppb ? 'SPPB TERBIT' : 'Menunggu SPPB',
-                        'badge_color'  => $hasSppb ? '#166534' : '#64748b',
-                        'badge_bg'     => $hasSppb ? '#dcfce7' : '#f1f5f9',
+                        'badge_color'  => $hasSppb ? '#166534' : '#b91c1c',
+                        'badge_bg'     => $hasSppb ? '#dcfce7' : '#fee2e2',
                     ],
                 ],
             ];

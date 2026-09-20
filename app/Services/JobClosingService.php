@@ -31,6 +31,10 @@ class JobClosingService
             if (! $job->customer()->withTrashed()->exists()) {
                 throw ValidationException::withMessages(['customer' => 'Customer job tidak tersedia.']);
             }
+            $isImport = in_array((string) ($job->service_type ?? ''), ['imp_sea', 'imp_air'], true);
+            if ($isImport && ! $job->hasSuratJalanDocument()) {
+                throw ValidationException::withMessages(['surat_jalan' => 'Job Import wajib memiliki berkas Surat Jalan yang sudah terupload sebelum job dapat diselesaikan/ditutup.']);
+            }
             if ($job->costs()->count() === 0 && ! empty($job->quotation_snapshot['items'])) {
                 app(JobService::class)->seedQuotationCharges($job, $actor);
             }

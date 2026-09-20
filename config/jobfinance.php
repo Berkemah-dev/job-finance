@@ -58,7 +58,7 @@ return [
             'pricing.view',
         ]],
         'operational' => ['label' => 'Operation', 'permissions' => [
-            'dashboard.view', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
+            'dashboard.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
         ]],
         'customer-service' => ['label' => 'Customer Service', 'permissions' => [
             'dashboard.view', 'customers.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',

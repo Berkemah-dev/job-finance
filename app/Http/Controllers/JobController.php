@@ -128,9 +128,26 @@ class JobController extends Controller
 
     public function confirmDo(Request $request, Job $job, JobService $service)
     {
-        $service->confirmDo($job, $request->user());
+        $request->validate([
+            'surat_jalan_file' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
+        ]);
 
-        return redirect()->route('jobs.show', $job)->with('success', 'DO Selesai berhasil dikonfirmasi.');
+        $file = $request->file('surat_jalan_file');
+        $service->confirmDo($job, $request->user(), $file);
+
+        return redirect()->to(route('jobs.show', $job).'#tab-delivery')->with('success', 'DO Selesai berhasil dikonfirmasi.');
+    }
+
+    public function uploadSuratJalan(Request $request, Job $job, JobService $service)
+    {
+        $request->validate([
+            'surat_jalan_file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png',
+            'notes'            => 'nullable|string|max:500',
+        ]);
+
+        $service->uploadSuratJalan($job, $request->file('surat_jalan_file'), $request->user(), $request->input('notes'));
+
+        return redirect()->to(route('jobs.show', $job).'#tab-delivery')->with('success', 'Berkas Surat Jalan berhasil diunggah.');
     }
 
     public function shipmentStatus(ShipmentStatusRequest $request, Job $job, JobService $service)

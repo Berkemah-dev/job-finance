@@ -57,6 +57,7 @@ class ShipmentStatusTest extends TestCase
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
         $this->actingAs($this->manager);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
+        $this->actingAs($this->operator);
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
         $this->actingAs($this->sales);
 
@@ -215,7 +216,8 @@ class ShipmentStatusTest extends TestCase
 
         // 1. Confirm DO
         $cs = User::where('email', 'customer-service@jobfinance.test')->firstOrFail();
-        $this->actingAs($cs)->post('/jobs/'.$job->id.'/confirm-do')->assertSessionHasNoErrors();
+        $sjFile = \Illuminate\Http\UploadedFile::fake()->create('surat_jalan.pdf', 50, 'application/pdf');
+        $this->actingAs($cs)->post('/jobs/'.$job->id.'/confirm-do', ['surat_jalan_file' => $sjFile])->assertSessionHasNoErrors();
         $this->assertTrue($job->fresh()->hasDoChecklist());
 
         // 2. Upload SPJM
