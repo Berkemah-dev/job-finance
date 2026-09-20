@@ -5,7 +5,7 @@
     <title>Quotation {{ $quotation->number }}</title>
     <style>
         @page {
-            margin: 22px 30px 22px 30px;
+            margin: 20px 28px 20px 28px;
             size: a4 portrait;
         }
         * {
@@ -14,7 +14,7 @@
         body {
             font-family: 'Courier New', Courier, 'DejaVu Sans Mono', monospace;
             color: #000;
-            font-size: 8.5pt;
+            font-size: 10pt;
             line-height: 1.35;
             margin: 0;
             padding: 0;
@@ -32,11 +32,11 @@
             clear: both;
         }
         .header {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         .header-logo {
             float: left;
-            width: 45%;
+            width: 42%;
         }
         .header-logo img {
             max-width: 190px;
@@ -44,22 +44,23 @@
         }
         .header-company {
             float: right;
-            width: 53%;
+            width: 56%;
             text-align: right;
-            font-size: 8.5pt;
+            font-size: 9.5pt;
             line-height: 1.3;
         }
         .header-company .company-name {
             font-weight: bold;
+            font-size: 10.5pt;
             margin-bottom: 2px;
         }
         .top-block {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
         .to-block {
             float: left;
-            width: 55%;
-            font-size: 8.5pt;
+            width: 53%;
+            font-size: 10pt;
             line-height: 1.35;
         }
         .to-label {
@@ -79,28 +80,28 @@
         }
         .quo-block {
             float: right;
-            width: 42%;
+            width: 45%;
             text-align: right;
         }
         .quo-title {
-            font-size: 16pt;
+            font-size: 18pt;
             font-weight: bold;
             letter-spacing: 1px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         .quo-meta {
             border-collapse: collapse;
             margin-left: auto;
-            font-size: 8.5pt;
+            font-size: 10pt;
         }
         .quo-meta td {
-            padding: 1px 0;
+            padding: 1.5px 0;
         }
         .quo-meta td.lbl {
             font-weight: bold;
             text-align: left;
             padding-right: 2px;
-            width: 95px;
+            width: 105px;
         }
         .quo-meta td.colon {
             width: 12px;
@@ -112,18 +113,18 @@
         }
         .shipment-info {
             border-collapse: collapse;
-            margin-bottom: 14px;
-            font-size: 8.5pt;
+            margin-bottom: 12px;
+            font-size: 10pt;
             width: 100%;
         }
         .shipment-info td {
-            padding: 1.5px 0;
+            padding: 2px 0;
             vertical-align: top;
         }
         .shipment-info td.field-label {
             font-weight: bold;
             color: #000;
-            width: 155px;
+            width: 170px;
         }
         .shipment-info td.colon {
             width: 14px;
@@ -136,14 +137,14 @@
         }
         .intro {
             margin-bottom: 8px;
-            font-size: 8.5pt;
+            font-size: 10pt;
         }
         table.items {
             width: 100%;
             border: 1px solid #000;
             border-collapse: collapse;
-            margin-bottom: 14px;
-            font-size: 8pt;
+            margin-bottom: 12px;
+            font-size: 9.5pt;
         }
         table.items thead tr {
             background-color: #e0e0e0;
@@ -153,7 +154,7 @@
             text-align: center;
             border: 1px solid #000;
             font-weight: bold;
-            font-size: 7.5pt;
+            font-size: 9pt;
             text-transform: uppercase;
         }
         table.items tbody tr {
@@ -171,8 +172,8 @@
             text-align: right;
         }
         .remarks {
-            margin-bottom: 12px;
-            font-size: 8pt;
+            margin-bottom: 10px;
+            font-size: 9.5pt;
             line-height: 1.35;
         }
         .remarks-title {
@@ -180,8 +181,8 @@
             margin-bottom: 3px;
         }
         .custom-remarks {
-            margin-bottom: 12px;
-            font-size: 8pt;
+            margin-bottom: 10px;
+            font-size: 9.5pt;
             line-height: 1.35;
         }
         .cr-label {
@@ -194,20 +195,20 @@
             text-transform: uppercase;
         }
         .closing {
-            margin: 12px 0 16px 0;
-            font-size: 8.5pt;
+            margin: 10px 0 12px 0;
+            font-size: 9.5pt;
             line-height: 1.35;
         }
         .sign {
             position: absolute;
-            bottom: 20px;
+            bottom: 15px;
             left: 0;
             right: 0;
-            font-size: 8.5pt;
+            font-size: 9.5pt;
             line-height: 1.3;
         }
         .sign-logo {
-            margin: 8px 0 6px 0;
+            margin: 6px 0 5px 0;
         }
         .sign-logo img {
             max-height: 36px;
@@ -226,9 +227,9 @@
             font-weight: normal;
         }
         .sign-generated {
-            margin-top: 8px;
+            margin-top: 6px;
             font-style: italic;
-            font-size: 7.5pt;
+            font-size: 8.5pt;
             color: #333;
         }
     </style>
@@ -390,7 +391,7 @@
             <td>
                 {{ strtoupper($item->description) }}
                 @if($subText)
-                    <br/><span style="font-size:7pt;color:#444;">{{ $subText }}</span>
+                    <br/><span style="font-size:8pt;color:#444;">{{ $subText }}</span>
                 @endif
             </td>
             <td class="center">{{ $currency }}</td>
@@ -399,7 +400,7 @@
             <td class="center">{{ $item->unit }}</td>
             <td class="center">{{ $excRate }}</td>
             <td class="right">{{ $amountFormatted }}</td>
-            <td style="font-size:7pt;">{{ $item->note ?? '' }}</td>
+            <td style="font-size:8pt;">{{ $item->note ?? '' }}</td>
         </tr>
         @endforeach
 
