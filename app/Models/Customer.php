@@ -45,6 +45,11 @@ class Customer extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function quotations(): HasMany
     {
         return $this->hasMany(Quotation::class);
