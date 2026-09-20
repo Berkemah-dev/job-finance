@@ -15,7 +15,15 @@ class QuotationPolicy
 
     public function view(User $user, Quotation $quotation): bool
     {
-        return $this->viewAny($user);
+        if (! $this->viewAny($user)) {
+            return false;
+        }
+
+        if ($user->hasRole('sales') && ! $user->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+            return $quotation->sales_id === $user->id || ($quotation->sales_id === null && $quotation->created_by === $user->id);
+        }
+
+        return true;
     }
 
     public function create(User $user): bool
@@ -25,7 +33,7 @@ class QuotationPolicy
 
     public function update(User $user, Quotation $quotation): bool
     {
-        return $this->viewAny($user) && in_array($quotation->status, [QuotationStatus::Draft, QuotationStatus::Revision], true);
+        return $this->view($user, $quotation) && in_array($quotation->status, [QuotationStatus::Draft, QuotationStatus::Revision], true);
     }
 
     public function submit(User $user, Quotation $quotation): bool

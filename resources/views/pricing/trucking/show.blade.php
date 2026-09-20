@@ -23,6 +23,9 @@
         </form>
     @endcan
 </div>
+@php
+    $showTruckingCost = ! auth()->user()?->hasRole('sales') || auth()->user()?->hasRole(['sales-manager', 'finance', 'finance-manager', 'super-admin', 'admin']);
+@endphp
 
 {{-- INFORMASI RUTE & VENDOR --}}
 <section class="panel" style="margin-bottom: 24px;">
@@ -61,7 +64,7 @@
 <section class="panel" style="margin-bottom: 24px;">
     <div class="panel-heading">
         <h2>Matriks Tarif Kontainer (20GP / 40FT / 40HQ)</h2>
-        <span class="subtle">Harga Normal & Overweight (Modal dan Harga Jual)</span>
+        <span class="subtle">Harga Normal & Overweight{{ $showTruckingCost ? ' (Modal dan Harga Jual)' : ' (Harga Jual)' }}</span>
     </div>
 
     <div class="table-scroll" style="padding: 16px 20px;">
@@ -86,10 +89,12 @@
                         {{-- NORMAL --}}
                         <td style="padding: 16px; text-align: center; background: #f0fdf4; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
                             @if($row['normal'])
-                                <div style="margin-bottom: 4px;">
-                                    <span style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Modal (Cost):</span><br>
-                                    <strong style="font-size: 14.5px; color: #0f172a;">{{ $row['normal']->currency }} {{ number_format((float) $row['normal']->price, 0, ',', '.') }}</strong>
-                                </div>
+                                @if($showTruckingCost)
+                                    <div style="margin-bottom: 4px;">
+                                        <span style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Modal (Cost):</span><br>
+                                        <strong style="font-size: 14.5px; color: #0f172a;">{{ $row['normal']->currency }} {{ number_format((float) $row['normal']->price, 0, ',', '.') }}</strong>
+                                    </div>
+                                @endif
                                 <div>
                                     <span style="font-size: 11px; color: #16a34a; font-weight: 600; text-transform: uppercase;">Harga Jual:</span><br>
                                     <strong style="font-size: 15px; color: #16a34a;">
@@ -103,10 +108,12 @@
                         {{-- OVERWEIGHT --}}
                         <td style="padding: 16px; text-align: center; background: #fff7ed;">
                             @if($row['overweight'])
-                                <div style="margin-bottom: 4px;">
-                                    <span style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Modal (Cost):</span><br>
-                                    <strong style="font-size: 14.5px; color: #0f172a;">{{ $row['overweight']->currency }} {{ number_format((float) $row['overweight']->price, 0, ',', '.') }}</strong>
-                                </div>
+                                @if($showTruckingCost)
+                                    <div style="margin-bottom: 4px;">
+                                        <span style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Modal (Cost):</span><br>
+                                        <strong style="font-size: 14.5px; color: #0f172a;">{{ $row['overweight']->currency }} {{ number_format((float) $row['overweight']->price, 0, ',', '.') }}</strong>
+                                    </div>
+                                @endif
                                 <div>
                                     <span style="font-size: 11px; color: #ea580c; font-weight: 600; text-transform: uppercase;">Harga Jual:</span><br>
                                     <strong style="font-size: 15px; color: #ea580c;">
@@ -136,7 +143,7 @@
                 <tr>
                     <th>Tipe Kontainer</th>
                     <th>Overweight</th>
-                    <th>Modal (Cost)</th>
+                    @if($showTruckingCost)<th>Modal (Cost)</th>@endif
                     <th>Harga Jual</th>
                     <th>Tgl Berlaku</th>
                     <th>Status</th>
@@ -154,7 +161,7 @@
                                 {{ $item->overweight ? 'Overweight' : 'Normal' }}
                             </span>
                         </td>
-                        <td><strong>{{ $item->currency }} {{ number_format((float) $item->price, 0, ',', '.') }}</strong></td>
+                        @if($showTruckingCost)<td><strong>{{ $item->currency }} {{ number_format((float) $item->price, 0, ',', '.') }}</strong></td>@endif
                         <td><strong style="color: #16a34a;">{{ $item->selling_price ? $item->currency.' '.number_format((float) $item->selling_price, 0, ',', '.') : '—' }}</strong></td>
                         <td>
                             {{ $item->effective_date?->format('d/m/Y') }}

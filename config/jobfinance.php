@@ -11,6 +11,7 @@ return [
         'jobs.view',
         'jobs.manage',
         'jobs.confirm-do',
+        'master-data.manage',
         'costs.manage',
         'jobs.close',
         'invoices.manage',
@@ -50,19 +51,17 @@ return [
         ]],
         'sales-manager' => ['label' => 'Sales Manager', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.manage',
-            'quotations.approve', 'jobs.view', 'jobs.manage', 'vendors.manage', 'pricing.manage', 'pricing.view',
+            'quotations.approve', 'jobs.view', 'jobs.manage', 'master-data.manage', 'vendors.manage', 'pricing.manage', 'pricing.view',
         ]],
         'sales' => ['label' => 'Sales', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.manage',
-            'jobs.view', 'pricing.view',
+            'pricing.view',
         ]],
         'operational' => ['label' => 'Operation', 'permissions' => [
-            'dashboard.view', 'customers.view', 'customers.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
-            'vendors.manage', 'pricing.view', 'tps.manage',
+            'dashboard.view', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
         ]],
         'customer-service' => ['label' => 'Customer Service', 'permissions' => [
             'dashboard.view', 'customers.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
-            'pricing.view',
         ]],
         'management' => ['label' => 'Management', 'permissions' => ['dashboard.view']],
     ],

@@ -75,7 +75,6 @@ class DashboardWidgetsTest extends TestCase
             ->assertOk()
             ->assertSee('Pipeline quotation')
             ->assertSee('Quotation saya')
-            ->assertSee('Pengiriman berjalan')
             ->assertDontSee('Jurnal bulan ini');
     }
 
@@ -95,7 +94,7 @@ class DashboardWidgetsTest extends TestCase
     {
         $this->actingAs($this->cs)->get('/dashboard')
             ->assertOk()
-            ->assertSee('Pengiriman berjalan')
+            ->assertDontSee('Pengiriman berjalan')
             ->assertSee('CS menangani 1 job terbuka')
             ->assertDontSee('Quotation saya');
     }

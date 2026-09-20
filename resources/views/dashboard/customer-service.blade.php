@@ -15,34 +15,23 @@
 />
 
 <div class="metric-grid">
-    <article class="metric-card"><div class="metric-label"><span>ETA 7 Hari</span><x-icon name="calendar"/></div><strong class="metric-value">{{ $arrivalSoon->where('eta','<=',today()->addDays(7))->count() }}</strong><span class="metric-caption">Perlu dikonfirmasi segera</span></article>
-    <article class="metric-card"><div class="metric-label"><span>ETA 14 Hari</span><x-icon name="calendar"/></div><strong class="metric-value">{{ $arrivalSoon->count() }}</strong><span class="metric-caption">Dalam pemantauan</span></article>
+    <article class="metric-card"><div class="metric-label"><span>ETA 3 Hari</span><x-icon name="calendar"/></div><strong class="metric-value">{{ $arrivalSoon->count() }}</strong><span class="metric-caption">Perlu dikonfirmasi segera</span></article>
+    <article class="metric-card"><div class="metric-label"><span>ETA Hari Ini</span><x-icon name="calendar"/></div><strong class="metric-value">{{ $arrivalSoon->filter(fn($j) => $j->eta?->isToday())->count() }}</strong><span class="metric-caption">Tiba hari ini</span></article>
     <article class="metric-card"><div class="metric-label"><span>Job Ditangani CS</span><x-icon name="briefcase"/></div><strong class="metric-value">{{ $widgets['myOpenJobs'] ?? 0 }}</strong><span class="metric-caption">CS menangani {{ $widgets['myOpenJobs'] ?? 0 }} job terbuka</span></article>
 </div>
 
-@if(isset($widgets['shipment']))
-<div class="section-heading"><h2>Pengiriman berjalan</h2><span class="subtle">CS menangani {{ $widgets['myOpenJobs'] ?? 0 }} job terbuka</span></div>
-<section class="panel" style="margin-bottom:20px">
-    <div class="filter-bar" style="justify-content:flex-start;border:none;padding:14px 23px;display:flex;flex-wrap:wrap;gap:8px">
-        @foreach(config('operations.shipment_statuses') as $value=>$label)
-        <span class="badge-pill status-{{ $value }}">{{ $label }} · {{ $widgets['shipment'][$value] ?? 0 }}</span>
-        @if(!$loop->last)<span class="text-link">→</span>@endif
-        @endforeach
-    </div>
-</section>
-@endif
-
 <section class="panel">
-    <div class="panel-heading"><div><h2>Job mendekati tiba</h2><p>ETA dalam 14 hari ke depan.</p></div><span class="count-badge">{{ $arrivalSoon->count() }}</span></div>
+    <div class="panel-heading"><div><h2>Job mendekati tiba</h2><p>ETA dalam H-3 (3 hari ke depan).</p></div><span class="count-badge">{{ $arrivalSoon->count() }}</span></div>
     <div class="table-scroll">
         <table>
-            <thead><tr><th>Job</th><th>Subject</th><th>ETA</th><th>Konfirmasi DO</th></tr></thead>
+            <thead><tr><th>NO JOB</th><th>EXPORT/IMPORT</th><th>ETA</th><th>NAMA CUSTOMER</th><th>KONFIRMASI DO</th></tr></thead>
             <tbody>
                 @forelse($arrivalSoon as $job)
                 <tr>
-                    <td><a class="text-link" href="{{ route('jobs.show',$job) }}">{{ $job->number }}</a></td>
-                    <td>{{ $job->subject }}</td>
+                    <td><a class="text-link" href="{{ route('jobs.show',$job) }}"><strong>{{ $job->number }}</strong></a></td>
+                    <td><span class="badge-pill">{{ \App\Models\ServiceType::label($job->service_type) }}</span></td>
                     <td>{{ $job->eta ? $job->eta->format('d/m/Y') : '—' }}</td>
+                    <td>{{ $job->customer?->name ?? $job->quotation_snapshot['customer']['name'] ?? '—' }}</td>
                     <td>
                         @if($job->do_confirmed_at)
                             <span class="status-badge" style="background:#ddf8ec;color:#1e9d75">DO Selesai</span>
@@ -56,7 +45,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="4">Tidak ada job yang mendekati tiba.</td></tr>
+                <tr><td colspan="5">Tidak ada job yang mendekati tiba dalam 3 hari ke depan.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -29,7 +29,9 @@ class QuotationController extends Controller
         $dateFrom = (string) $request->input('date_from', '');
         $dateTo = (string) $request->input('date_to', '');
         $serviceTypes = ServiceType::options();
+        $actor = $request->user();
         $quotations = Quotation::with(['customer', 'creator'])
+            ->when($actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin']), fn ($q) => $q->where(fn ($q) => $q->where('sales_id', $actor->id)->orWhere(fn ($q) => $q->whereNull('sales_id')->where('created_by', $actor->id))))
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
             ->when($status, fn ($q) => $q->where('status', $status))
             ->when($customerId, fn ($q) => $q->where('customer_id', $customerId))

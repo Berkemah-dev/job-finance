@@ -34,6 +34,13 @@ class PricingSuggestionController extends Controller
             $data['date'] ?? null
         );
 
+        if ($request->user()?->hasRole('sales') && ! $request->user()?->hasRole(['sales-manager', 'finance', 'finance-manager', 'super-admin', 'admin']) && ($suggestion['found'] ?? false)) {
+            $suggestion['unit_cost'] = '0.00';
+            if (isset($suggestion['snapshot']['price'])) {
+                unset($suggestion['snapshot']['price']);
+            }
+        }
+
         return response()->json($suggestion);
     }
 }

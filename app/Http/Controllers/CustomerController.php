@@ -22,8 +22,10 @@ class CustomerController extends Controller
         $status = $request->boolean('archived') ? 'inactive' : (string) $request->input('status', 'active');
         $onlyTrashed = $status === 'inactive';
         $pending = $status === 'pending';
+        $actor = $request->user();
         $customers = Customer::query()
             ->with('approver')
+            ->when($actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin']), fn ($q) => $q->where(fn ($q) => $q->where('created_by', $actor->id)->orWhereHas('quotations', fn ($quotation) => $quotation->where('sales_id', $actor->id)->orWhere(fn ($nested) => $nested->whereNull('sales_id')->where('created_by', $actor->id)))))
             ->when($onlyTrashed, fn ($q) => $q->onlyTrashed())
             ->when(! $onlyTrashed && $pending, fn ($q) => $q->where('approval_status', 'pending'))
             ->when(! $onlyTrashed && ! $pending, fn ($q) => $q->where('approval_status', 'approved'))
@@ -66,6 +68,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
+        $this->authorizeSalesCustomer($customer);
         $customer->load(['contacts', 'documents.uploader', 'approver', 'addresses']);
 
         return view('customers.show', compact('customer'));
@@ -73,6 +76,7 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
+        $this->authorizeSalesCustomer($customer);
         $customer->load(['contacts', 'documents']);
 
         return view('customers.form', compact('customer'));
@@ -80,6 +84,7 @@ class CustomerController extends Controller
 
     public function update(CustomerRequest $request, Customer $customer, MasterDataService $service, Filesystem $filesystem)
     {
+        $this->authorizeSalesCustomer($customer);
         $validated = $request->validated();
         $service->save($customer, Arr::except($validated, ['contacts']), $request->user());
         $this->syncContacts($customer, $validated['contacts'] ?? [], $request->user(), $service);
@@ -143,6 +148,21 @@ class CustomerController extends Controller
             $customer->contacts()->createMany($rows);
         }
         $service->log($user, 'customer.contacts_updated', 'Memperbarui shipper/consignee '.$customer->code, ['module' => 'customer', 'record_id' => $customer->id, 'before' => $before ?? null]);
+    }
+
+    private function authorizeSalesCustomer(Customer $customer): void
+    {
+        $user = request()->user();
+        if (! $user?->hasRole('sales') || $user->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+            return;
+        }
+
+        $allowed = $customer->created_by === $user->id
+            || $customer->quotations()
+                ->where(fn ($q) => $q->where('sales_id', $user->id)->orWhere(fn ($nested) => $nested->whereNull('sales_id')->where('created_by', $user->id)))
+                ->exists();
+
+        abort_unless($allowed, 403);
     }
 
     private function handleUploads(Customer $customer, Request $request, Filesystem $filesystem, ?User $user): void
