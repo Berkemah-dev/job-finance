@@ -65,11 +65,14 @@
                     <td>{{ $awb->etd?->format('d/m/Y') ?: '—' }}</td>
                     <td><span class="status-badge status-{{ in_array($awb->status, ['issued','completed']) ? 'approved' : ($awb->status === 'cancelled' ? 'rejected' : 'draft') }}">{{ ucfirst($awb->status) }}</span></td>
                     <td>
-                        <a class="button button-secondary" href="{{ route('awbs.edit', $awb) }}" style="padding:3px 10px;font-size:12px;">Edit</a>
-                        <form method="POST" action="{{ route('awbs.destroy', $awb) }}" style="display:inline;" data-confirm="Hapus AWB {{ $awb->number }}?">
-                            @csrf @method('DELETE')
-                            <button class="button button-danger" style="padding:3px 10px;font-size:12px;background:#ef4444;border-color:#ef4444;">Hapus</button>
-                        </form>
+                        <div style="display:flex;gap:4px;">
+                            <a class="button button-secondary button-sm" href="{{ route('awbs.show', $awb) }}">Detail</a>
+                            <a class="button button-secondary button-sm" href="{{ route('awbs.edit', $awb) }}">Edit</a>
+                            <form method="POST" action="{{ route('awbs.destroy', $awb) }}" style="display:inline;" data-confirm="Hapus AWB {{ $awb->number }}?">
+                                @csrf @method('DELETE')
+                                <button class="button button-danger button-sm">Hapus</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @endforeach

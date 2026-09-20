@@ -141,6 +141,11 @@ class AirWaybillAndBillOfLadingPdfTest extends TestCase
         $responseMawb = $this->get(route('awbs.pdf', ['awb' => $awb, 'type' => 'mawb']));
         $responseMawb->assertOk();
         $this->assertSame('application/pdf', $responseMawb->headers->get('Content-Type'));
+
+        // PDF Draft
+        $responseDraft = $this->get(route('awbs.pdf', ['awb' => $awb, 'type' => 'draft']));
+        $responseDraft->assertOk();
+        $this->assertSame('application/pdf', $responseDraft->headers->get('Content-Type'));
     }
 
     public function test_operational_documents_pdf_generation(): void

@@ -116,6 +116,14 @@ class AwbController extends Controller
             $validated['number'] = Awb::generateNumber();
         }
 
+        if (!empty($validated['job_id'])) {
+            $existingAwb = Awb::where('job_id', $validated['job_id'])->first();
+            if ($existingAwb) {
+                return redirect()->to(route('jobs.show', $validated['job_id']) . '#tab-awb')
+                    ->with('warning', 'Job Order ini sudah memiliki Air Waybill (' . $existingAwb->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
+        }
+
         $validated['created_by'] = auth()->id();
         $awb = Awb::create($validated);
 

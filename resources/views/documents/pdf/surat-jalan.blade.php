@@ -13,8 +13,17 @@
     $hasPhysicalCargo = !empty($job->cargo_description) || !empty($job->package_count);
     $items = $hasPhysicalCargo ? [] : ($job->quotation_snapshot['items'] ?? []);
 
-    $isFcl = ($job->container_type || in_array($job->service_type, ['exp_sea', 'imp_sea', 'sea'], true)) && !str_contains(strtolower($job->service_type ?? ''), 'lcl');
-    $isLcl = str_contains(strtolower($job->service_type ?? ''), 'lcl');
+    $vehicle = strtoupper($job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: ''));
+    if (str_contains($vehicle, 'TRAILER')) {
+        $isFcl = true;
+        $isLcl = false;
+    } elseif (str_contains($vehicle, 'FUSO') || str_contains($vehicle, 'PICKUP') || str_contains($vehicle, 'PICK UP') || str_contains($vehicle, 'BLINDVAN') || str_contains($vehicle, 'BLIND VAN') || str_contains($vehicle, 'CDD') || str_contains($vehicle, 'CDE')) {
+        $isFcl = false;
+        $isLcl = true;
+    } else {
+        $isFcl = ($job->container_type || in_array($job->service_type, ['exp_sea', 'imp_sea', 'sea'], true)) && !str_contains(strtolower($job->service_type ?? ''), 'lcl');
+        $isLcl = str_contains(strtolower($job->service_type ?? ''), 'lcl');
+    }
 @endphp
 <!doctype html>
 <html>
@@ -239,12 +248,12 @@
         <tr>
             <td class="col-label">Nama Supir</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->driver_name ?: ($job->vendorTruck?->driver_name ?: '—') }}</td>
+            <td>{{ $job->vendorTruck?->driver_name ?: ($job->driver_name ?: '—') }}</td>
         </tr>
         <tr>
             <td class="col-label">Nomor Telepon Supir</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->driver_phone ?: ($job->vendorTruck?->driver_phone ?: '—') }}</td>
+            <td>{{ $job->vendorTruck?->driver_phone ?: ($job->driver_phone ?: '—') }}</td>
         </tr>
         <tr>
             <td class="col-label">Jenis Kendaraan</td>

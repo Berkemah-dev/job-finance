@@ -65,11 +65,14 @@
                     <td>{{ $bl->etd?->format('d/m/Y') ?: '—' }}</td>
                     <td><span class="status-badge status-{{ in_array($bl->status, ['issued','released','completed']) ? 'approved' : ($bl->status === 'cancelled' ? 'rejected' : 'draft') }}">{{ ucfirst($bl->status) }}</span></td>
                     <td>
-                        <a class="button button-secondary" href="{{ route('bills-of-lading.edit', $bl) }}" style="padding:3px 10px;font-size:12px;">Edit</a>
-                        <form method="POST" action="{{ route('bills-of-lading.destroy', $bl) }}" style="display:inline;" data-confirm="Hapus B/L {{ $bl->number }}?">
-                            @csrf @method('DELETE')
-                            <button class="button button-danger" style="padding:3px 10px;font-size:12px;background:#ef4444;border-color:#ef4444;">Hapus</button>
-                        </form>
+                        <div style="display:flex;gap:4px;">
+                            <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.show', $bl) }}">Detail</a>
+                            <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.edit', $bl) }}">Edit</a>
+                            <form method="POST" action="{{ route('bills-of-lading.destroy', $bl) }}" style="display:inline;" data-confirm="Hapus B/L {{ $bl->number }}?">
+                                @csrf @method('DELETE')
+                                <button class="button button-danger button-sm">Hapus</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @endforeach

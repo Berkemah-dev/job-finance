@@ -4,11 +4,26 @@
     <meta charset="utf-8">
     <title>{{ strtoupper($type ?? 'HAWB') }} {{ $awb->number }}</title>
     @php
-        $isMawb = strtolower($type ?? request('type', 'hawb')) === 'mawb';
-        $themeColor = $isMawb ? '#dc2626' : '#1d4ed8';
-        $themeBg = $isMawb ? '#fef2f2' : '#f8fafc';
-        $themeBar = $isMawb ? '#fee2e2' : '#e0e7ff';
-        $footerText = $isMawb ? 'Original 2 - (For Consignee)' : 'Original 3 - (For Shipper)';
+        $rawType = strtolower($type ?? request('type', 'hawb'));
+        $isDraft = $rawType === 'draft';
+        $isMawb = $rawType === 'mawb';
+
+        if ($isDraft) {
+            $themeColor = '#475569';
+            $themeBg = '#f8fafc';
+            $themeBar = '#f1f5f9';
+            $footerText = '*** DRAFT COPY - NOT NEGOTIABLE ***';
+        } elseif ($isMawb) {
+            $themeColor = '#dc2626';
+            $themeBg = '#fef2f2';
+            $themeBar = '#fee2e2';
+            $footerText = 'Original 2 - (For Consignee)';
+        } else {
+            $themeColor = '#1d4ed8';
+            $themeBg = '#f8fafc';
+            $themeBar = '#e0e7ff';
+            $footerText = 'Original 3 - (For Shipper)';
+        }
 
         $customer = $awb->customer ?? $awb->job?->customer;
         
@@ -158,6 +173,13 @@
                 <div style="display: table-cell; vertical-align: top;">
                     <span class="f-lbl">Not Negotiable</span>
                     <div class="title-awb">Air Waybill</div>
+                    @if($isDraft)
+                        <div style="color: #dc2626; font-weight: 800; font-size: 7.5pt; letter-spacing: 0.5px; margin-bottom: 2pt;">*** DRAFT COPY — NOT NEGOTIABLE ***</div>
+                    @elseif($isMawb)
+                        <div style="color: #dc2626; font-weight: 800; font-size: 7.5pt; letter-spacing: 0.5px; margin-bottom: 2pt;">*** MASTER AIR WAYBILL (MAWB) ***</div>
+                    @else
+                        <div style="color: #1d4ed8; font-weight: 800; font-size: 7.5pt; letter-spacing: 0.5px; margin-bottom: 2pt;">*** HOUSE AIR WAYBILL (HAWB) ***</div>
+                    @endif
                     <span class="f-lbl">Issued By <strong>{{ $airlineName }}</strong></span>
                 </div>
                 <div style="display: table-cell; vertical-align: top; text-align: right; width: 35%;">

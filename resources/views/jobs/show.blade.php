@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
         <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
         <button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
         <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @elseif($isExportAir)
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
         <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
         <button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
         <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @else
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. Document Upload</button>
@@ -872,14 +872,15 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="display:flex;align-items:center;gap:12px;">
                 <span class="stat-icon blue"><x-icon name="file"/></span>
                 <div>
-                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN DELIVERY</p>
-                    <h2>Surat Jalan & Tanda Terima</h2>
-                    <p>Dokumen serah terima barang dan konfirmasi pengantaran.</p>
+                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL</p>
+                    <h2>{{ ($isExportSea || $isExportAir) ? 'Tanda Terima Dokumen' : 'Surat Jalan & Tanda Terima' }}</h2>
+                    <p>{{ ($isExportSea || $isExportAir) ? 'Dokumen tanda terima berkas dan serah terima dokumen ekspor.' : 'Dokumen serah terima barang dan konfirmasi pengantaran.' }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="report-grid" style="padding: 0 24px 24px;">
+        <div class="report-grid" style="padding: 0 24px 24px; {{ ($isExportSea || $isExportAir) ? 'display: block;' : '' }}">
+            @if(!$isExportSea && !$isExportAir)
             <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <div class="report-card-head">
@@ -936,7 +937,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <textarea name="delivery_address" id="delivery_address" rows="2" placeholder="Alamat lengkap lokasi bongkar..." style="font-size: 12px;">{{ old('delivery_address', $job->delivery_address ?: ($job->deliveryAddressLocation?->address ?: $job->consignee_address)) }}</textarea>
                             </div>
 
-                            {{-- 3. Vendor Trucking & Supir / Plat Nomor --}}
+                            {{-- 3. Vendor Trucking & Supir / Plat Nomor (Otomatis dari Master Vendor Truk) --}}
                             <div class="field" style="margin-bottom: 10px;">
                                 <label for="vendor_trucking_id" style="font-size: 11.5px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center;">
                                     <span>Vendor Trucking</span>
@@ -966,7 +967,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </select>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                                 <div class="field">
                                     <label for="truck_plate_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Truk (Plat Nomor)</label>
                                     <input type="text" name="truck_plate_number" id="truck_plate_number" maxlength="30" value="{{ old('truck_plate_number', $job->truck_plate_number ?: $job->vendorTruck?->plate_number) }}" placeholder="contoh: B 9123 UE" style="font-size: 12.5px; text-transform: uppercase;">
@@ -974,17 +975,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="field">
                                     <label for="vehicle_type" style="font-size: 11.5px; font-weight: 600; color: #475569;">Jenis Kendaraan</label>
                                     <input type="text" name="vehicle_type" id="vehicle_type" maxlength="60" value="{{ old('vehicle_type', $job->vehicle_type ?: $job->vendorTruck?->vehicle_type) }}" placeholder="Trailer 20ft / Trailer 40ft" style="font-size: 12.5px;">
-                                </div>
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                                <div class="field">
-                                    <label for="driver_name" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nama Supir</label>
-                                    <input type="text" name="driver_name" id="driver_name" maxlength="160" value="{{ old('driver_name', $job->driver_name ?: $job->vendorTruck?->driver_name) }}" placeholder="Nama supir" style="font-size: 12.5px;">
-                                </div>
-                                <div class="field">
-                                    <label for="driver_phone" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Telepon Supir</label>
-                                    <input type="text" name="driver_phone" id="driver_phone" maxlength="50" value="{{ old('driver_phone', $job->driver_phone ?: $job->vendorTruck?->driver_phone) }}" placeholder="08..." style="font-size: 12.5px;">
                                 </div>
                             </div>
 
@@ -1001,8 +991,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div><span style="color: #64748b;">No. Truk / Plat:</span> <strong>{{ $job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '-') }}</strong></div>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                                <div><span style="color: #64748b;">Nama Supir:</span> <strong>{{ $job->driver_name ?: ($job->vendorTruck?->driver_name ?: '-') }}</strong></div>
-                                <div><span style="color: #64748b;">No. Telepon Supir:</span> <strong>{{ $job->driver_phone ?: ($job->vendorTruck?->driver_phone ?: '-') }}</strong></div>
+                                <div><span style="color: #64748b;">Nama Supir:</span> <strong>{{ $job->vendorTruck?->driver_name ?: ($job->driver_name ?: '-') }}</strong></div>
+                                <div><span style="color: #64748b;">No. Telepon Supir:</span> <strong>{{ $job->vendorTruck?->driver_phone ?: ($job->driver_phone ?: '-') }}</strong></div>
                             </div>
                             <div>
                                 <span style="color: #64748b;">Tujuan Pengiriman:</span> <strong>{{ $job->delivery_address ?: ($job->consignee_address ?: '-') }}</strong>
@@ -1016,6 +1006,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </a>
                 </div>
             </article>
+            @endif
 
             <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
@@ -1023,16 +1014,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="report-card-title">
                             <span class="report-icon green"><x-icon name="check"/></span>
                             <div>
-                                <h2>Tanda Terima</h2>
-                                <small>Bukti serah terima dokumen / barang</small>
+                                <h2>{{ ($isExportSea || $isExportAir) ? 'Tanda Terima Dokumen' : 'Tanda Terima' }}</h2>
+                                <small>{{ ($isExportSea || $isExportAir) ? 'Bukti serah terima dokumen ekspor' : 'Bukti serah terima dokumen / barang' }}</small>
                             </div>
                         </div>
                     </div>
-                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi BL/AWB, daftar dokumen/barang, catatan, dan tanda tangan.</p>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi {{ ($isExportSea || $isExportAir) ? 'BL/AWB, daftar berkas ekspor' : 'BL/AWB, daftar dokumen/barang' }}, catatan, dan tanda tangan.</p>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'barang']) }}" target="_blank"><x-icon name="file"/> Cetak TT Barang</a>
-                    <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank"><x-icon name="file"/> Cetak TT Dokumen</a>
+                    @if(!$isExportSea && !$isExportAir)
+                        <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'barang']) }}" target="_blank"><x-icon name="file"/> Cetak TT Barang</a>
+                    @endif
+                    <a class="button {{ ($isExportSea || $isExportAir) ? 'button-primary' : 'button-secondary' }}" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank"><x-icon name="file"/> Cetak TT Dokumen</a>
                 </div>
             </article>
         </div>
@@ -1111,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <td><span class="status-badge">{{ ucfirst($bc->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">View</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
                                         <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">Print</a>
                                     </div>
@@ -1164,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">View</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
                                         <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">Print</a>
                                     </div>
@@ -1230,10 +1223,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <td>{{ $bl->mbl_number ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($bl->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;justify-content:center;">
-                                        <a class="button button-primary button-sm" href="{{ route('bills-of-lading.preview', $bl) }}" target="_blank">Cetak</a>
+                                    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.show', $bl) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.edit', $bl) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'draft']) }}" target="_blank">Cetak BL Draft</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'original']) }}" target="_blank">Cetak BL Original</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'copy']) }}" target="_blank">Cetak BL Copy</a>
                                     </div>
                                 </td>
                             </tr>
@@ -1299,10 +1294,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <td>{{ $awb->mawb_number ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($awb->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;justify-content:center;">
-                                        <a class="button button-primary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'hawb']) }}" target="_blank" style="background:#1d4ed8;border-color:#1d4ed8;">Cetak</a>
+                                    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.show', $awb) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.edit', $awb) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'draft']) }}" target="_blank">Cetak Draft</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'hawb']) }}" target="_blank">Cetak HAWB</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'mawb']) }}" target="_blank">Cetak MAWB</a>
                                     </div>
                                 </td>
                             </tr>

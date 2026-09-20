@@ -151,8 +151,11 @@
             margin-top: 3px;
         }
         .cut-divider {
-            margin: 8px 0 10px 0;
+            margin: 10px 0 14px 0;
             width: 100%;
+        }
+        .copy-second {
+            padding-top: 36px;
         }
         .cut-divider-table {
             width: 100%;
@@ -178,7 +181,7 @@
 <body>
 
     @for($copy = 1; $copy <= 2; $copy++)
-        <div class="half-sheet">
+        <div class="half-sheet {{ $copy === 2 ? 'copy-second' : '' }}">
             <!-- HEADER -->
             <table class="header-table">
                 <tr>

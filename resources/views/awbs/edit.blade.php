@@ -172,13 +172,25 @@
 
             <div class="field">
                 <label for="agent_name">Agent (Destination Agent)</label>
-                <input id="agent_name" name="agent_name" list="agent_list" maxlength="160"
-                    value="{{ old('agent_name', $awb->agent_name) }}" placeholder="Nama Agent di Bandara Tujuan">
-                <datalist id="agent_list">
+                <select id="agent_name" name="agent_name" data-custom-select data-allow-custom="true" aria-label="Agent (Destination Agent)">
+                    <option value="">Pilih Destination Agent atau ketik...</option>
+                    @php
+                        $currentAgent = old('agent_name', $awb->agent_name);
+                        $agentFound = false;
+                    @endphp
                     @foreach($airlines as $agent)
-                        <option value="{{ $agent->name }}">{{ $agent->name }}</option>
+                        @if($currentAgent === $agent->name)
+                            @php $agentFound = true; @endphp
+                        @endif
+                        <option value="{{ $agent->name }}" @selected($currentAgent === $agent->name)>
+                            {{ $agent->code ? '['.$agent->code.'] ' : '' }}{{ $agent->name }}
+                        </option>
                     @endforeach
-                </datalist>
+                    @if($currentAgent && !$agentFound)
+                        <option value="{{ $currentAgent }}" selected data-custom-option="true">{{ $currentAgent }}</option>
+                    @endif
+                </select>
+                <small style="color:#64748b;font-size:12px;margin-top:2px;">Vendor / Destination Agent</small>
             </div>
         </div>
 
@@ -241,13 +253,24 @@
 
             <div class="field">
                 <label for="airline">Airlines (Maskapai)</label>
-                <input id="airline" name="airline" list="airline_list" maxlength="160"
-                    value="{{ old('airline', $awb->airline) }}" placeholder="Nama Maskapai">
-                <datalist id="airline_list">
+                <select id="airline" name="airline" data-custom-select data-allow-custom="true" aria-label="Airlines (Maskapai)">
+                    <option value="">Pilih Maskapai Penerbangan atau ketik...</option>
+                    @php
+                        $currentAirline = old('airline', $awb->airline);
+                        $airlineFound = false;
+                    @endphp
                     @foreach($airlines as $a)
-                        <option value="{{ $a->name }}">{{ $a->name }}</option>
+                        @if($currentAirline === $a->name)
+                            @php $airlineFound = true; @endphp
+                        @endif
+                        <option value="{{ $a->name }}" data-code="{{ $a->code }}" @selected($currentAirline === $a->name)>
+                            {{ $a->code ? '['.$a->code.'] ' : '' }}{{ $a->name }}
+                        </option>
                     @endforeach
-                </datalist>
+                    @if($currentAirline && !$airlineFound)
+                        <option value="{{ $currentAirline }}" selected data-custom-option="true">{{ $currentAirline }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
@@ -330,5 +353,15 @@
         </div>
     </form>
 </section>
+
+<script>
+document.getElementById('airline')?.addEventListener('change', function() {
+    const selectedOpt = this.options[this.selectedIndex];
+    const codeInput = document.getElementById('airline_code');
+    if (selectedOpt && selectedOpt.dataset.code && codeInput && !codeInput.value) {
+        codeInput.value = selectedOpt.dataset.code;
+    }
+});
+</script>
 
 @endsection
