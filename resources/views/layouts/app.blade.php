@@ -58,13 +58,9 @@
 
         $salesCustomerItems = [
             ['quotations.manage','file','Quotation','quotations.index'],
-            ['customers.view','users','Customer','customers.index'],
-            ['customers.view','users','Shipper & Consignee','customer-contacts.index'],
+            ['customers.view','users','Customer','customers.index', $pendingCustomerCount > 0 ? $pendingCustomerCount : null],
+            ['vendors.manage','users','Vendor','vendors.index'],
         ];
-        if (auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin'])) {
-            $salesCustomerItems[] = ['customers.view','clipboard-check','Approval Customer','customers.index?status=pending', $pendingCustomerCount];
-        }
-        $salesCustomerItems[] = ['vendors.manage','users','Vendor','vendors.index'];
 
         $groups = [
             'SALES & CUSTOMER' => $salesCustomerItems,
@@ -87,11 +83,8 @@
             $destRaw = $item[3] ?? ['vendors.manage'=>'vendors.index','customers.view'=>'customers.index','coa.manage'=>'accounts.index','quotations.manage'=>'quotations.index','jobs.view'=>'jobs.index','costs.manage'=>'costs.overview','jobs.close'=>'closing.index','invoices.manage'=>'invoices.index','payments.manage'=>'payments.index','journals.manage'=>'journals.index','reimbursements.manage'=>'reimbursements.index'][$permission] ?? null;
             if (!$destRaw) return false;
 
-            if ($destRaw === 'customers.index?status=pending') {
-                return request()->routeIs('customers.index') && request('status') === 'pending';
-            }
             if ($destRaw === 'customers.index') {
-                return request()->routeIs('customers.*') && request('status') !== 'pending';
+                return request()->routeIs('customers.*', 'customer-contacts.*', 'customer-addresses.*');
             }
 
             $destination = str_contains((string)$destRaw, '?') ? strstr((string)$destRaw, '?', true) : $destRaw;

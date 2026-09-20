@@ -13,7 +13,30 @@
     art-subtitle="terkelola rapi."
 />
 <section class="panel">
-<form class="filter-bar" method="GET"><input name="search" value="{{ $search }}" placeholder="Cari nama, kode, email, NPWP, atau telepon" aria-label="Cari customer"><select name="status" aria-label="Status customer"><option value="active" @selected($status==='active')>Customer aktif</option><option value="pending" @selected($status==='pending')>Menunggu approval</option><option value="inactive" @selected($status==='inactive')>Nonaktif / diarsipkan</option></select><button class="button button-primary">Cari</button><a class="text-link" href="{{ route('customers.index') }}">Reset</a><a class="button button-secondary button-sm" href="{{ route('customer-addresses.index') }}" style="margin-left: auto;"><x-icon name="map-pin"/> Master Alamat Customer</a></form>
+    <form class="filter-bar" method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <input name="search" value="{{ $search }}" placeholder="Cari nama, kode, email, NPWP, atau telepon" aria-label="Cari customer" style="flex: 1; min-width: 220px;">
+        <select name="status" aria-label="Status customer" style="min-width: 170px;">
+            <option value="active" @selected($status==='active')>Customer aktif</option>
+            <option value="pending" @selected($status==='pending')>Menunggu approval {{ ($pendingCount ?? 0) > 0 ? '('.$pendingCount.')' : '' }}</option>
+            <option value="inactive" @selected($status==='inactive')>Nonaktif / diarsipkan</option>
+        </select>
+        <button class="button button-primary">Cari</button>
+        <a class="text-link" href="{{ route('customers.index') }}">Reset</a>
+
+        <div style="margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            @if(($pendingCount ?? 0) > 0 && auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin']))
+                <a class="button button-secondary button-sm" href="{{ route('customers.index', ['status' => 'pending']) }}" style="{{ $status === 'pending' ? 'background: #fff7ed; border-color: #f97316; color: #c2410c; font-weight: 700;' : '' }}" title="Lihat Customer Menunggu Approval">
+                    <x-icon name="check"/> Approval <span style="background: #ea580c; color: #fff; border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 800; margin-left: 2px;">{{ $pendingCount }}</span>
+                </a>
+            @endif
+            <a class="button button-secondary button-sm" href="{{ route('customer-contacts.index') }}" title="Kelola Kontak Shipper & Consignee">
+                <x-icon name="users"/> Shipper & Consignee
+            </a>
+            <a class="button button-secondary button-sm" href="{{ route('customer-addresses.index') }}" title="Kelola Master Alamat Pengiriman Customer">
+                <x-icon name="map-pin"/> Master Alamat Customer
+            </a>
+        </div>
+    </form>
 <div class="table-scroll">
     <table>
         <thead>

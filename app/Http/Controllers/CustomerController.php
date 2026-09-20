@@ -33,7 +33,9 @@ class CustomerController extends Controller
                 ->orWhere('email', 'like', '%'.$search.'%')->orWhere('tax_number', 'like', '%'.$search.'%')->orWhere('phone', 'like', '%'.$search.'%')))
             ->orderBy('name')->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
 
-        return view('customers.index', compact('customers', 'search', 'status'));
+        $pendingCount = Customer::where('approval_status', 'pending')->count();
+
+        return view('customers.index', compact('customers', 'search', 'status', 'pendingCount'));
     }
 
     public function create()
