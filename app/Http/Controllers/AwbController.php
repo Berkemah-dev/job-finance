@@ -47,7 +47,11 @@ class AwbController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'shippingInstructions'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'shippingInstructions', 'awbs'])->find($jobId);
+            if ($selectedJob && $selectedJob->awbs->isNotEmpty()) {
+                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-awb')
+                    ->with('warning', 'Job Order ini sudah memiliki Air Waybill (' . $selectedJob->awbs->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
         }
 
         $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();

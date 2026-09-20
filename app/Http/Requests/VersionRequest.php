@@ -13,6 +13,11 @@ class VersionRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['lock_version' => ['required', 'integer', 'min:0'], 'reason' => ['nullable', 'string', 'max:1000']];
+        return [
+            'lock_version' => ['required', 'integer', 'min:0'],
+            'reason' => ['nullable', 'string', 'max:1000'],
+            'items' => ['nullable', 'array'],
+            'items.*.unit_cost' => ['nullable', 'numeric', 'min:0'],
+        ];
     }
 }

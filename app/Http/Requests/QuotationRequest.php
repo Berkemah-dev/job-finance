@@ -57,6 +57,7 @@ class QuotationRequest extends FormRequest
             'discount' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lock_version' => [$this->isMethod('PUT') ? 'required' : 'nullable', 'integer', 'min:0'],
+            'direct_approve' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1', 'max:100'], 'items.*' => ['required', 'array'],
             'items.*.description' => ['required', 'string', 'max:255'],
             'items.*.note' => ['nullable', 'string', 'max:255'],

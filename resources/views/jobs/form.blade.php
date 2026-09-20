@@ -29,7 +29,12 @@
         $isImport = str_contains($serviceTypeRaw, 'imp');
     @endphp
     <div class="field">
-        <label for="shipper_name">Shipper @if($isImport)<span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">Master Shipper Import</span>@endif</label>
+        <label for="shipper_name" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Shipper @if($isImport)<span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">Master Shipper Import</span>@endif</span>
+            @can('customers.manage')
+                <a href="{{ route('customer-contacts.create', ['type' => 'shipper', 'customer_id' => $job->customer_id]) }}" target="_blank" style="color: #2563eb; font-size: 11px; text-decoration: none; font-weight: 500;">+ Tambah Master Shipper</a>
+            @endcan
+        </label>
         <select id="shipper_name" name="shipper_name" data-custom-select data-allow-custom="true" aria-label="Shipper">
             <option value="">{{ $isImport ? 'Pilih dari Master Shipper Import / ketik...' : 'Pilih atau ketik Shipper...' }}</option>
             @foreach($masterShippers ?? [] as $sContact)
@@ -46,7 +51,12 @@
     </div>
 
     <div class="field">
-        <label for="consignee_name">Consignee</label>
+        <label for="consignee_name" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Consignee</span>
+            @can('customers.manage')
+                <a href="{{ route('customer-contacts.create', ['type' => 'consignee', 'customer_id' => $job->customer_id]) }}" target="_blank" style="color: #2563eb; font-size: 11px; text-decoration: none; font-weight: 500;">+ Tambah Master Consignee</a>
+            @endcan
+        </label>
         <select id="consignee_name" name="consignee_name" data-custom-select data-allow-custom="true" aria-label="Consignee">
             <option value="">Pilih atau ketik Consignee...</option>
             @if($job->customer)
@@ -128,49 +138,18 @@
     <div class="field"><label for="gross_weight">Gross Weight (kg)</label><input id="gross_weight" name="gross_weight" inputmode="decimal" value="{{ old('gross_weight',$job->gross_weight) }}" placeholder="0.00"></div>
     <div class="field"><label for="volume">Volume (m³ / CBM)</label><input id="volume" name="volume" inputmode="decimal" value="{{ old('volume',$job->volume) }}" placeholder="0.00"></div>
     <div class="field span-2"><label for="shipment_reference">Referensi Pengiriman</label><input id="shipment_reference" name="shipment_reference" maxlength="100" value="{{ old('shipment_reference',$job->shipment_reference) }}" placeholder="No. Referensi / PO"></div>
-
-    <div class="field span-2 form-section-heading" style="margin-top: 15px;">
-        <h2>Dokumen Komersial & SK Pabean</h2>
-        <p>Data invoice dan packing list untuk kelengkapan Surat Kuasa Kepabeanan.</p>
+    <div class="field span-2" style="margin-top: 6px;">
+        <label for="cargo_description">
+            <span style="font-weight: 700; color: #1e293b;">Commodity (Nama Barang)</span>
+            <span style="font-size: 11px; color: #64748b; font-weight: 500; margin-left: 6px;">— Tersambung otomatis ke Surat Jalan & Deklarasi Nilai Pabean (DNP)</span>
+        </label>
+        <textarea id="cargo_description" name="cargo_description" rows="2" maxlength="2000" placeholder="Masukkan nama barang / komoditas (contoh: Spare Parts Mesin Industri / Garmen / Tekstil)">{{ old('cargo_description', $job->cargo_description) }}</textarea>
     </div>
-    <div class="field"><label for="commercial_invoice_number">Nomor Invoice</label><input id="commercial_invoice_number" name="commercial_invoice_number" maxlength="60" value="{{ old('commercial_invoice_number',$job->commercial_invoice_number) }}" placeholder="Nomor Commercial Invoice"></div>
-    <div class="field"><label for="commercial_invoice_date">Tanggal Invoice</label><input id="commercial_invoice_date" name="commercial_invoice_date" type="date" value="{{ old('commercial_invoice_date',$job->commercial_invoice_date?->format('Y-m-d')) }}"></div>
-    <div class="field"><label for="packing_list_number">Nomor Packing List</label><input id="packing_list_number" name="packing_list_number" maxlength="60" value="{{ old('packing_list_number',$job->packing_list_number) }}" placeholder="Nomor Packing List"></div>
-    <div class="field"><label for="packing_list_date">Tanggal Packing List</label><input id="packing_list_date" name="packing_list_date" type="date" value="{{ old('packing_list_date',$job->packing_list_date?->format('Y-m-d')) }}"></div>
-    <div class="field span-2"><label for="invoice_issuer">Nama Penerbit Invoice</label><input id="invoice_issuer" name="invoice_issuer" maxlength="160" value="{{ old('invoice_issuer',$job->invoice_issuer) }}" placeholder="Nama perusahaan shipper/penerbit invoice"></div>
-    <div class="field">
-        <label for="incoterm">Incoterm</label>
-        @php
-            $curIncoterm = strtoupper(old('incoterm', $job->incoterm ?: ($job->quotation?->incoterm ?? 'CIF')));
-        @endphp
-        <select id="incoterm" name="incoterm">
-            <option value="CIF" @selected($curIncoterm === 'CIF')>CIF (Cost, Insurance & Freight)</option>
-            <option value="FOB" @selected($curIncoterm === 'FOB')>FOB (Free On Board)</option>
-            <option value="EXW" @selected($curIncoterm === 'EXW')>EXW (Ex Works)</option>
-            <option value="DDP" @selected($curIncoterm === 'DDP')>DDP (Delivered Duty Paid)</option>
-            <option value="CFR" @selected($curIncoterm === 'CFR' || $curIncoterm === 'C&F')>CFR / C&F (Cost and Freight)</option>
-            <option value="FCA" @selected($curIncoterm === 'FCA')>FCA (Free Carrier)</option>
-            <option value="CPT" @selected($curIncoterm === 'CPT')>CPT (Carriage Paid To)</option>
-            <option value="CIP" @selected($curIncoterm === 'CIP')>CIP (Carriage & Insurance Paid)</option>
-            <option value="DAP" @selected($curIncoterm === 'DAP')>DAP (Delivered at Place)</option>
-            <option value="DPU" @selected($curIncoterm === 'DPU')>DPU (Delivered at Place Unloaded)</option>
-        </select>
-    </div>
-    <div class="field"><label for="invoice_amount">Nilai Invoice</label><input id="invoice_amount" name="invoice_amount" maxlength="100" value="{{ old('invoice_amount',$job->invoice_amount) }}" placeholder="contoh: USD 25,000 atau Rp 150.000.000"></div>
 
-    <div class="field span-2 form-section-heading" style="margin-top: 15px;">
-        <h2>Surat Jalan & Pengiriman (Delivery)</h2>
-        <p>Data armada, nomor container fisik, supir, dan alamat pengiriman.</p>
+    <div class="field span-2">
+        <label for="operational_notes">Catatan Operasional</label>
+        <textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000" placeholder="Catatan operasional atau instruksi penanganan khusus...">{{ old('operational_notes', $job->operational_notes) }}</textarea>
     </div>
-    <div class="field"><label for="container_number">Nomor Container (Manual)</label><input id="container_number" name="container_number" maxlength="120" value="{{ old('container_number',$job->container_number) }}" placeholder="contoh: TCLU 582910-1 / 40HC"></div>
-    <div class="field"><label for="truck_plate_number">Nomor Truk (Plat Nomor)</label><input id="truck_plate_number" name="truck_plate_number" maxlength="30" value="{{ old('truck_plate_number',$job->truck_plate_number) }}" placeholder="contoh: B 9123 UE" style="text-transform: uppercase;"></div>
-    <div class="field"><label for="driver_name">Nama Supir</label><input id="driver_name" name="driver_name" maxlength="160" value="{{ old('driver_name',$job->driver_name) }}" placeholder="Nama supir armada"></div>
-    <div class="field"><label for="driver_phone">Nomor Telepon Supir</label><input id="driver_phone" name="driver_phone" maxlength="50" value="{{ old('driver_phone',$job->driver_phone) }}" placeholder="08..."></div>
-    <div class="field"><label for="vehicle_type">Jenis Kendaraan</label><input id="vehicle_type" name="vehicle_type" maxlength="60" value="{{ old('vehicle_type',$job->vehicle_type) }}" placeholder="Trailer 20ft / Trailer 40ft / Tronton"></div>
-    <div class="field span-2"><label for="delivery_address">Tujuan Pengiriman (Alamat Lengkap)</label><textarea id="delivery_address" name="delivery_address" rows="2" maxlength="5000" placeholder="Alamat lengkap lokasi bongkar...">{{ old('delivery_address',$job->delivery_address) }}</textarea></div>
-
-    <div class="field span-2"><label for="cargo_description">Commodity</label><textarea id="cargo_description" name="cargo_description" rows="3" maxlength="2000">{{ old('cargo_description',$job->cargo_description) }}</textarea></div>
-    <div class="field span-2"><label for="operational_notes">Catatan Operasional</label><textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000">{{ old('operational_notes',$job->operational_notes) }}</textarea></div>
 </div>
 <div class="form-actions"><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">Batal</a><button class="button button-primary">Simpan operasional</button></div>
 </form>

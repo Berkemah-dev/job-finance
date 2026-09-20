@@ -10,7 +10,7 @@
     $aju = $job?->booking_reference ?: ($job?->customs_registration_number ?: '');
     $nopen = $job?->nopen ?: '';
     $nopenDate = $dnp?->dnp_date?->format('d-m-Y') ?? ($job?->nopen_date?->format('d-m-Y') ?? ($job?->job_date?->format('d-m-Y') ?? now()->format('d-m-Y')));
-    $commodity = $job?->cargo_description ?: ($quotation?->commodity ?? '');
+    $commodity = $dnp?->commodity ?: ($job?->cargo_description ?: ($quotation?->commodity ?? ''));
     $currency = $dnp?->currency ?: 'USD';
     $invoiceValue = $dnp ? $dnp->invoice_value : ($quotation?->subtotal ?? $job?->quotation_snapshot['totals']['subtotal'] ?? null);
     $freight = $dnp ? $dnp->freight : ($job?->quotation_snapshot['freight'] ?? null);

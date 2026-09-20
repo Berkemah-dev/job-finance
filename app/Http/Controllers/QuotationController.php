@@ -73,7 +73,8 @@ class QuotationController extends Controller
 
         $quotation->load(['items', 'customer', 'job', 'creator', 'approver', 'revisedBy', 'statusHistory.user']);
 
-        if (! Gate::allows('financial.view')) {
+        $canViewCost = Gate::allows('financial.view') || Gate::allows('quotations.approve') || (auth()->user() && auth()->user()->hasRole(['sales-manager', 'super-admin', 'admin']));
+        if (! $canViewCost) {
             foreach ($quotation->items as $item) {
                 $item->unit_cost = null;
             }

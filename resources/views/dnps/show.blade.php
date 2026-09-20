@@ -57,6 +57,10 @@
                         <td style="color:#64748b;">Nomor Job Order</td>
                         <td style="font-weight:600; color:#0f172a;">: {{ $dnp->job?->number ?: '—' }}</td>
                     </tr>
+                    <tr>
+                        <td style="color:#64748b;">Commodity (Barang)</td>
+                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->commodity ?: ($dnp->job?->cargo_description ?: '—') }}</td>
+                    </tr>
                 </table>
             </div>
 

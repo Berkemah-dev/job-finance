@@ -198,7 +198,21 @@
 </div>
 
 <div class="field"><label for="notes">Catatan / ketentuan penawaran</label><textarea name="notes" id="notes" rows="3" maxlength="5000">{{ old('notes',$quotation->notes) }}</textarea></div>
-<div class="form-actions"><a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a><button class="button button-primary" id="btn_save_quotation" @disabled($customers->isEmpty())>Simpan draft</button></div>
+<div class="form-actions" style="display:flex; gap:10px; align-items:center;">
+    <a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a>
+    @if($canManageCost)
+        <button type="submit" name="direct_approve" value="0" class="button button-secondary" id="btn_save_draft" @disabled($customers->isEmpty())>
+            Simpan Draft
+        </button>
+        <button type="submit" name="direct_approve" value="1" class="button button-primary" id="btn_save_approve" style="background:#16a34a; border-color:#16a34a;" @disabled($customers->isEmpty())>
+            ✓ {{ $quotation->exists && $quotation->status->value === 'approved' ? 'Simpan Perubahan (Approved)' : 'Simpan & Setujui Langsung' }}
+        </button>
+    @else
+        <button type="submit" name="direct_approve" value="0" class="button button-primary" id="btn_save_quotation" @disabled($customers->isEmpty())>
+            Simpan draft
+        </button>
+    @endif
+</div>
 </form></section>
 
 @php

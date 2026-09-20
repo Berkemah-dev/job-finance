@@ -61,14 +61,29 @@ class JobService
                 if (trim($data['reason'] ?? '') === '') {
                     throw ValidationException::withMessages(['reason' => 'Alasan pembatalan wajib diisi.']);
                 }
-                if ($job->costs()->exists()) {
-                    throw ValidationException::withMessages(['costs' => 'Job masih memiliki biaya aktif. Hapus biaya Draft terlebih dahulu. Biaya Final memerlukan proses koreksi sebelum pembatalan.']);
+                if ($job->costs()->where('status', '!=', 'draft')->exists()) {
+                    throw ValidationException::withMessages(['costs' => 'Job memiliki biaya final/aktif. Biaya Final memerlukan proses koreksi sebelum pembatalan.']);
                 }
+                $job->costs()->where('status', 'draft')->delete();
                 $job->status = 'cancelled';
                 $job->cancelled_by = $actor->id;
                 $job->cancelled_at = now();
                 $job->cancellation_reason = $data['reason'];
                 $note = $data['reason'];
+
+                if ($job->quotation) {
+                    $quo = $job->quotation;
+                    $quoFrom = $quo->status;
+                    $quo->status = \App\Enums\QuotationStatus::Approved;
+                    $quo->save();
+                    $quo->statusHistory()->create([
+                        'from_status' => $quoFrom?->value,
+                        'to_status' => \App\Enums\QuotationStatus::Approved->value,
+                        'note' => 'Job Order ' . $job->number . ' dibatalkan: ' . $data['reason'],
+                        'user_id' => $actor->id,
+                        'created_at' => now(),
+                    ]);
+                }
             } else {
                 throw new \InvalidArgumentException('Unknown job transition.');
             }

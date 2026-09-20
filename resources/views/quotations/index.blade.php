@@ -87,7 +87,13 @@
                         <td>
                             <span class="status-badge status-{{ $quotation->status->value }}">{{ $quotation->status->label() }}</span>
                             @if($quotation->status === \App\Enums\QuotationStatus::Approved && !$quotation->job)
-                                <br><small class="subtle" style="color: #16a34a; font-weight: 600;">Siap dibuat Job</small>
+                                @can('convert', $quotation)
+                                    <br><small class="subtle" style="color: #16a34a; font-weight: 600;">Siap dibuat Job</small>
+                                @else
+                                    <br><small class="subtle" style="color: #0284c7; font-weight: 600;">Menunggu CS</small>
+                                @endcan
+                            @elseif($quotation->job && $quotation->job->status === 'cancelled')
+                                <br><small class="subtle" style="color: #e11d48; font-weight: 600;">Job Dibatalkan</small>
                             @endif
                         </td>
                         <td>
@@ -95,6 +101,14 @@
                                 <a class="btn-action btn-action-primary" href="{{ route('quotations.show', $quotation) }}" title="Detail Quotation" data-tooltip="Detail" aria-label="Detail Quotation">
                                     <x-icon name="eye"/>
                                 </a>
+                                @can('quotations.manage')
+                                    <form method="POST" action="{{ route('quotations.duplicate', $quotation) }}" data-confirm="Buat salinan draft baru dari quotation {{ $quotation->number }}?">
+                                        @csrf
+                                        <button type="submit" class="btn-action" title="Duplikat Quote" data-tooltip="Duplikat" aria-label="Duplikat Quote">
+                                            <x-icon name="copy"/>
+                                        </button>
+                                    </form>
+                                @endcan
                                 @can('convert', $quotation)
                                     @if(!$quotation->job)
                                         <form method="POST" action="{{ route('quotations.convert', $quotation) }}" data-confirm="Konversi quotation ini ke Job Order? Status job akan langsung Open.">
