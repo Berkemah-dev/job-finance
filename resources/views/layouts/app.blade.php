@@ -59,6 +59,7 @@
         $salesCustomerItems = [
             ['quotations.manage','file','Quotation','quotations.index'],
             ['customers.view','users','Customer','customers.index'],
+            ['customers.view','users','Shipper & Consignee','customer-contacts.index'],
         ];
         if (auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin'])) {
             $salesCustomerItems[] = ['customers.view','clipboard-check','Approval Customer','customers.index?status=pending', $pendingCustomerCount];

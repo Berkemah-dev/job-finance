@@ -49,7 +49,11 @@ class BillOfLadingController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations', 'billsOfLading'])->find($jobId);
+            if ($selectedJob && $selectedJob->billsOfLading->isNotEmpty()) {
+                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-bl')
+                    ->with('warning', 'Job Order ini sudah memiliki Bill of Lading (' . $selectedJob->billsOfLading->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
         }
 
         $jobs = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->latest('id')->limit(50)->get();

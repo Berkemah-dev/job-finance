@@ -297,27 +297,39 @@
         </thead>
         <tbody>
             @php $rowCount = 0; @endphp
-            @forelse($items as $item)
-                @php $rowCount++; @endphp
-                <tr>
-                    <td style="text-align: center;">{{ $loop->iteration }}</td>
-                    <td>{{ $item['description'] ?? 'Barang / Dokumen' }}</td>
-                    <td style="text-align: center;">{{ \App\Support\Money::format($item['quantity'] ?? 1) }}</td>
-                    <td style="text-align: center;">{{ $item['unit'] ?? 'Package' }}</td>
-                    <td style="text-align: center;">{{ isset($item['weight']) ? \App\Support\Money::format($item['weight']) : ($job->gross_weight ? \App\Support\Money::format($job->gross_weight) : '—') }}</td>
-                    <td></td>
-                </tr>
-            @empty
+            @if(!empty($job->cargo_description))
                 @php $rowCount = 1; @endphp
                 <tr>
                     <td style="text-align: center;">1</td>
-                    <td>{{ $job->cargo_description ?? 'Barang / Kargo Pengiriman' }}</td>
+                    <td style="font-weight: bold;">{{ $job->cargo_description }}</td>
                     <td style="text-align: center;">{{ $job->package_count ?? 1 }}</td>
-                    <td style="text-align: center;">{{ $job->package_unit ?? 'Package' }}</td>
+                    <td style="text-align: center;">{{ $job->package_unit ?? ($job->container_type ? strtoupper($job->container_type) : 'Package') }}</td>
                     <td style="text-align: center;">{{ $job->gross_weight ? \App\Support\Money::format($job->gross_weight) : '—' }}</td>
-                    <td></td>
+                    <td>{{ $job->operational_notes ?? '' }}</td>
                 </tr>
-            @endforelse
+            @elseif(!empty($items))
+                @foreach($items as $item)
+                    @php $rowCount++; @endphp
+                    <tr>
+                        <td style="text-align: center;">{{ $loop->iteration }}</td>
+                        <td>{{ $item['description'] ?? 'Barang / Dokumen' }}</td>
+                        <td style="text-align: center;">{{ \App\Support\Money::format($item['quantity'] ?? 1) }}</td>
+                        <td style="text-align: center;">{{ $item['unit'] ?? 'Package' }}</td>
+                        <td style="text-align: center;">{{ isset($item['weight']) ? \App\Support\Money::format($item['weight']) : ($job->gross_weight ? \App\Support\Money::format($job->gross_weight) : '—') }}</td>
+                        <td></td>
+                    </tr>
+                @endforeach
+            @else
+                @php $rowCount = 1; @endphp
+                <tr>
+                    <td style="text-align: center;">1</td>
+                    <td>{{ $job->subject ?: 'Barang / Kargo Pengiriman' }}</td>
+                    <td style="text-align: center;">{{ $job->package_count ?? 1 }}</td>
+                    <td style="text-align: center;">{{ $job->package_unit ?? ($job->container_type ? strtoupper($job->container_type) : 'Package') }}</td>
+                    <td style="text-align: center;">{{ $job->gross_weight ? \App\Support\Money::format($job->gross_weight) : '—' }}</td>
+                    <td>{{ $job->operational_notes ?? '' }}</td>
+                </tr>
+            @endif
 
             @for($i = $rowCount; $i < 3; $i++)
                 <tr>

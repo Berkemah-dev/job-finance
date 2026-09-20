@@ -1088,6 +1088,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
+            @else
+                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
             @endif
         </div>
         @if($job->bookingConfirmations->isNotEmpty())
@@ -1120,7 +1122,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3><p style="margin:0;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3>
+                <p style="margin:0 0 16px;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p>
+                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+            </div>
         @endif
     </section>
 </div>
@@ -1132,6 +1139,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
+            @else
+                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
             @endif
         </div>
         @if($job->shippingInstructions->isNotEmpty())
@@ -1166,7 +1175,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3><p style="margin:0;color:#64748b;">Dokumen SI yang terhubung dengan Job Order akan tampil di sini.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3>
+                <p style="margin:0 0 16px;color:#64748b;">Dokumen SI yang terhubung dengan Job Order akan tampil di sini.</p>
+                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+            </div>
         @endif
     </section>
 </div>
@@ -1184,7 +1198,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p style="margin:0;color:#64748b;">Dokumen kepemilikan muatan laut yang terhubung dengan Job Order ini.</p>
                 </div>
             </div>
-            <a class="button button-primary" href="{{ route('bills-of-lading.create', ['job_id' => $job->id]) }}">+ Buat Bill of Lading (B/L)</a>
+            @if($job->billsOfLading->isNotEmpty())
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
+                    ✓ Dokumen Dibuat (Maks 1x)
+                </span>
+            @else
+                <a class="button button-primary" href="{{ route('bills-of-lading.create', ['job_id' => $job->id]) }}">+ Buat Bill of Lading (B/L)</a>
+            @endif
         </div>
         @if($job->billsOfLading->isNotEmpty())
             <div class="table-scroll">
@@ -1224,7 +1244,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
                 <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0f2fe;color:#0284c7;font-size:25px;">🚢</div>
                 <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Bill of Lading (B/L)</h3>
-                <p style="margin:0;color:#64748b;">Buat dokumen B/L dari tab ini agar seluruh data kapal dan muatan otomatis terisi.</p>
+                <p style="margin:0 0 16px;color:#64748b;">Buat dokumen B/L dari tab ini agar seluruh data kapal dan muatan otomatis terisi.</p>
+                <a class="button button-primary" href="{{ route('bills-of-lading.create', ['job_id' => $job->id]) }}">+ Buat Bill of Lading (B/L)</a>
             </div>
         @endif
     </section>
@@ -1243,7 +1264,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p style="margin:0;color:#64748b;">Dokumen pengangkutan udara yang terhubung dengan Job Order ini.</p>
                 </div>
             </div>
-            <a class="button button-primary" href="{{ route('awbs.create', ['job_id' => $job->id]) }}">+ Buat Air Waybill (AWB)</a>
+            @if($job->awbs->isNotEmpty())
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
+                    ✓ Dokumen Dibuat (Maks 1x)
+                </span>
+            @else
+                <a class="button button-primary" href="{{ route('awbs.create', ['job_id' => $job->id]) }}">+ Buat Air Waybill (AWB)</a>
+            @endif
         </div>
         @if($job->awbs->isNotEmpty())
             <div class="table-scroll">
@@ -1285,7 +1312,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
                 <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#ede9fe;color:#7c3aed;font-size:25px;">✈️</div>
                 <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Air Waybill (AWB)</h3>
-                <p style="margin:0;color:#64748b;">Buat dokumen AWB dari tab ini agar seluruh data penerbangan dan kargo otomatis terisi.</p>
+                <p style="margin:0 0 16px;color:#64748b;">Buat dokumen AWB dari tab ini agar seluruh data penerbangan dan kargo otomatis terisi.</p>
+                <a class="button button-primary" href="{{ route('awbs.create', ['job_id' => $job->id]) }}">+ Buat Air Waybill (AWB)</a>
             </div>
         @endif
     </section>
