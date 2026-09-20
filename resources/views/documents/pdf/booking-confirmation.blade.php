@@ -5,7 +5,8 @@
     <title>Booking Confirmation {{ $bc->number }}</title>
     <style>
         @page {
-            margin: 30pt 28pt 18pt 22pt;
+            margin: 20pt 25pt 15pt 25pt;
+            size: a4 portrait;
         }
         * {
             box-sizing: border-box;
@@ -18,150 +19,126 @@
             margin: 0;
             padding: 0;
         }
-
-        /* LOGO */
         .logo-box {
-            margin-bottom: 22pt;
+            margin-bottom: 12pt;
         }
         .logo-img {
-            width: 208.5pt;
-            height: 29.5pt;
+            height: 28pt;
+            width: auto;
             display: block;
         }
-
-        /* CENTERED TITLE */
         .title-box {
             text-align: center;
-            margin-bottom: 16pt;
+            margin-bottom: 14pt;
         }
         .title-main {
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: bold;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.5px;
         }
         .title-no {
             font-size: 8pt;
             margin-top: 2pt;
         }
-
-        /* DIVIDER */
         .hr-line {
             border: none;
             border-top: 1px solid #000000;
-            margin: 4pt 0 4pt 0;
+            margin: 4pt 0;
         }
-
-        /* TO & METADATA TABLE */
-        table.top-meta-table {
+        table.meta-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 8pt;
-            margin-bottom: 2pt;
+            margin-bottom: 4pt;
         }
-        table.top-meta-table td {
+        table.meta-table td {
             vertical-align: top;
             padding: 0;
         }
-
-        /* SALUTATION */
         .salutation-box {
-            margin-top: 8pt;
-            margin-bottom: 5pt;
+            margin-top: 6pt;
+            margin-bottom: 4pt;
             font-size: 8pt;
             line-height: 1.3;
         }
-
-        /* 2-COLUMN SHIPMENT DETAILS */
-        table.shipment-details-table {
+        table.shipment-details {
             width: 100%;
             border-collapse: collapse;
             font-size: 8pt;
-            margin: 1pt 0;
+            margin: 2pt 0;
         }
-        table.shipment-details-table td {
+        table.shipment-details td {
             vertical-align: top;
             padding: 0.5pt 0;
         }
-
-        /* 4-COLUMN CARGO TABLE */
         table.cargo-grid {
             width: 100%;
             border-collapse: collapse;
             font-size: 8pt;
-            margin: 1pt 0;
+            margin: 2pt 0;
         }
         table.cargo-grid th {
             text-align: left;
             font-weight: bold;
-            padding: 0 4pt 1pt 0;
+            padding: 0 4pt 2pt 0;
         }
         table.cargo-grid td {
             vertical-align: top;
-            padding: 0 4pt 1pt 0;
+            padding: 0 4pt 2pt 0;
         }
-
-        /* PACKAGING */
         .seaworthy-box {
             font-size: 8pt;
-            margin: 4pt 0 4pt 0;
+            margin: 5pt 0 4pt 0;
         }
-
-        /* DELIVERY & CUT-OFF COMBINED TABLE */
         table.delivery-cutoff-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 8pt;
-            margin: 1pt 0;
+            margin: 2pt 0;
+        }
+        table.delivery-cutoff-table th {
+            text-align: left;
+            font-weight: bold;
+            padding: 0 4pt 2pt 0;
         }
         table.delivery-cutoff-table td {
             vertical-align: top;
-            padding: 0;
+            padding: 0 4pt 0 0;
         }
-
-        /* IMPORTANT NOTE */
         .note-box {
-            margin-top: 16pt;
+            margin-top: 14pt;
+            font-size: 8pt;
         }
         .note-title {
-            font-size: 8pt;
+            font-weight: normal;
             margin-bottom: 3pt;
         }
-        .note-content {
-            font-size: 8pt;
-            line-height: 1.25;
-            margin-bottom: 4pt;
-        }
         .note-item {
-            margin-bottom: 2.5pt;
-            padding-left: 12pt;
-            text-indent: -12pt;
+            margin-bottom: 2pt;
+            line-height: 1.25;
+            padding-left: 10pt;
+            text-indent: -10pt;
         }
-
-        /* DISCLAIMER */
         .disclaimer-center {
             text-align: center;
             font-size: 8pt;
             line-height: 1.35;
-            margin-top: 26pt;
-            margin-bottom: 8pt;
-        }
-        .disclaimer-center div {
-            font-weight: bold;
+            margin-top: 22pt;
+            margin-bottom: 10pt;
         }
         .thank-you {
             text-align: center;
             font-size: 8pt;
-            font-weight: bold;
-            margin-top: 12pt;
+            margin-top: 8pt;
         }
     </style>
 </head>
 <body>
 
 @php
-    $consigneeName = $bc->consignee_name ?: ($job?->consignee_name ?: ($bc->customer?->consignees?->first()?->name ?? '—'));
-    $consigneeAddress = $bc->consignee_address ?: ($job?->consignee_address ?: ($bc->customer?->consignees?->first()?->address ?? ''));
-    $consigneeContact = $bc->contact_person ?: ($bc->consignee_contact ?: ($job?->consignee_contact ?: ($bc->customer?->consignees?->first()?->contact_name ?: ($bc->customer?->consignees?->first()?->phone ?? '—'))));
+    $consigneeName = $bc->consignee_name ?: ($job?->consignee_name ?: ($bc->customer?->consignees?->first()?->name ?? ($bc->customer?->name ?? '—')));
+    $consigneeAddress = $bc->consignee_address ?: ($job?->consignee_address ?: ($bc->customer?->consignees?->first()?->address ?? ($bc->customer?->address ?? '')));
+    $consigneeContact = $bc->contact_person ?: ($bc->consignee_contact ?: ($job?->consignee_contact ?: ($bc->customer?->consignees?->first()?->contact_name ?: ($bc->customer?->contact_name ?? '—'))));
 
     $shipperCustomer = $bc->customer ?? $job?->customer;
     $shipperName = $shipperCustomer?->name ?? ($bc->shipper_name ?: '—');
@@ -172,14 +149,23 @@
         $carrierStr .= ' (' . $bc->carrier_booking_no . ')';
     }
 
-    $logoPath = file_exists(public_path('images/rdx-logistics-doc-logo.png'))
-        ? public_path('images/rdx-logistics-doc-logo.png')
-        : public_path('images/logo.png');
+    $logoPath = file_exists(public_path('images/rdx-header-logo.jpg'))
+        ? public_path('images/rdx-header-logo.jpg')
+        : (file_exists(public_path('images/rdx-logistics-doc-logo.png')) ? public_path('images/rdx-logistics-doc-logo.png') : public_path('images/logo.png'));
 
-    // Parse clauses
-    $rawNotes = $bc->notes;
+    // 6 Standard Legal Clauses from reference BOOKING CONFIRMATION.jpg
+    $defaultClauses = [
+        'This booking confirmation validates your space booking with us according to all details stated in the Shipping Instruction, we reserve right to shut out cargo for any discrepancy that disables us from doing groupage consol.',
+        'This booking confirmation does not function as a guarantee of departure, we reserve right to shut out cargo in case of failures in export procedures and/or handicaps in export documentations.',
+        'This booking confirmation is automatically invalid upon your booking cancellation, kindly inform us immediately for any cancellation.',
+        'This booking confirmation is automatically invalid upon any cases of cargo/documentations problems, including failure of export declaration.',
+        "This booking confirmation is automatically invalid for following undeclared cargo:\nLONG LENGTH/OVERWEIGHT/FOODS & BEVERAGES, DUTIABLE/DANGEROUS GOODS/LAW FORBIDDEN/LIVE ANIMALS.",
+        'This booking confirmation is not valid for any claim.',
+    ];
+
+    $rawNotes = trim($bc->notes ?? '');
     $bulletClauses = [];
-    if ($rawNotes) {
+    if ($rawNotes !== '') {
         $lines = explode("\n", str_replace("\r", "", $rawNotes));
         foreach ($lines as $line) {
             $trimmed = trim($line);
@@ -195,6 +181,9 @@
             }
         }
     }
+    if (empty($bulletClauses)) {
+        $bulletClauses = $defaultClauses;
+    }
 @endphp
 
 {{-- LOGO (TOP LEFT) --}}
@@ -209,34 +198,33 @@
 </div>
 
 {{-- TO & METADATA TABLE --}}
-<table class="top-meta-table">
+<table class="meta-table">
     <tr>
         <td style="width: 58%;">
-            <div style="font-weight: bold;">To:</div>
-            <div>{{ $consigneeName }}</div>
+            <div>To : {{ $consigneeName }}</div>
             @if($consigneeAddress)
-                <div>{{ $consigneeAddress }}</div>
+                <div style="padding-left: 28px;">{{ $consigneeAddress }}</div>
             @endif
         </td>
         <td style="width: 42%;">
             <table style="width: 100%; border-collapse: collapse; font-size: inherit;">
                 <tr>
-                    <td style="width: 44%; font-weight: bold;">Date</td>
+                    <td style="width: 46%;">Date</td>
                     <td style="width: 4%;">:</td>
-                    <td style="width: 52%;">{{ $bc->booking_date ? $bc->booking_date->format('d-M-Y') : '—' }}</td>
+                    <td style="width: 50%;">{{ $bc->booking_date ? $bc->booking_date->format('d-M-Y') : '—' }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Contact Person</td>
+                    <td>Contact Person</td>
                     <td>:</td>
                     <td>{{ $consigneeContact }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Job No.</td>
+                    <td>Job No.</td>
                     <td>:</td>
                     <td>{{ $bc->job?->number ?? '—' }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Customer Ref</td>
+                    <td>Customer Ref</td>
                     <td>:</td>
                     <td>{{ $bc->customer_ref ?: '—' }}</td>
                 </tr>
@@ -254,14 +242,14 @@
 <hr class="hr-line">
 
 {{-- 2-COLUMN SHIPMENT DETAILS --}}
-<table class="shipment-details-table">
+<table class="shipment-details">
     <tr>
         <td style="width: 58%;">
             <table style="width: 100%; border-collapse: collapse; font-size: inherit;">
                 <tr>
-                    <td style="width: 32%; font-weight: bold;">Shipper</td>
-                    <td style="width: 3%;">:</td>
-                    <td style="width: 65%;">
+                    <td style="width: 38%;">Shipper</td>
+                    <td style="width: 4%;">:</td>
+                    <td style="width: 58%;">
                         {{ $shipperName }}
                         @if($shipperAddress)
                             <div>{{ $shipperAddress }}</div>
@@ -269,17 +257,17 @@
                     </td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Carrier Booking</td>
+                    <td>Carrier Booking</td>
                     <td>:</td>
                     <td>{{ $carrierStr }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Vessel</td>
+                    <td>Vessel</td>
                     <td>:</td>
                     <td>{{ $bc->vessel_voyage ?: '—' }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">Services</td>
+                    <td>Services</td>
                     <td>:</td>
                     <td>{{ $bc->service_term ?: 'CY/CY' }}</td>
                 </tr>
@@ -288,22 +276,22 @@
         <td style="width: 42%;">
             <table style="width: 100%; border-collapse: collapse; font-size: inherit;">
                 <tr>
-                    <td style="width: 25%; font-weight: bold;">POL</td>
+                    <td style="width: 32%;">POL</td>
                     <td style="width: 4%;">:</td>
-                    <td style="width: 71%;">{{ $bc->pol ?: '—' }}</td>
+                    <td style="width: 64%;">{{ $bc->pol ?: '—' }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">POD</td>
+                    <td>POD</td>
                     <td>:</td>
                     <td>{{ $bc->pod ?: '—' }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">ETD</td>
+                    <td>ETD</td>
                     <td>:</td>
                     <td>{{ $bc->etd ? $bc->etd->format('d-M-Y') : '—' }}</td>
                 </tr>
                 <tr>
-                    <td style="font-weight: bold;">ETA</td>
+                    <td>ETA</td>
                     <td>:</td>
                     <td>{{ $bc->eta ? $bc->eta->format('d-M-Y') : '—' }}</td>
                 </tr>
@@ -318,9 +306,9 @@
 <table class="cargo-grid">
     <thead>
         <tr>
-            <th style="width: 22%;">Quantity:</th>
-            <th style="width: 36%;">Description:</th>
-            <th style="width: 24%;">Gross Weight:</th>
+            <th style="width: 25%;">Quantity:</th>
+            <th style="width: 35%;">Description:</th>
+            <th style="width: 22%;">Gross Weight:</th>
             <th style="width: 18%;">CBM:</th>
         </tr>
     </thead>
@@ -341,50 +329,42 @@
     PLEASE MAKE SURE TO USE SEAWORTHY PACKAGING.
 </div>
 
-{{-- DELIVERY CARGO TO & CUT-OFF (HORIZONTALLY ALIGNED ON SAME ROW) --}}
+{{-- DELIVERY CARGO TO & CUT-OFF (HORIZONTALLY ALIGNED) --}}
 <table class="delivery-cutoff-table">
-    <tr>
-        <td style="width: 44%; padding-right: 12pt;">
-            <div style="font-weight: bold;">Delivery cargo to:</div>
-            <div style="margin-top: 1pt;">{{ $bc->delivery_cargo_to ?: '—' }}</div>
-        </td>
-        <td style="width: 56%;">
-            <table style="width: 100%; border-collapse: collapse; font-size: inherit;">
-                <tr>
-                    <td style="width: 36%; font-weight: bold; padding: 0 4pt 1pt 0;">Doc Cut-Off</td>
-                    <td style="width: 36%; font-weight: bold; padding: 0 4pt 1pt 0;">CY Cut-Off</td>
-                    <td style="width: 28%; font-weight: bold; padding: 0 0 1pt 0;">Delivery</td>
-                </tr>
-                <tr>
-                    <td style="padding: 0 4pt 0 0;">{{ $bc->doc_cutoff_at ? $bc->doc_cutoff_at->format('d-M-Y H:i') : '—' }}</td>
-                    <td style="padding: 0 4pt 0 0;">{{ $bc->cy_cutoff_at ? $bc->cy_cutoff_at->format('d-M-Y H:i') : '—' }}</td>
-                    <td style="padding: 0;">{{ $bc->delivery_cutoff_at ? $bc->delivery_cutoff_at->format('d-M-Y H:i') : '—' }}</td>
-                </tr>
-            </table>
-        </td>
-    </tr>
+    <thead>
+        <tr>
+            <th style="width: 44%;">Delivery cargo to:</th>
+            <th style="width: 20%;">Doc Cut-Off</th>
+            <th style="width: 20%;">CY Cut-Off</th>
+            <th style="width: 16%;">Delivery</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ $bc->delivery_cargo_to ?: '—' }}</td>
+            <td>{{ $bc->doc_cutoff_at ? $bc->doc_cutoff_at->format('d-M-Y H:i') : '—' }}</td>
+            <td>{{ $bc->cy_cutoff_at ? $bc->cy_cutoff_at->format('d-M-Y H:i') : '—' }}</td>
+            <td>{{ $bc->delivery_cutoff_at ? $bc->delivery_cutoff_at->format('d-M-Y H:i') : '—' }}</td>
+        </tr>
+    </tbody>
 </table>
 
-{{-- IMPORTANT NOTE (NO HORIZONTAL LINE ABOVE) --}}
+{{-- IMPORTANT NOTE --}}
 <div class="note-box">
     <div class="note-title">Important Note:</div>
     <div class="note-content">
-        @if(!empty($bulletClauses))
-            @foreach($bulletClauses as $clause)
-                @if(str_contains($clause, 'LONG LENGTH/OVERWEIGHT'))
-                    @php
-                        $splitPos = strpos($clause, 'LONG LENGTH');
-                        $before = trim(substr($clause, 0, $splitPos));
-                        $after = trim(substr($clause, $splitPos));
-                    @endphp
-                    <div class="note-item">• {{ $before }}<br><span style="padding-left: 12pt; display: inline-block;">{{ $after }}</span></div>
-                @else
-                    <div class="note-item">• {{ $clause }}</div>
-                @endif
-            @endforeach
-        @else
-            <div>—</div>
-        @endif
+        @foreach($bulletClauses as $clause)
+            @if(str_contains($clause, 'LONG LENGTH/OVERWEIGHT'))
+                @php
+                    $splitPos = strpos($clause, 'LONG LENGTH');
+                    $before = trim(substr($clause, 0, $splitPos));
+                    $after = trim(substr($clause, $splitPos));
+                @endphp
+                <div class="note-item">• {{ $before }}<br><span style="padding-left: 10pt; display: inline-block;">{{ $after }}</span></div>
+            @else
+                <div class="note-item">• {{ $clause }}</div>
+            @endif
+        @endforeach
     </div>
 </div>
 

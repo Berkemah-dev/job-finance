@@ -15,7 +15,9 @@
     <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
 
-<div class="quote-actions" style="margin-bottom: 20px;">
+<div class="quote-actions" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+    <a class="button button-primary" href="{{ route('awbs.preview', [$awb, 'type' => 'hawb']) }}" target="_blank" style="background:#1d4ed8;border-color:#1d4ed8;">📄 Cetak HAWB (House)</a>
+    <a class="button button-primary" href="{{ route('awbs.preview', [$awb, 'type' => 'mawb']) }}" target="_blank" style="background:#dc2626;border-color:#dc2626;">📄 Cetak MAWB (Master)</a>
     <a class="button button-secondary" href="{{ route('awbs.edit', $awb) }}">Edit AWB</a>
     @if($awb->job)
         <a class="button button-secondary" href="{{ route('jobs.show', $awb->job) . '#tab-awb' }}">Lihat Job Order</a>

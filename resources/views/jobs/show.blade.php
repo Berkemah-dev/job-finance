@@ -1036,6 +1036,8 @@
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
+            @else
+                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
             @endif
         </div>
         @if($job->bookingConfirmations->isNotEmpty())
@@ -1068,7 +1070,12 @@
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3><p style="margin:0;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3>
+                <p style="margin:0 0 16px;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p>
+                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+            </div>
         @endif
     </section>
 </div>
@@ -1080,6 +1087,8 @@
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
+            @else
+                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
             @endif
         </div>
         @if($job->shippingInstructions->isNotEmpty())
@@ -1114,7 +1123,12 @@
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3><p style="margin:0;color:#64748b;">Dokumen SI yang terhubung dengan Job Order akan tampil di sini.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3>
+                <p style="margin:0 0 16px;color:#64748b;">Instruksi pengiriman yang terhubung dengan Job Order akan tampil di sini.</p>
+                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+            </div>
         @endif
     </section>
 </div>
@@ -1159,6 +1173,7 @@
                                 <td><span class="status-badge">{{ ucfirst($bl->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;">
+                                        <a class="button button-primary button-sm" href="{{ route('bills-of-lading.preview', $bl) }}" target="_blank">Cetak</a>
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.show', $bl) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.edit', $bl) }}">Edit</a>
                                     </div>
@@ -1220,6 +1235,7 @@
                                 <td><span class="status-badge">{{ ucfirst($awb->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;">
+                                        <a class="button button-primary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'hawb']) }}" target="_blank" style="background:#1d4ed8;border-color:#1d4ed8;">Cetak</a>
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.show', $awb) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.edit', $awb) }}">Edit</a>
                                     </div>

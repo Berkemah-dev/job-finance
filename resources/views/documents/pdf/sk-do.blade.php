@@ -27,66 +27,69 @@
     <title>SURAT KUASA DELIVERY ORDER IMPORT - {{ $job->number }}</title>
     <style>
         @page {
-            margin: 45px 50px 35px 50px;
+            margin: 35pt 45pt 25pt 45pt;
+            size: a4 portrait;
         }
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: Arial, Helvetica, DejaVu Sans, sans-serif;
-            color: #000;
-            font-size: 9.5px;
-            line-height: 1.45;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
+            font-size: 9.5pt;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
         }
         .header-title {
             text-align: center;
-            margin-top: 15px;
-            margin-bottom: 30px;
+            margin-top: 15pt;
+            margin-bottom: 25pt;
         }
         .title-main {
-            font-size: 13.5px;
+            font-size: 13pt;
             font-weight: bold;
             letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            margin-bottom: 2pt;
         }
         .title-sub {
-            font-size: 11px;
+            font-size: 11pt;
             letter-spacing: 0.5px;
         }
         .paragraph {
-            margin: 14px 0 6px 0;
+            margin: 12pt 0 4pt 0;
             text-align: justify;
-            line-height: 1.45;
+            line-height: 1.4;
         }
-        .info-table {
+        table.info-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 2px 0 6px 0;
+            margin: 2pt 0 4pt 0;
         }
-        .info-table td {
+        table.info-table td {
             vertical-align: top;
-            padding: 1.5px 0;
-            font-size: 9.5px;
+            padding: 1.2pt 0;
+            font-size: 9.5pt;
         }
         .col-label {
-            width: 140px;
+            width: 150pt;
         }
         .col-label-ship {
-            width: 180px;
+            width: 180pt;
         }
         .col-sep {
-            width: 15px;
+            width: 15pt;
             text-align: center;
         }
         .col-val {
             text-align: left;
         }
-        .signature-table {
+        table.signature-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 50px;
+            margin-top: 40pt;
         }
-        .signature-table td {
+        table.signature-table td {
             vertical-align: top;
         }
         .sign-left {
@@ -96,24 +99,24 @@
         .sign-right {
             text-align: center;
             width: 50%;
-            padding-left: 60px;
+            padding-left: 50pt;
         }
-        .sign-logo {
-            max-height: 52px;
-            max-width: 140px;
-            margin: 4px 0 2px 0;
+        .sign-logo-img {
+            height: 44pt;
+            width: auto;
+            margin: 8pt 0 6pt 0;
             display: block;
         }
         .sign-name-bold {
             font-weight: bold;
-            font-size: 9.5px;
+            font-size: 9.5pt;
         }
         .sign-role-title {
             font-weight: bold;
-            font-size: 9.5px;
+            font-size: 9.5pt;
         }
         .sign-space-empty {
-            height: 58px;
+            height: 54pt;
         }
     </style>
 </head>
@@ -221,26 +224,27 @@
         </tr>
     </table>
 
-    <div class="paragraph" style="margin-top: 16px;">
+    <div class="paragraph" style="margin-top: 14pt;">
         Demikian Surat Kuasa ini kami buat untuk dipergunakan sebagaimana mestinya.
     </div>
 
     <table class="signature-table">
         <tr>
             <td class="sign-left">
-                <div>Penerima Kuasa,</div>
+                <div>Penerima Kuasa</div>
                 <div>
-                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo" alt="RDX LOGISTICS">
+                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo-img" alt="RDX LOGISTICS">
                 </div>
                 <div class="sign-name-bold">SYANNE</div>
                 <div class="sign-role-title">PPJK</div>
             </td>
             <td class="sign-right">
-                <div>Jakarta, {{ $signDate }}</div>
-                <div style="margin-top: 2px;">Pemberi Kuasa,</div>
+                <div>Jakarta, <strong>{{ strtoupper($signDate) }}</strong></div>
+                <div style="margin-top: 2pt;">Pemberi Kuasa,</div>
                 <div class="sign-space-empty"></div>
-                <div class="sign-name-bold">( {{ $authorizerName ?: '.........................................' }} )</div>
-                <div class="sign-role-title">{{ $authorizerTitle ?: 'Direktur' }}</div>
+                <div style="font-weight: bold; font-size: 9pt;">NAMA PENANGGUNG JAWAB</div>
+                <div class="sign-name-bold">{{ strtoupper($authorizerName ?: 'STANLEY AUDREY') }}</div>
+                <div class="sign-role-title">{{ strtoupper($authorizerTitle ?: 'DIREKTUR') }}</div>
             </td>
         </tr>
     </table>

@@ -203,4 +203,37 @@ class AwbController extends Controller
         return redirect()->route('awbs.index')
             ->with('success', 'AWB ' . $number . ' berhasil dihapus.');
     }
+
+    public function preview(Awb $awb)
+    {
+        $type = strtolower(request('type', 'hawb'));
+
+        return view('documents.pdf-preview', [
+            'title'       => strtoupper($type) . ' ' . $awb->number,
+            'backUrl'     => route('awbs.show', $awb),
+            'pdfUrl'      => route('awbs.pdf', ['awb' => $awb, 'type' => $type, 'mode' => 'inline', 't' => time()]),
+            'downloadUrl' => route('awbs.pdf', ['awb' => $awb, 'type' => $type, 'mode' => 'download']),
+        ]);
+    }
+
+    public function pdf(Request $request, Awb $awb)
+    {
+        $awb->load(['job.customer', 'customer']);
+        $type = strtolower($request->query('type', 'hawb'));
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.air-waybill', [
+            'awb'  => $awb,
+            'type' => $type,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = strtoupper($type) . '_' . str_replace(['/', '\\'], '-', $awb->number) . '.pdf';
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+                'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma'              => 'no-cache',
+            ]);
+    }
 }

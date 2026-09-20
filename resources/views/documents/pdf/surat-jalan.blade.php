@@ -23,142 +23,145 @@
     <title>DELIVERY ORDER SURAT JALAN - {{ $job->number }}</title>
     <style>
         @page {
-            margin: 25px 35px 25px 35px;
+            margin: 25pt 35pt 20pt 35pt;
+            size: a4 portrait;
         }
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: 'Courier New', Courier, DejaVu Sans Mono, monospace;
-            color: #000;
-            font-size: 8.5px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
+            font-size: 8.5pt;
             line-height: 1.35;
+            margin: 0;
+            padding: 0;
         }
-        .header-table {
+        table.header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 14pt;
         }
-        .header-table td {
+        table.header-table td {
             vertical-align: top;
         }
         .company-name {
             font-weight: bold;
-            font-size: 9.5px;
-            margin-bottom: 2px;
+            font-size: 9.5pt;
+            margin-bottom: 2pt;
         }
         .company-address {
-            font-size: 8.5px;
+            font-size: 8.5pt;
             line-height: 1.35;
         }
         .doc-title-container {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 14pt;
         }
         .doc-title-main {
             font-weight: bold;
-            font-size: 13px;
-            text-decoration: underline;
+            font-size: 13pt;
             letter-spacing: 0.5px;
         }
-        .meta-container {
+        table.meta-container {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 10pt;
         }
-        .meta-container td {
+        table.meta-container td {
             vertical-align: top;
         }
-        .checkbox-table {
+        table.checkbox-table {
             border-collapse: collapse;
             float: right;
         }
         .checkbox-box {
-            border: 1px solid #000;
-            width: 22px;
-            height: 16px;
+            border: 1px solid #000000;
+            width: 18pt;
+            height: 14pt;
             text-align: center;
-            line-height: 15px;
+            line-height: 13pt;
             font-weight: bold;
-            font-size: 9.5px;
+            font-size: 9pt;
         }
         .checkbox-label {
-            padding-left: 8px;
+            padding-left: 6pt;
             font-weight: bold;
-            font-size: 9px;
+            font-size: 8.5pt;
             vertical-align: middle;
         }
         .section-header {
             font-weight: bold;
-            font-size: 9.5px;
-            margin-bottom: 3px;
+            font-size: 9pt;
+            margin-bottom: 3pt;
+            text-transform: uppercase;
         }
-        .data-table {
+        table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 10pt;
         }
-        .data-table td {
+        table.data-table td {
             vertical-align: top;
-            padding: 1px 0;
-            font-size: 8.5px;
+            padding: 1.5pt 0;
+            font-size: 8.5pt;
         }
         .col-label {
-            width: 170px;
+            width: 140pt;
         }
         .col-sep {
-            width: 15px;
+            width: 12pt;
             text-align: center;
         }
-        .items-grid {
+        table.items-grid {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 4px;
+            margin-bottom: 4pt;
         }
-        .items-grid th {
-            border: 1px solid #000;
-            padding: 3.5px 4px;
+        table.items-grid th {
+            border: 1px solid #000000;
+            padding: 3.5pt 4pt;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 8pt;
             text-align: center;
+            background-color: #f2f2f2;
         }
-        .items-grid td {
-            border: 1px solid #000;
-            padding: 3.5px 4px;
-            font-size: 8px;
+        table.items-grid td {
+            border: 1px solid #000000;
+            padding: 3.5pt 4pt;
+            font-size: 8pt;
             vertical-align: middle;
         }
         .disclaimer {
-            font-size: 8px;
+            font-size: 7.5pt;
             font-weight: bold;
             font-style: italic;
-            margin-top: 5px;
-            margin-bottom: 25px;
+            margin-top: 4pt;
+            margin-bottom: 18pt;
             line-height: 1.3;
         }
         .signature-title {
             text-align: center;
             font-weight: bold;
-            font-size: 9.5px;
-            margin-bottom: 8px;
+            font-size: 9pt;
+            margin-bottom: 6pt;
         }
-        .signature-table {
+        table.signature-table {
             width: 100%;
             border-collapse: collapse;
-            page-break-inside: avoid;
         }
-        .signature-table td {
+        table.signature-table td {
             text-align: center;
             vertical-align: top;
         }
         .signature-img-space {
-            height: 52px;
+            height: 44pt;
             text-align: center;
             vertical-align: middle;
         }
         .signature-img {
-            max-height: 48px;
-            max-width: 140px;
+            max-height: 42pt;
+            max-width: 130pt;
             display: inline-block;
         }
     </style>
@@ -169,7 +172,7 @@
     <table class="header-table">
         <tr>
             <td style="width: 50%;">
-                <img src="{{ public_path('images/rdx-banner.png') }}" style="max-height: 44px; max-width: 230px;" alt="RDX LOGISTICS">
+                <img src="{{ public_path('images/rdx-banner.png') }}" style="max-height: 40pt; max-width: 200pt;" alt="RDX LOGISTICS">
             </td>
             <td style="width: 50%; text-align: right;">
                 <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
@@ -181,8 +184,7 @@
 
     <!-- DOCUMENT TITLE -->
     <div class="doc-title-container">
-        <div class="doc-title-main">DELIVERY ORDER</div>
-        <div class="doc-title-main" style="margin-top: 2px;">SURAT JALAN</div>
+        <div class="doc-title-main">DELIVERY ORDER SURAT JALAN</div>
     </div>
 
     <!-- META & CHECKBOX TABLE -->
@@ -191,14 +193,14 @@
             <td style="width: 70%;">
                 <table style="border-collapse: collapse;">
                     <tr>
-                        <td style="width: 160px; font-weight: bold;">Nomor Surat Jalan</td>
-                        <td style="width: 15px; text-align: center; font-weight: bold;">:</td>
+                        <td style="width: 140pt; font-weight: bold;">Nomor Surat Jalan</td>
+                        <td style="width: 12pt; text-align: center; font-weight: bold;">:</td>
                         <td style="font-weight: bold;">SJ-RDX/{{ $job->job_date?->format('Y') ?? now()->format('Y') }}/{{ str_pad($job->id, 4, '0', STR_PAD_LEFT) }}</td>
                     </tr>
                     <tr>
-                        <td style="font-weight: bold; padding-top: 3px;">Tanggal Surat Jalan</td>
-                        <td style="text-align: center; font-weight: bold; padding-top: 3px;">:</td>
-                        <td style="padding-top: 3px;">{{ $job->job_date?->format('d/m/Y') ?? now()->format('d/m/Y') }}</td>
+                        <td style="font-weight: bold; padding-top: 2pt;">Tanggal Surat Jalan</td>
+                        <td style="text-align: center; font-weight: bold; padding-top: 2pt;">:</td>
+                        <td style="padding-top: 2pt;">{{ $job->job_date?->format('d/m/Y') ?? now()->format('d/m/Y') }}</td>
                     </tr>
                 </table>
             </td>
@@ -207,8 +209,7 @@
                     <tr>
                         <td class="checkbox-box">{{ $isFcl ? '√' : '' }}</td>
                         <td class="checkbox-label">FCL</td>
-                    </tr>
-                    <tr>
+                        <td style="width: 12pt;"></td>
                         <td class="checkbox-box">{{ $isLcl ? '√' : '' }}</td>
                         <td class="checkbox-label">LCL</td>
                     </tr>
@@ -228,27 +229,27 @@
         <tr>
             <td class="col-label">Nomor Truk</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '') }}</td>
+            <td>{{ $job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '—') }}</td>
         </tr>
         <tr>
             <td class="col-label">Nomor Container</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->container_number ?: ($job->container_type ? strtoupper($job->container_type) : '') }}</td>
+            <td>{{ $job->container_number ?: ($job->container_type ? strtoupper($job->container_type) : '—') }}</td>
         </tr>
         <tr>
             <td class="col-label">Nama Supir</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->driver_name ?: ($job->vendorTruck?->driver_name ?: '') }}</td>
+            <td>{{ $job->driver_name ?: ($job->vendorTruck?->driver_name ?: '—') }}</td>
         </tr>
         <tr>
             <td class="col-label">Nomor Telepon Supir</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->driver_phone ?: ($job->vendorTruck?->driver_phone ?: '') }}</td>
+            <td>{{ $job->driver_phone ?: ($job->vendorTruck?->driver_phone ?: '—') }}</td>
         </tr>
         <tr>
             <td class="col-label">Jenis Kendaraan</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: '') }}</td>
+            <td>{{ $job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: '—') }}</td>
         </tr>
         <tr>
             <td class="col-label">Dari Gudang</td>
@@ -287,12 +288,12 @@
     <table class="items-grid">
         <thead>
             <tr>
-                <th style="width: 45px;">NO.</th>
+                <th style="width: 35pt;">NO.</th>
                 <th>NAMA BARANG</th>
-                <th style="width: 65px;">QTY</th>
-                <th style="width: 75px;">SATUAN</th>
-                <th style="width: 90px;">BERAT (KG)</th>
-                <th style="width: 140px;">KETERANGAN</th>
+                <th style="width: 55pt;">QTY</th>
+                <th style="width: 65pt;">SATUAN</th>
+                <th style="width: 75pt;">BERAT (KG)</th>
+                <th style="width: 110pt;">KETERANGAN</th>
             </tr>
         </thead>
         <tbody>
@@ -321,7 +322,7 @@
 
             @for($i = $rowCount; $i < 3; $i++)
                 <tr>
-                    <td style="height: 15px;"></td>
+                    <td style="height: 14pt; text-align: center;">{{ $i + 1 }}</td>
                     <td></td>
                     <td></td>
                     <td></td>

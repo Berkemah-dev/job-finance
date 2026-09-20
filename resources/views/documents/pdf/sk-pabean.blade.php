@@ -54,79 +54,78 @@
     <title>SURAT KUASA PENGAJUAN PEMBERITAHUAN PABEAN - {{ $job->number }}</title>
     <style>
         @page {
-            margin: 35px 50px 30px 50px;
+            margin: 28pt 45pt 20pt 45pt;
+            size: a4 portrait;
         }
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: Arial, Helvetica, DejaVu Sans, sans-serif;
-            color: #000;
-            font-size: 9px;
-            line-height: 1.4;
-        }
-        .kop-placeholder {
-            text-align: center;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 25px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
+            font-size: 9pt;
+            line-height: 1.35;
+            margin: 0;
+            padding: 0;
         }
         .header-title {
             text-align: center;
-            margin-bottom: 20px;
+            margin-top: 10pt;
+            margin-bottom: 20pt;
         }
         .title-main {
-            font-size: 13px;
+            font-size: 13pt;
             font-weight: bold;
             letter-spacing: 0.5px;
+            margin-bottom: 2pt;
         }
         .title-sub {
-            font-size: 11.5px;
-            font-weight: bold;
+            font-size: 11pt;
             letter-spacing: 0.5px;
-            margin: 1px 0;
+            margin-bottom: 2pt;
         }
         .title-no {
-            font-size: 10px;
-            font-weight: bold;
+            font-size: 9.5pt;
         }
         .paragraph {
-            margin: 10px 0 4px 0;
+            margin: 8pt 0 3pt 0;
             text-align: justify;
-            line-height: 1.4;
+            line-height: 1.35;
         }
-        .info-table {
+        table.info-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 2px 0 4px 0;
+            margin: 1.5pt 0 3pt 0;
         }
-        .info-table td {
+        table.info-table td {
             vertical-align: top;
-            padding: 1.2px 0;
-            font-size: 9px;
+            padding: 1pt 0;
+            font-size: 9pt;
         }
         .col-label {
-            width: 165px;
+            width: 150pt;
+        }
+        .col-label-doc {
+            width: 170pt;
         }
         .col-sep {
-            width: 15px;
+            width: 15pt;
             text-align: center;
         }
         .col-val {
             text-align: left;
         }
-        .legal-p {
-            margin: 10px 0 6px 0;
+        .legal-notice {
+            margin: 10pt 0 5pt 0;
             text-align: justify;
-            line-height: 1.4;
+            line-height: 1.35;
         }
-        .signature-table {
+        table.signature-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 30px;
+            margin-top: 25pt;
         }
-        .signature-table td {
+        table.signature-table td {
             vertical-align: top;
         }
         .sign-left {
@@ -136,35 +135,33 @@
         .sign-right {
             text-align: center;
             width: 50%;
-            padding-left: 60px;
+            padding-left: 50pt;
         }
-        .sign-logo {
-            max-height: 48px;
-            max-width: 130px;
-            margin: 4px 0 2px 0;
+        .sign-logo-img {
+            height: 42pt;
+            width: auto;
+            margin: 6pt 0 4pt 0;
             display: block;
         }
         .sign-name-bold {
             font-weight: bold;
-            font-size: 9px;
+            font-size: 9pt;
         }
         .sign-role-title {
             font-weight: bold;
-            font-size: 9px;
+            font-size: 9pt;
         }
         .sign-space-empty {
-            height: 52px;
+            height: 48pt;
         }
     </style>
 </head>
 <body>
 
-    <div class="kop-placeholder">KOP SURAT</div>
-
     <div class="header-title">
         <div class="title-main">SURAT KUASA</div>
         <div class="title-sub">PENGAJUAN PEMBERITAHUAN PABEAN</div>
-        <div class="title-no">(No. {{ $job->number }} )</div>
+        <div class="title-no">No. {{ $job->number }}</div>
     </div>
 
     <div class="paragraph">Yang bertanda-tangan dibawah ini :</div>
@@ -243,61 +240,65 @@
 
     <table class="info-table">
         <tr>
-            <td class="col-label">Nomor/Tanggal B/L atau AWB</td>
+            <td class="col-label-doc">Nomor/Tanggal B/L atau AWB</td>
             <td class="col-sep">:</td>
-            <td class="col-val">{{ $hblNumber }}{{ $hblNumber && $blDate ? ' / ' . $blDate : '' }}</td>
+            <td class="col-val">{{ $hblNumber }}{{ $hblNumber && $blDate ? ' / ' : '' }}{{ $blDate }}</td>
         </tr>
         <tr>
-            <td class="col-label">Nomor/Tanggal Invoice</td>
+            <td class="col-label-doc">Nomor/Tanggal Invoice</td>
             <td class="col-sep">:</td>
-            <td class="col-val">{{ $invoiceText }}</td>
+            <td class="col-val">{{ $invoiceText ?: '—' }}</td>
         </tr>
         <tr>
-            <td class="col-label">Harga ( FOB / C&F / CIF )</td>
+            <td class="col-label-doc">Harga ( FOB / C&amp;F / CIF )</td>
             <td class="col-sep">:</td>
             <td class="col-val">{{ $priceText }}</td>
         </tr>
         <tr>
-            <td class="col-label">Nomor/Tanggal Packing List</td>
+            <td class="col-label-doc">Nomor/Tanggal Packing List</td>
             <td class="col-sep">:</td>
-            <td class="col-val">{{ $plText }}</td>
+            <td class="col-val">{{ $plText ?: '—' }}</td>
         </tr>
         <tr>
-            <td class="col-label">Dokumen Pelengkap lainnya</td>
+            <td class="col-label-doc">Dokumen Pelengkap lainnya</td>
             <td class="col-sep">:</td>
-            <td class="col-val">1.<br>2.</td>
-        </tr>
-        <tr>
-            <td class="col-label">Nama Penerbit Invoice</td>
-            <td class="col-sep">:</td>
-            <td class="col-val">{{ $shipperName }}</td>
+            <td class="col-val">{{ $job->notes ?: '—' }}</td>
         </tr>
     </table>
 
-    <div class="legal-p">
+    <table class="info-table" style="margin-top: 4pt;">
+        <tr>
+            <td class="col-label-doc">Nama Penerbit Invoice</td>
+            <td class="col-sep">:</td>
+            <td class="col-val">{{ $shipperName ?: '—' }}</td>
+        </tr>
+    </table>
+
+    <div class="legal-notice">
         Atas penyerahan dokumen tersebut, kami bertanggung jawab penuh atas kebenaran mengenai isi, jumlah, jenis serta kualitas barang yang tercantum dalam dokumen. Kami bertanggung jawab sepenuhnya atas segala kewajiban Kepabeanan sebagaimana dimaksud dalam Undang - undang No. 17 Tahun 2006 tentang Kepabeanan.
     </div>
 
-    <div class="paragraph" style="margin-top: 8px;">
+    <div class="paragraph" style="margin-top: 8pt;">
         Demikian Surat Kuasa ini kami buat untuk dipergunakan sebagaimana mestinya.
     </div>
 
     <table class="signature-table">
         <tr>
             <td class="sign-left">
-                <div>Penerima Kuasa,</div>
+                <div>Penerima Kuasa</div>
                 <div>
-                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo" alt="RDX LOGISTICS">
+                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo-img" alt="RDX LOGISTICS">
                 </div>
                 <div class="sign-name-bold">SYANNE</div>
                 <div class="sign-role-title">PPJK</div>
             </td>
             <td class="sign-right">
-                <div>Jakarta, {{ $signDate }}</div>
-                <div style="margin-top: 2px;">Pemberi Kuasa,</div>
+                <div>Jakarta, <strong>{{ strtoupper($signDate) }}</strong></div>
+                <div style="margin-top: 2pt;">Pemberi Kuasa,</div>
                 <div class="sign-space-empty"></div>
-                <div class="sign-name-bold">( {{ $authorizerName ?: '.........................................' }} )</div>
-                <div class="sign-role-title">{{ $authorizerTitle ?: 'Direktur' }}</div>
+                <div style="font-weight: bold; font-size: 8.5pt;">NAMA PENANGGUNG JAWAB</div>
+                <div class="sign-name-bold">{{ strtoupper($authorizerName ?: 'STANLEY AUDREY') }}</div>
+                <div class="sign-role-title">{{ strtoupper($authorizerTitle ?: 'DIREKTUR') }}</div>
             </td>
         </tr>
     </table>

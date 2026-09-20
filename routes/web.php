@@ -124,8 +124,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/shipping-instructions/{shippingInstruction}/pdf', [ShippingInstructionController::class, 'pdf'])->middleware('can:jobs.view')->name('shipping-instructions.pdf');
     // AWB — Air Waybill (Export Air)
     Route::resource('awbs', AwbController::class)->middleware('can:jobs.view');
+    Route::get('/awbs/{awb}/preview', [AwbController::class, 'preview'])->middleware('can:jobs.view')->name('awbs.preview');
+    Route::get('/api/awbs/{awb}/pdf', [AwbController::class, 'pdf'])->middleware('can:jobs.view')->name('awbs.pdf');
     // Bill of Lading — B/L (Export Sea)
     Route::resource('bills-of-lading', BillOfLadingController::class)->parameters(['bills-of-lading' => 'billOfLading'])->middleware('can:jobs.view');
+    Route::get('/bills-of-lading/{billOfLading}/preview', [BillOfLadingController::class, 'preview'])->middleware('can:jobs.view')->name('bills-of-lading.preview');
+    Route::get('/api/bills-of-lading/{billOfLading}/pdf', [BillOfLadingController::class, 'pdf'])->middleware('can:jobs.view')->name('bills-of-lading.pdf');
     // DNP — Deklarasi Nilai Pabean (Import)
     Route::resource('dnps', DnpController::class)->middleware('can:jobs.view');
     Route::get('/dnps/{dnp}/pdf', [DnpController::class, 'previewPdf'])->middleware('can:jobs.view')->name('dnps.pdf');

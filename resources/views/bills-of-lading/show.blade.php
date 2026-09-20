@@ -15,7 +15,10 @@
     <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
 
-<div class="quote-actions" style="margin-bottom:20px;">
+<div class="quote-actions" style="margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+    <a class="button button-primary" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'draft']) }}" target="_blank">📄 Cetak Draft</a>
+    <a class="button button-secondary" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'original']) }}" target="_blank">📄 Cetak Original</a>
+    <a class="button button-secondary" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'copy']) }}" target="_blank">📄 Cetak Copy</a>
     <a class="button button-secondary" href="{{ route('bills-of-lading.edit', $bl) }}">Edit B/L</a>
     @if($bl->job)
         <a class="button button-secondary" href="{{ route('jobs.show', $bl->job) . '#tab-bl' }}">Lihat Job Order</a>

@@ -286,4 +286,37 @@ class BillOfLadingController extends Controller
         return redirect()->route('bills-of-lading.index')
             ->with('success', 'B/L ' . $number . ' berhasil dihapus.');
     }
+
+    public function preview(BillOfLading $billOfLading)
+    {
+        $type = request('type', $billOfLading->status === 'draft' ? 'draft' : 'original');
+
+        return view('documents.pdf-preview', [
+            'title'       => 'Bill of Lading ' . $billOfLading->number,
+            'backUrl'     => route('bills-of-lading.show', $billOfLading),
+            'pdfUrl'      => route('bills-of-lading.pdf', ['billOfLading' => $billOfLading, 'type' => $type, 'mode' => 'inline', 't' => time()]),
+            'downloadUrl' => route('bills-of-lading.pdf', ['billOfLading' => $billOfLading, 'type' => $type, 'mode' => 'download']),
+        ]);
+    }
+
+    public function pdf(Request $request, BillOfLading $billOfLading)
+    {
+        $billOfLading->load(['job.customer', 'customer']);
+        $type = strtolower($request->query('type', $billOfLading->status === 'draft' ? 'draft' : 'original'));
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.bill-of-lading', [
+            'bl'   => $billOfLading,
+            'type' => $type,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'BL_' . str_replace(['/', '\\'], '-', $billOfLading->number) . '_' . strtoupper($type) . '.pdf';
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+                'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma'              => 'no-cache',
+            ]);
+    }
 }
