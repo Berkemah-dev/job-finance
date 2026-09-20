@@ -105,14 +105,17 @@ class OperationalDocumentController extends Controller
     {
         $quotation->load(['items', 'customer', 'creator', 'approver']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
-        $filename = $quotation->number.'.pdf';
+        $date = $quotation->quotation_date ? $quotation->quotation_date->format('d-m-Y') : now()->format('d-m-Y');
+        $parts = explode('-', str_replace('/', '-', $quotation->number));
+        $seq = end($parts);
+        $filename = 'QUO_RDX_'.$seq.'_'.$date.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF quotation '.$quotation->number, ['module' => 'document', 'record_id' => $quotation->id]);
 
         return $request->query('mode') === 'download'
             ? $pdf->download($filename)
             : response($pdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
                 'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
                 'Pragma' => 'no-cache',
             ]);
@@ -126,7 +129,7 @@ class OperationalDocumentController extends Controller
         $filename = $quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF job order '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function suratJalanPdf(Request $request, Quotation $quotation, MasterDataService $master)
@@ -137,7 +140,7 @@ class OperationalDocumentController extends Controller
         $filename = 'Surat_Jalan_'.$quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF Surat Jalan '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function tandaTerimaPdf(Request $request, Quotation $quotation, MasterDataService $master)

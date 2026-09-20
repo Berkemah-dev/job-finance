@@ -89,8 +89,12 @@ class QuotationController extends Controller
         $quotation->load(['items', 'customer', 'creator']);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('quotations.pdf', ['quotation' => $quotation]);
+        $date = $quotation->quotation_date ? $quotation->quotation_date->format('d-m-Y') : now()->format('d-m-Y');
+        $parts = explode('-', str_replace('/', '-', $quotation->number));
+        $seq = end($parts);
+        $filename = 'QUO_RDX_'.$seq.'_'.$date.'.pdf';
         
-        return $pdf->download('Quotation_'.$quotation->number.'.pdf');
+        return $pdf->download($filename);
     }
 
     public function edit(Quotation $quotation)
@@ -168,14 +172,17 @@ class QuotationController extends Controller
 
         $quotation->load(['items', 'customer', 'creator', 'approver', 'sales']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
-        $filename = $quotation->number.'.pdf';
+        $date = $quotation->quotation_date ? $quotation->quotation_date->format('d-m-Y') : now()->format('d-m-Y');
+        $parts = explode('-', str_replace('/', '-', $quotation->number));
+        $seq = end($parts);
+        $filename = 'QUO_RDX_'.$seq.'_'.$date.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF quotation '.$quotation->number, ['module' => 'quotation', 'record_id' => $quotation->id]);
 
         return $request->query('mode') === 'download'
             ? $pdf->download($filename)
             : response($pdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
                 'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
                 'Pragma' => 'no-cache',
             ]);
