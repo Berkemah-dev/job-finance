@@ -198,7 +198,7 @@
             margin-bottom: 2px;
         }
         .custom-remarks {
-            margin-bottom: 8px;
+            margin: 6px 0 6px 0;
             font-size: 8.5pt;
             line-height: 1.25;
             color: #000;
@@ -208,7 +208,7 @@
             color: #000;
         }
         .cr-content {
-            font-weight: normal;
+            font-weight: bold;
             color: #000;
             text-transform: uppercase;
         }
@@ -470,10 +470,10 @@
     7.All prices above are valid according to the available valid date and are not binding if it has passed.
 </div>
 
-{{-- CUSTOM REMARKS --}}
+{{-- CUSTOM REMARKS / NOTE --}}
 @if(!empty(trim($quotation->notes ?? '')))
 <div class="custom-remarks">
-    <div class="cr-label">REMARKS :</div>
+    <div class="cr-label">NOTE:</div>
     <div class="cr-content">{!! nl2br(e($quotation->notes)) !!}</div>
 </div>
 @endif

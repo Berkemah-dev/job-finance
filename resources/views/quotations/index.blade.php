@@ -95,6 +95,14 @@
                                 <a class="btn-action btn-action-primary" href="{{ route('quotations.show', $quotation) }}" title="Detail Quotation" data-tooltip="Detail" aria-label="Detail Quotation">
                                     <x-icon name="eye"/>
                                 </a>
+                                @can('quotations.manage')
+                                    <form method="POST" action="{{ route('quotations.duplicate', $quotation) }}" data-confirm="Buat salinan draft baru dari quotation {{ $quotation->number }}?">
+                                        @csrf
+                                        <button type="submit" class="btn-action" title="Duplikat Quote" data-tooltip="Duplikat" aria-label="Duplikat Quote">
+                                            <x-icon name="copy"/>
+                                        </button>
+                                    </form>
+                                @endcan
                                 @can('convert', $quotation)
                                     @if(!$quotation->job)
                                         <form method="POST" action="{{ route('quotations.convert', $quotation) }}" data-confirm="Konversi quotation ini ke Job Order? Status job akan langsung Open.">
