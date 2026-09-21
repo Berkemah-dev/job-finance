@@ -31,7 +31,17 @@ class JobService
                 throw ValidationException::withMessages(['job_date' => 'Tanggal job tidak dapat diubah setelah job dibuka.']);
             }
             // Customer, quotation, document number, snapshot and workflow fields are never editable here.
-            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'booking_reference', 'nopen', 'nopen_date', 'npe_number', 'peb_number', 'peb_date', 'commercial_invoice_number', 'commercial_invoice_date', 'packing_list_number', 'packing_list_date', 'invoice_issuer', 'invoice_amount', 'incoterm', 'package_count', 'gross_weight', 'volume', 'container_type', 'container_number', 'vendor_trucking_id', 'vendor_truck_id', 'customer_address_id', 'truck_plate_number', 'driver_name', 'driver_phone', 'vehicle_type', 'delivery_address', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes']));
+            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'booking_reference', 'nopen', 'nopen_date', 'npe_number', 'peb_number', 'peb_date', 'sk_pabean_number', 'commercial_invoice_number', 'commercial_invoice_date', 'packing_list_number', 'packing_list_date', 'invoice_issuer', 'invoice_amount', 'incoterm', 'package_count', 'gross_weight', 'volume', 'container_type', 'container_number', 'vendor_trucking_id', 'vendor_truck_id', 'customer_address_id', 'truck_plate_number', 'driver_name', 'driver_phone', 'vehicle_type', 'delivery_address', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes']));
+            if (!empty($job->vendor_truck_id)) {
+                $vt = \App\Models\VendorTruck::find($job->vendor_truck_id);
+                if ($vt) {
+                    $job->driver_name = $vt->driver_name;
+                    $job->driver_phone = $vt->driver_phone;
+                    if (empty($job->truck_plate_number)) {
+                        $job->truck_plate_number = $vt->plate_number;
+                    }
+                }
+            }
             $job->updated_by = $actor->id;
             $job->lock_version++;
             $job->save();

@@ -137,8 +137,8 @@ class OperationalDocumentController extends Controller
         $quotation->load(['job.customer', 'job.vendorTrucking', 'job.vendorTruck', 'job.customerAddress']);
         abort_unless($quotation->job, 404);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.surat-jalan', ['job' => $quotation->job, 'quotation' => $quotation])->setPaper('a4');
-        $filename = 'Surat_Jalan_'.$quotation->job->number.'.pdf';
-        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Surat Jalan '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
+        $filename = 'Delivery_Order_'.$quotation->job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Delivery Order '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
@@ -192,8 +192,8 @@ class OperationalDocumentController extends Controller
     {
         $job->load(['customer', 'quotation', 'vendorTrucking', 'vendorTruck', 'customerAddress']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.surat-jalan', ['job' => $job, 'quotation' => $job->quotation])->setPaper('a4');
-        $filename = 'Surat_Jalan_'.$job->number.'.pdf';
-        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Surat Jalan '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
+        $filename = 'Delivery_Order_'.$job->number.'.pdf';
+        $master->log($request->user(), 'document.generated', 'Mengunduh PDF Delivery Order '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 
         return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
     }

@@ -46,6 +46,8 @@
     $plText = $plNo ? ($plNo . ($plDate ? ' / ' . $plDate : '')) : '';
 
     $signDate = $job->job_date?->format('d-m-Y') ?? now()->format('d-m-Y');
+    $signSyanneFile = public_path('images/signature-syanne.jpeg');
+    $signSyanneBase64 = file_exists($signSyanneFile) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($signSyanneFile)) : '';
 @endphp
 <!doctype html>
 <html>
@@ -95,7 +97,7 @@
         table.info-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 1.5pt 0 3pt 0;
+            margin: 1pt 0 3pt 0;
         }
         table.info-table td {
             vertical-align: top;
@@ -161,7 +163,7 @@
     <div class="header-title">
         <div class="title-main">SURAT KUASA</div>
         <div class="title-sub">PENGAJUAN PEMBERITAHUAN PABEAN</div>
-        <div class="title-no">No. {{ $job->number }}</div>
+        <div class="title-no">No. {{ $job->sk_pabean_number ?: $job->number }}</div>
     </div>
 
     <div class="paragraph">Yang bertanda-tangan dibawah ini :</div>
@@ -287,7 +289,7 @@
             <td class="sign-left">
                 <div>Penerima Kuasa</div>
                 <div>
-                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo-img" alt="RDX LOGISTICS">
+                    <img src="{{ $signSyanneBase64 ?: public_path('images/signature-syanne.jpeg') }}" class="sign-logo-img" alt="RDX LOGISTICS">
                 </div>
                 <div class="sign-name-bold">SYANNE</div>
                 <div class="sign-role-title">PPJK</div>
@@ -296,8 +298,7 @@
                 <div>Jakarta, <strong>{{ strtoupper($signDate) }}</strong></div>
                 <div style="margin-top: 2pt;">Pemberi Kuasa,</div>
                 <div class="sign-space-empty"></div>
-                <div style="font-weight: bold; font-size: 8.5pt;">NAMA PENANGGUNG JAWAB</div>
-                <div class="sign-name-bold">{{ strtoupper($authorizerName ?: 'STANLEY AUDREY') }}</div>
+                <div class="sign-name-bold">{{ strtoupper($authorizerName ?: 'BUDI SANTOSO') }}</div>
                 <div class="sign-role-title">{{ strtoupper($authorizerTitle ?: 'DIREKTUR') }}</div>
             </td>
         </tr>

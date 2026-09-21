@@ -767,6 +767,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <span>Input Data SK Pabean (Manual)</span>
                             </div>
 
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="sk_pabean_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Surat Kuasa Pabean (Manual)</label>
+                                <input type="text" name="sk_pabean_number" id="sk_pabean_number" maxlength="60" value="{{ old('sk_pabean_number', $job->sk_pabean_number) }}" placeholder="Nomor surat manual (opsional, jika kosong default: nomor Job)" style="font-size: 12.5px;">
+                            </div>
+
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                                 <div class="field">
                                     <label for="commercial_invoice_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Invoice</label>
@@ -940,7 +945,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="report-card-title">
                             <span class="report-icon blue"><x-icon name="file"/></span>
                             <div>
-                                <h2>Surat Jalan</h2>
+                                <h2>Delivery Order</h2>
                                 <small>Delivery order pengantaran barang (Import Sea / Laut)</small>
                             </div>
                         </div>
@@ -958,7 +963,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
                                 <x-icon name="file" style="width: 14px; height: 14px; color: #2563eb;"/>
-                                <span>Input Data Surat Jalan (Import Sea / Delivery)</span>
+                                <span>Input Data Delivery Order (Import Sea / Delivery)</span>
                             </div>
 
                             {{-- 1. Nomor Container Manual --}}
@@ -1027,13 +1032,28 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                                 <div class="field">
                                     <label for="vehicle_type" style="font-size: 11.5px; font-weight: 600; color: #475569;">Jenis Kendaraan</label>
-                                    <input type="text" name="vehicle_type" id="vehicle_type" maxlength="60" value="{{ old('vehicle_type', $job->vehicle_type ?: $job->vendorTruck?->vehicle_type) }}" placeholder="Trailer 20ft / Trailer 40ft" style="font-size: 12.5px;">
+                                    @php
+                                        $currentVehicle = strtoupper(old('vehicle_type', $job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?? '')));
+                                    @endphp
+                                    <select name="vehicle_type" id="vehicle_type" style="font-size: 12.5px;">
+                                        <option value="">— Pilih Jenis Kendaraan —</option>
+                                        <optgroup label="FCL (Full Container Load)">
+                                            <option value="TRAILER" @selected($currentVehicle === 'TRAILER')>TRAILER (FCL)</option>
+                                        </optgroup>
+                                        <optgroup label="LCL (Less than Container Load)">
+                                            <option value="FUSO" @selected($currentVehicle === 'FUSO')>FUSO (LCL)</option>
+                                            <option value="PICKUP" @selected($currentVehicle === 'PICKUP' || $currentVehicle === 'PICK UP')>PICKUP (LCL)</option>
+                                            <option value="BLINDVAN" @selected($currentVehicle === 'BLINDVAN' || $currentVehicle === 'BLIND VAN')>BLINDVAN (LCL)</option>
+                                            <option value="CDD" @selected($currentVehicle === 'CDD')>CDD (LCL)</option>
+                                            <option value="CDE" @selected($currentVehicle === 'CDE')>CDE (LCL)</option>
+                                        </optgroup>
+                                    </select>
                                 </div>
                             </div>
 
                             <div style="display: flex; justify-content: flex-end;">
                                 <button type="submit" class="button button-primary" style="font-size: 12px; padding: 7px 16px;">
-                                    <x-icon name="check"/> Simpan Data Surat Jalan
+                                    <x-icon name="check"/> Simpan Data Delivery Order
                                 </button>
                             </div>
                         </form>
@@ -1055,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div style="padding-top: 6px;">
                     <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank" style="width: 100%; justify-content: center;">
-                        <x-icon name="file"/> Preview / Cetak Surat Jalan
+                        <x-icon name="file"/> Preview / Cetak Delivery Order
                     </a>
                 </div>
             </article>
@@ -1597,14 +1617,18 @@ function onVendorTruckSelected(selectEl) {
     if (!selectedOption || !selectedOption.value) return;
 
     const plateField = document.getElementById('truck_plate_number');
-    const driverField = document.getElementById('driver_name');
-    const phoneField = document.getElementById('driver_phone');
     const typeField = document.getElementById('vehicle_type');
 
     if (plateField && selectedOption.dataset.plate) plateField.value = selectedOption.dataset.plate;
-    if (driverField && selectedOption.dataset.driver) driverField.value = selectedOption.dataset.driver;
-    if (phoneField && selectedOption.dataset.phone !== undefined) phoneField.value = selectedOption.dataset.phone;
-    if (typeField && selectedOption.dataset.type !== undefined) typeField.value = selectedOption.dataset.type;
+    if (typeField && selectedOption.dataset.type) {
+        const rawType = selectedOption.dataset.type.toUpperCase().replace(/\s+/g, '');
+        for (let opt of typeField.options) {
+            if (opt.value && (rawType.includes(opt.value) || opt.value.includes(rawType))) {
+                typeField.value = opt.value;
+                break;
+            }
+        }
+    }
 }
 </script>
 

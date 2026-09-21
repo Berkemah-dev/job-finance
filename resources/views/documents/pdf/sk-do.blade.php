@@ -19,6 +19,8 @@
     $commodity = $job->cargo_description ?: ($quotation?->commodity ?? '');
     
     $signDate = $job->job_date?->format('d-m-Y') ?? now()->format('d-m-Y');
+    $signSyanneFile = public_path('images/signature-syanne.jpeg');
+    $signSyanneBase64 = file_exists($signSyanneFile) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($signSyanneFile)) : '';
 @endphp
 <!doctype html>
 <html>
@@ -233,7 +235,7 @@
             <td class="sign-left">
                 <div>Penerima Kuasa</div>
                 <div>
-                    <img src="{{ public_path('images/signature-syanne.jpeg') }}" class="sign-logo-img" alt="RDX LOGISTICS">
+                    <img src="{{ $signSyanneBase64 ?: public_path('images/signature-syanne.jpeg') }}" class="sign-logo-img" alt="RDX LOGISTICS">
                 </div>
                 <div class="sign-name-bold">SYANNE</div>
                 <div class="sign-role-title">PPJK</div>
@@ -242,8 +244,7 @@
                 <div>Jakarta, <strong>{{ strtoupper($signDate) }}</strong></div>
                 <div style="margin-top: 2pt;">Pemberi Kuasa,</div>
                 <div class="sign-space-empty"></div>
-                <div style="font-weight: bold; font-size: 9pt;">NAMA PENANGGUNG JAWAB</div>
-                <div class="sign-name-bold">{{ strtoupper($authorizerName ?: 'STANLEY AUDREY') }}</div>
+                <div class="sign-name-bold">{{ strtoupper($authorizerName ?: 'BUDI SANTOSO') }}</div>
                 <div class="sign-role-title">{{ strtoupper($authorizerTitle ?: 'DIREKTUR') }}</div>
             </td>
         </tr>
