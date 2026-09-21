@@ -199,6 +199,6 @@ class JobController extends Controller
 
         return $request->query('mode') === 'download'
             ? $pdf->download($filename)
-            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 }

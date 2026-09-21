@@ -24,7 +24,7 @@
     @endif
     <form method="POST" action="{{ route('dnps.destroy', $dnp) }}" data-confirm="Hapus DNP {{ $dnp->number }}?" style="display:inline;">
         @csrf @method('DELETE')
-        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;">Hapus</button>
+        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;color:#ffffff !important;font-weight:600;">Hapus</button>
     </form>
 </div>
 

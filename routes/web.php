@@ -113,6 +113,7 @@ Route::middleware('auth')->group(function () {
     foreach (['approve', 'reject', 'revise'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.approve')->name('quotations.'.$action);
     }
+    Route::get('/quotations/{quotation}/approve', fn(Quotation $quotation) => redirect()->route('quotations.show', $quotation));
     Route::post('/quotations/{quotation}/convert', [QuotationController::class, 'convert'])->middleware(['can:quotations.manage', 'can:jobs.manage'])->name('quotations.convert');
     // Booking Confirmation
     Route::resource('booking-confirmations', BookingConfirmationController::class)->middleware('can:jobs.view');
