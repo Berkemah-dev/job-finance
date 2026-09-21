@@ -25,7 +25,7 @@
     @endif
     <form method="POST" action="{{ route('bills-of-lading.destroy', $bl) }}" data-confirm="Hapus B/L {{ $bl->number }}?" style="display:inline;">
         @csrf @method('DELETE')
-        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;">Hapus</button>
+        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;color:#ffffff !important;font-weight:600;">Hapus</button>
     </form>
 </div>
 

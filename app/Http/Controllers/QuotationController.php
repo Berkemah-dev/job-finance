@@ -132,6 +132,10 @@ class QuotationController extends Controller
 
     public function approve(VersionRequest $request, Quotation $quotation, QuotationService $service)
     {
+        if ($quotation->status === QuotationStatus::Approved) {
+            return redirect()->route('quotations.show', $quotation)->with('info', 'Quotation ini sudah berstatus disetujui.');
+        }
+
         return $this->change($request, $quotation, $service, 'approve');
     }
 

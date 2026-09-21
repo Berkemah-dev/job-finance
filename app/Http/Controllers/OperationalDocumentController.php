@@ -152,7 +152,7 @@ class OperationalDocumentController extends Controller
         $filename = 'Tanda_Terima_'.ucfirst($type).'_'.$quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.ucfirst($type).' '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function skDoPdf(Request $request, Quotation $quotation, MasterDataService $master)
@@ -163,7 +163,7 @@ class OperationalDocumentController extends Controller
         $filename = 'SK_DO_'.$quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK DO '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function dnpPdf(Request $request, Quotation $quotation, MasterDataService $master)
@@ -174,7 +174,7 @@ class OperationalDocumentController extends Controller
         $filename = 'DNP_'.$quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF DNP '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function skPabeaPdf(Request $request, Quotation $quotation, MasterDataService $master)
@@ -185,7 +185,7 @@ class OperationalDocumentController extends Controller
         $filename = 'SK_Pabean_'.$quotation->job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK Pabean '.$quotation->job->number, ['module' => 'document', 'record_id' => $quotation->job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function jobSuratJalanPdf(Request $request, Job $job, MasterDataService $master)
@@ -195,7 +195,7 @@ class OperationalDocumentController extends Controller
         $filename = 'Delivery_Order_'.$job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF Delivery Order '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function jobTandaTerimaPdf(Request $request, Job $job, MasterDataService $master)
@@ -206,7 +206,7 @@ class OperationalDocumentController extends Controller
         $filename = 'Tanda_Terima_'.ucfirst($type).'_'.$job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF Tanda Terima '.ucfirst($type).' '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function jobSkDoPdf(Request $request, Job $job, MasterDataService $master)
@@ -216,7 +216,7 @@ class OperationalDocumentController extends Controller
         $filename = 'SK_DO_'.$job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK DO '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function jobDnpPdf(Request $request, Job $job, MasterDataService $master)
@@ -226,7 +226,7 @@ class OperationalDocumentController extends Controller
         $filename = 'DNP_'.$job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF DNP '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function jobSkPabeanPdf(Request $request, Job $job, MasterDataService $master)
@@ -236,7 +236,7 @@ class OperationalDocumentController extends Controller
         $filename = 'SK_Pabean_'.$job->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF SK Pabean '.$job->number, ['module' => 'job_order', 'record_id' => $job->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function invoicePdf(Request $request, \App\Models\Invoice $invoice, MasterDataService $master)
@@ -246,7 +246,7 @@ class OperationalDocumentController extends Controller
         $filename = 'Invoice_'.$invoice->number.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF Invoice '.$invoice->number, ['module' => 'document', 'record_id' => $invoice->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function soaPdf(Request $request, string $customerId, MasterDataService $master)
@@ -260,6 +260,6 @@ class OperationalDocumentController extends Controller
         $filename = 'SOA_'.$customer->code.'_'.$from->format('Ymd').'-'.$to->format('Ymd').'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF SOA '.$customer->name, ['module' => 'document', 'record_id' => $customer->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 }

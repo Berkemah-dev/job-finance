@@ -949,6 +949,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div style="display:flex; gap:6px; justify-content:center;">
                                         <a class="button button-secondary button-sm" href="{{ route('dnps.show', $dnp) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('dnps.edit', $dnp) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('dnps.pdf', $dnp) }}" target="_blank">Cetak PDF</a>
                                     </div>
                                 </td>
                             </tr>
