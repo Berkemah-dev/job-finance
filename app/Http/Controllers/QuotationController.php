@@ -11,7 +11,9 @@ use App\Models\ChargeType;
 use App\Models\Port;
 use App\Models\Quotation;
 use App\Models\ServiceType;
+use App\Models\TruckingPrice;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Services\MasterDataService;
 use App\Services\QuotationService;
 use Illuminate\Http\Request;
@@ -57,6 +59,7 @@ class QuotationController extends Controller
             'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
+            'truckingVendors' => $this->truckingVendors(),
         ]);
     }
 
@@ -111,6 +114,7 @@ class QuotationController extends Controller
             'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
+            'truckingVendors' => $this->truckingVendors(),
         ]);
     }
 
@@ -194,6 +198,18 @@ class QuotationController extends Controller
         return User::whereHas('role', function ($q) {
             $q->whereIn('name', ['sales', 'sales-manager']);
         })->orderBy('name')->get(['id', 'name']);
+    }
+
+    private function truckingVendors()
+    {
+        return Vendor::where('is_active', true)
+            ->where(function ($q) {
+                $q->whereIn('type', ['trucking', 'both'])
+                    ->orWhereHas('categories', fn ($c) => $c->whereIn('category', ['trucking', 'both']))
+                    ->orWhereIn('id', TruckingPrice::select('vendor_id'));
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
     }
 
     public function convert(VersionRequest $request, Quotation $quotation, QuotationService $service)

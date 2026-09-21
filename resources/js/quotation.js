@@ -103,6 +103,7 @@ if (form) {
     const truckingDestination = document.getElementById('input_trucking_destination');
     const truckingContainer = document.getElementById('input_trucking_container_type');
     const truckingOverweight = document.getElementById('input_trucking_overweight');
+    const truckingVendor = document.getElementById('input_trucking_vendor');
     const fetchTruckingButton = document.getElementById('btn_fetch_trucking');
     const truckingStatus = document.getElementById('trucking_pricing_status');
     const truckingVendorBadge = document.getElementById('trucking_pricing_vendor');
@@ -160,6 +161,9 @@ if (form) {
                 container_type: truckingContainer.value,
                 overweight: truckingOverweight.value,
             });
+            if (truckingVendor && truckingVendor.value) {
+                params.set('vendor_id', truckingVendor.value);
+            }
             const response = await fetch(`${endpoint}?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             const data = await response.json();
             if (!response.ok || !data.found) {
@@ -201,7 +205,7 @@ if (form) {
         truckingTimer = setTimeout(fetchTruckingPrice, 350);
     }
     [truckingOrigin, truckingDestination].forEach(input => input?.addEventListener('input', scheduleTruckingLookup));
-    [truckingContainer, truckingOverweight].forEach(input => input?.addEventListener('change', scheduleTruckingLookup));
+    [truckingContainer, truckingOverweight, truckingVendor].forEach(input => input?.addEventListener('change', scheduleTruckingLookup));
     fetchTruckingButton?.addEventListener('click', fetchTruckingPrice);
     inputDesc?.addEventListener('change', syncTruckingFields);
     syncTruckingFields();
@@ -427,6 +431,7 @@ if (form) {
         if (inputCurrency) { inputCurrency.value = 'IDR'; syncCurrencyInputs(); }
         if (truckingOrigin) truckingOrigin.value = '';
         if (truckingDestination) truckingDestination.value = '';
+        if (truckingVendor) truckingVendor.value = '';
         truckingPricing = null;
         syncTruckingFields();
         inputDesc?.focus();

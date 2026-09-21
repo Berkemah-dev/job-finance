@@ -116,10 +116,9 @@
     @endcan
     @if($job->status==='open' && !$job->do_confirmed_at)
         @can('jobs.confirm-do')
-            <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?">
-                @csrf
-                <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">DO Selesai</button>
-            </form>
+            <button type="button" class="button button-primary" style="background:#16a34a;border-color:#16a34a" onclick="document.getElementById('modal-confirm-do').showModal()">
+                <x-icon name="check"/> DO Selesai
+            </button>
         @endcan
     @elseif($job->do_confirmed_at)
         <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
@@ -205,7 +204,53 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
                 <button type="button" class="button button-secondary" onclick="document.getElementById('modal-reopen-job').close()">Batal</button>
-                <button type="submit" class="button button-danger" style="background: #dc2626; border-color: #dc2626;">Ya, Buka Kembali Job</button>
+                <button type="submit" class="button button-danger" style="background: #dc2626; border-color: #dc2626; color: #ffffff !important; font-weight: 600;">Ya, Buka Kembali Job</button>
+            </div>
+        </form>
+    </dialog>
+    @endif
+@endcan
+
+@can('jobs.confirm-do')
+    @if($job->status === 'open' && !$job->do_confirmed_at)
+    @php
+        $hasSj = $job->hasSuratJalanDocument();
+    @endphp
+    <dialog id="modal-confirm-do" class="modal-dialog" style="max-width: 520px !important; border: none; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+        <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" enctype="multipart/form-data">
+            @csrf
+            <div style="padding: 18px 24px; border-bottom: 1px solid #dcfce7; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">📦</span>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #166534;">Konfirmasi DO Selesai</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('modal-confirm-do').close()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #166534;">✕</button>
+            </div>
+            <div style="padding: 20px 24px;">
+                <p style="font-size: 13.5px; color: #374151; margin-top: 0; line-height: 1.5;">
+                    Konfirmasi bahwa pengiriman <strong>Delivery Order (DO)</strong> untuk job <strong>{{ $job->number }}</strong> telah selesai dan barang telah diterima oleh customer.
+                </p>
+
+                @if(!$hasSj)
+                    <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+                        <label for="modal_surat_jalan_file" style="font-size: 12.5px; font-weight: 700; color: #991b1b; display: block; margin-bottom: 4px;">
+                            Upload Berkas Surat Jalan (Wajib) <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="file" name="surat_jalan_file" id="modal_surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #fca5a5; border-radius: 6px; background: #fff; width: 100%; box-sizing: border-box;">
+                        <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 4px;">Wajib melampirkan foto/scan Surat Jalan yang telah ditandatangani sebelum konfirmasi selesai.</small>
+                    </div>
+                @else
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12.5px; color: #166534; display: flex; align-items: center; gap: 8px;">
+                        <span>✓</span>
+                        <span>Berkas Surat Jalan fisik sudah diunggah di sistem.</span>
+                    </div>
+                @endif
+            </div>
+            <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <button type="button" class="button button-secondary" onclick="document.getElementById('modal-confirm-do').close()">Batal</button>
+                <button type="submit" class="button button-primary" style="background: #16a34a; border-color: #16a34a;">
+                    <x-icon name="check"/> Ya, Konfirmasi DO Selesai
+                </button>
             </div>
         </form>
     </dialog>
@@ -274,26 +319,26 @@ document.addEventListener('DOMContentLoaded', function() {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
             @foreach($checklist['items'] as $item)
                 @php
-                    $isRed = !$item['completed'] && ($item['badge_bg'] === '#fee2e2' || ($item['active'] ?? false));
-                    $boxBorder = $item['completed'] ? '#bbf7d0' : ($isRed ? '#fca5a5' : '#e2e8f0');
-                    $boxBg = $item['completed'] ? '#f0fdf4' : ($isRed ? '#fff5f5' : '#f8fafc');
-                    $badgeBorder = $item['completed'] ? '#86efac' : ($isRed ? '#fca5a5' : '#cbd5e1');
+                    $isCompleted = (bool) ($item['completed'] ?? false);
+                    $boxBorder = $isCompleted ? '#bbf7d0' : '#fca5a5';
+                    $boxBg = $isCompleted ? '#f0fdf4' : '#fef2f2';
+                    $badgeBorder = $isCompleted ? '#86efac' : '#fca5a5';
+                    $badgeBg = $isCompleted ? ($item['badge_bg'] ?? '#dcfce7') : '#fee2e2';
+                    $badgeColor = $isCompleted ? ($item['badge_color'] ?? '#166534') : '#b91c1c';
                 @endphp
-                <div style="padding: 10px 14px; border-radius: 8px; border: 1px solid {{ $boxBorder }}; background: {{ $boxBg }}; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="padding: 10px 14px; border-radius: 8px; border: 1.5px solid {{ $boxBorder }}; background: {{ $boxBg }}; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                     <div>
                         <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-                            @if($item['completed'])
+                            @if($isCompleted)
                                 <span style="color: #16a34a; font-size: 12px;">●</span>
-                            @elseif($isRed)
-                                <span style="color: #dc2626; font-size: 12px;">●</span>
                             @else
-                                <span style="color: #94a3b8; font-size: 12px;">●</span>
+                                <span style="color: #dc2626; font-size: 12px;">●</span>
                             @endif
                             {{ $item['label'] }}
                         </div>
-                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">{{ $item['sublabel'] }}</div>
+                        <div style="font-size: 11.5px; color: {{ $isCompleted ? '#64748b' : '#991b1b' }}; margin-top: 2px;">{{ $item['sublabel'] }}</div>
                     </div>
-                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $item['badge_bg'] }}; color: {{ $item['badge_color'] }}; border: 1px solid {{ $badgeBorder }}; white-space: nowrap;">
+                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $badgeBg }}; color: {{ $badgeColor }}; border: 1px solid {{ $badgeBorder }}; white-space: nowrap;">
                         {{ $item['badge_text'] }}
                     </span>
                 </div>

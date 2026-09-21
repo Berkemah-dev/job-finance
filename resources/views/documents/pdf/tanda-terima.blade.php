@@ -32,6 +32,7 @@
             'DOKUMEN PABEAN (PIB / PEB / SPPB / NPE)',
             'SURAT KUASA & DELIVERY ORDER',
         ];
+    }
     $bannerFile = public_path('images/rdx-banner.png');
     $altLogoFile = public_path('images/rdx-header-logo.jpg');
     if (file_exists($bannerFile)) {

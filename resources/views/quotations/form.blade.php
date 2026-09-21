@@ -130,11 +130,22 @@
 
     <div id="trucking-pricing-fields" hidden style="margin-top: 14px; padding: 14px; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff;">
         <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; margin-bottom: 10px;">Tarif Trucking dari Master Harga</div>
-        <div style="display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items:end;">
+        <div style="display:grid; grid-template-columns: repeat({{ $canManageCost ? 5 : 4 }}, minmax(0, 1fr)); gap: 12px; align-items:end;">
             <div class="field"><label for="input_trucking_origin">Asal / POL <span class="required">*</span></label><input id="input_trucking_origin" type="text" placeholder="Contoh: PRIOK" autocomplete="off"></div>
             <div class="field"><label for="input_trucking_destination">Tujuan / POD <span class="required">*</span></label><input id="input_trucking_destination" type="text" placeholder="Contoh: SURABAYA" autocomplete="off"></div>
             <div class="field"><label for="input_trucking_container_type">Tipe Armada <span class="required">*</span></label><select id="input_trucking_container_type">@foreach($containerUnits ?? \App\Models\ContainerUnit::options() as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
             <div class="field"><label for="input_trucking_overweight">Kategori <span class="required">*</span></label><select id="input_trucking_overweight"><option value="0">Normal</option><option value="1">Overweight</option></select></div>
+            @if($canManageCost)
+            <div class="field">
+                <label for="input_trucking_vendor">Pilihan Vendor (Modal)</label>
+                <select id="input_trucking_vendor">
+                    <option value="">-- Rekomendasi / Termurah --</option>
+                    @foreach($truckingVendors ?? [] as $vendor)
+                        <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
         </div>
         <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px;">
             <button type="button" class="button button-secondary" id="btn_fetch_trucking" style="padding: 7px 14px;">Ambil harga trucking</button>
@@ -156,8 +167,8 @@
 #single-item-input-panel .form-grid > .field > input,
 #single-item-input-panel .form-grid > .field > select { width: 100%; min-height: 44px; height: 44px; box-sizing: border-box; }
 #trucking-pricing-fields input, #trucking-pricing-fields select { width:100%; min-height:44px; height:44px; box-sizing:border-box; }
-@media (max-width: 900px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
-@media (max-width: 560px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: 1fr !important; } }
+@media (max-width: 1024px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+@media (max-width: 640px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: 1fr !important; } }
 </style>
 
 {{-- DAFTAR ITEM PENAWARAN (TABEL SUBMITTED ITEMS) --}}

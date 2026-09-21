@@ -478,114 +478,86 @@
     </div>
 </section>
 
-{{-- MODAL ADD PAYMENT (DESAIN BERSIH & RAPI SESUAI TEMA APLIKASI WEB) --}}
+{{-- MODAL ADD PAYMENT (DESAIN SESUAI IMAGE 9 CLIENT) --}}
 @if($invoice->status !== 'paid')
-<dialog id="modal-add-payment" class="modal-dialog" style="max-width: 560px !important; width: calc(100% - 32px); border: 1px solid #e2e8f0; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25); background: #ffffff; position: fixed; inset: 0; margin: auto; overflow: hidden;">
-    {{-- Header Modal --}}
-    <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #eff6ff; color: #2563eb; font-size: 18px; border: 1px solid #dbeafe;">
-                💳
-            </div>
-            <div>
-                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a;">Catat Pembayaran Invoice</h3>
-                <p style="margin: 2px 0 0; font-size: 11.5px; color: #64748b;">Pelunasan tagihan & potongan PPh 23</p>
-            </div>
-        </div>
-        <button type="button" onclick="document.getElementById('modal-add-payment').close()" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; display: grid; place-items: center; cursor: pointer; font-size: 13px; transition: all .15s ease;" onmouseover="this.style.background='#fee2e2';this.style.color='#ef4444';" onmouseout="this.style.background='#fff';this.style.color='#64748b';">✕</button>
-    </div>
-
-    <form method="POST" action="{{ route('payments.store', $invoice) }}" style="padding: 16px 20px 18px; margin: 0;">
+<dialog id="modal-add-payment" class="modal-dialog" style="max-width: 620px !important; width: calc(100% - 32px); border: 2px solid #3b82f6; border-radius: 8px; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); background: #ffffff; position: fixed; inset: 0; margin: auto; overflow: hidden;">
+    <form method="POST" action="{{ route('payments.store', $invoice) }}" style="margin: 0; padding: 0;">
         @csrf
         <input type="hidden" name="lock_version" value="{{ $invoice->lock_version }}">
         <input type="hidden" name="method" value="transfer">
 
-        {{-- Summary Info Card Invoice --}}
-        <div style="display: grid; grid-template-columns: 1.1fr 1.6fr 1.3fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; align-items: center;">
-            <div>
-                <span style="display: block; font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">No. Invoice</span>
-                <strong style="font-size: 12.5px; color: #0f172a; font-weight: 700;">{{ $invoice->number }}</strong>
+        {{-- SECTION 1: DATA INVOICE --}}
+        <div style="background: #4682b4; color: #ffffff; padding: 8px 16px; font-weight: bold; font-size: 13.5px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 14px;">📋</span>
+                <span>Data Invoice</span>
             </div>
-            <div>
-                <span style="display: block; font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Customer</span>
-                <strong style="font-size: 12px; color: #334155; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $invoice->customer_snapshot['name'] }}">{{ $invoice->customer_snapshot['name'] }}</strong>
+            <button type="button" onclick="document.getElementById('modal-add-payment').close()" style="background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; font-weight: bold;">✕</button>
+        </div>
+
+        <div style="padding: 16px 22px; background: #ffffff; border-bottom: 1px solid #cbd5e1;">
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 10px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">#Inv. No :</label>
+                <input type="text" value="{{ $invoice->number }}" disabled style="max-width: 240px; background: #f8fafc; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 13px; font-weight: 600; border-radius: 3px; color: #0f172a;">
             </div>
-            <div style="text-align: right;">
-                <span style="display: block; font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Sisa Tagihan</span>
-                <strong style="font-size: 13px; color: #2563eb; font-weight: 800; font-family: monospace;">{{ $invoice->currency }} {{ \App\Support\Money::format($invoice->balance) }}</strong>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 10px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Customer :</label>
+                <input type="text" value="{{ $invoice->customer_snapshot['name'] }}" disabled style="width: 100%; max-width: 420px; background: #fef3c7; border: 1px solid #d97706; padding: 5px 10px; font-size: 12.5px; font-weight: 600; border-radius: 3px; color: #78350f;">
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Billing :</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="text" value="{{ \App\Support\Money::format($invoice->balance) }}" disabled style="width: 140px; text-align: right; background: #fef3c7; border: 1px solid #d97706; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; color: #78350f; font-family: monospace;">
+                    <span style="border: 1px solid #94a3b8; background: #f8fafc; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 3px; color: #334155;">{{ $invoice->currency }}</span>
+                </div>
             </div>
         </div>
 
-        {{-- Form Grid Input Data Payment --}}
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px;">
-            {{-- Tanggal Bayar --}}
-            <div class="field" style="margin: 0;">
-                <label for="pay_date" style="display: block; font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                    Tanggal Pembayaran <span style="color:#ef4444;">*</span>
-                </label>
-                <input type="date" id="pay_date" name="payment_date" min="{{ $invoice->invoice_date->format('Y-m-d') }}" max="{{ today()->toDateString() }}" value="{{ old('payment_date', today()->toDateString()) }}" required style="width: 100%; height: 35px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; box-sizing: border-box; background: #fff;">
+        {{-- SECTION 2: DATA PAYMENT --}}
+        <div style="background: #4682b4; color: #ffffff; padding: 8px 16px; font-weight: bold; font-size: 13.5px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px;">📋</span>
+            <span>Data Payment</span>
+        </div>
+
+        <div style="padding: 18px 22px 20px; background: #ffffff;">
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Payment Date :</label>
+                <input type="date" name="payment_date" value="{{ old('payment_date', today()->toDateString()) }}" required style="width: 170px; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 12.5px; border-radius: 3px; background: #fff;">
             </div>
 
-            {{-- Jumlah Bayar --}}
-            <div class="field" style="margin: 0;">
-                <label for="pay_amount" style="display: block; font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                    Jumlah Bayar (Kas/Bank) <span style="color:#ef4444;">*</span>
-                </label>
-                <input type="number" id="pay_amount" name="amount" min="0.01" max="{{ $invoice->balance }}" step="0.01" value="{{ old('amount', $invoice->balance) }}" required style="width: 100%; height: 35px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 700; font-family: monospace; box-sizing: border-box; background: #fff;">
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Payment Amount :</label>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <input type="number" id="pay_amount" name="amount" min="0.01" max="{{ $invoice->balance }}" step="0.01" value="{{ old('amount', $invoice->balance) }}" required style="width: 140px; text-align: right; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; background: #fff;">
+                    <select name="currency" id="pay_currency" style="border: 1px solid #94a3b8; padding: 5px 8px; font-size: 12.5px; font-weight: 600; border-radius: 3px; background: #fff;">
+                        <option value="IDR" @selected($invoice->currency === 'IDR')>IDR</option>
+                        <option value="USD" @selected($invoice->currency === 'USD')>USD</option>
+                        <option value="SGD" @selected($invoice->currency === 'SGD')>SGD</option>
+                    </select>
+                    <label style="font-weight: bold; font-size: 12.5px; color: #334155; margin-left: 6px;">Exc. Rate :</label>
+                    <input type="number" name="exchange_rate" id="pay_rate" step="0.0001" min="0.0001" value="{{ old('exchange_rate', $invoice->currency === 'IDR' ? '1' : ($invoice->exchange_rate ?? '1')) }}" style="width: 90px; text-align: center; border: 1px solid #94a3b8; padding: 5px 8px; font-size: 12.5px; border-radius: 3px; font-family: monospace; background: #fff;">
+                </div>
             </div>
 
-            {{-- Mata Uang --}}
-            <div class="field" style="margin: 0;">
-                <label for="pay_currency" style="display: block; font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                    Mata Uang <span style="color:#ef4444;">*</span>
-                </label>
-                <select id="pay_currency" name="currency" required style="width: 100%; height: 35px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 600; box-sizing: border-box; background: #fff;">
-                    <option value="IDR" @selected($invoice->currency === 'IDR')>IDR (Rupiah)</option>
-                    <option value="USD" @selected($invoice->currency === 'USD')>USD (US Dollar)</option>
-                    <option value="SGD" @selected($invoice->currency === 'SGD')>SGD (Singapore Dollar)</option>
-                    <option value="EUR" @selected($invoice->currency === 'EUR')>EUR (Euro)</option>
-                </select>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">PPH 23 :</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="number" id="pay_pph23" name="pph23_amount" min="0" step="0.01" value="{{ old('pph23_amount', '0') }}" placeholder="0" style="width: 140px; text-align: right; border: 1px solid #d97706; background: #fef3c7; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; color: #78350f;">
+                    <span style="border: 1px solid #94a3b8; background: #f8fafc; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 3px; color: #334155;">IDR</span>
+                    <small style="color: #64748b; font-size: 11px; margin-left: 6px;">(Auto jurnal ke COA PPH 23 Dibayar Dimuka)</small>
+                </div>
             </div>
 
-            {{-- Kurs --}}
-            <div class="field" style="margin: 0;">
-                <label for="pay_rate" style="display: block; font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                    Kurs / Nilai Tukar <span style="color:#ef4444;">*</span>
-                </label>
-                <input type="number" id="pay_rate" name="exchange_rate" step="0.0001" min="0.0001" value="{{ old('exchange_rate', $invoice->currency === 'IDR' ? '1' : ($invoice->exchange_rate ?? '1')) }}" placeholder="1" required style="width: 100%; height: 35px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-family: monospace; box-sizing: border-box; background: #fff;" title="Kurs ke Rupiah">
-            </div>
-
-            {{-- PPH 23 --}}
-            <div class="field" style="margin: 0;">
-                <label for="pay_pph23" style="display: block; font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                    Potongan PPH 23 (IDR)
-                </label>
-                <input type="number" id="pay_pph23" name="pph23_amount" min="0" step="0.01" value="{{ old('pph23_amount', '0') }}" placeholder="0.00" style="width: 100%; height: 35px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 600; font-family: monospace; box-sizing: border-box; background: #fff;">
-                <small style="display: block; font-size: 10px; color: #64748b; margin-top: 3px;">Auto jurnal ke <strong>11192 - PPH 23 Dimuka</strong></small>
-            </div>
-
-            {{-- Referensi --}}
-            <div class="field" style="margin: 0;">
-                <label for="pay_ref" style="display: block; font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                    No. Referensi / Berita Transfer <span style="font-weight: 400; color: #94a3b8;">(Opsional)</span>
-                </label>
-                <input type="text" id="pay_ref" name="reference" value="{{ old('reference') }}" placeholder="cth: Ref No. 892019 / Bukti Transfer" maxlength="100" style="width: 100%; height: 35px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; box-sizing: border-box; background: #fff;">
-            </div>
-
-            {{-- Bank/Kas (Full Width) --}}
-            <div class="field" style="grid-column: span 2; margin: 0;">
-                <label for="pay_bank" style="display: block; font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                    Rekening Penerimaan (Bank / Kas) <span style="color:#ef4444;">*</span>
-                </label>
-                <select id="pay_bank" name="deposit_account" required style="width: 100%; height: 35px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; box-sizing: border-box; background: #fff;">
-                    <option value="">-- Pilih Rekening Penerimaan --</option>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 20px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Bank/Cash :</label>
+                <select id="pay_bank" name="deposit_account" required style="width: 100%; max-width: 420px; border: 1px solid #94a3b8; padding: 6px 10px; font-size: 12.5px; border-radius: 3px; background: #fff;">
                     @foreach($bankAccounts as $acc)
                         @php
                             $displayName = $acc->name;
-                            if (str_contains($acc->code, '11121')) $displayName = 'BCA IDR - 240-0375-758 (11121)';
-                            elseif (str_contains($acc->code, '11122')) $displayName = 'MANDIRI IDR - 115-00-1053704-3 (11122)';
-                            elseif (str_contains($acc->code, '11123')) $displayName = 'BCA USD - 240-0386-172 (11123)';
-                            elseif (str_contains($acc->code, '11101')) $displayName = 'PETTY CASH (-) (11101)';
+                            if (str_contains($acc->code, '11121')) $displayName = 'BCA IDR - 240-0375-758 - IDR';
+                            elseif (str_contains($acc->code, '11122')) $displayName = 'MANDIRI IDR - 115-00-1053704-3 - IDR';
+                            elseif (str_contains($acc->code, '11123')) $displayName = 'BCA USD - 240-0386-172 - USD';
+                            elseif (str_contains($acc->code, '11101')) $displayName = 'PETTY CASH - IDR';
                             else $displayName = $acc->name . ' (' . $acc->code . ')';
                         @endphp
                         <option value="{{ $acc->id }}" @selected(old('deposit_account') == $acc->id || (empty(old('deposit_account')) && str_contains($acc->code, '11121')))>
@@ -594,14 +566,16 @@
                     @endforeach
                 </select>
             </div>
-        </div>
 
-        {{-- Footer Actions --}}
-        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
-            <button type="button" class="button button-secondary" onclick="document.getElementById('modal-add-payment').close()">Batal</button>
-            <button type="submit" class="button button-primary">
-                <x-icon name="check"/> Simpan Pembayaran
-            </button>
+            {{-- ACTION BUTTONS SESUAI GAMBAR 9 --}}
+            <div style="display: flex; justify-content: flex-start; gap: 10px; padding-left: 132px;">
+                <button type="submit" style="background: #059669; color: #ffffff; border: 1px solid #047857; padding: 7px 22px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    <span>💾</span> Save
+                </button>
+                <button type="button" onclick="document.getElementById('modal-add-payment').close()" style="background: #dc2626; color: #ffffff; border: 1px solid #b91c1c; padding: 7px 22px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    <span>✖</span> Cancel
+                </button>
+            </div>
         </div>
     </form>
 </dialog>
@@ -635,7 +609,7 @@
             </div>
             <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
                 <button type="button" class="button button-secondary" onclick="document.getElementById('modal-reopen-job').close()">Batal</button>
-                <button type="submit" class="button button-danger" style="background: #dc2626; border-color: #dc2626;">Ya, Buka Kembali Job</button>
+                <button type="submit" class="button button-danger" style="background: #dc2626; border-color: #dc2626; color: #ffffff !important; font-weight: 600;">Ya, Buka Kembali Job</button>
             </div>
         </form>
     </dialog>
