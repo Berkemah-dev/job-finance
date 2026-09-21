@@ -37,7 +37,7 @@
 @if($quotation->rejection_reason)<div class="detail-notes"><strong>Alasan penolakan</strong><br>{{ $quotation->rejection_reason }}</div>@endif
 </section>
 <div class="quote-actions">
-@can('update',$quotation)<a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">{{ in_array($quotation->status, [\App\Enums\QuotationStatus::Approved, \App\Enums\QuotationStatus::Converted], true) ? 'Edit Quotation' : 'Edit draft' }}</a>@endcan
+@can('update',$quotation)<a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">{{ in_array($quotation->status, [\App\Enums\QuotationStatus::Approved, \App\Enums\QuotationStatus::Converted, \App\Enums\QuotationStatus::Submitted], true) ? 'Edit Quotation' : 'Edit draft' }}</a>@endcan
 <form method="POST" action="{{ route('quotations.duplicate',$quotation) }}" data-confirm="Buat salinan draft baru dari quotation ini?">@csrf<button class="button button-secondary">Duplikat draft</button></form>
 <a class="button button-secondary" href="{{ route('quotations.preview',$quotation) }}" target="_blank">🖨 Preview PDF</a>
 @can('submit',$quotation)<form method="POST" action="{{ route('quotations.submit',$quotation) }}" data-confirm="Ajukan quotation ini? Draft tidak dapat diedit setelah diajukan.">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Ajukan quotation</button></form>@endcan
@@ -55,6 +55,11 @@
         <span class="badge-pill" style="background:#fee2e2;color:#991b1b;padding:8px 14px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;"><x-icon name="x" style="width:14px;height:14px;"/> Job Order {{ $quotation->job->number }} telah Dibatalkan</span>
     @else
         <a class="button button-primary" href="{{ route('jobs.show',$quotation->job) }}">Lihat {{ $quotation->job->number }} <x-icon name="arrow"/></a>
+        @can('cancel', $quotation->job)
+            <button type="button" class="button button-danger" onclick="document.getElementById('modal-cancel-job-quote').showModal()">
+                <x-icon name="x"/> Batalkan Job Order
+            </button>
+        @endcan
     @endif
 @endif
 </div>
@@ -97,6 +102,7 @@
                         $qty = (float)$item->quantity;
                         $sellIdr = (float)$item->unit_price * $rate;
                         $currentCost = (float)($item->unit_cost ?? 0);
+                        $formattedCost = $currentCost > 0 ? number_format($currentCost, 0, ',', '.') : '0';
                     @endphp
                     <tr style="border-bottom: 1px solid #f1f5f9;" data-item-row data-qty="{{ $qty }}" data-rate="{{ $rate }}" data-sell="{{ $sellIdr }}">
                         <td style="padding: 12px;">
@@ -108,7 +114,7 @@
                             Rp {{ \App\Support\Money::format($sellIdr) }}
                         </td>
                         <td style="padding: 12px; text-align: right;">
-                            <input type="number" step="0.01" min="0" name="items[{{ $item->id }}][unit_cost]" value="{{ $currentCost }}" required class="approve-cost-input" style="width: 100%; text-align: right; padding: 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="0">
+                            <input type="text" inputmode="numeric" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" required class="approve-cost-input" style="width: 100%; text-align: right; padding: 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="0" autocomplete="off">
                         </td>
                         <td style="padding: 12px; text-align: right; font-weight: 700; color: #475569;" data-row-cost-total>
                             Rp {{ \App\Support\Money::format($currentCost * $qty * $rate) }}
@@ -151,7 +157,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const dialog = document.getElementById('modal-approve-quotation');
     if (!dialog) return;
 
-    // Tutup modal ketika mengklik area backdrop di luar box
     dialog.addEventListener('click', function(e) {
         const rect = dialog.getBoundingClientRect();
         const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height && rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
@@ -163,6 +168,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalCostEl = document.getElementById('preview-total-cost');
     const totalProfitEl = document.getElementById('preview-total-profit');
     const marginEl = document.getElementById('preview-margin');
+
+    function parseNum(val) {
+        if (!val) return 0;
+        let s = String(val).trim().replace(/\s/g, '');
+        if (s.includes('.') && s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+        else if (s.match(/^\d{1,3}(\.\d{3})+$/)) s = s.replace(/\./g, '');
+        else if (s.includes(',')) s = s.replace(',', '.');
+        return parseFloat(s) || 0;
+    }
 
     function fmt(n) {
         return 'Rp ' + Number(n).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -176,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const rate = parseFloat(r.dataset.rate) || 1;
             const sell = parseFloat(r.dataset.sell) || 0;
             const input = r.querySelector('.approve-cost-input');
-            const costVal = parseFloat(input.value) || 0;
+            const costVal = parseNum(input.value);
             const rowCostTotal = costVal * qty * rate;
             sumSell += sell * qty;
             sumCost += rowCostTotal;
@@ -191,7 +205,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     dialog.querySelectorAll('.approve-cost-input').forEach(inp => {
-        inp.addEventListener('input', recalc);
+        inp.addEventListener('input', function() {
+            let raw = inp.value.replace(/\D/g, '');
+            if (raw === '') {
+                inp.value = '';
+            } else {
+                let num = parseInt(raw, 10);
+                inp.value = num.toLocaleString('id-ID');
+            }
+            recalc();
+        });
+        inp.addEventListener('focus', function() {
+            if (inp.value === '0') inp.value = '';
+        });
+        inp.addEventListener('blur', function() {
+            if (inp.value === '') inp.value = '0';
+            recalc();
+        });
     });
 });
 </script>
@@ -201,5 +231,41 @@ document.addEventListener('DOMContentLoaded', function() {
 @can('reject',$quotation)<section class="panel"><form class="transition-form" method="POST" action="{{ route('quotations.reject',$quotation) }}" data-confirm="Tolak quotation ini? Quotation yang ditolak tidak dapat dikonversi.">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><label for="reason">Alasan penolakan</label><textarea id="reason" name="reason" required maxlength="1000" rows="2" placeholder="Jelaskan alasan penawaran ditolak">{{ old('reason') }}</textarea><button class="button button-danger">Tolak quotation</button></form></section>@endcan
 @if($quotation->statusHistory->isNotEmpty())
 <section class="panel"><div class="panel-heading"><h2>Riwayat status</h2></div><ol class="approval-timeline">@foreach($quotation->statusHistory as $event)<li><span></span><div><strong>@if($event->from_status){{ \App\Enums\QuotationStatus::tryFrom($event->from_status)?->label() ?? $event->from_status }} → {{ \App\Enums\QuotationStatus::tryFrom($event->to_status)?->label() ?? $event->to_status }}@else Dibuat → {{ \App\Enums\QuotationStatus::tryFrom($event->to_status)?->label() ?? $event->to_status }}@endif</strong><p>{{ $event->user?->name ?? 'System' }} · {{ $event->created_at->format('d/m/Y H:i') }}@if($event->note)<br>{{ $event->note }}@endif</p></div></li>@endforeach</ol></section>
+@endif
+
+@if($quotation->job && $quotation->job->status !== 'cancelled')
+@can('cancel', $quotation->job)
+<dialog id="modal-cancel-job-quote" class="modal-dialog" style="max-width: 520px !important;">
+    <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-top-left-radius: 18px; border-top-right-radius: 18px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #fee2e2; color: #e11d48; font-size: 20px; box-shadow: 0 2px 6px rgba(225,29,72,0.15);">
+                ⚠️
+            </div>
+            <div>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #9f1239;">Pembatalan Job Order</h3>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #be123c;">Batalkan pekerjaan ini jika terjadi revisi penawaran.</p>
+            </div>
+        </div>
+        <button type="button" onclick="document.getElementById('modal-cancel-job-quote').close()" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #fecdd3; background: #fff; color: #be123c; display: grid; place-items: center; cursor: pointer; font-size: 14px; transition: all .15s ease;">✕</button>
+    </div>
+
+    <form method="POST" action="{{ route('jobs.cancel', $quotation->job) }}" style="padding: 20px 24px;">
+        @csrf
+        <input type="hidden" name="lock_version" value="{{ $quotation->job->lock_version }}">
+        <p style="color: #475569; font-size: 13.5px; line-height: 1.5; margin-top: 0;">
+            Apakah Anda yakin ingin membatalkan Job Order <strong>{{ $quotation->job->number }}</strong>?
+            Setelah dibatalkan, Sales Manager dapat mengedit kembali Quotation terkait.
+        </p>
+        <div style="margin: 16px 0;">
+            <label for="cancel_reason_quote" style="display: block; font-weight: 700; font-size: 12.5px; margin-bottom: 6px; color: #334155;">Alasan Pembatalan <span style="color: #e11d48;">*</span></label>
+            <textarea id="cancel_reason_quote" name="reason" rows="3" required placeholder="Jelaskan alasan pembatalan Job Order..." style="width: 100%; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 13.5px; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
+            <button type="button" class="button button-secondary" onclick="document.getElementById('modal-cancel-job-quote').close()">Batal</button>
+            <button type="submit" class="button button-danger">Ya, Batalkan Job</button>
+        </div>
+    </form>
+</dialog>
+@endcan
 @endif
 @endsection

@@ -66,9 +66,6 @@
             <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1e3a8a;">➕ Input Item Biaya Penawaran</h3>
             <span class="subtle" style="font-size: 11.5px;">Isi detail biaya & mata uang di bawah, lalu klik <strong>"+ Tambah Item ke Daftar"</strong>.</span>
         </div>
-        @if(! $canManageCost)
-            <span class="status-badge" style="background:#e0f2fe;color:#0369a1;font-size:11px;">🔒 Modal akan dimasukkan oleh Sales Manager saat approval</span>
-        @endif
     </div>
 
     {{-- BARIS 1: URAIAN BIAYA & SATUAN & QTY --}}
@@ -195,10 +192,7 @@
 <div class="summary-box" aria-live="polite">
     <div class="summary-row"><span>Total Penawaran (Jual)</span><strong data-preview-total>Rp 0,00</strong></div>
     <div class="summary-row"><span>Estimasi Profit</span><strong data-preview-profit style="color:#16a34a;">Rp 0,00</strong></div>
-    <p class="form-help">Pajak, diskon, dan grand total dihitung saat disimpan.</p>
 </div>
-
-<div class="field"><label for="notes">Catatan / ketentuan penawaran</label><textarea name="notes" id="notes" rows="3" maxlength="5000">{{ old('notes',$quotation->notes) }}</textarea></div>
 <div class="form-actions" style="display:flex; gap:10px; align-items:center;">
     <a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a>
     @if($canManageCost)

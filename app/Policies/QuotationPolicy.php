@@ -41,8 +41,8 @@ class QuotationPolicy
             return true;
         }
 
-        // Sales Manager / Admin can re-edit an approved or converted quotation if the job is not yet created or has been cancelled
-        if (in_array($quotation->status, [QuotationStatus::Approved, QuotationStatus::Converted], true) && ($user->hasRole(['sales-manager', 'super-admin', 'admin']) || $user->hasPermission('quotations.approve'))) {
+        // Sales Manager / Admin can re-edit a submitted, approved, or converted quotation if the job is not yet created or has been cancelled
+        if (in_array($quotation->status, [QuotationStatus::Submitted, QuotationStatus::Approved, QuotationStatus::Converted], true) && ($user->hasRole(['sales-manager', 'super-admin', 'admin']) || $user->hasPermission('quotations.approve'))) {
             return ! $quotation->job || $quotation->job->status === 'cancelled';
         }
 

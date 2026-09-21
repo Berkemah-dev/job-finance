@@ -62,6 +62,7 @@
             vertical-align: top;
             font-size: 9pt;
             line-height: 1.25;
+            padding-top: 14px;
         }
         .to-attn {
             font-weight: bold;
@@ -258,11 +259,25 @@
 </head>
 <body>
 
+@php
+    $headerLogoFile = public_path('images/rdx-header-logo.jpg');
+    $headerLogoSrc = file_exists($headerLogoFile)
+        ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerLogoFile))
+        : (file_exists(public_path('images/rdx-logistics-doc-logo.png'))
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents(public_path('images/rdx-logistics-doc-logo.png')))
+            : public_path('images/rdx-header-logo.jpg'));
+
+    $signLogoFile = public_path('images/logo.png');
+    $signLogoSrc = file_exists($signLogoFile)
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($signLogoFile))
+        : public_path('images/logo.png');
+@endphp
+
 {{-- HEADER --}}
 <table class="header-table">
     <tr>
         <td class="header-logo">
-            <img src="{{ public_path('images/rdx-header-logo.jpg') }}" alt="RDX LOGISTICS">
+            <img src="{{ $headerLogoSrc }}" alt="RDX LOGISTICS">
         </td>
         <td class="header-company">
             <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
@@ -487,7 +502,7 @@
 <div class="sign">
     <div>Yours Faithfully,</div>
     <div class="sign-logo">
-        <img src="{{ public_path('images/logo.png') }}" alt="RDX">
+        <img src="{{ $signLogoSrc }}" alt="RDX">
     </div>
     @php
         $salesUser = $quotation->sales ?? ($quotation->creator ?? null);

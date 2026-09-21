@@ -29,6 +29,20 @@ class QuotationRequest extends FormRequest
                 if (! isset($item['unit_cost']) || $item['unit_cost'] === '' || $item['unit_cost'] === null) {
                     $items[$k]['unit_cost'] = '0';
                 }
+                foreach (['unit_cost', 'unit_price', 'quantity', 'exchange_rate'] as $numField) {
+                    if (isset($items[$k][$numField]) && is_string($items[$k][$numField])) {
+                        $val = trim($items[$k][$numField]);
+                        if (str_contains($val, '.') && str_contains($val, ',')) {
+                            $val = str_replace('.', '', $val);
+                            $val = str_replace(',', '.', $val);
+                        } elseif (preg_match('/^\d{1,3}(\.\d{3})+$/', $val)) {
+                            $val = str_replace('.', '', $val);
+                        } else {
+                            $val = str_replace(',', '.', $val);
+                        }
+                        $items[$k][$numField] = $val;
+                    }
+                }
             }
             $this->merge(['items' => $items]);
         }
