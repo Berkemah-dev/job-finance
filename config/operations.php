@@ -59,8 +59,8 @@ return [
     // Format kode customer otomatis: prefix + delimiter + tahun (period year) + delimiter + nomor urut pad.
     'customer_code' => ['prefix' => 'CUS', 'delimiter' => '-', 'period' => 'year', 'pad' => 5],
     'vendor_code' => ['prefix' => 'VND', 'delimiter' => '-', 'period' => 'year', 'pad' => 5],
-    // Aturan unggahan dokumen customer (NPWP/NIB): MIME, ekstensi, dan batas ukuran KB.
-    'customer_documents' => ['mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'extensions' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'max_kb' => 5120],
+    // Aturan unggahan dokumen customer (NPWP/NIB): MIME, ekstensi, dan batas ukuran KB (3MB = 3072 KB).
+    'customer_documents' => ['mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'extensions' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'], 'max_kb' => 3072],
     // Nilai bawaan kalkulator LCL (boleh kosong; rate ditentukan pemakai bila belum terisi).
     'lcl' => ['default_rate' => null],
     'container_types' => [

@@ -24,7 +24,7 @@ class ReimbursementRequest extends FormRequest
             'amount' => ['required', 'regex:/^\d{1,15}(\.\d{1,2})?$/', 'gt:0'],
             'currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
             'exchange_rate' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/', 'gt:0'],
-            'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:4096'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:3072'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
