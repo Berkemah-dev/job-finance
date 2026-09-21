@@ -44,7 +44,24 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice)
     {
-        return view('invoices.show', ['invoice' => $invoice->load(['items', 'payments.account', 'job', 'snapshot'])]);
+        $bankAccounts = \App\Models\ChartOfAccount::query()
+            ->where('type', 'asset')
+            ->where(function ($q) {
+                $q->whereIn('code', ['11100', '11101', '11120', '11121', '11122', '11123'])
+                    ->orWhere('code', 'like', '1110%')
+                    ->orWhere('code', 'like', '1112%')
+                    ->orWhere('name', 'like', '%Bank%')
+                    ->orWhere('name', 'like', '%Cash%')
+                    ->orWhere('name', 'like', '%Kas%');
+            })
+            ->where('code', '!=', '1103')
+            ->orderBy('code')
+            ->get();
+
+        return view('invoices.show', [
+            'invoice' => $invoice->load(['items', 'payments.account', 'job', 'snapshot']),
+            'bankAccounts' => $bankAccounts,
+        ]);
     }
 
     public function coretax(Invoice $invoice, CoretaxService $service)
@@ -80,7 +97,7 @@ class InvoiceController extends Controller
 
         return $request->query('mode') === 'download'
             ? $pdf->download($filename)
-            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function updateDelivery(Request $request, Invoice $invoice)

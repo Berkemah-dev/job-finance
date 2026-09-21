@@ -47,10 +47,14 @@ class AwbController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'shippingInstructions'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'shippingInstructions', 'awbs'])->find($jobId);
+            if ($selectedJob && $selectedJob->awbs->isNotEmpty()) {
+                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-awb')
+                    ->with('warning', 'Job Order ini sudah memiliki Air Waybill (' . $selectedJob->awbs->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
         }
 
-        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
+        $jobs      = Job::with(['customer', 'shippingInstructions', 'awbs'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $airlines  = Vendor::orderBy('name')->get();
 
@@ -110,6 +114,14 @@ class AwbController extends Controller
 
         if (empty($validated['number'])) {
             $validated['number'] = Awb::generateNumber();
+        }
+
+        if (!empty($validated['job_id'])) {
+            $existingAwb = Awb::where('job_id', $validated['job_id'])->first();
+            if ($existingAwb) {
+                return redirect()->to(route('jobs.show', $validated['job_id']) . '#tab-awb')
+                    ->with('warning', 'Job Order ini sudah memiliki Air Waybill (' . $existingAwb->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
         }
 
         $validated['created_by'] = auth()->id();
@@ -202,5 +214,38 @@ class AwbController extends Controller
 
         return redirect()->route('awbs.index')
             ->with('success', 'AWB ' . $number . ' berhasil dihapus.');
+    }
+
+    public function preview(Awb $awb)
+    {
+        $type = strtolower(request('type', 'hawb'));
+
+        return view('documents.pdf-preview', [
+            'title'       => strtoupper($type) . ' ' . $awb->number,
+            'backUrl'     => route('awbs.show', $awb),
+            'pdfUrl'      => route('awbs.pdf', ['awb' => $awb, 'type' => $type, 'mode' => 'inline', 't' => time()]),
+            'downloadUrl' => route('awbs.pdf', ['awb' => $awb, 'type' => $type, 'mode' => 'download']),
+        ]);
+    }
+
+    public function pdf(Request $request, Awb $awb)
+    {
+        $awb->load(['job.customer', 'customer']);
+        $type = strtolower($request->query('type', 'hawb'));
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.air-waybill', [
+            'awb'  => $awb,
+            'type' => $type,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = strtoupper($type) . '_' . str_replace(['/', '\\'], '-', $awb->number) . '.pdf';
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+                'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma'              => 'no-cache',
+            ]);
     }
 }

@@ -103,6 +103,10 @@
     @can('jobs.close')
         @if($job->status==='open')
             <a class="button button-primary" href="{{ route('closing.create',$job) }}">Closing Job</a>
+        @elseif($job->status==='closed' && (!$job->invoice || ($job->invoice->payments()->doesntExist() && (float)$job->invoice->paid_amount == 0)))
+            <button type="button" class="button button-secondary" style="color:#dc2626; border-color:#fca5a5;" onclick="document.getElementById('modal-reopen-job').showModal()">
+                ↺ Undo / Buka Kembali Job
+            </button>
         @endif
     @endcan
     @can('invoices.manage')
@@ -112,15 +116,146 @@
     @endcan
     @if($job->status==='open' && !$job->do_confirmed_at)
         @can('jobs.confirm-do')
-            <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?">
-                @csrf
-                <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">DO Selesai</button>
-            </form>
+            <button type="button" class="button button-primary" style="background:#16a34a;border-color:#16a34a" onclick="document.getElementById('modal-confirm-do').showModal()">
+                <x-icon name="check"/> DO Selesai
+            </button>
         @endcan
     @elseif($job->do_confirmed_at)
         <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
     @endif
+    @can('cancel', $job)
+        <button type="button" class="button button-danger" onclick="document.getElementById('modal-cancel-job').showModal()">
+            <x-icon name="x"/> Batalkan Job
+        </button>
+    @endcan
 </div>
+
+@can('cancel', $job)
+<dialog id="modal-cancel-job" class="modal-dialog" style="max-width: 520px !important;">
+    <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-top-left-radius: 18px; border-top-right-radius: 18px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #fee2e2; color: #e11d48; font-size: 20px; box-shadow: 0 2px 6px rgba(225,29,72,0.15);">
+                ⚠️
+            </div>
+            <div>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #9f1239;">Pembatalan Job Order</h3>
+                <p style="margin: 2px 0 0; font-size: 12px; color: #be123c;">Batalkan pekerjaan ini jika terjadi revisi penawaran.</p>
+            </div>
+        </div>
+        <button type="button" onclick="document.getElementById('modal-cancel-job').close()" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #fecdd3; background: #fff; color: #be123c; display: grid; place-items: center; cursor: pointer; font-size: 14px; transition: all .15s ease;">✕</button>
+    </div>
+
+    <form method="POST" action="{{ route('jobs.cancel', $job) }}" style="padding: 20px 24px;">
+        @csrf
+        <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
+        <p style="color: #475569; font-size: 13.5px; line-height: 1.5; margin-top: 0;">
+            Apakah Anda yakin ingin membatalkan Job Order <strong>{{ $job->number }}</strong>?
+            Setelah dibatalkan, Sales Manager dapat mengedit kembali Quotation terkait.
+        </p>
+        <div style="margin: 16px 0;">
+            <label for="cancel_reason" style="display: block; font-weight: 700; font-size: 12.5px; margin-bottom: 6px; color: #334155;">Alasan Pembatalan <span style="color: #e11d48;">*</span></label>
+            <textarea id="cancel_reason" name="reason" rows="3" required placeholder="Jelaskan alasan pembatalan Job Order..." style="width: 100%; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 13.5px; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
+            <button type="button" class="button button-secondary" onclick="document.getElementById('modal-cancel-job').close()">Batal</button>
+            <button type="submit" class="button button-danger">Ya, Batalkan Job</button>
+        </div>
+    </form>
+</dialog>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelModal = document.getElementById('modal-cancel-job');
+    if (cancelModal) {
+        cancelModal.addEventListener('click', function(e) {
+            const rect = cancelModal.getBoundingClientRect();
+            const inDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height && rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+            if (!inDialog) cancelModal.close();
+        });
+    }
+});
+</script>
+@endcan
+
+@can('jobs.close')
+    @if($job->status === 'closed' && (!$job->invoice || ($job->invoice->payments()->doesntExist() && (float)$job->invoice->paid_amount == 0)))
+    <dialog id="modal-reopen-job" class="modal-dialog" style="max-width: 500px !important; border: none; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+        <form method="POST" action="{{ route('jobs.reopen', $job) }}">
+            @csrf
+            <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
+            <div style="padding: 18px 24px; border-bottom: 1px solid #fee2e2; display: flex; justify-content: space-between; align-items: center; background: #fef2f2; border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">↺</span>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #991b1b;">Undo / Buka Kembali Job</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('modal-reopen-job').close()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #991b1b;">✕</button>
+            </div>
+            <div style="padding: 20px 24px;">
+                <p style="font-size: 13px; color: #374151; margin-top: 0; line-height: 1.5;">
+                    Apakah Anda yakin ingin membuka kembali job <strong>{{ $job->number }}</strong>?
+                </p>
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px; font-size: 12px; color: #92400e; margin-bottom: 16px; line-height: 1.5;">
+                    ⚠️ Tindakan ini akan mengembalikan status Job ke <strong>Open</strong>, membatalkan/menghapus invoice {{ $job->invoice?->number }}, dan me-reverse jurnal penutupan akuntansi secara otomatis.
+                </div>
+                <div class="field">
+                    <label for="reopen_reason_job" style="font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 4px; display: block;">Alasan Buka Kembali (opsional)</label>
+                    <input type="text" id="reopen_reason_job" name="reason" placeholder="cth: Salah input biaya aktual / revisi operasional" style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; font-size: 13px; box-sizing: border-box;">
+                </div>
+            </div>
+            <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <button type="button" class="button button-secondary" onclick="document.getElementById('modal-reopen-job').close()">Batal</button>
+                <button type="submit" class="button button-danger" style="background: #dc2626; border-color: #dc2626; color: #ffffff !important; font-weight: 600;">Ya, Buka Kembali Job</button>
+            </div>
+        </form>
+    </dialog>
+    @endif
+@endcan
+
+@can('jobs.confirm-do')
+    @if($job->status === 'open' && !$job->do_confirmed_at)
+    @php
+        $hasSj = $job->hasSuratJalanDocument();
+    @endphp
+    <dialog id="modal-confirm-do" class="modal-dialog" style="max-width: 520px !important; border: none; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+        <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" enctype="multipart/form-data">
+            @csrf
+            <div style="padding: 18px 24px; border-bottom: 1px solid #dcfce7; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">📦</span>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #166534;">Konfirmasi DO Selesai</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('modal-confirm-do').close()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #166534;">✕</button>
+            </div>
+            <div style="padding: 20px 24px;">
+                <p style="font-size: 13.5px; color: #374151; margin-top: 0; line-height: 1.5;">
+                    Konfirmasi bahwa pengiriman <strong>Delivery Order (DO)</strong> untuk job <strong>{{ $job->number }}</strong> telah selesai dan barang telah diterima oleh customer.
+                </p>
+
+                @if(!$hasSj)
+                    <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+                        <label for="modal_surat_jalan_file" style="font-size: 12.5px; font-weight: 700; color: #991b1b; display: block; margin-bottom: 4px;">
+                            Upload Berkas Surat Jalan (Wajib) <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="file" name="surat_jalan_file" id="modal_surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #fca5a5; border-radius: 6px; background: #fff; width: 100%; box-sizing: border-box;">
+                        <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 4px;">Wajib melampirkan foto/scan Surat Jalan yang telah ditandatangani sebelum konfirmasi selesai.</small>
+                    </div>
+                @else
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12.5px; color: #166534; display: flex; align-items: center; gap: 8px;">
+                        <span>✓</span>
+                        <span>Berkas Surat Jalan fisik sudah diunggah di sistem.</span>
+                    </div>
+                @endif
+            </div>
+            <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <button type="button" class="button button-secondary" onclick="document.getElementById('modal-confirm-do').close()">Batal</button>
+                <button type="submit" class="button button-primary" style="background: #16a34a; border-color: #16a34a;">
+                    <x-icon name="check"/> Ya, Konfirmasi DO Selesai
+                </button>
+            </div>
+        </form>
+    </dialog>
+    @endif
+@endcan
 
 {{-- HORIZONTAL PILL TABS MENU KE KANAN (SESUAI REQUEST & SCREENSHOT CLIENT) --}}
 <nav class="job-pill-tabs-nav" style="display: flex; gap: 8px; background: #e2e8f0; padding: 6px; border-radius: 9999px; margin-bottom: 24px; overflow-x: auto;">
@@ -138,7 +273,7 @@
         <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
         <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
         <button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
         <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @elseif($isExportAir)
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
@@ -146,7 +281,7 @@
         <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
         <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
         <button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Surat Jalan / Tanda Terima</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
         <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @else
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. Document Upload</button>
@@ -175,7 +310,7 @@
                         ✓ {{ $checklist['status_summary'] }}
                     </span>
                 @else
-                    <span class="status-badge" style="background: #f1f5f9; color: #475569; font-weight: 600;">
+                    <span class="status-badge" style="background: #fee2e2; color: #b91c1c; font-weight: 600; border: 1px solid #fca5a5;">
                         {{ $checklist['status_summary'] }}
                     </span>
                 @endif
@@ -183,12 +318,27 @@
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
             @foreach($checklist['items'] as $item)
-                <div style="padding: 10px 14px; border-radius: 8px; border: 1px solid {{ $item['completed'] ? '#bbf7d0' : ($item['active'] ?? false ? '#fca5a5' : '#e2e8f0') }}; background: {{ $item['completed'] ? '#f0fdf4' : ($item['active'] ?? false ? '#fef2f2' : '#f8fafc') }}; display: flex; justify-content: space-between; align-items: center;">
+                @php
+                    $isCompleted = (bool) ($item['completed'] ?? false);
+                    $boxBorder = $isCompleted ? '#bbf7d0' : '#fca5a5';
+                    $boxBg = $isCompleted ? '#f0fdf4' : '#fef2f2';
+                    $badgeBorder = $isCompleted ? '#86efac' : '#fca5a5';
+                    $badgeBg = $isCompleted ? ($item['badge_bg'] ?? '#dcfce7') : '#fee2e2';
+                    $badgeColor = $isCompleted ? ($item['badge_color'] ?? '#166534') : '#b91c1c';
+                @endphp
+                <div style="padding: 10px 14px; border-radius: 8px; border: 1.5px solid {{ $boxBorder }}; background: {{ $boxBg }}; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                     <div>
-                        <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">{{ $item['label'] }}</div>
-                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">{{ $item['sublabel'] }}</div>
+                        <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                            @if($isCompleted)
+                                <span style="color: #16a34a; font-size: 12px;">●</span>
+                            @else
+                                <span style="color: #dc2626; font-size: 12px;">●</span>
+                            @endif
+                            {{ $item['label'] }}
+                        </div>
+                        <div style="font-size: 11.5px; color: {{ $isCompleted ? '#64748b' : '#991b1b' }}; margin-top: 2px;">{{ $item['sublabel'] }}</div>
                     </div>
-                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $item['badge_bg'] }}; color: {{ $item['badge_color'] }};">
+                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $badgeBg }}; color: {{ $badgeColor }}; border: 1px solid {{ $badgeBorder }}; white-space: nowrap;">
                         {{ $item['badge_text'] }}
                     </span>
                 </div>
@@ -662,6 +812,11 @@
                                 <span>Input Data SK Pabean (Manual)</span>
                             </div>
 
+                            <div class="field" style="margin-bottom: 10px;">
+                                <label for="sk_pabean_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Surat Kuasa Pabean (Manual)</label>
+                                <input type="text" name="sk_pabean_number" id="sk_pabean_number" maxlength="60" value="{{ old('sk_pabean_number', $job->sk_pabean_number) }}" placeholder="Nomor surat manual (opsional, jika kosong default: nomor Job)" style="font-size: 12.5px;">
+                            </div>
+
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                                 <div class="field">
                                     <label for="commercial_invoice_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Invoice</label>
@@ -794,6 +949,7 @@
                                     <div style="display:flex; gap:6px; justify-content:center;">
                                         <a class="button button-secondary button-sm" href="{{ route('dnps.show', $dnp) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('dnps.edit', $dnp) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('dnps.pdf', $dnp) }}" target="_blank">Cetak PDF</a>
                                     </div>
                                 </td>
                             </tr>
@@ -820,21 +976,22 @@
             <div style="display:flex;align-items:center;gap:12px;">
                 <span class="stat-icon blue"><x-icon name="file"/></span>
                 <div>
-                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN DELIVERY</p>
-                    <h2>Surat Jalan & Tanda Terima</h2>
-                    <p>Dokumen serah terima barang dan konfirmasi pengantaran.</p>
+                    <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL</p>
+                    <h2>{{ ($isExportSea || $isExportAir) ? 'Tanda Terima Dokumen' : 'Surat Jalan & Tanda Terima' }}</h2>
+                    <p>{{ ($isExportSea || $isExportAir) ? 'Dokumen tanda terima berkas dan serah terima dokumen ekspor.' : 'Dokumen serah terima barang dan konfirmasi pengantaran.' }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="report-grid" style="padding: 0 24px 24px;">
+        <div class="report-grid" style="padding: 0 24px 24px; {{ ($isExportSea || $isExportAir) ? 'display: block;' : '' }}">
+            @if(!$isExportSea && !$isExportAir)
             <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <div class="report-card-head">
                         <div class="report-card-title">
                             <span class="report-icon blue"><x-icon name="file"/></span>
                             <div>
-                                <h2>Surat Jalan</h2>
+                                <h2>Delivery Order</h2>
                                 <small>Delivery order pengantaran barang (Import Sea / Laut)</small>
                             </div>
                         </div>
@@ -852,7 +1009,7 @@
 
                             <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
                                 <x-icon name="file" style="width: 14px; height: 14px; color: #2563eb;"/>
-                                <span>Input Data Surat Jalan (Import Sea / Delivery)</span>
+                                <span>Input Data Delivery Order (Import Sea / Delivery)</span>
                             </div>
 
                             {{-- 1. Nomor Container Manual --}}
@@ -884,7 +1041,7 @@
                                 <textarea name="delivery_address" id="delivery_address" rows="2" placeholder="Alamat lengkap lokasi bongkar..." style="font-size: 12px;">{{ old('delivery_address', $job->delivery_address ?: ($job->deliveryAddressLocation?->address ?: $job->consignee_address)) }}</textarea>
                             </div>
 
-                            {{-- 3. Vendor Trucking & Supir / Plat Nomor --}}
+                            {{-- 3. Vendor Trucking & Supir / Plat Nomor (Otomatis dari Master Vendor Truk) --}}
                             <div class="field" style="margin-bottom: 10px;">
                                 <label for="vendor_trucking_id" style="font-size: 11.5px; font-weight: 600; color: #475569; display: flex; justify-content: space-between; align-items: center;">
                                     <span>Vendor Trucking</span>
@@ -914,31 +1071,35 @@
                                 </select>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                                 <div class="field">
                                     <label for="truck_plate_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Truk (Plat Nomor)</label>
                                     <input type="text" name="truck_plate_number" id="truck_plate_number" maxlength="30" value="{{ old('truck_plate_number', $job->truck_plate_number ?: $job->vendorTruck?->plate_number) }}" placeholder="contoh: B 9123 UE" style="font-size: 12.5px; text-transform: uppercase;">
                                 </div>
                                 <div class="field">
                                     <label for="vehicle_type" style="font-size: 11.5px; font-weight: 600; color: #475569;">Jenis Kendaraan</label>
-                                    <input type="text" name="vehicle_type" id="vehicle_type" maxlength="60" value="{{ old('vehicle_type', $job->vehicle_type ?: $job->vendorTruck?->vehicle_type) }}" placeholder="Trailer 20ft / Trailer 40ft" style="font-size: 12.5px;">
-                                </div>
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                                <div class="field">
-                                    <label for="driver_name" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nama Supir</label>
-                                    <input type="text" name="driver_name" id="driver_name" maxlength="160" value="{{ old('driver_name', $job->driver_name ?: $job->vendorTruck?->driver_name) }}" placeholder="Nama supir" style="font-size: 12.5px;">
-                                </div>
-                                <div class="field">
-                                    <label for="driver_phone" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Telepon Supir</label>
-                                    <input type="text" name="driver_phone" id="driver_phone" maxlength="50" value="{{ old('driver_phone', $job->driver_phone ?: $job->vendorTruck?->driver_phone) }}" placeholder="08..." style="font-size: 12.5px;">
+                                    @php
+                                        $currentVehicle = strtoupper(old('vehicle_type', $job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?? '')));
+                                    @endphp
+                                    <select name="vehicle_type" id="vehicle_type" style="font-size: 12.5px;">
+                                        <option value="">— Pilih Jenis Kendaraan —</option>
+                                        <optgroup label="FCL (Full Container Load)">
+                                            <option value="TRAILER" @selected($currentVehicle === 'TRAILER')>TRAILER (FCL)</option>
+                                        </optgroup>
+                                        <optgroup label="LCL (Less than Container Load)">
+                                            <option value="FUSO" @selected($currentVehicle === 'FUSO')>FUSO (LCL)</option>
+                                            <option value="PICKUP" @selected($currentVehicle === 'PICKUP' || $currentVehicle === 'PICK UP')>PICKUP (LCL)</option>
+                                            <option value="BLINDVAN" @selected($currentVehicle === 'BLINDVAN' || $currentVehicle === 'BLIND VAN')>BLINDVAN (LCL)</option>
+                                            <option value="CDD" @selected($currentVehicle === 'CDD')>CDD (LCL)</option>
+                                            <option value="CDE" @selected($currentVehicle === 'CDE')>CDE (LCL)</option>
+                                        </optgroup>
+                                    </select>
                                 </div>
                             </div>
 
                             <div style="display: flex; justify-content: flex-end;">
                                 <button type="submit" class="button button-primary" style="font-size: 12px; padding: 7px 16px;">
-                                    <x-icon name="check"/> Simpan Data Surat Jalan
+                                    <x-icon name="check"/> Simpan Data Delivery Order
                                 </button>
                             </div>
                         </form>
@@ -949,8 +1110,8 @@
                                 <div><span style="color: #64748b;">No. Truk / Plat:</span> <strong>{{ $job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '-') }}</strong></div>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                                <div><span style="color: #64748b;">Nama Supir:</span> <strong>{{ $job->driver_name ?: ($job->vendorTruck?->driver_name ?: '-') }}</strong></div>
-                                <div><span style="color: #64748b;">No. Telepon Supir:</span> <strong>{{ $job->driver_phone ?: ($job->vendorTruck?->driver_phone ?: '-') }}</strong></div>
+                                <div><span style="color: #64748b;">Nama Supir:</span> <strong>{{ $job->vendorTruck?->driver_name ?: ($job->driver_name ?: '-') }}</strong></div>
+                                <div><span style="color: #64748b;">No. Telepon Supir:</span> <strong>{{ $job->vendorTruck?->driver_phone ?: ($job->driver_phone ?: '-') }}</strong></div>
                             </div>
                             <div>
                                 <span style="color: #64748b;">Tujuan Pengiriman:</span> <strong>{{ $job->delivery_address ?: ($job->consignee_address ?: '-') }}</strong>
@@ -960,10 +1121,11 @@
                 </div>
                 <div style="padding-top: 6px;">
                     <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank" style="width: 100%; justify-content: center;">
-                        <x-icon name="file"/> Preview / Cetak Surat Jalan
+                        <x-icon name="file"/> Preview / Cetak Delivery Order
                     </a>
                 </div>
             </article>
+            @endif
 
             <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
@@ -971,41 +1133,91 @@
                         <div class="report-card-title">
                             <span class="report-icon green"><x-icon name="check"/></span>
                             <div>
-                                <h2>Tanda Terima</h2>
-                                <small>Bukti serah terima dokumen / barang</small>
+                                <h2>{{ ($isExportSea || $isExportAir) ? 'Tanda Terima Dokumen' : 'Tanda Terima' }}</h2>
+                                <small>{{ ($isExportSea || $isExportAir) ? 'Bukti serah terima dokumen ekspor' : 'Bukti serah terima dokumen / barang' }}</small>
                             </div>
                         </div>
                     </div>
-                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi BL/AWB, daftar dokumen/barang, catatan, dan tanda tangan.</p>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi {{ ($isExportSea || $isExportAir) ? 'BL/AWB, daftar berkas ekspor' : 'BL/AWB, daftar dokumen/barang' }}, catatan, dan tanda tangan.</p>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'barang']) }}" target="_blank"><x-icon name="file"/> Cetak TT Barang</a>
-                    <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank"><x-icon name="file"/> Cetak TT Dokumen</a>
+                    @if(!$isExportSea && !$isExportAir)
+                        <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'barang']) }}" target="_blank"><x-icon name="file"/> Cetak TT Barang</a>
+                    @endif
+                    <a class="button {{ ($isExportSea || $isExportAir) ? 'button-primary' : 'button-secondary' }}" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank"><x-icon name="file"/> Cetak TT Dokumen</a>
                 </div>
             </article>
         </div>
 
+        @if(!$isExportSea && !$isExportAir)
         <div style="padding: 0 24px 24px;">
             <article class="report-card">
                 <div class="report-card-head">
                     <div class="report-card-title">
                         <span class="report-icon amber"><x-icon name="briefcase"/></span>
                         <div>
-                            <h2>Status Delivery Order (DO)</h2>
-                            <small>Status penyelesaian pengantaran</small>
+                            <h2>Status Delivery Order (DO) & Penyelesaian Pengantaran</h2>
+                            <small>Konfirmasi pengantaran selesai & verifikasi berkas Surat Jalan</small>
                         </div>
                     </div>
                 </div>
                 <strong class="report-value {{ $job->do_confirmed_at ? 'positive' : 'negative' }}" style="font-size: 18px;">
                     {{ $job->do_confirmed_at ? 'Selesai Dikonfirmasi' : 'Menunggu Penyelesaian Pengantaran' }}
                 </strong>
+
+                @php
+                    $suratJalanDoc = $job->getSuratJalanDocument();
+                @endphp
+
+                @if($suratJalanDoc)
+                    <div style="margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: #f0fdf4; border: 1px solid #86efac; font-size: 13px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <strong>✓ Berkas Surat Jalan Terupload:</strong>
+                            <span style="font-weight: 600;">{{ $suratJalanDoc->original_name }}</span>
+                            <small style="color: #64748b; margin-left: 6px;">({{ $suratJalanDoc->created_at->format('d/m/Y H:i') }})</small>
+                        </div>
+                        <a class="button button-secondary button-sm" href="{{ route('jobs.documents.download', [$job, $suratJalanDoc]) }}" target="_blank" style="font-size: 12px; padding: 4px 10px;">
+                            <x-icon name="download"/> Unduh Berkas
+                        </a>
+                    </div>
+                @else
+                    <div style="margin-top: 14px; padding: 14px 16px; border-radius: 8px; background: #fff5f5; border: 1.5px solid #fca5a5; font-size: 13px; color: #991b1b; line-height: 1.6;">
+                        <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; margin-bottom: 6px;">
+                            <span style="font-size: 16px;">⚠️</span> Berkas Surat Jalan Wajib Diunggah
+                        </div>
+                        <p style="margin: 0 0 10px; color: #7f1d1d; font-size: 12.5px;">
+                            Wajib mengunggah (upload) berkas Surat Jalan (scan/foto bertanda tangan atau stempel penerima) sebelum mengonfirmasi penyelesaian job.
+                        </p>
+                        @can('update', $job)
+                            <form method="POST" action="{{ route('jobs.surat-jalan.upload', $job) }}" enctype="multipart/form-data" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                @csrf
+                                <input type="file" name="surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <button type="submit" class="button button-primary button-sm" style="font-size: 12px; padding: 7px 14px;">
+                                    <x-icon name="upload"/> Upload Berkas Sekarang
+                                </button>
+                            </form>
+                        @endcan
+                    </div>
+                @endif
+
                 @if($job->do_confirmed_at)
                     <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 10px;">Dikonfirmasi pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.</p>
                 @elseif($job->status === 'open')
                     @can('jobs.confirm-do')
-                        <form method="POST" action="{{ route('jobs.confirm-do',$job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai?" style="margin-top: 16px;">
+                        <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" enctype="multipart/form-data" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai dan barang telah diterima?" style="margin-top: 16px; padding: 14px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0;">
                             @csrf
-                            <button class="button button-primary" style="background:#16a34a;border-color:#16a34a"><x-icon name="check"/> Konfirmasi DO Selesai</button>
+                            @if(!$suratJalanDoc)
+                                <div class="field" style="margin-bottom: 12px;">
+                                    <label for="confirm_surat_jalan_file" style="font-size: 12.5px; font-weight: 700; color: #991b1b; display: block; margin-bottom: 4px;">
+                                        Upload Berkas Surat Jalan (Wajib) <span class="required">*</span>
+                                    </label>
+                                    <input type="file" name="surat_jalan_file" id="confirm_surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #fca5a5; border-radius: 6px; background: #fff; width: 100%;">
+                                    <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">Lampirkan berkas scan/foto Surat Jalan yang telah ditandatangani.</small>
+                                </div>
+                            @endif
+                            <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">
+                                <x-icon name="check"/> Konfirmasi DO Selesai
+                            </button>
                         </form>
                     @endcan
                 @elseif($job->status === 'draft')
@@ -1022,6 +1234,7 @@
                 @endif
             </article>
         </div>
+        @endif
     </section>
 </div>
 {{-- ========================================================================= --}}
@@ -1036,6 +1249,8 @@
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
+            @else
+                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
             @endif
         </div>
         @if($job->bookingConfirmations->isNotEmpty())
@@ -1057,7 +1272,7 @@
                                 <td><span class="status-badge">{{ ucfirst($bc->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">View</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.show', $bc) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.edit', $bc) }}">Edit</a>
                                         <a class="button button-secondary button-sm" href="{{ route('booking-confirmations.preview', $bc) }}" target="_blank">Print</a>
                                     </div>
@@ -1068,7 +1283,12 @@
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3><p style="margin:0;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3>
+                <p style="margin:0 0 16px;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p>
+                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+            </div>
         @endif
     </section>
 </div>
@@ -1080,6 +1300,8 @@
                 <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
+            @else
+                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
             @endif
         </div>
         @if($job->shippingInstructions->isNotEmpty())
@@ -1103,7 +1325,7 @@
                                 <td><span class="status-badge">{{ ucfirst($si->status ?? 'Draft') }}</span></td>
                                 <td>
                                     <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">View</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.show', $si) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.edit', $si) }}">Edit</a>
                                         <a class="button button-secondary button-sm" href="{{ route('shipping-instructions.preview', $si) }}" target="_blank">Print</a>
                                     </div>
@@ -1114,7 +1336,12 @@
                 </table>
             </div>
         @else
-            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;"><div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div><h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3><p style="margin:0;color:#64748b;">Dokumen SI yang terhubung dengan Job Order akan tampil di sini.</p></div>
+            <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
+                <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div>
+                <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3>
+                <p style="margin:0 0 16px;color:#64748b;">Instruksi pengiriman yang terhubung dengan Job Order akan tampil di sini.</p>
+                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+            </div>
         @endif
     </section>
 </div>
@@ -1132,7 +1359,13 @@
                     <p style="margin:0;color:#64748b;">Dokumen kepemilikan muatan laut yang terhubung dengan Job Order ini.</p>
                 </div>
             </div>
-            <a class="button button-primary" href="{{ route('bills-of-lading.create', ['job_id' => $job->id]) }}">+ Buat Bill of Lading (B/L)</a>
+            @if($job->billsOfLading->isNotEmpty())
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
+                    ✓ Dokumen Dibuat (Maks 1x)
+                </span>
+            @else
+                <a class="button button-primary" href="{{ route('bills-of-lading.create', ['job_id' => $job->id]) }}">+ Buat Bill of Lading (B/L)</a>
+            @endif
         </div>
         @if($job->billsOfLading->isNotEmpty())
             <div class="table-scroll">
@@ -1158,9 +1391,12 @@
                                 <td>{{ $bl->mbl_number ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($bl->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;justify-content:center;">
+                                    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.show', $bl) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.edit', $bl) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'draft']) }}" target="_blank">Cetak BL Draft</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'original']) }}" target="_blank">Cetak BL Original</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'copy']) }}" target="_blank">Cetak BL Copy</a>
                                     </div>
                                 </td>
                             </tr>
@@ -1172,7 +1408,8 @@
             <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
                 <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0f2fe;color:#0284c7;font-size:25px;">🚢</div>
                 <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Bill of Lading (B/L)</h3>
-                <p style="margin:0;color:#64748b;">Buat dokumen B/L dari tab ini agar seluruh data kapal dan muatan otomatis terisi.</p>
+                <p style="margin:0 0 16px;color:#64748b;">Buat dokumen B/L dari tab ini agar seluruh data kapal dan muatan otomatis terisi.</p>
+                <a class="button button-primary" href="{{ route('bills-of-lading.create', ['job_id' => $job->id]) }}">+ Buat Bill of Lading (B/L)</a>
             </div>
         @endif
     </section>
@@ -1191,7 +1428,13 @@
                     <p style="margin:0;color:#64748b;">Dokumen pengangkutan udara yang terhubung dengan Job Order ini.</p>
                 </div>
             </div>
-            <a class="button button-primary" href="{{ route('awbs.create', ['job_id' => $job->id]) }}">+ Buat Air Waybill (AWB)</a>
+            @if($job->awbs->isNotEmpty())
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
+                    ✓ Dokumen Dibuat (Maks 1x)
+                </span>
+            @else
+                <a class="button button-primary" href="{{ route('awbs.create', ['job_id' => $job->id]) }}">+ Buat Air Waybill (AWB)</a>
+            @endif
         </div>
         @if($job->awbs->isNotEmpty())
             <div class="table-scroll">
@@ -1219,9 +1462,12 @@
                                 <td>{{ $awb->mawb_number ?? '—' }}</td>
                                 <td><span class="status-badge">{{ ucfirst($awb->status ?? 'Draft') }}</span></td>
                                 <td>
-                                    <div style="display:flex;gap:6px;justify-content:center;">
+                                    <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.show', $awb) }}">Detail</a>
                                         <a class="button button-secondary button-sm" href="{{ route('awbs.edit', $awb) }}">Edit</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'draft']) }}" target="_blank">Cetak Draft</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'hawb']) }}" target="_blank">Cetak HAWB</a>
+                                        <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'mawb']) }}" target="_blank">Cetak MAWB</a>
                                     </div>
                                 </td>
                             </tr>
@@ -1233,7 +1479,8 @@
             <div style="margin:28px; padding:42px 24px; text-align:center; border:1px dashed #cbd5e1; border-radius:14px; background:#f8fafc;">
                 <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#ede9fe;color:#7c3aed;font-size:25px;">✈️</div>
                 <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Air Waybill (AWB)</h3>
-                <p style="margin:0;color:#64748b;">Buat dokumen AWB dari tab ini agar seluruh data penerbangan dan kargo otomatis terisi.</p>
+                <p style="margin:0 0 16px;color:#64748b;">Buat dokumen AWB dari tab ini agar seluruh data penerbangan dan kargo otomatis terisi.</p>
+                <a class="button button-primary" href="{{ route('awbs.create', ['job_id' => $job->id]) }}">+ Buat Air Waybill (AWB)</a>
             </div>
         @endif
     </section>
@@ -1416,14 +1663,18 @@ function onVendorTruckSelected(selectEl) {
     if (!selectedOption || !selectedOption.value) return;
 
     const plateField = document.getElementById('truck_plate_number');
-    const driverField = document.getElementById('driver_name');
-    const phoneField = document.getElementById('driver_phone');
     const typeField = document.getElementById('vehicle_type');
 
     if (plateField && selectedOption.dataset.plate) plateField.value = selectedOption.dataset.plate;
-    if (driverField && selectedOption.dataset.driver) driverField.value = selectedOption.dataset.driver;
-    if (phoneField && selectedOption.dataset.phone !== undefined) phoneField.value = selectedOption.dataset.phone;
-    if (typeField && selectedOption.dataset.type !== undefined) typeField.value = selectedOption.dataset.type;
+    if (typeField && selectedOption.dataset.type) {
+        const rawType = selectedOption.dataset.type.toUpperCase().replace(/\s+/g, '');
+        for (let opt of typeField.options) {
+            if (opt.value && (rawType.includes(opt.value) || opt.value.includes(rawType))) {
+                typeField.value = opt.value;
+                break;
+            }
+        }
+    }
 }
 </script>
 

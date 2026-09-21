@@ -15,14 +15,17 @@
     <a class="button button-secondary" href="{{ $backUrl }}">← Kembali</a>
 </div>
 
-<div class="quote-actions" style="margin-bottom: 20px;">
+<div class="quote-actions" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+    <a class="button button-secondary" href="{{ route('awbs.preview', [$awb, 'type' => 'draft']) }}" target="_blank">📄 Cetak AWB Draft</a>
+    <a class="button button-secondary" href="{{ route('awbs.preview', [$awb, 'type' => 'hawb']) }}" target="_blank">📄 Cetak HAWB</a>
+    <a class="button button-secondary" href="{{ route('awbs.preview', [$awb, 'type' => 'mawb']) }}" target="_blank">📄 Cetak MAWB</a>
     <a class="button button-secondary" href="{{ route('awbs.edit', $awb) }}">Edit AWB</a>
     @if($awb->job)
         <a class="button button-secondary" href="{{ route('jobs.show', $awb->job) . '#tab-awb' }}">Lihat Job Order</a>
     @endif
     <form method="POST" action="{{ route('awbs.destroy', $awb) }}" data-confirm="Hapus AWB {{ $awb->number }}?" style="display:inline;">
         @csrf @method('DELETE')
-        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;">Hapus</button>
+        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;color:#ffffff !important;font-weight:600;">Hapus</button>
     </form>
 </div>
 

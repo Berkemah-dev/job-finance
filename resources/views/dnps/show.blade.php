@@ -24,7 +24,7 @@
     @endif
     <form method="POST" action="{{ route('dnps.destroy', $dnp) }}" data-confirm="Hapus DNP {{ $dnp->number }}?" style="display:inline;">
         @csrf @method('DELETE')
-        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;">Hapus</button>
+        <button class="button button-danger" style="background:#ef4444;border-color:#ef4444;color:#ffffff !important;font-weight:600;">Hapus</button>
     </form>
 </div>
 
@@ -56,6 +56,10 @@
                     <tr>
                         <td style="color:#64748b;">Nomor Job Order</td>
                         <td style="font-weight:600; color:#0f172a;">: {{ $dnp->job?->number ?: '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#64748b;">Commodity (Barang)</td>
+                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->commodity ?: ($dnp->job?->cargo_description ?: '—') }}</td>
                     </tr>
                 </table>
             </div>

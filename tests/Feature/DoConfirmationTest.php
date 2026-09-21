@@ -46,8 +46,8 @@ class DoConfirmationTest extends TestCase
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
         $this->actingAs($this->manager);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
-        $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
         $this->actingAs($this->operator);
+        $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
         $job = Job::firstOrFail();
         $this->post('/jobs/'.$job->id.'/open', ['lock_version' => $job->lock_version])->assertSessionHasNoErrors();
 
@@ -59,8 +59,9 @@ class DoConfirmationTest extends TestCase
         $job = $this->openJob();
         $this->actingAs(User::where('email', 'customer-service@jobfinance.test')->firstOrFail());
 
-        $this->post('/jobs/'.$job->id.'/confirm-do')
-            ->assertSessionHasNoErrors()->assertRedirect(route('jobs.show', $job));
+        $file = \Illuminate\Http\UploadedFile::fake()->create('surat_jalan.pdf', 50, 'application/pdf');
+        $this->post('/jobs/'.$job->id.'/confirm-do', ['surat_jalan_file' => $file])
+            ->assertSessionHasNoErrors()->assertRedirect(route('jobs.show', $job).'#tab-delivery');
 
         $fresh = $job->fresh();
         $this->assertNotNull($fresh->do_confirmed_at);
@@ -89,7 +90,8 @@ class DoConfirmationTest extends TestCase
     {
         $job = $this->openJob();
         $this->actingAs($this->operator);
-        $this->post('/jobs/'.$job->id.'/confirm-do')->assertSessionHasNoErrors();
+        $file = \Illuminate\Http\UploadedFile::fake()->create('surat_jalan.pdf', 50, 'application/pdf');
+        $this->post('/jobs/'.$job->id.'/confirm-do', ['surat_jalan_file' => $file])->assertSessionHasNoErrors();
         $this->post('/jobs/'.$job->id.'/confirm-do')->assertSessionHasErrors('do');
     }
 

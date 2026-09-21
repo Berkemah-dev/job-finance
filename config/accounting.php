@@ -12,6 +12,7 @@ return [
         'cogs' => ['label' => 'HPP Job', 'type' => 'cogs', 'code' => '5101', 'name' => 'HPP Job'],
         'expense' => ['label' => 'Beban Operasional', 'type' => 'expense', 'code' => '6101', 'name' => 'Beban Operasional'],
         'tax_payable' => ['label' => 'Utang Pajak', 'type' => 'liability', 'code' => '2102', 'name' => 'Utang Pajak'],
+        'pph23_prepaid' => ['label' => 'PPh 23 Dibayar Dimuka', 'type' => 'asset', 'code' => '11192', 'name' => 'PPH 23 Dimuka'],
     ],
     'coretax' => [
         // Profil PKP penjual untuk ekspor XML Coretax (NPWP 16 digit).

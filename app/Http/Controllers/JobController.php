@@ -9,6 +9,7 @@ use App\Models\Job;
 use App\Models\ServiceType;
 use App\Models\ContainerUnit;
 use App\Models\User;
+use App\Services\JobClosingService;
 use App\Services\JobCostService;
 use App\Services\JobService;
 use App\Services\MasterDataService;
@@ -126,11 +127,43 @@ class JobController extends Controller
         return redirect()->route('jobs.show', $job)->with('success', 'Job berhasil dibatalkan.');
     }
 
+    public function reopen(Request $request, Job $job, JobClosingService $service)
+    {
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:255'],
+            'lock_version' => ['nullable', 'integer'],
+        ]);
+        if (! isset($data['lock_version'])) {
+            $data['lock_version'] = $job->lock_version;
+        }
+
+        $service->reopen($job, $data, $request->user());
+
+        return redirect()->route('jobs.show', $job)->with('success', 'Job berhasil dibuka kembali. Jurnal closing dan invoice telah dibatalkan.');
+    }
+
     public function confirmDo(Request $request, Job $job, JobService $service)
     {
-        $service->confirmDo($job, $request->user());
+        $request->validate([
+            'surat_jalan_file' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
+        ]);
 
-        return redirect()->route('jobs.show', $job)->with('success', 'DO Selesai berhasil dikonfirmasi.');
+        $file = $request->file('surat_jalan_file');
+        $service->confirmDo($job, $request->user(), $file);
+
+        return redirect()->to(route('jobs.show', $job).'#tab-delivery')->with('success', 'DO Selesai berhasil dikonfirmasi.');
+    }
+
+    public function uploadSuratJalan(Request $request, Job $job, JobService $service)
+    {
+        $request->validate([
+            'surat_jalan_file' => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png',
+            'notes'            => 'nullable|string|max:500',
+        ]);
+
+        $service->uploadSuratJalan($job, $request->file('surat_jalan_file'), $request->user(), $request->input('notes'));
+
+        return redirect()->to(route('jobs.show', $job).'#tab-delivery')->with('success', 'Berkas Surat Jalan berhasil diunggah.');
     }
 
     public function shipmentStatus(ShipmentStatusRequest $request, Job $job, JobService $service)
@@ -166,6 +199,6 @@ class JobController extends Controller
 
         return $request->query('mode') === 'download'
             ? $pdf->download($filename)
-            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline']);
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 }

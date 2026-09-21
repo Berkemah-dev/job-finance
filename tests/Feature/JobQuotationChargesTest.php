@@ -53,8 +53,8 @@ class JobQuotationChargesTest extends TestCase
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
         $this->actingAs($this->manager);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
-        $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
         $this->actingAs($this->operator);
+        $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
 
         return Job::firstOrFail();
     }
@@ -91,7 +91,7 @@ class JobQuotationChargesTest extends TestCase
         foreach ($rows as $row) {
             $this->assertStringStartsWith('CST-', $row->number);
         }
-        $this->assertDatabaseHas('activity_logs', ['action' => 'job.costs.seeded', 'user_id' => $this->manager->id]);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job.costs.seeded', 'user_id' => $this->operator->id]);
         $this->assertCount(2, ActivityLog::where('action', 'job_cost.created')->get());
 
         $this->actingAs($this->finance);

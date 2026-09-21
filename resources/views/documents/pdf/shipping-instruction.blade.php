@@ -5,297 +5,331 @@
     <title>Shipping Instruction {{ $si->number }}</title>
     <style>
         @page {
-            margin: 20px 28px 20px 28px;
+            margin: 18pt 25pt 15pt 25pt;
+            size: a4 portrait;
         }
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: DejaVu Sans, sans-serif;
-            color: #000;
-            font-size: 9px;
-            line-height: 1.3;
+            font-family: 'Courier New', Courier, monospace;
+            color: #000000;
+            font-size: 8.5pt;
+            line-height: 1.25;
             margin: 0;
             padding: 0;
         }
-
-        /* HEADER KOP */
         .top-header {
-            width: 100%;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
+            margin-bottom: 18pt;
         }
-        .top-header-left {
-            float: left;
-            width: 50%;
+        .logo-img {
+            height: 24pt;
+            width: auto;
+            display: block;
         }
-        .top-header-left img {
-            max-width: 170px;
-            max-height: 48px;
-        }
-        .top-header-right {
-            float: right;
-            width: 48%;
-            text-align: right;
-            font-size: 8px;
-            color: #444;
-            padding-top: 6px;
-        }
-        .clear {
-            clear: both;
-        }
-
-        /* MAIN B/L TABLE */
-        table.si-table {
+        table.si-main-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1.5px solid #000;
-            margin-bottom: 6px;
+            border: 1px solid #000000;
+            table-layout: fixed;
         }
-        table.si-table td, table.si-table th {
-            border: 1px solid #000;
-            padding: 4px 6px;
+        table.si-main-table td {
+            border: 1px solid #000000;
             vertical-align: top;
+            padding: 0;
         }
-        .cell-title {
-            font-weight: 700;
-            font-size: 9.5px;
-            background-color: #f1f1f1;
-            padding: 2px 5px;
-            border-bottom: 1px solid #000;
-            margin: -4px -6px 4px -6px;
+        .cell-head {
+            background-color: #dfdfdf;
+            font-weight: bold;
+            font-size: 8.5pt;
+            padding: 2.5pt 5pt;
+            border-bottom: 1px solid #000000;
         }
-        .cell-content {
-            font-size: 8.5px;
+        .cell-body {
+            padding: 4pt 6pt;
+            font-size: 8pt;
+            line-height: 1.25;
+        }
+        .si-title-center {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            text-decoration: underline;
+            margin-top: 8pt;
+            margin-bottom: 2pt;
+        }
+        .si-no-center {
+            text-align: center;
+            font-weight: bold;
+            font-size: 9pt;
+            margin-bottom: 14pt;
+        }
+        .si-meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            padding: 0 8pt;
+        }
+        .si-meta-table td {
+            border: none !important;
+            padding: 1.5pt 0;
+        }
+        .si-notice-text {
+            text-align: center;
+            margin-top: 75pt;
+            margin-bottom: 8pt;
+            padding: 0 8pt;
+            font-size: 8pt;
             line-height: 1.35;
         }
-
-        /* TO CARRIER BOX */
-        .si-title {
+        .cargo-head {
+            background-color: #dfdfdf;
+            font-weight: bold;
+            font-size: 8.5pt;
             text-align: center;
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            margin-bottom: 1px;
+            padding: 3pt 4pt;
+            border-bottom: 1px solid #000000;
         }
-        .si-number {
-            text-align: center;
-            font-size: 10px;
-            font-weight: 700;
-            margin-bottom: 6px;
+        .cargo-cell {
+            padding: 6pt;
+            font-size: 8pt;
+            line-height: 1.3;
+            vertical-align: top;
         }
-        table.carrier-meta {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 8.5px;
-            margin-bottom: 4px;
-        }
-        table.carrier-meta td {
-            border: none;
-            padding: 1.5px 0;
-        }
-        .si-notice {
-            font-size: 8px;
-            font-style: italic;
-            padding-top: 3px;
-            border-top: 0.5px dashed #666;
-            margin-top: 3px;
-        }
-
-        /* CARGO HEADERS */
-        th.cargo-th {
-            background-color: #e5e5e5;
-            font-size: 9px;
-            font-weight: 700;
-            text-align: left;
-            padding: 4px 6px;
-        }
-
-        /* FOOTER */
         .page-footer {
-            position: fixed;
-            bottom: -5px;
-            left: 0;
-            right: 0;
-            text-align: right;
-            font-size: 8px;
-            color: #555;
+            margin-top: 16pt;
+            font-size: 8pt;
+            color: #000000;
         }
     </style>
 </head>
 <body>
 
-{{-- TOP LOGO HEADER --}}
+@php
+    $cleanLogoFile = public_path('images/rdx-logo-clean.png');
+    $headerLogoFile = public_path('images/rdx-header-logo.jpg');
+    $altLogoFile = public_path('images/rdx-logistics-doc-logo.png');
+    $pngLogoFile = public_path('images/logo.png');
+
+    if (file_exists($cleanLogoFile)) {
+        $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($cleanLogoFile));
+    } elseif (file_exists($headerLogoFile)) {
+        $logoPath = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerLogoFile));
+    } elseif (file_exists($altLogoFile)) {
+        $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($altLogoFile));
+    } elseif (file_exists($pngLogoFile)) {
+        $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($pngLogoFile));
+    } else {
+        $logoPath = '';
+    }
+
+    $shipperCustomer = $si->customer ?? $si->job?->customer;
+    $shipperName = $si->shipper_name ?: ($shipperCustomer?->name ?? '—');
+    $shipperAddress = $si->shipper_address ?: ($shipperCustomer?->address ?? '');
+
+    $consigneeName = $si->consignee_name ?: ($si->job?->consignee_name ?: ($shipperCustomer?->consignees?->first()?->name ?? '—'));
+    $consigneeAddress = $si->consignee_address ?: ($si->job?->consignee_address ?: ($shipperCustomer?->consignees?->first()?->address ?? ''));
+
+    $notifyName = $si->notify_party ?: ($si->job?->notify_party ?: 'SAME AS CONSIGNEE');
+
+    $carrierName = $si->carrier ?: ($si->carrier_name ?: ($si->job?->carrier ?? '—'));
+    $carrierAttn = $si->carrier_contact ?: 'EXPORT DEPT';
+    $carrierPhone = $si->carrier_phone ?: '—';
+
+    $vesselName = $si->vessel_voyage ?: ($si->job?->vessel_voyage ?: ($si->vessel_name ?: '—'));
+    $etdStr = $si->etd ? $si->etd->format('d-M-Y') : ($si->job?->etd ? $si->job->etd->format('d-M-Y') : '—');
+    $etaStr = $si->eta ? $si->eta->format('d-M-Y') : ($si->job?->eta ? $si->job->eta->format('d-M-Y') : '—');
+
+    $shipmentTerm = $si->shipment_term ?: ($si->freight_term ?: 'CY/CY');
+    $connectingVessel = $si->connecting_vessel ?: '—';
+    $loadingPort = $si->pol ?: ($si->job?->pol ?? 'JAKARTA, INDONESIA');
+    $dischargePort = $si->pod ?: ($si->job?->pod ?? '—');
+
+    $marksNumbers = $si->marks_numbers ?: ($si->container_number ? $si->container_number . ($si->seal_number ? ' / ' . $si->seal_number : '') : 'N/M');
+    $description = $si->cargo_description ?: ($si->job?->cargo_description ?? 'SAID TO CONTAIN :');
+    if ($si->package_count) {
+        $description = $si->package_count . ' ' . ($si->package_unit ?: 'PACKAGES') . "\n" . $description;
+    }
+    if ($si->container_type) {
+        $description .= "\n1x " . strtoupper($si->container_type);
+    }
+
+    $gwMeas = '';
+    if ($si->gross_weight) {
+        $gwMeas .= 'G.W : ' . \App\Support\Money::format($si->gross_weight) . " KGS\n";
+    } elseif ($si->job?->gross_weight) {
+        $gwMeas .= 'G.W : ' . \App\Support\Money::format($si->job->gross_weight) . " KGS\n";
+    }
+    if ($si->measurement) {
+        $gwMeas .= 'MEAS: ' . \App\Support\Money::format($si->measurement) . " CBM";
+    } elseif ($si->job?->volume) {
+        $gwMeas .= 'MEAS: ' . \App\Support\Money::format($si->job->volume) . " CBM";
+    }
+    if ($gwMeas === '') {
+        $gwMeas = "G.W : —\nMEAS: —";
+    }
+
+    $remarksContent = $si->remarks ?: ($si->notes ?: "FREIGHT " . ($si->freight_term ?: 'PREPAID'));
+@endphp
+
+{{-- LOGO ATAS KIRI (TANPA TEKS INTERNATIONAL FREIGHT FORWARDERS) --}}
 <div class="top-header">
-    <div class="top-header-left">
-        <img src="{{ public_path('images/logo.png') }}" alt="RDX Logistics">
-    </div>
-    <div class="top-header-right">
-        <strong>PT. RADIX INTERNATIONAL LOGISTICS</strong><br>
-        International Freight Forwarder & Customs Brokerage
-    </div>
-    <div class="clear"></div>
+    <img class="logo-img" src="{{ $logoPath }}" alt="RDX LOGISTICS">
 </div>
 
-{{-- MAIN B/L TABLE --}}
-<table class="si-table">
-    {{-- ROW 1: SHIPPER vs TO CARRIER (ROWSPAN 3) --}}
+{{-- MAIN SI TABLE --}}
+<table class="si-main-table">
+    {{-- BARIS 1: SHIPPER, CONSIGNEE, NOTIFY vs HEADER SI --}}
     <tr>
-        <td style="width: 50%; height: 60px;">
-            <div class="cell-title">SHIPPER</div>
-            <div class="cell-content">
-                <strong>{{ $si->shipper_name }}</strong>
-            </div>
-        </td>
-        <td rowspan="3" style="width: 50%;">
-            <div class="si-title">SHIPPING INSTRUCTION</div>
-            <div class="si-number">{{ $si->number }}</div>
-            <table class="carrier-meta">
-                <tr>
-                    <td style="width: 22%; font-weight: 700;">To</td>
-                    <td style="width: 3%;">:</td>
-                    <td style="width: 75%; font-weight: 700;">{{ $si->to_carrier }}</td>
-                </tr>
-                <tr>
-                    <td style="font-weight: 700;">Attn</td>
-                    <td>:</td>
-                    <td>{{ $si->carrier_attn ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="font-weight: 700;">Date</td>
-                    <td>:</td>
-                    <td>{{ $si->si_date->format('d/m/Y') }}</td>
-                </tr>
-            </table>
-            <div class="si-notice">
-                Please kindly arrange space for our booking as according to below mention
-            </div>
-        </td>
-    </tr>
-
-    {{-- ROW 2: CONSIGNEE --}}
-    <tr>
-        <td style="height: 60px;">
-            <div class="cell-title">CONSIGNEE</div>
-            <div class="cell-content">
-                <strong>{{ $si->consignee_name }}</strong>
-            </div>
-        </td>
-    </tr>
-
-    {{-- ROW 3: NOTIFY PARTY --}}
-    <tr>
-        <td style="height: 50px;">
-            <div class="cell-title">NOTIFY PARTY</div>
-            <div class="cell-content">
-                {{ $si->notify_party ?: 'SAME AS CONSIGNEE' }}
-            </div>
-        </td>
-    </tr>
-
-    {{-- ROW 4: VESSEL & ETD/ETA vs SHIPMENT TERM --}}
-    <tr>
-        <td style="padding: 4px 6px;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="border: none; padding: 1px 0; width: 30%; font-weight: 700;">Vessel Name</td>
-                    <td style="border: none; padding: 1px 0; width: 3%;">:</td>
-                    <td style="border: none; padding: 1px 0; width: 67%; font-weight: 700;">{{ $si->vessel_voyage ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="border: none; padding: 1px 0; font-weight: 700;">ETD</td>
-                    <td style="border: none; padding: 1px 0;">:</td>
-                    <td style="border: none; padding: 1px 0;">{{ $si->etd?->format('d/m/Y') ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td style="border: none; padding: 1px 0; font-weight: 700;">ETA</td>
-                    <td style="border: none; padding: 1px 0;">:</td>
-                    <td style="border: none; padding: 1px 0;">{{ $si->eta?->format('d/m/Y') ?: '—' }}</td>
-                </tr>
-            </table>
-        </td>
-        <td style="vertical-align: middle; padding: 6px;">
-            <strong>Shipment Term :</strong>
-            <span style="font-weight: 700; font-size: 10px; margin-left: 6px;">
-                {{ $si->shipment_term }}
-            </span>
-        </td>
-    </tr>
-
-    {{-- ROW 5: TRANSHIPMENT / CONNECTING VESSEL vs LOADING & DISCHARGE --}}
-    <tr>
-        <td style="vertical-align: middle;">
-            @if($si->is_transhipment)
-                <strong style="font-size:8px;background:#fef3c7;padding:1px 4px;border-radius:2px;">TRANSHIPMENT</strong><br>
-                <strong>Transit Port :</strong> {{ $si->transit_port ?: '—' }}<br>
-                <strong>ETD Transit :</strong> {{ $si->transit_etd?->format('d/m/Y') ?: '—' }} &nbsp;
-                <strong>ETA Transit :</strong> {{ $si->transit_eta?->format('d/m/Y') ?: '—' }}
-                @if($si->connecting_vessel)
-                    <br><strong>Connecting Vessel :</strong> {{ $si->connecting_vessel }}
+        <td style="width: 50%;">
+            <div class="cell-head">SHIPPER</div>
+            <div class="cell-body" style="min-height: 52pt;">
+                <strong>{{ $shipperName }}</strong>
+                @if($shipperAddress)
+                    <div>{!! nl2br(e($shipperAddress)) !!}</div>
                 @endif
-            @else
-                <strong>Connecting Vessel :</strong> {{ $si->connecting_vessel ?: '—' }}
-            @endif
+            </div>
+
+            <div class="cell-head" style="border-top: 1px solid #000000;">CONSIGNEE</div>
+            <div class="cell-body" style="min-height: 52pt;">
+                <strong>{{ $consigneeName }}</strong>
+                @if($consigneeAddress)
+                    <div>{!! nl2br(e($consigneeAddress)) !!}</div>
+                @endif
+            </div>
+
+            <div class="cell-head" style="border-top: 1px solid #000000;">NOTIFY PARTY</div>
+            <div class="cell-body" style="min-height: 46pt;">
+                {!! nl2br(e($notifyName)) !!}
+            </div>
+        </td>
+        <td style="width: 50%; padding: 4pt 6pt;">
+            <div class="si-title-center">SHIPPING INSTRUCTION</div>
+            <div class="si-no-center">{{ $si->number }}</div>
+
+            <table class="si-meta-table">
+                <tr>
+                    <td style="width: 25%; font-weight: bold;">To</td>
+                    <td style="width: 4%;">:</td>
+                    <td style="width: 71%;">{{ $carrierName }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Attn</td>
+                    <td>:</td>
+                    <td>{{ $carrierAttn }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Telp/Fax</td>
+                    <td>:</td>
+                    <td>{{ $carrierPhone }}</td>
+                </tr>
+            </table>
+
+            {{-- DITENGAH DAN DIPOSISIKAN DI BAWAH SESUAI GAMBAR 2 & GAMBAR 4 --}}
+            <div class="si-notice-text">
+                Please kindly arrange space for our booking<br>
+                as according to below mention
+            </div>
+        </td>
+    </tr>
+
+    {{-- BARIS 2: VESSEL / SCHEDULE & SHIPMENT TERM --}}
+    <tr>
+        <td style="padding: 4pt 6pt;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                <tr>
+                    <td style="border: none !important; width: 28%; font-weight: bold;">Vessel Name</td>
+                    <td style="border: none !important; width: 4%;">:</td>
+                    <td style="border: none !important; width: 36%;">{{ $vesselName }}</td>
+                    <td style="border: none !important; width: 12%; font-weight: bold;">ETD</td>
+                    <td style="border: none !important; width: 4%;">:</td>
+                    <td style="border: none !important; width: 16%;">{{ $etdStr }}</td>
+                </tr>
+                <tr>
+                    <td style="border: none !important;"></td>
+                    <td style="border: none !important;"></td>
+                    <td style="border: none !important;"></td>
+                    <td style="border: none !important; font-weight: bold;">ETA</td>
+                    <td style="border: none !important;">:</td>
+                    <td style="border: none !important;">{{ $etaStr }}</td>
+                </tr>
+            </table>
+        </td>
+        <td style="padding: 4pt 6pt;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                <tr>
+                    <td style="border: none !important; width: 34%; font-weight: bold;">Shipment Term</td>
+                    <td style="border: none !important; width: 4%;">:</td>
+                    <td style="border: none !important; width: 62%;">{{ $shipmentTerm }}</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    {{-- BARIS 3: CONNECTING VESSEL & LOADING / DISCHARGE (BG PUTIH / TIDAK SHADOW SESUAI GAMBAR 3 & 4) --}}
+    <tr>
+        <td style="padding: 4pt 6pt; vertical-align: middle;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                <tr>
+                    <td style="border: none !important; width: 40%; font-weight: bold;">Connecting Vessel</td>
+                    <td style="border: none !important; width: 4%;">:</td>
+                    <td style="border: none !important; width: 56%;">{{ $connectingVessel }}</td>
+                </tr>
+            </table>
         </td>
         <td style="padding: 0;">
-            <table style="width: 100%; border-collapse: collapse;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
                 <tr>
-                    <td style="border: none; border-bottom: 1px solid #000; border-right: 1px solid #000; width: 30%; font-weight: 700; background: #f8fafc; padding: 3px 6px;">
-                        LOADING
-                    </td>
-                    <td style="border: none; border-bottom: 1px solid #000; font-weight: 700; padding: 3px 6px;">
-                        {{ $si->pol }}
-                    </td>
+                    <td style="border: none !important; border-bottom: 1px solid #000000 !important; border-right: 1px solid #000000 !important; width: 34%; font-weight: bold; padding: 3pt 6pt; background-color: #ffffff;">LOADING</td>
+                    <td style="border: none !important; border-bottom: 1px solid #000000 !important; padding: 3pt 6pt;">{{ $loadingPort }}</td>
                 </tr>
                 <tr>
-                    <td style="border: none; border-right: 1px solid #000; font-weight: 700; background: #f8fafc; padding: 3px 6px;">
-                        DISCHARGE
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 34%; font-weight: bold; padding: 3pt 6pt; background-color: #ffffff;">DISCHARGE</td>
+                    <td style="border: none !important; padding: 3pt 6pt;">{{ $dischargePort }}</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    {{-- BARIS 4: CARGO HEADERS --}}
+    <tr>
+        <td colspan="2" style="padding: 0;">
+            <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                <tr>
+                    <td class="cargo-head" style="width: 28%; border: none !important; border-right: 1px solid #000000 !important;">MARKS AND NUMBER</td>
+                    <td class="cargo-head" style="width: 44%; border: none !important; border-right: 1px solid #000000 !important;">DESCRIPTION</td>
+                    <td class="cargo-head" style="width: 28%; border: none !important;">GW/MEASUREMENT</td>
+                </tr>
+                <tr>
+                    <td class="cargo-cell" style="width: 28%; min-height: 200pt; height: 200pt; border: none !important; border-right: 1px solid #000000 !important;">
+                        {!! nl2br(e($marksNumbers)) !!}
                     </td>
-                    <td style="border: none; font-weight: 700; padding: 3px 6px;">
-                        {{ $si->pod }}
+                    <td class="cargo-cell" style="width: 44%; min-height: 200pt; height: 200pt; border: none !important; border-right: 1px solid #000000 !important;">
+                        {!! nl2br(e($description)) !!}
+                    </td>
+                    <td class="cargo-cell" style="width: 28%; min-height: 200pt; height: 200pt; border: none !important;">
+                        {!! nl2br(e($gwMeas)) !!}
                     </td>
                 </tr>
             </table>
         </td>
     </tr>
 
-    {{-- ROW 6: CARGO HEADERS --}}
+    {{-- BARIS 5: REMARKS --}}
     <tr>
-        <th class="cargo-th" style="width: 30%;">MARKS AND NUMBER</th>
-        <th class="cargo-th" style="width: 44%;">DESCRIPTION</th>
-        <th class="cargo-th" style="width: 26%;">GW/MEASUREMENT</th>
-    </tr>
-
-    {{-- ROW 7: CARGO CONTENTS --}}
-    <tr>
-        <td style="height: 180px; vertical-align: top; font-size: 8.5px;">
-            {!! nl2br(e($si->marks_numbers ?: "N/M\n(NO MARKS)")) !!}
-        </td>
-        <td style="height: 180px; vertical-align: top; font-size: 8.5px;">
-            {!! nl2br(e($si->cargo_description)) !!}
-        </td>
-        <td style="height: 180px; vertical-align: top; font-size: 8.5px; line-height: 1.6;">
-            @if($si->quantity)
-                <strong>QTY :</strong> {{ $si->quantity }} {{ $si->package_unit }}<br>
-            @endif
-            <strong>G.W :</strong> {{ $si->gross_weight ? \App\Support\Money::format($si->gross_weight) . ' KGS' : '—' }}<br>
-            <strong>N.W :</strong> {{ $si->net_weight ? \App\Support\Money::format($si->net_weight) . ' KGS' : '—' }}<br>
-            <strong>MEAS :</strong> {{ $si->measurement ? \App\Support\Money::format($si->measurement) . ' CBM' : '—' }}
-        </td>
-    </tr>
-
-    {{-- ROW 8: REMARKS --}}
-    <tr>
-        <td colspan="3" style="padding: 0;">
-            <div class="cell-title">REMARKS</div>
-            <div class="cell-content" style="padding: 4px 6px; min-height: 45px;">
-                {!! nl2br(e($si->remarks ?: '—')) !!}
+        <td colspan="2" style="padding: 0;">
+            <div class="cell-head">REMARKS</div>
+            <div class="cell-body" style="min-height: 50pt;">
+                {!! nl2br(e($remarksContent)) !!}
             </div>
         </td>
     </tr>
 </table>
 
-<div class="page-footer">Page 1/1</div>
+{{-- FOOTER KIRI BAWAH --}}
+<div class="page-footer">
+    Page 1/1
+</div>
 
 </body>
 </html>

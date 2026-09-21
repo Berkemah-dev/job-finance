@@ -109,6 +109,7 @@
                             data-consignee="{{ $j->consignee_name ?? $j->customer?->name }}"
                             data-shipper="{{ $j->shipper_name }}"
                             data-importer="{{ $j->customer?->name ?? $j->consignee_name }}"
+                            data-commodity="{{ $j->cargo_description }}"
                         >
                             {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->cargo_description, 30) }})
                         </option>
@@ -135,6 +136,16 @@
                 <input id="importer_name" name="importer_name" maxlength="160"
                     value="{{ old('importer_name', $selectedJob?->customer?->name ?? $selectedJob?->consignee_name) }}"
                     placeholder="Nama Importir">
+            </div>
+
+            <div class="field span-2">
+                <label for="commodity">
+                    <span style="font-weight: 700; color: #1e293b;">Commodity (Nama Barang)</span>
+                    <span style="font-size: 11px; color: #64748b; font-weight: normal; margin-left: 6px;">— Otomatis terisi dari Job Order</span>
+                </label>
+                <input id="commodity" name="commodity" maxlength="500"
+                    value="{{ old('commodity', $selectedJob?->cargo_description) }}"
+                    placeholder="Nama barang / komoditas deklarasi pabean">
             </div>
 
             <div class="field">
@@ -240,6 +251,7 @@ document.getElementById('job_id')?.addEventListener('change', function() {
     if (opt.dataset.consignee) setVal('consignee_name', opt.dataset.consignee);
     if (opt.dataset.shipper) setVal('shipper_name', opt.dataset.shipper);
     if (opt.dataset.importer) setVal('importer_name', opt.dataset.importer);
+    if (opt.dataset.commodity) setVal('commodity', opt.dataset.commodity);
 });
 </script>
 

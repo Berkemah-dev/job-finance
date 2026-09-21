@@ -33,6 +33,15 @@
             'SURAT KUASA & DELIVERY ORDER',
         ];
     }
+    $bannerFile = public_path('images/rdx-banner.png');
+    $altLogoFile = public_path('images/rdx-header-logo.jpg');
+    if (file_exists($bannerFile)) {
+        $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($bannerFile));
+    } elseif (file_exists($altLogoFile)) {
+        $logoBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($altLogoFile));
+    } else {
+        $logoBase64 = '';
+    }
 @endphp
 <!doctype html>
 <html>
@@ -151,8 +160,11 @@
             margin-top: 3px;
         }
         .cut-divider {
-            margin: 8px 0 10px 0;
+            margin: 10px 0 14px 0;
             width: 100%;
+        }
+        .copy-second {
+            padding-top: 36px;
         }
         .cut-divider-table {
             width: 100%;
@@ -178,12 +190,12 @@
 <body>
 
     @for($copy = 1; $copy <= 2; $copy++)
-        <div class="half-sheet">
+        <div class="half-sheet {{ $copy === 2 ? 'copy-second' : '' }}">
             <!-- HEADER -->
             <table class="header-table">
                 <tr>
                     <td style="width: 45%;">
-                        <img src="{{ public_path('images/rdx-banner.png') }}" class="logo-img" alt="RDX LOGISTICS">
+                        <img src="{{ $logoBase64 ?: public_path('images/rdx-banner.png') }}" class="logo-img" alt="RDX LOGISTICS">
                     </td>
                     <td style="width: 55%; text-align: right;">
                         <div class="doc-title">{{ $isDokumen ? 'TANDA TERIMA DOKUMEN' : 'TANDA TERIMA BARANG' }}</div>

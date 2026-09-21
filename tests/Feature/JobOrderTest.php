@@ -54,8 +54,9 @@ class JobOrderTest extends TestCase
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
         $this->actingAs($this->manager);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
+        $this->actingAs($this->cs);
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
-        $this->actingAs($this->sales);
+        $this->actingAs($this->cs);
 
         return Job::firstOrFail();
     }
@@ -84,7 +85,7 @@ class JobOrderTest extends TestCase
         $this->get('/jobs/'.$job->id)->assertOk()->assertSee('PT Sumber Makmur')->assertSee('PT Tujuan Jaya')->assertSee('Jakarta');
         $this->actingAs($this->operator);
         $this->get('/jobs/'.$job->id.'/edit')->assertOk()->assertSee('Pelabuhan muat (POL)')->assertSee('Nomor BL');
-        $this->assertDatabaseHas('activity_logs', ['action' => 'quotation.converted', 'user_id' => $this->manager->id]);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'quotation.converted', 'user_id' => $this->cs->id]);
     }
 
     public function test_update_edits_routing_references_cargo_and_assignees(): void
@@ -135,10 +136,11 @@ class JobOrderTest extends TestCase
     public function test_index_filters_service_routing_and_assignee(): void
     {
         $jobA = $this->convertedJob();
-        $jobB = Job::factory()->create(['service_type' => 'land', 'sales_id' => $this->manager->id, 'cs_id' => $this->cs->id]);
+        $otherCs = User::factory()->create(['role_id' => $this->cs->role_id]);
+        $jobB = Job::factory()->create(['service_type' => 'land', 'sales_id' => $this->manager->id, 'cs_id' => $otherCs->id]);
         $this->get('/jobs?service_type=sea')->assertSee($jobA->number)->assertDontSee($jobB->number);
         $this->get('/jobs?sales_id='.$this->manager->id)->assertSee($jobB->number)->assertDontSee($jobA->number);
-        $this->get('/jobs?cs_id='.$this->cs->id)->assertSee($jobB->number)->assertDontSee($jobA->number);
+        $this->get('/jobs?cs_id='.$otherCs->id)->assertSee($jobB->number)->assertDontSee($jobA->number);
         $this->get('/jobs?date_from='.today()->toDateString())->assertSee($jobB->number);
         $this->get('/jobs')->assertSee($jobA->number)->assertSee($jobB->number);
     }

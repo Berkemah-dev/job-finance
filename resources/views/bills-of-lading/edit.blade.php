@@ -86,14 +86,6 @@
                 <small style="color:#64748b;font-size:12px;margin-top:2px;">Otomatis ditarik dari Master B/L Job Order.</small>
             </div>
 
-            <div class="field">
-                <label for="bl_type">Tipe B/L <span class="required">*</span></label>
-                <select id="bl_type" name="bl_type" required>
-                    <option value="original" @selected(old('bl_type', $bl->bl_type) === 'original')>Original B/L</option>
-                    <option value="telex" @selected(old('bl_type', $bl->bl_type) === 'telex')>Telex Release</option>
-                    <option value="seaway" @selected(old('bl_type', $bl->bl_type) === 'seaway')>Sea Waybill</option>
-                </select>
-            </div>
 
             <div class="field">
                 <label for="original_bl_count">Number of Original BL</label>

@@ -66,9 +66,6 @@
             <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1e3a8a;">➕ Input Item Biaya Penawaran</h3>
             <span class="subtle" style="font-size: 11.5px;">Isi detail biaya & mata uang di bawah, lalu klik <strong>"+ Tambah Item ke Daftar"</strong>.</span>
         </div>
-        @if(! $canManageCost)
-            <span class="status-badge" style="background:#e0f2fe;color:#0369a1;font-size:11px;">🔒 Modal akan dimasukkan oleh Sales Manager saat approval</span>
-        @endif
     </div>
 
     {{-- BARIS 1: URAIAN BIAYA & SATUAN & QTY --}}
@@ -133,15 +130,27 @@
 
     <div id="trucking-pricing-fields" hidden style="margin-top: 14px; padding: 14px; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff;">
         <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; margin-bottom: 10px;">Tarif Trucking dari Master Harga</div>
-        <div style="display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items:end;">
+        <div style="display:grid; grid-template-columns: repeat({{ $canManageCost ? 5 : 4 }}, minmax(0, 1fr)); gap: 12px; align-items:end;">
             <div class="field"><label for="input_trucking_origin">Asal / POL <span class="required">*</span></label><input id="input_trucking_origin" type="text" placeholder="Contoh: PRIOK" autocomplete="off"></div>
             <div class="field"><label for="input_trucking_destination">Tujuan / POD <span class="required">*</span></label><input id="input_trucking_destination" type="text" placeholder="Contoh: SURABAYA" autocomplete="off"></div>
             <div class="field"><label for="input_trucking_container_type">Tipe Armada <span class="required">*</span></label><select id="input_trucking_container_type">@foreach($containerUnits ?? \App\Models\ContainerUnit::options() as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
             <div class="field"><label for="input_trucking_overweight">Kategori <span class="required">*</span></label><select id="input_trucking_overweight"><option value="0">Normal</option><option value="1">Overweight</option></select></div>
+            @if($canManageCost)
+            <div class="field">
+                <label for="input_trucking_vendor">Pilihan Vendor (Modal)</label>
+                <select id="input_trucking_vendor">
+                    <option value="">-- Rekomendasi / Termurah --</option>
+                    @foreach($truckingVendors ?? [] as $vendor)
+                        <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
         </div>
-        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px;">
             <button type="button" class="button button-secondary" id="btn_fetch_trucking" style="padding: 7px 14px;">Ambil harga trucking</button>
             <span id="trucking_pricing_status" style="font-size:12px; color:#64748b;">Isi asal, tujuan, dan tipe armada. Harga akan dicari otomatis.</span>
+            <span id="trucking_pricing_vendor" style="display:none; font-size:12px; font-weight:700; color:#1e40af; background:#dbeafe; padding:4px 10px; border-radius:6px; border:1px solid #93c5fd; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"></span>
         </div>
     </div>
 
@@ -158,8 +167,8 @@
 #single-item-input-panel .form-grid > .field > input,
 #single-item-input-panel .form-grid > .field > select { width: 100%; min-height: 44px; height: 44px; box-sizing: border-box; }
 #trucking-pricing-fields input, #trucking-pricing-fields select { width:100%; min-height:44px; height:44px; box-sizing:border-box; }
-@media (max-width: 900px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
-@media (max-width: 560px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: 1fr !important; } }
+@media (max-width: 1024px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+@media (max-width: 640px) { #trucking-pricing-fields > div:nth-child(2) { grid-template-columns: 1fr !important; } }
 </style>
 
 {{-- DAFTAR ITEM PENAWARAN (TABEL SUBMITTED ITEMS) --}}
@@ -194,11 +203,22 @@
 <div class="summary-box" aria-live="polite">
     <div class="summary-row"><span>Total Penawaran (Jual)</span><strong data-preview-total>Rp 0,00</strong></div>
     <div class="summary-row"><span>Estimasi Profit</span><strong data-preview-profit style="color:#16a34a;">Rp 0,00</strong></div>
-    <p class="form-help">Pajak, diskon, dan grand total dihitung saat disimpan.</p>
 </div>
-
-<div class="field"><label for="notes">Catatan / ketentuan penawaran</label><textarea name="notes" id="notes" rows="3" maxlength="5000">{{ old('notes',$quotation->notes) }}</textarea></div>
-<div class="form-actions"><a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a><button class="button button-primary" id="btn_save_quotation" @disabled($customers->isEmpty())>Simpan draft</button></div>
+<div class="form-actions" style="display:flex; gap:10px; align-items:center;">
+    <a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a>
+    @if($canManageCost)
+        <button type="submit" name="direct_approve" value="0" class="button button-secondary" id="btn_save_draft" @disabled($customers->isEmpty())>
+            Simpan Draft
+        </button>
+        <button type="submit" name="direct_approve" value="1" class="button button-primary" id="btn_save_approve" style="background:#16a34a; border-color:#16a34a;" @disabled($customers->isEmpty())>
+            ✓ {{ $quotation->exists && $quotation->status->value === 'approved' ? 'Simpan Perubahan (Approved)' : 'Simpan & Setujui Langsung' }}
+        </button>
+    @else
+        <button type="submit" name="direct_approve" value="0" class="button button-primary" id="btn_save_quotation" @disabled($customers->isEmpty())>
+            Simpan draft
+        </button>
+    @endif
+</div>
 </form></section>
 
 @php

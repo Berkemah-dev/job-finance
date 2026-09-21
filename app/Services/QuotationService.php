@@ -56,6 +56,13 @@ class QuotationService
             $quotation->customer_snapshot = $customer->only(['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number', 'default_payment_terms']);
             $quotation->forceFill($calculated['totals']);
             $this->applyTaxAndGrandTotal($quotation);
+            if (!empty($data['direct_approve']) && ($actor->hasRole(['sales-manager', 'super-admin', 'admin']) || $actor->hasPermission('quotations.approve'))) {
+                $quotation->status = QuotationStatus::Approved;
+                $quotation->approved_by = $actor->id;
+                $quotation->approved_at = now();
+            } elseif (! $new && in_array($quotation->status, [QuotationStatus::Approved, QuotationStatus::Converted], true) && empty($data['direct_approve'])) {
+                $quotation->status = QuotationStatus::Draft;
+            }
             $quotation->updated_by = $actor->id;
             $quotation->lock_version = $new ? 0 : $quotation->lock_version + 1;
             $quotation->save();
@@ -65,6 +72,37 @@ class QuotationService
 
             return $quotation;
         }, 3);
+    }
+
+    /**
+     * Update modal (unit_cost) per item saat approval oleh Sales Manager dan kalkulasi ulang totals.
+     */
+    public function updateCostsAndRecalculate(Quotation $quotation, array $itemCosts): void
+    {
+        $existingItems = $quotation->items()->orderBy('position')->orderBy('id')->get();
+        $rawRows = [];
+        foreach ($existingItems as $index => $item) {
+            $row = $item->toArray();
+            $costInput = $itemCosts[$item->id]['unit_cost'] ?? ($itemCosts[$index]['unit_cost'] ?? null);
+            if ($costInput !== null && $costInput !== '') {
+                $row['unit_cost'] = (string) $costInput;
+            }
+            $rawRows[] = $row;
+        }
+
+        $calculated = $this->calculate($rawRows, $quotation->quotation_date ?? now());
+        $quotation->forceFill($calculated['totals']);
+        $this->applyTaxAndGrandTotal($quotation);
+        $quotation->save();
+
+        foreach ($calculated['items'] as $index => $updatedItemData) {
+            if (isset($existingItems[$index])) {
+                $existingItems[$index]->update([
+                    'unit_cost' => $updatedItemData['unit_cost'],
+                    'total_cost' => $updatedItemData['total_cost'],
+                ]);
+            }
+        }
     }
 
     /**
@@ -98,6 +136,9 @@ class QuotationService
                 $quotation->submitted_by = $actor->id;
                 $quotation->submitted_at = now();
             } elseif ($action === 'approve') {
+                if (!empty($data['items']) && is_array($data['items'])) {
+                    $this->updateCostsAndRecalculate($quotation, $data['items']);
+                }
                 $quotation->status = QuotationStatus::Approved;
                 $quotation->approved_by = $actor->id;
                 $quotation->approved_at = now();
@@ -137,8 +178,8 @@ class QuotationService
             Gate::forUser($actor)->authorize('convert', $quotation);
             $this->master->checkVersion($quotation, $data);
             $this->activeCustomer($quotation->customer_id);
-            if ($quotation->job()->exists()) {
-                throw ValidationException::withMessages(['quotation' => 'Quotation sudah dikonversi.']);
+            if ($quotation->jobs()->where('status', '!=', 'cancelled')->exists()) {
+                throw ValidationException::withMessages(['quotation' => 'Quotation sudah dikonversi ke Job aktif.']);
             }
             $quotation->load('items');
             $snapshot = [

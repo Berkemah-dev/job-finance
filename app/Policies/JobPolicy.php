@@ -29,6 +29,6 @@ class JobPolicy
 
     public function cancel(User $user, Job $job): bool
     {
-        return $user->hasPermission('jobs.manage') && $job->status === 'open';
+        return ($user->hasPermission('jobs.manage') || $user->hasRole(['sales-manager', 'super-admin', 'admin'])) && $job->status === 'open';
     }
 }

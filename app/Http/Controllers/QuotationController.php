@@ -11,7 +11,9 @@ use App\Models\ChargeType;
 use App\Models\Port;
 use App\Models\Quotation;
 use App\Models\ServiceType;
+use App\Models\TruckingPrice;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Services\MasterDataService;
 use App\Services\QuotationService;
 use Illuminate\Http\Request;
@@ -57,6 +59,7 @@ class QuotationController extends Controller
             'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
+            'truckingVendors' => $this->truckingVendors(),
         ]);
     }
 
@@ -73,7 +76,8 @@ class QuotationController extends Controller
 
         $quotation->load(['items', 'customer', 'job', 'creator', 'approver', 'revisedBy', 'statusHistory.user']);
 
-        if (! Gate::allows('financial.view')) {
+        $canViewCost = Gate::allows('financial.view') || Gate::allows('quotations.approve') || (auth()->user() && auth()->user()->hasRole(['sales-manager', 'super-admin', 'admin']));
+        if (! $canViewCost) {
             foreach ($quotation->items as $item) {
                 $item->unit_cost = null;
             }
@@ -89,8 +93,12 @@ class QuotationController extends Controller
         $quotation->load(['items', 'customer', 'creator']);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('quotations.pdf', ['quotation' => $quotation]);
+        $date = $quotation->quotation_date ? $quotation->quotation_date->format('d-m-Y') : now()->format('d-m-Y');
+        $parts = explode('-', str_replace('/', '-', $quotation->number));
+        $seq = end($parts);
+        $filename = 'QUO_RDX_'.$seq.'_'.$date.'.pdf';
         
-        return $pdf->download('Quotation_'.$quotation->number.'.pdf');
+        return $pdf->download($filename);
     }
 
     public function edit(Quotation $quotation)
@@ -106,6 +114,7 @@ class QuotationController extends Controller
             'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
+            'truckingVendors' => $this->truckingVendors(),
         ]);
     }
 
@@ -123,6 +132,10 @@ class QuotationController extends Controller
 
     public function approve(VersionRequest $request, Quotation $quotation, QuotationService $service)
     {
+        if ($quotation->status === QuotationStatus::Approved) {
+            return redirect()->route('quotations.show', $quotation)->with('info', 'Quotation ini sudah berstatus disetujui.');
+        }
+
         return $this->change($request, $quotation, $service, 'approve');
     }
 
@@ -168,14 +181,17 @@ class QuotationController extends Controller
 
         $quotation->load(['items', 'customer', 'creator', 'approver', 'sales']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
-        $filename = $quotation->number.'.pdf';
+        $date = $quotation->quotation_date ? $quotation->quotation_date->format('d-m-Y') : now()->format('d-m-Y');
+        $parts = explode('-', str_replace('/', '-', $quotation->number));
+        $seq = end($parts);
+        $filename = 'QUO_RDX_'.$seq.'_'.$date.'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF quotation '.$quotation->number, ['module' => 'quotation', 'record_id' => $quotation->id]);
 
         return $request->query('mode') === 'download'
             ? $pdf->download($filename)
             : response($pdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
                 'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
                 'Pragma' => 'no-cache',
             ]);
@@ -188,8 +204,22 @@ class QuotationController extends Controller
         })->orderBy('name')->get(['id', 'name']);
     }
 
+    private function truckingVendors()
+    {
+        return Vendor::where('is_active', true)
+            ->where(function ($q) {
+                $q->whereIn('type', ['trucking', 'both'])
+                    ->orWhereHas('categories', fn ($c) => $c->whereIn('category', ['trucking', 'both']))
+                    ->orWhereIn('id', TruckingPrice::select('vendor_id'));
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+    }
+
     public function convert(VersionRequest $request, Quotation $quotation, QuotationService $service)
     {
+        Gate::authorize('convert', $quotation);
+
         $job = $service->convert($quotation, $request->validated(), $request->user());
 
         return redirect()->route('jobs.show', $job)->with('success', 'Quotation berhasil dikonversi menjadi Job Order (Status: Open). Finance dapat langsung mengisi biaya operasional.');

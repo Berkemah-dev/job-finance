@@ -113,6 +113,7 @@ Route::middleware('auth')->group(function () {
     foreach (['approve', 'reject', 'revise'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.approve')->name('quotations.'.$action);
     }
+    Route::get('/quotations/{quotation}/approve', fn(Quotation $quotation) => redirect()->route('quotations.show', $quotation));
     Route::post('/quotations/{quotation}/convert', [QuotationController::class, 'convert'])->middleware(['can:quotations.manage', 'can:jobs.manage'])->name('quotations.convert');
     // Booking Confirmation
     Route::resource('booking-confirmations', BookingConfirmationController::class)->middleware('can:jobs.view');
@@ -124,8 +125,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/shipping-instructions/{shippingInstruction}/pdf', [ShippingInstructionController::class, 'pdf'])->middleware('can:jobs.view')->name('shipping-instructions.pdf');
     // AWB — Air Waybill (Export Air)
     Route::resource('awbs', AwbController::class)->middleware('can:jobs.view');
+    Route::get('/awbs/{awb}/preview', [AwbController::class, 'preview'])->middleware('can:jobs.view')->name('awbs.preview');
+    Route::get('/api/awbs/{awb}/pdf', [AwbController::class, 'pdf'])->middleware('can:jobs.view')->name('awbs.pdf');
     // Bill of Lading — B/L (Export Sea)
     Route::resource('bills-of-lading', BillOfLadingController::class)->parameters(['bills-of-lading' => 'billOfLading'])->middleware('can:jobs.view');
+    Route::get('/bills-of-lading/{billOfLading}/preview', [BillOfLadingController::class, 'preview'])->middleware('can:jobs.view')->name('bills-of-lading.preview');
+    Route::get('/api/bills-of-lading/{billOfLading}/pdf', [BillOfLadingController::class, 'pdf'])->middleware('can:jobs.view')->name('bills-of-lading.pdf');
     // DNP — Deklarasi Nilai Pabean (Import)
     Route::resource('dnps', DnpController::class)->middleware('can:jobs.view');
     Route::get('/dnps/{dnp}/pdf', [DnpController::class, 'previewPdf'])->middleware('can:jobs.view')->name('dnps.pdf');
@@ -139,7 +144,9 @@ Route::middleware('auth')->group(function () {
     foreach (['open', 'cancel'] as $action) {
         Route::post('/jobs/{job}/'.$action, [JobController::class, $action])->middleware('can:jobs.manage')->name('jobs.'.$action);
     }
+    Route::post('/jobs/{job}/reopen', [JobController::class, 'reopen'])->middleware('can:jobs.close')->name('jobs.reopen');
     Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.confirm-do')->name('jobs.confirm-do');
+    Route::post('/jobs/{job}/upload-surat-jalan', [JobController::class, 'uploadSuratJalan'])->middleware('can:jobs.view')->name('jobs.surat-jalan.upload');
     // Job Documents
     Route::post('/jobs/{job}/documents', [JobDocumentController::class, 'store'])->middleware('can:jobs.view')->name('jobs.documents.store');
     Route::get('/jobs/{job}/documents/{document}/download', [JobDocumentController::class, 'download'])->middleware('can:jobs.view')->name('jobs.documents.download');

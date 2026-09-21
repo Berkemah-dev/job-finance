@@ -49,10 +49,14 @@ class BillOfLadingController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations', 'billsOfLading'])->find($jobId);
+            if ($selectedJob && $selectedJob->billsOfLading->isNotEmpty()) {
+                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-bl')
+                    ->with('warning', 'Job Order ini sudah memiliki Bill of Lading (' . $selectedJob->billsOfLading->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
         }
 
-        $jobs = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations', 'billsOfLading'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $ports = Port::orderBy('name')->get();
 
@@ -88,7 +92,7 @@ class BillOfLadingController extends Controller
             'customer_id'         => 'nullable|exists:customers,id',
             'hbl_number'          => 'nullable|string|max:100',
             'mbl_number'          => 'nullable|string|max:100',
-            'bl_type'             => 'required|string|in:original,telex,seaway',
+            'bl_type'             => 'nullable|string|max:50',
             'original_bl_count'   => 'nullable|integer|min:0',
             'place_of_issue'      => 'nullable|string|max:60',
             'date_of_issue'       => 'nullable|date',
@@ -125,6 +129,18 @@ class BillOfLadingController extends Controller
             'remarks'             => 'nullable|string',
             'status'              => 'nullable|string|in:draft,issued,released,completed,cancelled',
         ]);
+
+        if (empty($validated['bl_type'])) {
+            $validated['bl_type'] = 'original';
+        }
+
+        if (!empty($validated['job_id'])) {
+            $existingBl = BillOfLading::where('job_id', $validated['job_id'])->first();
+            if ($existingBl) {
+                return redirect()->to(route('jobs.show', $validated['job_id']) . '#tab-bl')
+                    ->with('warning', 'Job Order ini sudah memiliki Bill of Lading (' . $existingBl->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+            }
+        }
 
         if (empty($validated['status'])) {
             $validated['status'] = 'draft';
@@ -201,7 +217,7 @@ class BillOfLadingController extends Controller
             'customer_id'         => 'nullable|exists:customers,id',
             'hbl_number'          => 'nullable|string|max:100',
             'mbl_number'          => 'nullable|string|max:100',
-            'bl_type'             => 'required|string|in:original,telex,seaway',
+            'bl_type'             => 'nullable|string|max:50',
             'original_bl_count'   => 'nullable|integer|min:0',
             'place_of_issue'      => 'nullable|string|max:60',
             'date_of_issue'       => 'nullable|date',
@@ -285,5 +301,38 @@ class BillOfLadingController extends Controller
 
         return redirect()->route('bills-of-lading.index')
             ->with('success', 'B/L ' . $number . ' berhasil dihapus.');
+    }
+
+    public function preview(BillOfLading $billOfLading)
+    {
+        $type = request('type', $billOfLading->status === 'draft' ? 'draft' : 'original');
+
+        return view('documents.pdf-preview', [
+            'title'       => 'Bill of Lading ' . $billOfLading->number,
+            'backUrl'     => route('bills-of-lading.show', $billOfLading),
+            'pdfUrl'      => route('bills-of-lading.pdf', ['billOfLading' => $billOfLading, 'type' => $type, 'mode' => 'inline', 't' => time()]),
+            'downloadUrl' => route('bills-of-lading.pdf', ['billOfLading' => $billOfLading, 'type' => $type, 'mode' => 'download']),
+        ]);
+    }
+
+    public function pdf(Request $request, BillOfLading $billOfLading)
+    {
+        $billOfLading->load(['job.customer', 'customer']);
+        $type = strtolower($request->query('type', $billOfLading->status === 'draft' ? 'draft' : 'original'));
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.bill-of-lading', [
+            'bl'   => $billOfLading,
+            'type' => $type,
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'BL_' . str_replace(['/', '\\'], '-', $billOfLading->number) . '_' . strtoupper($type) . '.pdf';
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+                'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma'              => 'no-cache',
+            ]);
     }
 }

@@ -145,13 +145,15 @@
     $quotationVolume = $quotation?->items?->sum(fn($i) => (float)($i->volume ?? 0));
     $volumeStr = $job->volume ? $job->volume . ' M3' : ($quotationVolume > 0 ? $quotationVolume . ' M3' : '—');
     $commodityStr = $job->cargo_description ?? $quotation?->commodity ?? 'General Cargo';
-    $noteContent = $job->operational_notes ?? $quotation?->notes ?? '';
+    $noteContent = $job->operational_notes ?: ($quotation?->notes ?? '—');
+    $logoFile = public_path('images/logo.png');
+    $logoBase64 = file_exists($logoFile) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoFile)) : '';
 @endphp
 
 {{-- HEADER --}}
 <div class="header">
     <div class="header-logo">
-        <img src="{{ public_path('images/logo.png') }}" alt="RDX Logistics">
+        <img src="{{ $logoBase64 ?: public_path('images/logo.png') }}" alt="RDX Logistics">
     </div>
     <div class="header-meta">
         <div class="meta-box">

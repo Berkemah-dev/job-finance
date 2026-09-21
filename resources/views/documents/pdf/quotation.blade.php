@@ -5,24 +5,21 @@
     <title>Quotation {{ $quotation->number }}</title>
     <style>
         @page {
-            margin: 20px 28px 20px 28px;
+            margin: 22px 26px 20px 26px;
             size: a4 portrait;
         }
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: 'Courier New', Courier, 'DejaVu Sans Mono', monospace;
+            font-family: 'Courier New', Courier, monospace;
             color: #000;
-            font-size: 10pt;
-            line-height: 1.35;
+            font-size: 9pt;
+            line-height: 1.25;
             margin: 0;
             padding: 0;
-            position: relative;
-            min-height: 100%;
         }
         table {
-            width: 100%;
             border-collapse: collapse;
         }
         td {
@@ -31,139 +28,159 @@
         .clear {
             clear: both;
         }
-        .header {
-            margin-bottom: 16px;
+        .header-table {
+            width: 100%;
+            margin-bottom: 76px;
         }
         .header-logo {
-            float: left;
-            width: 42%;
+            width: 58%;
+            vertical-align: top;
         }
         .header-logo img {
-            max-width: 190px;
-            max-height: 52px;
+            width: 198pt;
+            height: auto;
         }
         .header-company {
-            float: right;
-            width: 56%;
-            text-align: right;
-            font-size: 9.5pt;
-            line-height: 1.3;
+            width: 42%;
+            vertical-align: top;
+            text-align: left;
+            font-size: 8pt;
+            line-height: 1.2;
+            padding-left: 15px;
         }
         .header-company .company-name {
             font-weight: bold;
-            font-size: 10.5pt;
+            font-size: 9.5pt;
             margin-bottom: 2px;
         }
-        .top-block {
+        .top-block-table {
+            width: 100%;
             margin-bottom: 14px;
         }
         .to-block {
-            float: left;
-            width: 53%;
-            font-size: 10pt;
-            line-height: 1.35;
+            width: 70%;
+            vertical-align: top;
+            font-size: 9pt;
+            line-height: 1.25;
+            padding-top: 14px;
         }
-        .to-label {
+        .to-attn {
             font-weight: bold;
             color: #000;
         }
         .to-name {
-            font-weight: bold;
-            color: #cc0000;
+            font-weight: normal;
+            color: #000;
             text-transform: uppercase;
         }
         .to-address {
-            color: #cc0000;
-            font-weight: bold;
+            color: #000;
+            font-size: 9pt;
             text-transform: uppercase;
-            margin-top: 2px;
+            line-height: 1.25;
+        }
+        .to-npwp {
+            font-weight: normal;
+            color: #000;
+            font-size: 9pt;
         }
         .quo-block {
-            float: right;
-            width: 45%;
-            text-align: right;
+            width: 30%;
+            vertical-align: top;
+            text-align: left;
+            padding-left: 5px;
         }
         .quo-title {
-            font-size: 18pt;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 20pt;
+            font-weight: normal;
+            letter-spacing: 0.5px;
+            line-height: 0.85;
+            margin-top: 3px;
+            margin-bottom: 5px;
         }
         .quo-meta {
             border-collapse: collapse;
-            margin-left: auto;
-            font-size: 10pt;
+            font-size: 9pt;
+            width: 100%;
         }
         .quo-meta td {
-            padding: 1.5px 0;
+            padding: 1px 0;
         }
         .quo-meta td.lbl {
             font-weight: bold;
             text-align: left;
-            padding-right: 2px;
-            width: 105px;
+            width: 88px;
+            white-space: nowrap;
         }
         .quo-meta td.colon {
-            width: 12px;
+            width: 10px;
             text-align: center;
         }
         .quo-meta td.val {
             text-align: left;
-            padding-left: 4px;
+            padding-left: 2px;
+            font-weight: normal;
+            color: #000;
+            white-space: nowrap;
         }
         .shipment-info {
             border-collapse: collapse;
             margin-bottom: 12px;
-            font-size: 10pt;
-            width: 100%;
+            font-size: 9pt;
+            width: 60%;
         }
         .shipment-info td {
-            padding: 2px 0;
+            padding: 1px 0;
             vertical-align: top;
         }
         .shipment-info td.field-label {
             font-weight: bold;
             color: #000;
-            width: 170px;
+            width: 135px;
+            white-space: nowrap;
         }
         .shipment-info td.colon {
-            width: 14px;
+            width: 10px;
             text-align: center;
         }
         .shipment-info td.val {
-            font-weight: bold;
-            color: #cc0000;
+            font-weight: normal;
+            color: #000;
             text-transform: uppercase;
+            padding-left: 3px;
         }
         .intro {
-            margin-bottom: 8px;
-            font-size: 10pt;
+            margin-bottom: 6px;
+            font-size: 9pt;
+            color: #000;
         }
         table.items {
             width: 100%;
             border: 1px solid #000;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            font-size: 9.5pt;
+            margin-bottom: 10px;
+            font-size: 8pt;
         }
         table.items thead tr {
-            background-color: #e0e0e0;
+            background-color: #dfdfdf;
         }
         table.items thead th {
-            padding: 5px 3px;
+            padding: 4px 2px;
             text-align: center;
             border: 1px solid #000;
             font-weight: bold;
-            font-size: 9pt;
+            font-size: 8pt;
             text-transform: uppercase;
         }
         table.items tbody tr {
             background-color: #fff;
         }
         table.items tbody td {
-            padding: 4px 4px;
+            padding: 3px 4px;
             border: 1px solid #000;
             vertical-align: middle;
+            color: #000;
         }
         table.items td.center {
             text-align: center;
@@ -172,114 +189,149 @@
             text-align: right;
         }
         .remarks {
-            margin-bottom: 10px;
-            font-size: 9.5pt;
-            line-height: 1.35;
+            margin-bottom: 8px;
+            font-size: 8.5pt;
+            line-height: 1.25;
+            color: #000;
         }
         .remarks-title {
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .custom-remarks {
-            margin-bottom: 10px;
-            font-size: 9.5pt;
-            line-height: 1.35;
+            margin: 6px 0 6px 0;
+            font-size: 8.5pt;
+            line-height: 1.25;
+            color: #000;
         }
         .cr-label {
             font-weight: bold;
-            color: #cc0000;
+            color: #000;
         }
         .cr-content {
             font-weight: bold;
-            color: #cc0000;
+            color: #000;
             text-transform: uppercase;
         }
         .closing {
-            margin: 10px 0 12px 0;
-            font-size: 9.5pt;
-            line-height: 1.35;
+            margin: 8px 0 16px 0;
+            font-size: 8.5pt;
+            line-height: 1.25;
+            color: #000;
         }
         .sign {
-            position: absolute;
-            bottom: 15px;
-            left: 0;
-            right: 0;
-            font-size: 9.5pt;
-            line-height: 1.3;
+            margin-top: 210px;
+            font-size: 8.5pt;
+            line-height: 1.25;
+            color: #000;
         }
         .sign-logo {
-            margin: 6px 0 5px 0;
+            margin: 6px 0 6px 0;
         }
         .sign-logo img {
-            max-height: 36px;
-            max-width: 110px;
+            width: 73pt;
+            height: auto;
         }
         .sign-name {
             font-weight: bold;
-            color: #cc0000;
+            color: #000;
             text-decoration: underline;
             text-transform: uppercase;
+            font-style: normal;
         }
         .sign-role {
             font-weight: normal;
+            color: #000;
         }
         .sign-contact {
             font-weight: normal;
+            color: #000;
         }
-        .sign-generated {
-            margin-top: 6px;
+        .footer-disclaimer {
+            position: absolute;
+            bottom: 12px;
+            left: 0;
             font-style: italic;
-            font-size: 8.5pt;
-            color: #333;
+            font-size: 7.5pt;
+            color: #000;
         }
     </style>
 </head>
 <body>
 
+@php
+    $headerLogoFile = public_path('images/rdx-header-logo.jpg');
+    $headerLogoSrc = file_exists($headerLogoFile)
+        ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerLogoFile))
+        : (file_exists(public_path('images/rdx-logistics-doc-logo.png'))
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents(public_path('images/rdx-logistics-doc-logo.png')))
+            : public_path('images/rdx-header-logo.jpg'));
+
+    $signLogoFile = public_path('images/logo.png');
+    $signLogoSrc = file_exists($signLogoFile)
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($signLogoFile))
+        : public_path('images/logo.png');
+@endphp
+
 {{-- HEADER --}}
-<div class="header">
-    <div class="header-logo">
-        <img src="{{ public_path('images/logo.png') }}" alt="RDX LOGISTICS">
-    </div>
-    <div class="header-company">
-        <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
-        <div>Address : Jl.Teh No 3C Tamansari Pinangsia</div>
-        <div>Jakarta Barat Indonesia 11110</div>
-        <div>Telp : 021-38873060</div>
-    </div>
-    <div class="clear"></div>
-</div>
+<table class="header-table">
+    <tr>
+        <td class="header-logo">
+            <img src="{{ $headerLogoSrc }}" alt="RDX LOGISTICS">
+        </td>
+        <td class="header-company">
+            <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
+            <div>Jl.Teh No.3C Jakarta Barat 11110 Indonesia</div>
+            <div>Telp : 021-38873060</div>
+        </td>
+    </tr>
+</table>
 
 {{-- TO + QUOTATION TITLE --}}
-<div class="top-block">
-    <div class="to-block">
-        <span class="to-label">To : </span><span class="to-name">{{ $quotation->customer_snapshot['name'] ?? ($quotation->customer?->name ?? '—') }}</span>
-        @if(!empty($quotation->customer_snapshot['address']) || !empty($quotation->customer?->address))
-        <div class="to-address">{!! nl2br(e($quotation->customer_snapshot['address'] ?? $quotation->customer?->address)) !!}</div>
-        @endif
-    </div>
-    <div class="quo-block">
-        <div class="quo-title">QUOTATION</div>
-        <table class="quo-meta">
-            <tr>
-                <td class="lbl">QUO NO.</td>
-                <td class="colon">:</td>
-                <td class="val">{{ $quotation->number }}</td>
-            </tr>
-            <tr>
-                <td class="lbl">QUO DATE</td>
-                <td class="colon">:</td>
-                <td class="val">{{ $quotation->quotation_date ? $quotation->quotation_date->format('d/m/Y') : '-' }}</td>
-            </tr>
-            <tr>
-                <td class="lbl">VALID UNTIL</td>
-                <td class="colon">:</td>
-                <td class="val">{{ $quotation->valid_until ? $quotation->valid_until->format('d/m/Y') : '-' }}</td>
-            </tr>
-        </table>
-    </div>
-    <div class="clear"></div>
-</div>
+<table class="top-block-table">
+    <tr>
+        <td class="to-block">
+            @php
+                $contactName = $quotation->customer_snapshot['contact_name'] ?? ($quotation->customer?->contact_name ?? null);
+                $custName = $quotation->customer_snapshot['name'] ?? ($quotation->customer?->name ?? '—');
+                $custAddress = $quotation->customer_snapshot['address'] ?? ($quotation->customer?->address ?? null);
+                $taxNumber = $quotation->customer_snapshot['tax_number'] ?? ($quotation->customer?->tax_number ?? null);
+            @endphp
+            @if($contactName)
+                <div class="to-attn">Attn. {{ strtoupper($contactName) }}</div>
+                <div class="to-name">{{ strtoupper($custName) }}</div>
+            @else
+                <div class="to-name"><span style="font-weight: bold;">To : </span>{{ strtoupper($custName) }}</div>
+            @endif
+            @if(!empty($custAddress))
+                <div class="to-address">{!! nl2br(e($custAddress)) !!}</div>
+            @endif
+            @if(!empty($taxNumber))
+                <div class="to-npwp">NPWP : {{ $taxNumber }}</div>
+            @endif
+        </td>
+        <td class="quo-block">
+            <div class="quo-title">QUOTATION</div>
+            <table class="quo-meta">
+                <tr>
+                    <td class="lbl">QUO NO.</td>
+                    <td class="colon">:</td>
+                    <td class="val">{{ $quotation->number }}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">QUO DATE</td>
+                    <td class="colon">:</td>
+                    <td class="val">{{ $quotation->quotation_date ? $quotation->quotation_date->format('d-m-Y') : '-' }}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">VALID UNTIL</td>
+                    <td class="colon">:</td>
+                    <td class="val">{{ $quotation->valid_until ? $quotation->valid_until->format('d-m-Y') : '' }}</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 
 {{-- SHIPMENT INFO --}}
 <table class="shipment-info">
@@ -336,7 +388,7 @@
             <th style="width:36px;">CUR</th>
             <th style="width:85px;">PRICE</th>
             <th style="width:36px;">QTY</th>
-            <th style="width:55px;">UNIT</th>
+            <th style="width:65px;">UNIT</th>
             <th style="width:60px;">EXC.RATE</th>
             <th style="width:95px;">AMOUNT IDR</th>
             <th style="width:70px;">NOTE</th>
@@ -391,16 +443,16 @@
             <td>
                 {{ strtoupper($item->description) }}
                 @if($subText)
-                    <br/><span style="font-size:8pt;color:#444;">{{ $subText }}</span>
+                    <br/><span style="font-size:7pt;color:#444;">{{ $subText }}</span>
                 @endif
             </td>
             <td class="center">{{ $currency }}</td>
             <td class="right">{{ $priceFormatted }}</td>
             <td class="center">{{ $qtyFormatted }}</td>
-            <td class="center">{{ $item->unit }}</td>
+            <td>{{ $item->unit }}</td>
             <td class="center">{{ $excRate }}</td>
             <td class="right">{{ $amountFormatted }}</td>
-            <td style="font-size:8pt;">{{ $item->note ?? '' }}</td>
+            <td style="font-size:7pt;">{{ $item->note ?? '' }}</td>
         </tr>
         @endforeach
 
@@ -424,19 +476,19 @@
 {{-- STANDARD REMARKS --}}
 <div class="remarks">
     <div class="remarks-title">Remarks:</div>
-    1. All fees and charges listed must be paid in IDR (Indonesian Rupiah) according to the Invoice date and subject to PPN 1.1%<br>
-    2. Shipping is not insured unless specifically requested by the customer.<br>
-    3. Importers or exporters are required to prepare NPWP/NIB and other supporting documents to complete the order.<br>
-    4. Term of Payment and penalty for late charges will be implemented according to the general Term and condition.<br>
-    5. Every Cancellation shipment is required to pay a Cancellation Fee if any.<br>
-    6. Payment is made 7 days normally from the invoice received by the customer.<br>
-    7. All prices above are valid according to the available valid date and are not binding if it has passed.
+    1.All fees and charges listed must be paid in IDR (Indonesian Rupiah) according to the Invoice date and subject to PPN 1.1%<br>
+    2.Shipping is not insured unless specifically requested by the customer.<br>
+    3.Importers or exporters are required to prepare NPWP/NIB and other supporting documents to complete the order.<br>
+    4.Term of Payment and penalty for late charges will be implemented according to the general Term and condition.<br>
+    5.Every Cancellation shipment is required to pay a Cancellation Fee if any.<br>
+    6.Payment is made 7 days normally from the invoice received by the customer.<br>
+    7.All prices above are valid according to the available valid date and are not binding if it has passed.
 </div>
 
-{{-- CUSTOM REMARKS --}}
+{{-- CUSTOM REMARKS / NOTE --}}
 @if(!empty(trim($quotation->notes ?? '')))
 <div class="custom-remarks">
-    <div class="cr-label">REMARKS :</div>
+    <div class="cr-label">NOTE:</div>
     <div class="cr-content">{!! nl2br(e($quotation->notes)) !!}</div>
 </div>
 @endif
@@ -446,20 +498,24 @@
     Will be happy to assist your shipment and for further information you may need please do not hesitate to contact us.
 </div>
 
-{{-- SIGNATURE (DILETAKKAN DI PALING BAWAH HALAMAN) --}}
+{{-- SIGNATURE --}}
 <div class="sign">
     <div>Yours Faithfully,</div>
     <div class="sign-logo">
-        <img src="{{ public_path('images/logo.png') }}" alt="RDX">
+        <img src="{{ $signLogoSrc }}" alt="RDX">
     </div>
     @php
         $salesUser = $quotation->sales ?? ($quotation->creator ?? null);
     @endphp
-    <div class="sign-name">{{ strtoupper($salesUser?->name ?? 'NAMA SALES') }}</div>
+    <div class="sign-name">{{ strtoupper($salesUser?->name ?? 'STEVEN JOMAN') }}</div>
     <div class="sign-role">MARKETING</div>
-    <div class="sign-contact">Mobile : {{ $salesUser?->phone ?? '' }}</div>
-    <div class="sign-contact">Email : {{ $salesUser?->email ?? '' }}</div>
-    <div class="sign-generated">This is computer-generated does not require signature</div>
+    <div class="sign-contact">Mobile : {{ $salesUser?->phone ?? '082246500047' }}</div>
+    <div class="sign-contact">Email : {{ $salesUser?->email ?? 'steven@rdx-interlog.com' }}</div>
+</div>
+
+{{-- FOOTER DISCLAIMER --}}
+<div class="footer-disclaimer">
+    This is computer-generated does not require signature
 </div>
 
 </body>

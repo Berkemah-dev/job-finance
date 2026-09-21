@@ -25,13 +25,20 @@
 
 <div class="quote-actions" style="margin-bottom: 20px;">
     @if($invoice->status !== 'paid')
-        <a class="button button-primary" href="{{ route('payments.create', $invoice) }}">+ Catat Pembayaran</a>
+        <button type="button" class="button button-primary" onclick="document.getElementById('modal-add-payment').showModal()">+ Add Payment</button>
     @endif
     <a class="button button-secondary" href="{{ route('invoices.preview', $invoice) }}" target="_blank">🖨 Preview PDF</a>
     @if((float) $invoice->tax > 0)
         <a class="button button-secondary" href="{{ route('invoices.coretax', $invoice) }}">Ekspor XML Coretax</a>
     @endif
     <a class="button button-secondary" href="{{ route('jobs.show', $job) }}">Lihat Job Order</a>
+    @can('jobs.close')
+        @if($job && $job->status === 'closed' && (!$invoice->payments()->exists() && (float)$invoice->paid_amount == 0))
+            <button type="button" class="button button-secondary" style="color: #dc2626; border-color: #fca5a5;" onclick="document.getElementById('modal-reopen-job').showModal()">
+                ↺ Undo / Buka Kembali Job
+            </button>
+        @endif
+    @endcan
 </div>
 
 {{-- PANEL UTAMA TAMPILAN INVOICE SESUAI FORMAT DOCX --}}
@@ -441,6 +448,7 @@
                     <th>Tanggal</th>
                     <th>Metode</th>
                     <th>Rekening Tujuan</th>
+                    <th class="money">PPH 23</th>
                     <th class="money">Jumlah Dibayar</th>
                 </tr>
             </thead>
@@ -450,17 +458,185 @@
                         <td><strong>{{ $payment->number }}</strong></td>
                         <td>{{ $payment->payment_date->format('d/m/Y') }}</td>
                         <td><span class="status-badge" style="background:#e0f2fe;color:#0369a1;">{{ ucfirst($payment->method) }}</span></td>
-                        <td>{{ $payment->account->code }} — {{ $payment->account->name }}</td>
+                        <td>{{ $payment->account ? ($payment->account->code . ' — ' . $payment->account->name) : '—' }}</td>
+                        <td class="money" style="color:#b45309; font-weight:600;">
+                            @if((float)$payment->pph23_amount > 0)
+                                Rp {{ \App\Support\Money::format($payment->pph23_amount) }}
+                            @else
+                                <span style="color:#94a3b8;">0,00</span>
+                            @endif
+                        </td>
                         <td class="money" style="font-weight:700;color:#16a34a;">Rp {{ \App\Support\Money::format($payment->amount) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">Belum ada riwayat pembayaran untuk invoice ini.</td>
+                        <td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">Belum ada riwayat pembayaran untuk invoice ini.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 </section>
+
+{{-- MODAL ADD PAYMENT (DESAIN SESUAI IMAGE 9 CLIENT) --}}
+@if($invoice->status !== 'paid')
+<dialog id="modal-add-payment" class="modal-dialog" style="max-width: 620px !important; width: calc(100% - 32px); border: 2px solid #3b82f6; border-radius: 8px; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); background: #ffffff; position: fixed; inset: 0; margin: auto; overflow: hidden;">
+    <form method="POST" action="{{ route('payments.store', $invoice) }}" style="margin: 0; padding: 0;">
+        @csrf
+        <input type="hidden" name="lock_version" value="{{ $invoice->lock_version }}">
+        <input type="hidden" name="method" value="transfer">
+
+        {{-- SECTION 1: DATA INVOICE --}}
+        <div style="background: #4682b4; color: #ffffff; padding: 8px 16px; font-weight: bold; font-size: 13.5px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 14px;">📋</span>
+                <span>Data Invoice</span>
+            </div>
+            <button type="button" onclick="document.getElementById('modal-add-payment').close()" style="background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; font-weight: bold;">✕</button>
+        </div>
+
+        <div style="padding: 16px 22px; background: #ffffff; border-bottom: 1px solid #cbd5e1;">
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 10px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">#Inv. No :</label>
+                <input type="text" value="{{ $invoice->number }}" disabled style="max-width: 240px; background: #f8fafc; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 13px; font-weight: 600; border-radius: 3px; color: #0f172a;">
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center; margin-bottom: 10px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Customer :</label>
+                <input type="text" value="{{ $invoice->customer_snapshot['name'] }}" disabled style="width: 100%; max-width: 420px; background: #fef3c7; border: 1px solid #d97706; padding: 5px 10px; font-size: 12.5px; font-weight: 600; border-radius: 3px; color: #78350f;">
+            </div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Billing :</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="text" value="{{ \App\Support\Money::format($invoice->balance) }}" disabled style="width: 140px; text-align: right; background: #fef3c7; border: 1px solid #d97706; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; color: #78350f; font-family: monospace;">
+                    <span style="border: 1px solid #94a3b8; background: #f8fafc; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 3px; color: #334155;">{{ $invoice->currency }}</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- SECTION 2: DATA PAYMENT --}}
+        <div style="background: #4682b4; color: #ffffff; padding: 8px 16px; font-weight: bold; font-size: 13.5px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px;">📋</span>
+            <span>Data Payment</span>
+        </div>
+
+        <div style="padding: 18px 22px 20px; background: #ffffff;">
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Payment Date :</label>
+                <input type="date" name="payment_date" value="{{ old('payment_date', today()->toDateString()) }}" required style="width: 170px; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 12.5px; border-radius: 3px; background: #fff;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Payment Amount :</label>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <input type="number" id="pay_amount" name="amount" min="0.01" max="{{ $invoice->balance }}" step="0.01" value="{{ old('amount', $invoice->balance) }}" required style="width: 140px; text-align: right; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; background: #fff;">
+                    <select name="currency" id="pay_currency" style="border: 1px solid #94a3b8; padding: 5px 8px; font-size: 12.5px; font-weight: 600; border-radius: 3px; background: #fff;">
+                        <option value="IDR" @selected($invoice->currency === 'IDR')>IDR</option>
+                        <option value="USD" @selected($invoice->currency === 'USD')>USD</option>
+                        <option value="SGD" @selected($invoice->currency === 'SGD')>SGD</option>
+                    </select>
+                    <label style="font-weight: bold; font-size: 12.5px; color: #334155; margin-left: 6px;">Exc. Rate :</label>
+                    <input type="number" name="exchange_rate" id="pay_rate" step="0.0001" min="0.0001" value="{{ old('exchange_rate', $invoice->currency === 'IDR' ? '1' : ($invoice->exchange_rate ?? '1')) }}" style="width: 90px; text-align: center; border: 1px solid #94a3b8; padding: 5px 8px; font-size: 12.5px; border-radius: 3px; font-family: monospace; background: #fff;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">PPH 23 :</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="number" id="pay_pph23" name="pph23_amount" min="0" step="0.01" value="{{ old('pph23_amount', '0') }}" placeholder="0" style="width: 140px; text-align: right; border: 1px solid #d97706; background: #fef3c7; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; color: #78350f;">
+                    <span style="border: 1px solid #94a3b8; background: #f8fafc; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 3px; color: #334155;">IDR</span>
+                    <small style="color: #64748b; font-size: 11px; margin-left: 6px;">(Auto jurnal ke COA PPH 23 Dibayar Dimuka)</small>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 20px;">
+                <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Bank/Cash :</label>
+                <select id="pay_bank" name="deposit_account" required style="width: 100%; max-width: 420px; border: 1px solid #94a3b8; padding: 6px 10px; font-size: 12.5px; border-radius: 3px; background: #fff;">
+                    @foreach($bankAccounts as $acc)
+                        @php
+                            $displayName = $acc->name;
+                            if (str_contains($acc->code, '11121')) $displayName = 'BCA IDR - 240-0375-758 - IDR';
+                            elseif (str_contains($acc->code, '11122')) $displayName = 'MANDIRI IDR - 115-00-1053704-3 - IDR';
+                            elseif (str_contains($acc->code, '11123')) $displayName = 'BCA USD - 240-0386-172 - USD';
+                            elseif (str_contains($acc->code, '11101')) $displayName = 'PETTY CASH - IDR';
+                            else $displayName = $acc->name . ' (' . $acc->code . ')';
+                        @endphp
+                        <option value="{{ $acc->id }}" @selected(old('deposit_account') == $acc->id || (empty(old('deposit_account')) && str_contains($acc->code, '11121')))>
+                            {{ $displayName }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- ACTION BUTTONS SESUAI GAMBAR 9 --}}
+            <div style="display: flex; justify-content: flex-start; gap: 10px; padding-left: 132px;">
+                <button type="submit" style="background: #059669; color: #ffffff; border: 1px solid #047857; padding: 7px 22px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    <span>💾</span> Save
+                </button>
+                <button type="button" onclick="document.getElementById('modal-add-payment').close()" style="background: #dc2626; color: #ffffff; border: 1px solid #b91c1c; padding: 7px 22px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    <span>✖</span> Cancel
+                </button>
+            </div>
+        </div>
+    </form>
+</dialog>
+@endif
+
+{{-- MODAL UNDO / BUKA KEMBALI JOB --}}
+@can('jobs.close')
+    @if($job && $job->status === 'closed' && (!$invoice->payments()->exists() && (float)$invoice->paid_amount == 0))
+    <dialog id="modal-reopen-job" class="modal-dialog" style="max-width: 500px !important; border: none; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+        <form method="POST" action="{{ route('jobs.reopen', $job) }}">
+            @csrf
+            <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
+            <div style="padding: 18px 24px; border-bottom: 1px solid #fee2e2; display: flex; justify-content: space-between; align-items: center; background: #fef2f2; border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">↺</span>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #991b1b;">Undo / Buka Kembali Job</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('modal-reopen-job').close()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #991b1b;">✕</button>
+            </div>
+            <div style="padding: 20px 24px;">
+                <p style="font-size: 13px; color: #374151; margin-top: 0; line-height: 1.5;">
+                    Apakah Anda yakin ingin membuka kembali job <strong>{{ $job->number }}</strong>?
+                </p>
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px; font-size: 12px; color: #92400e; margin-bottom: 16px; line-height: 1.5;">
+                    ⚠️ Tindakan ini akan mengembalikan status Job ke <strong>Open</strong>, menghapus tagihan invoice <strong>{{ $invoice->number }}</strong>, dan me-reverse (membatalkan) jurnal closing secara otomatis.
+                </div>
+                <div class="field">
+                    <label for="reopen_reason_inv" style="font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 4px; display: block;">Alasan Buka Kembali (opsional)</label>
+                    <input type="text" id="reopen_reason_inv" name="reason" placeholder="cth: Koreksi biaya aktual / revisi invoice" style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; font-size: 13px; box-sizing: border-box;">
+                </div>
+            </div>
+            <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <button type="button" class="button button-secondary" onclick="document.getElementById('modal-reopen-job').close()">Batal</button>
+                <button type="submit" class="button button-danger" style="background: #dc2626; border-color: #dc2626; color: #ffffff !important; font-weight: 600;">Ya, Buka Kembali Job</button>
+            </div>
+        </form>
+    </dialog>
+    @endif
+@endcan
+
+<style>
+dialog.modal-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const payModal = document.getElementById('modal-add-payment');
+    if (payModal) {
+        payModal.addEventListener('click', function(e) {
+            const rect = payModal.getBoundingClientRect();
+            const inDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height && rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+            if (!inDialog) payModal.close();
+        });
+        @if(request('add_payment') == '1' || $errors->any())
+            payModal.showModal();
+        @endif
+    }
+});
+</script>
 
 @endsection

@@ -14,7 +14,12 @@ class Payment extends Model
 
     protected function casts(): array
     {
-        return ['payment_date' => 'date', 'amount' => 'decimal:2'];
+        return [
+            'payment_date' => 'date',
+            'amount' => 'decimal:2',
+            'pph23_amount' => 'decimal:2',
+            'exchange_rate' => 'decimal:4',
+        ];
     }
 
     public function invoice(): BelongsTo

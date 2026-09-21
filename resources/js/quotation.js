@@ -103,8 +103,10 @@ if (form) {
     const truckingDestination = document.getElementById('input_trucking_destination');
     const truckingContainer = document.getElementById('input_trucking_container_type');
     const truckingOverweight = document.getElementById('input_trucking_overweight');
+    const truckingVendor = document.getElementById('input_trucking_vendor');
     const fetchTruckingButton = document.getElementById('btn_fetch_trucking');
     const truckingStatus = document.getElementById('trucking_pricing_status');
+    const truckingVendorBadge = document.getElementById('trucking_pricing_vendor');
     let truckingPricing = null;
     let truckingTimer = null;
 
@@ -139,7 +141,11 @@ if (form) {
     const syncTruckingFields = () => {
         const active = isTrucking();
         if (truckingFields) truckingFields.hidden = !active;
-        if (!active) { truckingPricing = null; setTruckingStatus('Isi asal, tujuan, dan tipe armada. Harga akan dicari otomatis.'); }
+        if (!active) { 
+            truckingPricing = null; 
+            if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
+            setTruckingStatus('Isi asal, tujuan, dan tipe armada. Harga akan dicari otomatis.'); 
+        }
         else if (truckingOrigin?.value && truckingDestination?.value) scheduleTruckingLookup();
     };
     const fetchTruckingPrice = async () => {
@@ -155,10 +161,14 @@ if (form) {
                 container_type: truckingContainer.value,
                 overweight: truckingOverweight.value,
             });
+            if (truckingVendor && truckingVendor.value) {
+                params.set('vendor_id', truckingVendor.value);
+            }
             const response = await fetch(`${endpoint}?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             const data = await response.json();
             if (!response.ok || !data.found) {
                 truckingPricing = null;
+                if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
                 if (inputCost) inputCost.value = '0';
                 inputPrice.value = '0';
                 setTruckingStatus('Tarif belum tersedia untuk rute, armada, dan kategori ini.', '#b45309');
@@ -174,9 +184,19 @@ if (form) {
             if (inputExchangeRate && data.exchange_rate) {
                 inputExchangeRate.value = data.exchange_rate;
             }
-            setTruckingStatus(`Tarif ditemukan: ${data.port_origin} → ${data.destination}. Modal dan harga jual sudah diisi.`, '#15803d');
+            if (data.vendor_name) {
+                if (truckingVendorBadge) {
+                    truckingVendorBadge.textContent = '🚚 Vendor: ' + data.vendor_name;
+                    truckingVendorBadge.style.display = 'inline-block';
+                }
+                setTruckingStatus(`✓ Tarif ditemukan: ${data.port_origin} → ${data.destination}. Modal & harga jual terisi.`, '#15803d');
+            } else {
+                if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
+                setTruckingStatus(`✓ Tarif ditemukan: ${data.port_origin} → ${data.destination}. Modal & harga jual terisi.`, '#15803d');
+            }
         } catch (error) {
             truckingPricing = null;
+            if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
             setTruckingStatus('Tarif belum bisa diambil. Periksa koneksi atau Master Trucking.', '#b91c1c');
         } finally { if (fetchTruckingButton) fetchTruckingButton.disabled = false; }
     };
@@ -185,7 +205,7 @@ if (form) {
         truckingTimer = setTimeout(fetchTruckingPrice, 350);
     }
     [truckingOrigin, truckingDestination].forEach(input => input?.addEventListener('input', scheduleTruckingLookup));
-    [truckingContainer, truckingOverweight].forEach(input => input?.addEventListener('change', scheduleTruckingLookup));
+    [truckingContainer, truckingOverweight, truckingVendor].forEach(input => input?.addEventListener('change', scheduleTruckingLookup));
     fetchTruckingButton?.addEventListener('click', fetchTruckingPrice);
     inputDesc?.addEventListener('change', syncTruckingFields);
     syncTruckingFields();
@@ -256,10 +276,13 @@ if (form) {
                 </td>
             ` : `<input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost || 0}">`;
 
+            const vendorName = item.vendor_name || item.pricing_snapshot?.vendor_name || (typeof item.pricing_snapshot === 'string' && item.pricing_snapshot.includes('"vendor_name"') ? JSON.parse(item.pricing_snapshot).vendor_name : null);
+
             tr.innerHTML = `
                 <td style="text-align: center; padding: 10px 8px; color: #64748b; font-weight: 600;">${index + 1}</td>
                 <td style="padding: 10px 12px;">
                     <strong style="color: #0f172a;">${escapeHtml(item.description)}</strong>
+                    ${vendorName ? `<div style="margin-top: 2px;"><span class="status-badge" style="background: #eff6ff; color: #1d4ed8; font-size: 10.5px; padding: 2px 7px; font-weight: 600;">🚚 Vendor: ${escapeHtml(vendorName)}</span></div>` : ''}
                     ${item.note ? `<div class="muted-cell" style="font-size: 11px; color: #64748b; margin-top: 2px;">${escapeHtml(item.note)}</div>` : ''}
                     <input type="hidden" name="items[${index}][description]" value="${escapeHtml(item.description)}">
                     <input type="hidden" name="items[${index}][note]" value="${escapeHtml(item.note || '')}">
@@ -395,6 +418,7 @@ if (form) {
             overweight: trucking ? truckingOverweight.value === '1' : false,
             port_origin: trucking ? truckingOrigin.value.trim() : '',
             destination: trucking ? truckingDestination.value.trim() : '',
+            vendor_name: trucking ? (truckingPricing?.vendor_name || '') : '',
         });
 
         // Reset inputs
@@ -407,6 +431,7 @@ if (form) {
         if (inputCurrency) { inputCurrency.value = 'IDR'; syncCurrencyInputs(); }
         if (truckingOrigin) truckingOrigin.value = '';
         if (truckingDestination) truckingDestination.value = '';
+        if (truckingVendor) truckingVendor.value = '';
         truckingPricing = null;
         syncTruckingFields();
         inputDesc?.focus();

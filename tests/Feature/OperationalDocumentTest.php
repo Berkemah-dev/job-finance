@@ -62,12 +62,12 @@ class OperationalDocumentTest extends TestCase
             ->assertOk()
             ->assertSee('Dokumen Job')
             ->assertSee($quotation->number)
-            ->assertDontSee('Create JO');
+            ->assertSee('Create JO');
 
         $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
         $this->get('/dokumen-job?search='.$quotation->number)
             ->assertOk()
-            ->assertSee('Create JO');
+            ->assertDontSee('Create JO');
         $this->actingAs($this->actor);
 
         $this->get('/dokumen-job/'.$quotation->id)
@@ -79,7 +79,7 @@ class OperationalDocumentTest extends TestCase
             ->assertOk()
             ->assertSee('Job Order belum dibuat');
 
-        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
+        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
         $this->post('/quotations/'.$quotation->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
         $this->actingAs($this->actor);
         $job = Job::firstOrFail();
@@ -101,7 +101,7 @@ class OperationalDocumentTest extends TestCase
     public function test_sk_pabean_manual_fields_can_be_saved_and_rendered_in_pdf(): void
     {
         $quotation = $this->approvedQuotation();
-        $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
+        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
         $this->post('/quotations/'.$quotation->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
         $this->actingAs($this->actor);
         $job = Job::firstOrFail();

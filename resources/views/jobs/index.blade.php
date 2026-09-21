@@ -127,6 +127,15 @@
         <td>
             <div class="table-actions">
                 <a class="btn-action btn-action-primary" href="{{ route('jobs.show',$job) }}" title="Detail Job" data-tooltip="Detail" aria-label="Detail Job"><x-icon name="eye"/></a>
+                @php
+                    $isExportJob = str_contains(strtolower($job->service_type ?? ''), 'exp') || $job->service_type === 'export' || ($job->bookingConfirmations && $job->bookingConfirmations->isNotEmpty());
+                @endphp
+                @if($isExportJob && $job->bookingConfirmations && $job->bookingConfirmations->isNotEmpty())
+                    <a class="btn-action btn-action-success" href="{{ route('booking-confirmations.preview', $job->bookingConfirmations->first()) }}" target="_blank" title="Cetak Booking Confirmation Export ({{ $job->bookingConfirmations->first()->number }})" data-tooltip="Booking Confirmation" aria-label="Booking Confirmation"><x-icon name="clipboard"/></a>
+                @endif
+                @if($job->shippingInstructions && $job->shippingInstructions->isNotEmpty())
+                    <a class="btn-action btn-action-purple" href="{{ route('shipping-instructions.preview', $job->shippingInstructions->first()) }}" target="_blank" title="Cetak Shipping Instruction ({{ $job->shippingInstructions->first()->number }})" data-tooltip="Cetak SI" aria-label="Cetak Shipping Instruction"><x-icon name="file"/></a>
+                @endif
                 @can('update',$job)
                     <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>
                 @endcan

@@ -9,6 +9,9 @@ use App\Models\QuotationItem;
 use App\Models\User;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
+use App\Models\DocumentType;
+use App\Models\JobDocument;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -28,7 +31,17 @@ class JobService
                 throw ValidationException::withMessages(['job_date' => 'Tanggal job tidak dapat diubah setelah job dibuka.']);
             }
             // Customer, quotation, document number, snapshot and workflow fields are never editable here.
-            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'booking_reference', 'nopen', 'nopen_date', 'npe_number', 'peb_number', 'peb_date', 'commercial_invoice_number', 'commercial_invoice_date', 'packing_list_number', 'packing_list_date', 'invoice_issuer', 'invoice_amount', 'incoterm', 'package_count', 'gross_weight', 'volume', 'container_type', 'container_number', 'vendor_trucking_id', 'vendor_truck_id', 'customer_address_id', 'truck_plate_number', 'driver_name', 'driver_phone', 'vehicle_type', 'delivery_address', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes']));
+            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'booking_reference', 'nopen', 'nopen_date', 'npe_number', 'peb_number', 'peb_date', 'sk_pabean_number', 'commercial_invoice_number', 'commercial_invoice_date', 'packing_list_number', 'packing_list_date', 'invoice_issuer', 'invoice_amount', 'incoterm', 'package_count', 'gross_weight', 'volume', 'container_type', 'container_number', 'vendor_trucking_id', 'vendor_truck_id', 'customer_address_id', 'truck_plate_number', 'driver_name', 'driver_phone', 'vehicle_type', 'delivery_address', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes']));
+            if (!empty($job->vendor_truck_id)) {
+                $vt = \App\Models\VendorTruck::find($job->vendor_truck_id);
+                if ($vt) {
+                    $job->driver_name = $vt->driver_name;
+                    $job->driver_phone = $vt->driver_phone;
+                    if (empty($job->truck_plate_number)) {
+                        $job->truck_plate_number = $vt->plate_number;
+                    }
+                }
+            }
             $job->updated_by = $actor->id;
             $job->lock_version++;
             $job->save();
@@ -69,6 +82,20 @@ class JobService
                 $job->cancelled_at = now();
                 $job->cancellation_reason = $data['reason'];
                 $note = $data['reason'];
+
+                if ($job->quotation) {
+                    $quo = $job->quotation;
+                    $quoFrom = $quo->status;
+                    $quo->status = \App\Enums\QuotationStatus::Approved;
+                    $quo->save();
+                    $quo->statusHistory()->create([
+                        'from_status' => $quoFrom?->value,
+                        'to_status' => \App\Enums\QuotationStatus::Approved->value,
+                        'note' => 'Job Order ' . $job->number . ' dibatalkan: ' . $data['reason'],
+                        'user_id' => $actor->id,
+                        'created_at' => now(),
+                    ]);
+                }
             } else {
                 throw new \InvalidArgumentException('Unknown job transition.');
             }
@@ -108,10 +135,10 @@ class JobService
         }, 3);
     }
 
-    public function confirmDo(Job $job, User $actor): Job
+    public function confirmDo(Job $job, User $actor, ?UploadedFile $suratJalanFile = null): Job
     {
-        return DB::transaction(function () use ($job, $actor) {
-            $job = Job::lockForUpdate()->findOrFail($job->id);
+        return DB::transaction(function () use ($job, $actor, $suratJalanFile) {
+            $job = Job::lockForUpdate()->with('documents.documentType')->findOrFail($job->id);
             Gate::forUser($actor)->authorize('jobs.confirm-do');
             if ($job->status !== 'open') {
                 throw ValidationException::withMessages(['do' => 'DO Selesai hanya dapat dikonfirmasi untuk job berstatus Open.']);
@@ -119,6 +146,48 @@ class JobService
             if ($job->do_confirmed_at) {
                 throw ValidationException::withMessages(['do' => 'DO job ini sudah dikonfirmasi selesai sebelumnya.']);
             }
+
+            if ($suratJalanFile) {
+                $service = (string) ($job->service_type ?? '');
+                $code = str_contains($service, 'air') ? 'IMPAIR-SJ' : 'IMPSEA-SJ';
+                $docType = DocumentType::where('code', $code)->orWhere('name', 'SURAT JALAN')->first()
+                    ?: DocumentType::where('code', 'GEN-SJ')->first();
+
+                if (! $docType) {
+                    $docType = DocumentType::firstOrCreate(
+                        ['code' => 'GEN-SJ'],
+                        [
+                            'name' => 'SURAT JALAN',
+                            'category' => 'delivery',
+                            'service_codes' => json_encode(['sea', 'air', 'trucking', 'domestic']),
+                            'description' => 'Berkas Surat Jalan yang ditandatangani supir/penerima',
+                            'is_required' => true,
+                            'is_active' => true,
+                            'sort_order' => 80,
+                        ]
+                    );
+                }
+
+                $path = $suratJalanFile->store('job-documents/'.$job->id, 'private');
+                $job->documents()->create([
+                    'document_type_id' => $docType->id,
+                    'original_name'    => $suratJalanFile->getClientOriginalName(),
+                    'file_path'        => $path,
+                    'mime_type'        => $suratJalanFile->getMimeType(),
+                    'file_size'        => $suratJalanFile->getSize(),
+                    'notes'            => 'Berkas Surat Jalan diunggah saat konfirmasi DO selesai',
+                    'uploaded_by'      => $actor->id,
+                ]);
+
+                $job->load('documents.documentType');
+            }
+
+            if (! $job->hasSuratJalanDocument()) {
+                throw ValidationException::withMessages([
+                    'surat_jalan' => 'Wajib mengunggah (upload) berkas Surat Jalan sebelum mengonfirmasi penyelesaian job.',
+                ]);
+            }
+
             $job->do_confirmed_at = now();
             $job->do_confirmed_by = $actor->id;
             $job->updated_by = $actor->id;
@@ -127,6 +196,53 @@ class JobService
             $this->master->log($actor, 'job.do_confirmed', 'Konfirmasi DO selesai untuk '.$job->number, ['module' => 'job', 'record_id' => $job->id, 'after' => $job->do_confirmed_at->toDateTimeString()]);
 
             return $job;
+        }, 3);
+    }
+
+    public function uploadSuratJalan(Job $job, UploadedFile $file, User $actor, ?string $notes = null): JobDocument
+    {
+        return DB::transaction(function () use ($job, $file, $actor, $notes) {
+            $job = Job::lockForUpdate()->findOrFail($job->id);
+            Gate::forUser($actor)->authorize('update', $job);
+
+            $service = (string) ($job->service_type ?? '');
+            $code = str_contains($service, 'air') ? 'IMPAIR-SJ' : 'IMPSEA-SJ';
+            $docType = DocumentType::where('code', $code)->orWhere('name', 'SURAT JALAN')->first()
+                ?: DocumentType::where('code', 'GEN-SJ')->first();
+
+            if (! $docType) {
+                $docType = DocumentType::firstOrCreate(
+                    ['code' => 'GEN-SJ'],
+                    [
+                        'name' => 'SURAT JALAN',
+                        'category' => 'delivery',
+                        'service_codes' => json_encode(['sea', 'air', 'trucking', 'domestic']),
+                        'description' => 'Berkas Surat Jalan yang ditandatangani supir/penerima',
+                        'is_required' => true,
+                        'is_active' => true,
+                        'sort_order' => 80,
+                    ]
+                );
+            }
+
+            $path = $file->store('job-documents/'.$job->id, 'private');
+            $doc = $job->documents()->create([
+                'document_type_id' => $docType->id,
+                'original_name'    => $file->getClientOriginalName(),
+                'file_path'        => $path,
+                'mime_type'        => $file->getMimeType(),
+                'file_size'        => $file->getSize(),
+                'notes'            => $notes ?: 'Berkas Surat Jalan pengantaran / delivery',
+                'uploaded_by'      => $actor->id,
+            ]);
+
+            $this->master->log($actor, 'job.surat_jalan_uploaded', 'Upload berkas Surat Jalan untuk '.$job->number, [
+                'module' => 'job',
+                'record_id' => $job->id,
+                'document_id' => $doc->id,
+            ]);
+
+            return $doc;
         }, 3);
     }
 

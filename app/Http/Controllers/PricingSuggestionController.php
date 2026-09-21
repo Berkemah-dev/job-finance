@@ -25,16 +25,19 @@ class PricingSuggestionController extends Controller
             'date' => ['nullable', 'date'],
         ]);
 
+        $canManageCost = $request->user()?->hasRole(['sales-manager', 'finance', 'finance-manager', 'super-admin', 'admin']) || Gate::allows('financial.view') || Gate::allows('quotations.approve');
+        $vendorId = $canManageCost ? ($data['vendor_id'] ?? null) : null;
+
         $suggestion = $this->pricing->suggestTrucking(
             $data['port_origin'],
             $data['destination'],
             $data['container_type'],
             (bool) ($data['overweight'] ?? false),
-            $data['vendor_id'] ?? null,
+            $vendorId,
             $data['date'] ?? null
         );
 
-        if ($request->user()?->hasRole('sales') && ! $request->user()?->hasRole(['sales-manager', 'finance', 'finance-manager', 'super-admin', 'admin']) && ($suggestion['found'] ?? false)) {
+        if (! $canManageCost && ($suggestion['found'] ?? false)) {
             $suggestion['unit_cost'] = '0.00';
             if (isset($suggestion['snapshot']['price'])) {
                 unset($suggestion['snapshot']['price']);

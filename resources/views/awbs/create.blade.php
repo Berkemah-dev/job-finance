@@ -66,9 +66,11 @@
                     @foreach($jobs as $j)
                         @php
                             $si = $j->shippingInstructions?->first();
+                            $hasAwb = $j->awbs?->isNotEmpty();
                         @endphp
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
+                            @disabled($hasAwb && old('job_id', $selectedJob?->id) != $j->id)
                             data-customer-id="{{ $j->customer_id }}"
                             data-shipper="{{ $j->shipper_name }}"
                             data-consignee="{{ $j->consignee_name }}"
@@ -85,7 +87,7 @@
                             data-gross-weight="{{ $j->gross_weight }}"
                             data-volume="{{ $j->volume }}"
                         >
-                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 35) }})
+                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 35) }}){{ $hasAwb ? ' [Sudah Ada AWB]' : '' }}
                         </option>
                     @endforeach
                 </select>
@@ -194,13 +196,25 @@
 
             <div class="field">
                 <label for="agent_name">Agent (Destination Agent)</label>
-                <input id="agent_name" name="agent_name" list="agent_list" maxlength="160"
-                    value="{{ old('agent_name') }}" placeholder="Nama Agent di Bandara Tujuan">
-                <datalist id="agent_list">
+                <select id="agent_name" name="agent_name" data-custom-select data-allow-custom="true" aria-label="Agent (Destination Agent)">
+                    <option value="">Pilih Destination Agent atau ketik...</option>
+                    @php
+                        $currentAgent = old('agent_name');
+                        $agentFound = false;
+                    @endphp
                     @foreach($airlines as $agent)
-                        <option value="{{ $agent->name }}">{{ $agent->name }}</option>
+                        @if($currentAgent === $agent->name)
+                            @php $agentFound = true; @endphp
+                        @endif
+                        <option value="{{ $agent->name }}" @selected($currentAgent === $agent->name)>
+                            {{ $agent->code ? '['.$agent->code.'] ' : '' }}{{ $agent->name }}
+                        </option>
                     @endforeach
-                </datalist>
+                    @if($currentAgent && !$agentFound)
+                        <option value="{{ $currentAgent }}" selected data-custom-option="true">{{ $currentAgent }}</option>
+                    @endif
+                </select>
+                <small style="color:#64748b;font-size:12px;margin-top:2px;">Vendor / Destination Agent</small>
             </div>
         </div>
 
@@ -263,13 +277,24 @@
 
             <div class="field">
                 <label for="airline">Airlines (Maskapai)</label>
-                <input id="airline" name="airline" list="airline_list" maxlength="160"
-                    value="{{ old('airline') }}" placeholder="Nama Maskapai Penerbangan">
-                <datalist id="airline_list">
+                <select id="airline" name="airline" data-custom-select data-allow-custom="true" aria-label="Airlines (Maskapai)">
+                    <option value="">Pilih Maskapai Penerbangan atau ketik...</option>
+                    @php
+                        $currentAirline = old('airline');
+                        $airlineFound = false;
+                    @endphp
                     @foreach($airlines as $a)
-                        <option value="{{ $a->name }}">{{ $a->name }}</option>
+                        @if($currentAirline === $a->name)
+                            @php $airlineFound = true; @endphp
+                        @endif
+                        <option value="{{ $a->name }}" data-code="{{ $a->code }}" @selected($currentAirline === $a->name)>
+                            {{ $a->code ? '['.$a->code.'] ' : '' }}{{ $a->name }}
+                        </option>
                     @endforeach
-                </datalist>
+                    @if($currentAirline && !$airlineFound)
+                        <option value="{{ $currentAirline }}" selected data-custom-option="true">{{ $currentAirline }}</option>
+                    @endif
+                </select>
             </div>
 
             <div class="field">
@@ -357,7 +382,13 @@
 document.getElementById('job_id')?.addEventListener('change', function() {
     const opt = this.options[this.selectedIndex];
     if (!opt || !opt.value) return;
-    const setVal = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; };
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined && val !== null) {
+            el.value = val;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    };
 
     if (opt.dataset.customerId) setVal('customer_id', opt.dataset.customerId);
     if (opt.dataset.shipper) setVal('shipper_on_hawb', opt.dataset.shipper);
@@ -380,6 +411,14 @@ document.getElementById('job_id')?.addEventListener('change', function() {
         setVal('chargeable_weight', opt.dataset.grossWeight);
     }
     if (opt.dataset.volume) setVal('volume', opt.dataset.volume);
+});
+
+document.getElementById('airline')?.addEventListener('change', function() {
+    const selectedOpt = this.options[this.selectedIndex];
+    const codeInput = document.getElementById('airline_code');
+    if (selectedOpt && selectedOpt.dataset.code && codeInput && !codeInput.value) {
+        codeInput.value = selectedOpt.dataset.code;
+    }
 });
 </script>
 
