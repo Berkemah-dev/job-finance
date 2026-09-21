@@ -5,7 +5,7 @@
     <title>Bill of Lading {{ $bl->number }}</title>
     <style>
         @page {
-            margin: 15pt 20pt 15pt 20pt;
+            margin: 10mm 12mm 10mm 12mm;
             size: a4 portrait;
         }
         * {
@@ -22,24 +22,27 @@
         table.bl-grid {
             width: 100%;
             border-collapse: collapse;
-            border: 1.5px solid #000000;
+            border: 1px solid #000000;
             table-layout: fixed;
         }
         table.bl-grid td {
             border: 1px solid #000000;
             vertical-align: top;
-            padding: 2pt 4pt;
+            padding: 2.5pt 4pt;
         }
         .cell-lbl {
-            font-size: 7pt;
+            font-size: 6.5pt;
             font-weight: bold;
             text-transform: uppercase;
+            color: #000000;
             margin-bottom: 2pt;
             display: block;
+            text-align: left;
         }
         .cell-val {
             font-size: 7.5pt;
             line-height: 1.25;
+            text-align: left;
         }
         .logo-center {
             text-align: center;
@@ -74,6 +77,7 @@
         table.cargo-table th {
             border: none;
             border-bottom: 1px solid #000000;
+            background-color: #f2f2f2;
             font-size: 7pt;
             font-weight: bold;
             text-align: center;
@@ -96,7 +100,7 @@
             margin-top: 6pt;
             text-align: right;
             font-size: 7.5pt;
-            color: #888888;
+            color: #666666;
         }
     </style>
 </head>
@@ -161,7 +165,7 @@
 <table class="bl-grid">
     {{-- TOP ROW: SHIPPER (LEFT 50%) vs LOGO & BL NO (RIGHT 50%) --}}
     <tr>
-        <td rowspan="2" style="width: 50%; height: 60pt;">
+        <td rowspan="2" style="width: 50%; height: 58pt;">
             <span class="cell-lbl">SHIPPER</span>
             <div class="cell-val">
                 <strong>{{ $shipperName }}</strong><br>
@@ -177,7 +181,7 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2" style="height: 34pt; vertical-align: middle;">
+        <td colspan="2" style="height: 32pt; vertical-align: middle; background-color: #f2f2f2;">
             <div class="title-bl-main">BILL OF LADING</div>
             <div class="title-bl-sub">{{ $watermarkText }}</div>
         </td>
@@ -185,7 +189,7 @@
 
     {{-- CONSIGNEE vs BOOKING NO & REFERENCES --}}
     <tr>
-        <td rowspan="2" style="height: 60pt;">
+        <td rowspan="2" style="height: 58pt;">
             <span class="cell-lbl">CONSIGNEE</span>
             <div class="cell-val">
                 <strong>{{ $consigneeName }}</strong><br>
@@ -202,7 +206,7 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2" style="height: 35pt;">
+        <td colspan="2" style="height: 33pt;">
             <span class="cell-lbl">FORWARDING AGENT</span>
             <div class="cell-val">{!! nl2br(e($forwardingAgent)) !!}</div>
         </td>
@@ -210,11 +214,11 @@
 
     {{-- NOTIFY PARTY vs SURRENDERED TO --}}
     <tr>
-        <td style="height: 52pt;">
+        <td style="height: 50pt;">
             <span class="cell-lbl">NOTIFY PARTY</span>
             <div class="cell-val">{!! nl2br(e($notifyParty)) !!}</div>
         </td>
-        <td colspan="2" style="height: 52pt;">
+        <td colspan="2" style="height: 50pt;">
             <span class="cell-lbl">BILL OF LADING MUST SURRENDERED TO :</span>
             <div class="cell-val">{!! nl2br(e($surrenderTo)) !!}</div>
         </td>
@@ -225,19 +229,19 @@
         <td style="padding: 0;" colspan="3">
             <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                 <tr>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">PRE-CARRIAGE BY</span>
                         <div class="cell-val">{{ $preCarriage }}</div>
                     </td>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">PLACE OF RECEIPT</span>
                         <div class="cell-val">{{ $placeOfReceipt }}</div>
                     </td>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">VESSEL/VOYAGE NO.</span>
                         <div class="cell-val">{{ $vesselVoyage }}</div>
                     </td>
-                    <td style="border: none; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">PORT OF LOADING</span>
                         <div class="cell-val">{{ $pol }}</div>
                     </td>
@@ -251,19 +255,19 @@
         <td style="padding: 0;" colspan="3">
             <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                 <tr>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">PORT OF DISCHARGE</span>
                         <div class="cell-val">{{ $pod }}</div>
                     </td>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">PLACE OF DELIVERY</span>
                         <div class="cell-val">{{ $placeOfDelivery }}</div>
                     </td>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">SERVICE</span>
                         <div class="cell-val">{{ $service }}</div>
                     </td>
-                    <td style="border: none; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">FINAL DESTINATION</span>
                         <div class="cell-val">{{ $finalDest }}</div>
                     </td>
@@ -278,25 +282,25 @@
             <table class="cargo-table">
                 <thead>
                     <tr>
-                        <th style="width: 20%; border-right: 1px solid #000;">MARKS &amp; NUMBERS</th>
-                        <th style="width: 12%; border-right: 1px solid #000;">NO. OF PKGS</th>
-                        <th style="width: 36%; border-right: 1px solid #000;">DESCRIPTION OF PACKAGES AND GOODS</th>
-                        <th style="width: 16%; border-right: 1px solid #000;">GROSS WEIGHT</th>
+                        <th style="width: 20%; border-right: 1px solid #000000 !important;">MARKS &amp; NUMBERS</th>
+                        <th style="width: 12%; border-right: 1px solid #000000 !important;">NO. OF PKGS</th>
+                        <th style="width: 36%; border-right: 1px solid #000000 !important;">DESCRIPTION OF PACKAGES AND GOODS</th>
+                        <th style="width: 16%; border-right: 1px solid #000000 !important;">GROSS WEIGHT</th>
                         <th style="width: 16%;">MEASUREMENT</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="height: 180pt; border-right: 1px solid #000;">
+                        <td style="height: 180pt; border-right: 1px solid #000000 !important;">
                             {!! nl2br(e($marksNumbers)) !!}
                         </td>
-                        <td style="height: 180pt; border-right: 1px solid #000; text-align: center;">
+                        <td style="height: 180pt; border-right: 1px solid #000000 !important; text-align: center;">
                             {{ $pkgCount }}
                         </td>
-                        <td style="height: 180pt; border-right: 1px solid #000;">
+                        <td style="height: 180pt; border-right: 1px solid #000000 !important;">
                             {!! nl2br(e($desc)) !!}
                         </td>
-                        <td style="height: 180pt; border-right: 1px solid #000; text-align: right;">
+                        <td style="height: 180pt; border-right: 1px solid #000000 !important; text-align: right;">
                             {{ $gw }}
                         </td>
                         <td style="height: 180pt; text-align: right;">
@@ -304,13 +308,13 @@
                         </td>
                     </tr>
                     <tr>
-                        <td style="border-top: 1px solid #000; border-right: 1px solid #000;"></td>
-                        <td style="border-top: 1px solid #000; border-right: 1px solid #000; text-align: center; font-weight: bold;">
+                        <td style="border-top: 1px solid #000000 !important; border-right: 1px solid #000000 !important;"></td>
+                        <td style="border-top: 1px solid #000000 !important; border-right: 1px solid #000000 !important; text-align: center; font-weight: bold;">
                             TOTAL:
                         </td>
-                        <td style="border-top: 1px solid #000; border-right: 1px solid #000;"></td>
-                        <td style="border-top: 1px solid #000; border-right: 1px solid #000;"></td>
-                        <td style="border-top: 1px solid #000;"></td>
+                        <td style="border-top: 1px solid #000000 !important; border-right: 1px solid #000000 !important;"></td>
+                        <td style="border-top: 1px solid #000000 !important; border-right: 1px solid #000000 !important;"></td>
+                        <td style="border-top: 1px solid #000000 !important;"></td>
                     </tr>
                 </tbody>
             </table>
@@ -322,19 +326,19 @@
         <td style="padding: 0;" colspan="3">
             <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                 <tr>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">FREIGHT &amp; CHARGES</span>
                         <div class="cell-val">{{ $freightTerm }}</div>
                     </td>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">INCOTERMS</span>
                         <div class="cell-val">{{ $incoterms }}</div>
                     </td>
-                    <td style="border: none; border-right: 1px solid #000; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; border-right: 1px solid #000000 !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">NUMBER OF ORIGINAL B(S)/L</span>
                         <div class="cell-val">{{ $origCount }}</div>
                     </td>
-                    <td style="border: none; width: 25%; padding: 2pt 4pt;">
+                    <td style="border: none !important; width: 25%; padding: 2.5pt 4pt;">
                         <span class="cell-lbl">SHIPPED ON BOARD</span>
                         <div class="cell-val">{{ $shippedDate }}</div>
                     </td>
@@ -361,13 +365,13 @@
 
     {{-- PLACE & DATE OF ISSUE vs AS AGENT FOR CARRIER --}}
     <tr>
-        <td colspan="2" style="width: 60%; height: 38pt;">
+        <td colspan="2" style="width: 60%; height: 36pt;">
             <span class="cell-lbl">PLACE AND DATE OF ISSUE</span>
             <div class="cell-val" style="margin-top: 2pt;">{{ $placeDateIssue }}</div>
         </td>
-        <td style="width: 40%; height: 38pt;">
+        <td style="width: 40%; height: 36pt;">
             <span class="cell-lbl">AS AGENT FOR THE CARRIER</span>
-            <div class="cell-val" style="margin-top: 18pt; text-align: center;">
+            <div class="cell-val" style="margin-top: 16pt; text-align: center; font-weight: bold;">
                 PT. RADIX INTERNATIONAL LOGISTICS
             </div>
         </td>
