@@ -44,7 +44,6 @@
                 <tr>
                     <th>HBL No.</th>
                     <th>Tanggal</th>
-                    <th>Tipe B/L</th>
                     <th>Carrier</th>
                     <th>Shipper</th>
                     <th>POL → POD</th>
@@ -58,16 +57,18 @@
                 <tr>
                     <td><a class="text-link" href="{{ route('bills-of-lading.show', $bl) }}"><strong>{{ $bl->number }}</strong></a></td>
                     <td>{{ $bl->bl_date->format('d/m/Y') }}</td>
-                    <td><span class="badge-pill">{{ strtoupper($bl->bl_type) }}</span></td>
                     <td>{{ Str::limit($bl->carrier, 20) ?: '—' }}</td>
                     <td>{{ Str::limit($bl->shipper_name, 22) ?: '—' }}</td>
                     <td style="font-size:12px;">{{ $bl->pol ?: '—' }} → {{ $bl->pod ?: '—' }}</td>
                     <td>{{ $bl->etd?->format('d/m/Y') ?: '—' }}</td>
                     <td><span class="status-badge status-{{ in_array($bl->status, ['issued','released','completed']) ? 'approved' : ($bl->status === 'cancelled' ? 'rejected' : 'draft') }}">{{ ucfirst($bl->status) }}</span></td>
                     <td>
-                        <div style="display:flex;gap:4px;">
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
                             <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.show', $bl) }}">Detail</a>
                             <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.edit', $bl) }}">Edit</a>
+                            <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'draft']) }}" target="_blank" title="Cetak BL Draft" style="font-size:11px;padding:3px 7px;">Draft</a>
+                            <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'original']) }}" target="_blank" title="Cetak BL Original" style="font-size:11px;padding:3px 7px;">Original</a>
+                            <a class="button button-secondary button-sm" href="{{ route('bills-of-lading.preview', [$bl, 'type' => 'copy']) }}" target="_blank" title="Cetak BL Copy" style="font-size:11px;padding:3px 7px;">Copy</a>
                             <form method="POST" action="{{ route('bills-of-lading.destroy', $bl) }}" style="display:inline;" data-confirm="Hapus B/L {{ $bl->number }}?">
                                 @csrf @method('DELETE')
                                 <button class="button button-danger button-sm">Hapus</button>

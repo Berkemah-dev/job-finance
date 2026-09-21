@@ -54,7 +54,7 @@ class AwbController extends Controller
             }
         }
 
-        $jobs      = Job::with(['customer', 'shippingInstructions'])->latest('id')->limit(50)->get();
+        $jobs      = Job::with(['customer', 'shippingInstructions', 'awbs'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $airlines  = Vendor::orderBy('name')->get();
 

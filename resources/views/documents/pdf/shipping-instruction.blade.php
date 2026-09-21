@@ -98,9 +98,19 @@
 <body>
 
 @php
-    $logoPath = file_exists(public_path('images/rdx-header-logo.jpg'))
-        ? public_path('images/rdx-header-logo.jpg')
-        : (file_exists(public_path('images/rdx-logistics-doc-logo.png')) ? public_path('images/rdx-logistics-doc-logo.png') : public_path('images/logo.png'));
+    $headerLogoFile = public_path('images/rdx-header-logo.jpg');
+    $altLogoFile = public_path('images/rdx-logistics-doc-logo.png');
+    $pngLogoFile = public_path('images/logo.png');
+
+    if (file_exists($headerLogoFile)) {
+        $logoPath = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerLogoFile));
+    } elseif (file_exists($altLogoFile)) {
+        $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($altLogoFile));
+    } elseif (file_exists($pngLogoFile)) {
+        $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($pngLogoFile));
+    } else {
+        $logoPath = '';
+    }
 
     $shipperCustomer = $si->customer ?? $si->job?->customer;
     $shipperName = $si->shipper_name ?: ($shipperCustomer?->name ?? '—');

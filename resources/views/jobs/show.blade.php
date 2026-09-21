@@ -1083,6 +1083,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </article>
         </div>
 
+        @if(!$isExportSea && !$isExportAir)
         <div style="padding: 0 24px 24px;">
             <article class="report-card">
                 <div class="report-card-head">
@@ -1167,6 +1168,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 @endif
             </article>
         </div>
+        @endif
     </section>
 </div>
 {{-- ========================================================================= --}}

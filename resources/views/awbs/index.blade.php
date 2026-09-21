@@ -65,9 +65,12 @@
                     <td>{{ $awb->etd?->format('d/m/Y') ?: '—' }}</td>
                     <td><span class="status-badge status-{{ in_array($awb->status, ['issued','completed']) ? 'approved' : ($awb->status === 'cancelled' ? 'rejected' : 'draft') }}">{{ ucfirst($awb->status) }}</span></td>
                     <td>
-                        <div style="display:flex;gap:4px;">
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
                             <a class="button button-secondary button-sm" href="{{ route('awbs.show', $awb) }}">Detail</a>
                             <a class="button button-secondary button-sm" href="{{ route('awbs.edit', $awb) }}">Edit</a>
+                            <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'draft']) }}" target="_blank" title="Cetak AWB Draft" style="font-size:11px;padding:3px 7px;">Draft</a>
+                            <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'hawb']) }}" target="_blank" title="Cetak HAWB" style="font-size:11px;padding:3px 7px;">HAWB</a>
+                            <a class="button button-secondary button-sm" href="{{ route('awbs.preview', [$awb, 'type' => 'mawb']) }}" target="_blank" title="Cetak MAWB" style="font-size:11px;padding:3px 7px;">MAWB</a>
                             <form method="POST" action="{{ route('awbs.destroy', $awb) }}" style="display:inline;" data-confirm="Hapus AWB {{ $awb->number }}?">
                                 @csrf @method('DELETE')
                                 <button class="button button-danger button-sm">Hapus</button>

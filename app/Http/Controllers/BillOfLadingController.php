@@ -56,7 +56,7 @@ class BillOfLadingController extends Controller
             }
         }
 
-        $jobs = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations'])->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'shippingInstructions', 'bookingConfirmations', 'billsOfLading'])->latest('id')->limit(50)->get();
         $customers = Customer::orderBy('name')->get();
         $ports = Port::orderBy('name')->get();
 

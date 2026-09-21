@@ -70,6 +70,7 @@
                         @php
                             $si = $j->shippingInstructions?->first();
                             $bc = $j->bookingConfirmations?->first();
+                            $hasBl = $j->billsOfLading?->isNotEmpty();
                             $jVessel = $j->vessel_voyage ?: ($bc?->vessel_voyage ?? '');
                             $jCarrier = $si?->to_carrier ?: ($bc?->carrier_name ?? '');
                             $jPol = $j->pol ?? $j->origin;
@@ -77,6 +78,7 @@
                         @endphp
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
+                            @disabled($hasBl && old('job_id', $selectedJob?->id) != $j->id)
                             data-customer-id="{{ $j->customer_id }}"
                             data-shipper="{{ $j->shipper_name }}"
                             data-consignee="{{ $j->consignee_name }}"
@@ -94,7 +96,7 @@
                             data-volume="{{ $j->volume }}"
                             data-qty="{{ $j->package_count }}"
                         >
-                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 35) }})
+                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 35) }}){{ $hasBl ? ' [Sudah Ada BL]' : '' }}
                         </option>
                     @endforeach
                 </select>

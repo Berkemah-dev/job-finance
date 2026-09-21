@@ -141,7 +141,6 @@
     <div class="field span-2" style="margin-top: 6px;">
         <label for="cargo_description">
             <span style="font-weight: 700; color: #1e293b;">Commodity (Nama Barang)</span>
-            <span style="font-size: 11px; color: #64748b; font-weight: 500; margin-left: 6px;">— Tersambung otomatis ke Surat Jalan & Deklarasi Nilai Pabean (DNP)</span>
         </label>
         <textarea id="cargo_description" name="cargo_description" rows="2" maxlength="2000" placeholder="Masukkan nama barang / komoditas (contoh: Spare Parts Mesin Industri / Garmen / Tekstil)">{{ old('cargo_description', $job->cargo_description) }}</textarea>
     </div>

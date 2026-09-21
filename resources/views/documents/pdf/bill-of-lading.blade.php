@@ -103,7 +103,9 @@
 <body>
 
 @php
-    $logoPath = public_path('images/logo.png');
+    $logoFile = public_path('images/logo.png');
+    $logoBase64 = file_exists($logoFile) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoFile)) : '';
+    $logoPath = $logoBase64;
 
     $copyType = strtoupper($type ?? request('type', 'draft'));
     if ($copyType === 'ORIGINAL') {

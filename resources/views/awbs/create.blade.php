@@ -66,9 +66,11 @@
                     @foreach($jobs as $j)
                         @php
                             $si = $j->shippingInstructions?->first();
+                            $hasAwb = $j->awbs?->isNotEmpty();
                         @endphp
                         <option value="{{ $j->id }}"
                             @selected(old('job_id', $selectedJob?->id) == $j->id)
+                            @disabled($hasAwb && old('job_id', $selectedJob?->id) != $j->id)
                             data-customer-id="{{ $j->customer_id }}"
                             data-shipper="{{ $j->shipper_name }}"
                             data-consignee="{{ $j->consignee_name }}"
@@ -85,7 +87,7 @@
                             data-gross-weight="{{ $j->gross_weight }}"
                             data-volume="{{ $j->volume }}"
                         >
-                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 35) }})
+                            {{ $j->number }} — {{ $j->customer?->name }} ({{ Str::limit($j->subject, 35) }}){{ $hasAwb ? ' [Sudah Ada AWB]' : '' }}
                         </option>
                     @endforeach
                 </select>
