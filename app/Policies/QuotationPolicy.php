@@ -41,9 +41,10 @@ class QuotationPolicy
             return true;
         }
 
-        // Sales Manager / Admin can re-edit a submitted, approved, or converted quotation if the job is not yet created or has been cancelled
-        if (in_array($quotation->status, [QuotationStatus::Submitted, QuotationStatus::Approved, QuotationStatus::Converted], true) && ($user->hasRole(['sales-manager', 'super-admin', 'admin']) || $user->hasPermission('quotations.approve'))) {
-            return ! $quotation->job || $quotation->job->status === 'cancelled';
+        // Sales Manager/Admin may correct a quotation that is already submitted or accepted.
+        // The Job Order keeps its own snapshot, so its existing data is not changed here.
+        if (in_array($quotation->status, [QuotationStatus::Submitted, QuotationStatus::Approved], true) && ($user->hasRole(['sales-manager', 'super-admin', 'admin']) || $user->hasPermission('quotations.approve'))) {
+            return true;
         }
 
         return false;
@@ -51,7 +52,10 @@ class QuotationPolicy
 
     public function submit(User $user, Quotation $quotation): bool
     {
-        return $this->update($user, $quotation);
+        return $this->view($user, $quotation)
+            && $user->hasRole('sales')
+            && ! $user->hasRole(['sales-manager', 'super-admin', 'admin'])
+            && in_array($quotation->status, [QuotationStatus::Draft, QuotationStatus::Revision], true);
     }
 
     public function approve(User $user, Quotation $quotation): bool

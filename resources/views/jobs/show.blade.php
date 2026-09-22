@@ -813,8 +813,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
 
                             <div class="field" style="margin-bottom: 10px;">
-                                <label for="sk_pabean_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">Nomor Surat Kuasa Pabean (Manual)</label>
-                                <input type="text" name="sk_pabean_number" id="sk_pabean_number" maxlength="60" value="{{ old('sk_pabean_number', $job->sk_pabean_number) }}" placeholder="Nomor surat manual (opsional, jika kosong default: nomor Job)" style="font-size: 12.5px;">
+                                <label for="sk_pabean_number" style="font-size: 11.5px; font-weight: 600; color: #475569;">No. Surat SK Pabean (Manual)</label>
+                                <input type="text" name="sk_pabean_number" id="sk_pabean_number" maxlength="60" value="{{ old('sk_pabean_number', $job->sk_pabean_number) }}" placeholder="Masukkan nomor surat SK Pabean" style="font-size: 12.5px;">
                             </div>
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">

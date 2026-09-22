@@ -163,7 +163,7 @@
     <div class="header-title">
         <div class="title-main">SURAT KUASA</div>
         <div class="title-sub">PENGAJUAN PEMBERITAHUAN PABEAN</div>
-        <div class="title-no">No. {{ $job->sk_pabean_number ?: $job->number }}</div>
+        <div class="title-no">No. {{ $job->sk_pabean_number ?: '—' }}</div>
     </div>
 
     <div class="paragraph">Yang bertanda-tangan dibawah ini :</div>

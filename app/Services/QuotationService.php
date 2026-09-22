@@ -60,8 +60,6 @@ class QuotationService
                 $quotation->status = QuotationStatus::Approved;
                 $quotation->approved_by = $actor->id;
                 $quotation->approved_at = now();
-            } elseif (! $new && in_array($quotation->status, [QuotationStatus::Approved, QuotationStatus::Converted], true) && empty($data['direct_approve'])) {
-                $quotation->status = QuotationStatus::Draft;
             }
             $quotation->updated_by = $actor->id;
             $quotation->lock_version = $new ? 0 : $quotation->lock_version + 1;
