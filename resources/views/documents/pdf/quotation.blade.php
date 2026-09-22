@@ -410,43 +410,11 @@
                             : number_format((float)$item->quantity, 2, '.', ',');
             $amountFormatted = number_format((float)$item->total_price, 2, '.', ',');
 
-            $subText = '';
-            if ($item->pricing_source === 'trucking') {
-                $truckParts = [];
-                $pOrig = $item->pricing_snapshot['port_origin'] ?? '';
-                $pDest = $item->pricing_snapshot['destination'] ?? '';
-                if ($pOrig || $pDest) {
-                    $truckParts[] = $pOrig . ' → ' . $pDest;
-                }
-                if ($item->container_type) {
-                    $truckParts[] = strtoupper($item->container_type) . ($item->overweight ? ' · OVERWEIGHT' : '');
-                }
-                $pCurr = $item->pricing_snapshot['currency'] ?? 'IDR';
-                if ($pCurr !== 'IDR') {
-                    $truckParts[] = $pCurr . ' ' . number_format((float)($item->pricing_snapshot['price'] ?? 0), 2, '.', ',') . ' @ kurs ' . number_format((float)($item->pricing_snapshot['exchange_rate'] ?? 1), 2, '.', ',');
-                }
-                $subText = 'Tarif trucking' . (!empty($truckParts) ? ' · ' . implode(' · ', $truckParts) : '');
-            } elseif ($item->container_type) {
-                $parts = [strtoupper($item->container_type)];
-                if ($item->overweight) {
-                    $parts[] = 'OVERWEIGHT';
-                }
-                if ($item->gross_weight !== null && $item->gross_weight !== '') {
-                    $parts[] = 'BW ' . number_format((float)$item->gross_weight, 2, '.', ',') . ' kg';
-                }
-                if ($item->volume !== null && $item->volume !== '') {
-                    $parts[] = $item->volume . ' m³';
-                }
-                $subText = implode(' · ', $parts);
-            }
         @endphp
         <tr>
             <td class="center">{{ $index + 1 }}</td>
             <td>
                 {{ strtoupper($item->description) }}
-                @if($subText)
-                    <br/><span style="font-size:7pt;color:#444;">{{ $subText }}</span>
-                @endif
             </td>
             <td class="center">{{ $currency }}</td>
             <td class="right">{{ $priceFormatted }}</td>
