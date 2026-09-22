@@ -28,4 +28,5 @@ yarn-error.log
 /.zed
 /storage/logs/
 /storage/framework/testing/  
- 
+/scratch/
+scratch_footer.png
