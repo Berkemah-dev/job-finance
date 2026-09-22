@@ -260,12 +260,12 @@
 <body>
 
 @php
-    $headerLogoFile = public_path('images/rdx-header-logo.jpg');
+    $headerLogoFile = public_path('images/rdx-logo-clean.png');
     $headerLogoSrc = file_exists($headerLogoFile)
-        ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerLogoFile))
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($headerLogoFile))
         : (file_exists(public_path('images/rdx-logistics-doc-logo.png'))
             ? 'data:image/png;base64,' . base64_encode(file_get_contents(public_path('images/rdx-logistics-doc-logo.png')))
-            : public_path('images/rdx-header-logo.jpg'));
+            : public_path('images/rdx-logo-clean.png'));
 
     $signLogoFile = public_path('images/logo.png');
     $signLogoSrc = file_exists($signLogoFile)
