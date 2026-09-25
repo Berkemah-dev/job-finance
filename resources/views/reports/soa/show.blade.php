@@ -42,22 +42,67 @@
             </span>
         </div>
     @endif
+    {{-- Fitur Kirim SOA via Email (Disembunyikan sementara) --}}
+    @if(false)
     @can('email.manage')
-        <div class="cost-summary-body">
-            <p class="panel-note">Kirim statement ini ke email customer (termasuk kontak shipper / consignee). Satu alamat per baris.</p>
-            <form method="POST" action="{{ route('reports.soa.email',$customer) }}">
+        @php
+            $defaultEmails = collect([$customer->email])
+                ->merge($customer->contacts->pluck('email'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->implode("\n");
+        @endphp
+        <div class="email-soa-card" style="margin: 0 24px 20px 24px; padding: 18px 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="display: inline-grid; place-items: center; width: 34px; height: 34px; background: #e0f2fe; color: #0284c7; border-radius: 8px; font-size: 16px;">✉️</span>
+                    <div>
+                        <strong style="display: block; font-size: 13px; color: #0f1f3d; font-weight: 600;">Kirim Statement of Account via Email</strong>
+                        <span style="display: block; font-size: 11px; color: #64748b; margin-top: 1px;">Kirimkan ringkasan tagihan & pembayaran periode {{ $from->format('d/m/Y') }} – {{ $to->format('d/m/Y') }} langsung ke email customer.</span>
+                    </div>
+                </div>
+                @if($customer->contacts->isNotEmpty())
+                    <span style="font-size: 11px; color: #64748b; background: #fff; padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0; white-space: nowrap;">
+                        👥 {{ $customer->contacts->count() }} Kontak Terdaftar
+                    </span>
+                @endif
+            </div>
+
+            <form method="POST" action="{{ route('reports.soa.email', $customer) }}" style="display: flex; flex-direction: column; gap: 10px;">
                 @csrf
                 <input type="hidden" name="from" value="{{ $from->toDateString() }}">
                 <input type="hidden" name="to" value="{{ $to->toDateString() }}">
-                <textarea name="emails" rows="3" maxlength="2000" placeholder="email@customer.com">{{ $customer->email }}{{ $customer->contacts->pluck('email')->filter()->unique()->map(fn ($email) => '
-'.$email)->join('') }}</textarea>
-                @error('emails')<div class="info-note">{{ $message }}</div>@enderror
-                <div class="action-group" style="margin-top: 10px;">
-                    <button class="button button-primary">Kirim lewat email</button>
+
+                <div>
+                    <label for="soa-emails-input" style="display: block; font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 5px;">
+                        Alamat Email Tujuan <span style="font-weight: normal; color: #64748b;">(satu email per baris atau pisahkan dengan koma)</span>:
+                    </label>
+                    <textarea 
+                        id="soa-emails-input"
+                        name="emails" 
+                        rows="2" 
+                        maxlength="2000" 
+                        placeholder="contoh: finance@customer.com"
+                        style="width: 100%; box-sizing: border-box; padding: 10px 14px; font-size: 12px; font-family: inherit; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; color: #1e293b; resize: vertical; line-height: 1.5; outline: none; transition: border-color 0.15s ease;"
+                    >{{ old('emails', $defaultEmails) }}</textarea>
+                    @error('emails')
+                        <div class="field-error" style="color: #dc2626; font-size: 11px; margin-top: 4px;">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div style="font-size: 11px; color: #64748b;">
+                        💡 <em>Email yang dikirimkan berisi rincian saldo awal, mutasi tagihan & pembayaran, umur piutang, dan saldo akhir periode.</em>
+                    </div>
+                    <button type="submit" class="button button-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; font-size: 12px; border-radius: 8px; cursor: pointer; white-space: nowrap;">
+                        <span>✉️ Kirim Lewat Email</span>
+                    </button>
                 </div>
             </form>
         </div>
     @endcan
+    @endif
     <div class="table-scroll">
         <table>
             <thead>
@@ -101,6 +146,7 @@
     <div class="pagination">{{ $statement['rows']->links() }}</div>
 </section>
 
+@if(false)
 @if(isset($logs) && $logs->isNotEmpty())
 <div class="section-heading" style="margin-top: 24px;">
     <h2>📧 Log Riwayat Pengiriman Email SOA</h2>
@@ -147,5 +193,6 @@
         </table>
     </div>
 </section>
+@endif
 @endif
 @endsection

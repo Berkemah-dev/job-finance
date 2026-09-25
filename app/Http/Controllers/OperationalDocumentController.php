@@ -255,11 +255,19 @@ class OperationalDocumentController extends Controller
         $service = app(\App\Services\StatementOfAccountService::class);
         $from = $request->date('from') ?? today()->startOfMonth();
         $to = $request->date('to') ?? today();
-        $statement = $service->statement($customer, $from, $to);
+        $statement = $service->statement($customer, $from, $to, paginate: false);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.soa', ['customer' => $customer, 'statement' => $statement, 'from' => $from, 'to' => $to])->setPaper('a4');
-        $filename = 'SOA_'.$customer->code.'_'.$from->format('Ymd').'-'.$to->format('Ymd').'.pdf';
+        $custCode = str_replace(['/', '\\', ' '], ['-', '-', '_'], $customer->code);
+        $filename = 'Statement_of_Account_'.$custCode.'_'.$from->format('d-m-Y').'_'.$to->format('d-m-Y').'.pdf';
         $master->log($request->user(), 'document.generated', 'Mengunduh PDF SOA '.$customer->name, ['module' => 'document', 'record_id' => $customer->id]);
 
-        return $request->query('mode') === 'download' ? $pdf->download($filename) : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+            ]);
     }
 }

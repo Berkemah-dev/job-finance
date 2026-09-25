@@ -154,9 +154,25 @@ class StatementOfAccountTest extends TestCase
         $this->get('/reports/statement-of-account/'.$this->customer->id)
             ->assertOk()
             ->assertSee('PT Statement Client');
-        $this->get('/reports/statement-of-account')->assertOk()->assertSee('PT Statement Client');
-
         $totals = $this->service()->statement(Customer::withTrashed()->findOrFail($this->customer->id), today()->startOfMonth(), today());
         $this->assertSame((string) $invoice->total, $totals['invoiced']);
     }
+
+    public function test_soa_pdf_renders_successfully_inline_and_download(): void
+    {
+        $invoice = $this->invoice(today()->subDays(5)->toDateString(), today()->addDays(25)->toDateString());
+        $this->pay($invoice, today()->subDays(2)->toDateString(), '2000000');
+
+        $response = $this->get('/reports/statement-of-account/'.$this->customer->id.'/pdf?from='.today()->subDays(10)->toDateString().'&to='.today()->toDateString());
+        $response->assertOk();
+        $this->assertStringContainsString('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('inline', $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('Statement_of_Account_'.$this->customer->code, $response->headers->get('Content-Disposition'));
+
+        $downloadResponse = $this->get('/reports/statement-of-account/'.$this->customer->id.'/pdf?mode=download');
+        $downloadResponse->assertOk();
+        $this->assertStringContainsString('attachment', $downloadResponse->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('Statement_of_Account_'.$this->customer->code, $downloadResponse->headers->get('Content-Disposition'));
+    }
 }
+

@@ -80,7 +80,7 @@
         }
         .meta-col {
             float: right;
-            width: 50%;
+            width: 48%;
             text-align: right;
         }
         .meta-table {
@@ -89,12 +89,21 @@
             font-size: 9.5px;
         }
         .meta-table td {
-            padding: 1px 2px;
+            padding: 1.5px 1px;
             white-space: nowrap;
         }
         .meta-table td.lbl {
             font-weight: bold;
             text-decoration: underline;
+            text-align: left;
+        }
+        .meta-table td.colon {
+            width: 12px;
+            text-align: center;
+        }
+        .meta-table td.val {
+            text-align: left;
+            padding-left: 2px;
         }
         .big-amount-box {
             margin-top: 8px;
@@ -287,9 +296,19 @@
     <div class="meta-col">
         <table class="meta-table">
             <tr>
-                <td class="lbl">Inv. No</td><td>:</td><td>{{ $invoice->number }}</td>
-                <td style="padding-left:10px;" class="lbl">Inv. Date</td><td>:</td><td>{{ $invoice->invoice_date->format('d-m-Y') }}</td>
-                <td style="padding-left:10px;" class="lbl">Due. Date</td><td>:</td><td>{{ $invoice->due_date->format('d-m-Y') }}</td>
+                <td class="lbl">Inv. No</td>
+                <td class="colon">:</td>
+                <td class="val">{{ $invoice->number }}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Inv. Date</td>
+                <td class="colon">:</td>
+                <td class="val">{{ $invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : '—' }}</td>
+            </tr>
+            <tr>
+                <td class="lbl">Due. Date</td>
+                <td class="colon">:</td>
+                <td class="val">{{ $invoice->due_date ? $invoice->due_date->format('d-m-Y') : '—' }}</td>
             </tr>
         </table>
         <div class="big-amount-box">

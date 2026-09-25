@@ -67,7 +67,7 @@ class StatementOfAccountService
         return ['customers' => $paginatedCustomers, 'grand' => $grand];
     }
 
-    public function statement(Customer $customer, Carbon $from, Carbon $to): array
+    public function statement(Customer $customer, Carbon $from, Carbon $to, bool $paginate = true): array
     {
         $invoices = Invoice::with(['payments', 'job'])->where('customer_id', $customer->id)->orderBy('invoice_date')->orderBy('id')->get();
 
@@ -89,12 +89,30 @@ class StatementOfAccountService
         foreach ($invoices as $invoice) {
             if ($invoice->invoice_date->between($from, $to)) {
                 $invoiced = $invoiced->plus(Money::decimal($invoice->total));
-                $rows[] = ['date' => $invoice->invoice_date, 'number' => $invoice->number, 'description' => 'Invoice '.$invoice->number.' · Job '.($invoice->job?->number ?? '—'), 'type' => 'invoice', 'debit' => '0.00', 'credit' => (string) $invoice->total];
+                $rows[] = [
+                    'date' => $invoice->invoice_date,
+                    'number' => $invoice->number,
+                    'description' => 'Invoice '.$invoice->number.($invoice->job?->number ? ' · Job '.$invoice->job->number : ''),
+                    'type' => 'invoice',
+                    'debit' => '0.00',
+                    'credit' => (string) $invoice->total,
+                    'invoice' => $invoice,
+                    'is_overdue' => $invoice->due_date && Carbon::parse($invoice->due_date)->endOfDay()->isPast() && ! Money::decimal($invoice->balance)->isZero(),
+                ];
             }
             foreach ($invoice->payments as $payment) {
                 if ($payment->payment_date->between($from, $to)) {
                     $paid = $paid->plus(Money::decimal($payment->amount));
-                    $rows[] = ['date' => $payment->payment_date, 'number' => $payment->number, 'description' => 'Pembayaran '.$payment->number.' · '.ucfirst($payment->method), 'type' => 'payment', 'debit' => (string) $payment->amount, 'credit' => '0.00'];
+                    $rows[] = [
+                        'date' => $payment->payment_date,
+                        'number' => $payment->number,
+                        'description' => 'Pembayaran '.$payment->number.' · '.ucfirst($payment->method),
+                        'type' => 'payment',
+                        'debit' => (string) $payment->amount,
+                        'credit' => '0.00',
+                        'invoice' => $invoice,
+                        'is_overdue' => false,
+                    ];
                 }
             }
         }
@@ -104,6 +122,7 @@ class StatementOfAccountService
         foreach ($rows as &$row) {
             $running = $running->plus(Money::decimal($row['credit']))->minus(Money::decimal($row['debit']));
             $row['balance'] = (string) $running;
+            $row['running'] = (string) $running;
         }
         unset($row);
 
@@ -141,7 +160,18 @@ class StatementOfAccountService
             ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => request()->query()]
         );
 
-        return ['opening' => Money::checked($opening), 'closing' => Money::checked($closing), 'invoiced' => Money::checked($invoiced), 'paid' => Money::checked($paid), 'rows' => $paginatedRows, 'aged' => $aged];
+        return [
+            'opening' => Money::checked($opening),
+            'closing' => Money::checked($closing),
+            'invoiced' => Money::checked($invoiced),
+            'paid' => Money::checked($paid),
+            'total_debit' => Money::checked($paid),
+            'total_credit' => Money::checked($invoiced),
+            'rows' => $paginate ? $paginatedRows : $rows,
+            'all_rows' => $rows,
+            'lines' => $rows,
+            'aged' => $aged,
+        ];
     }
 
     private function bucket(int $days): string

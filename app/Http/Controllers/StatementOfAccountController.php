@@ -59,7 +59,7 @@ class StatementOfAccountController extends Controller
         $status = 'sent';
         $errorMessage = null;
         try {
-            Mail::to($emails)->send(new StatementOfAccountMail($customer->load('contacts'), $this->service->statement($customer, $from, $to), $from, $to));
+            Mail::to($emails)->send(new StatementOfAccountMail($customer->load('contacts'), $this->service->statement($customer, $from, $to, paginate: false), $from, $to));
         } catch (\Throwable $e) {
             $status = 'failed';
             $errorMessage = $e->getMessage();
