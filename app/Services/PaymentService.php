@@ -81,7 +81,8 @@ class PaymentService
             }
             $journalEntries[] = ['account_id' => $receivableAccount->id, 'description' => 'Pelunasan piutang '.$invoice->number, 'debit' => 0, 'credit' => (string) $totalDeduction];
 
-            $this->journals->post('customer_payment', Payment::class, $payment->id, $data['payment_date'], 'Pembayaran '.$payment->number.' untuk '.$invoice->number, $journalEntries, $actor);
+            $journalNumber = $this->numbers->nextBankJournal($depositAccount->code, $depositAccount->name, true, \Carbon\Carbon::parse($data['payment_date']));
+            $this->journals->post('customer_payment', Payment::class, $payment->id, $data['payment_date'], 'Pembayaran '.$payment->number.' untuk '.$invoice->number, $journalEntries, $actor, $journalNumber);
 
             $state = ['paid_amount' => $invoice->paid_amount, 'balance' => $invoice->balance, 'status' => $invoice->status];
             $this->master->log($actor, 'payment.created', $payment->number.' · '.$invoice->number, ['module' => 'payment', 'record_id' => $payment->id, 'after' => array_merge(['amount' => (string) $amount, 'pph23_amount' => (string) $pph23Amount], $state)]);

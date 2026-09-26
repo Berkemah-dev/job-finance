@@ -33,6 +33,13 @@ class JobDocumentController extends Controller
         Gate::authorize('update', $job);
         $docType = DocumentType::findOrFail($request->document_type_id);
         $docText = strtoupper($docType->code.' '.$docType->name);
+        $isCustomsDocument = $this->detectCustomsKind($docText) !== '';
+        if ($isCustomsDocument && ! $request->boolean('customs_upload')) {
+            return back()->withErrors(['document_type_id' => 'Dokumen kepabeanan hanya dapat diunggah melalui tab PIB/PEB.'])->withInput();
+        }
+        if (! $isCustomsDocument && $request->boolean('customs_upload')) {
+            return back()->withErrors(['document_type_id' => 'Pilih dokumen kepabeanan pada tab PIB/PEB.'])->withInput();
+        }
         $kind = (string) $request->input('customs_document_kind', '');
         $kind = $kind ?: $this->detectCustomsKind($docText);
 
@@ -227,6 +234,17 @@ class JobDocumentController extends Controller
         abort_unless($document->job_id === $job->id, 404);
 
         return Storage::disk('private')->download($document->file_path, $document->original_name);
+    }
+
+    public function preview(Job $job, JobDocument $document)
+    {
+        abort_unless($document->job_id === $job->id, 404);
+        abort_unless(Storage::disk('private')->exists($document->file_path), 404);
+
+        return response(Storage::disk('private')->get($document->file_path), 200, [
+            'Content-Type' => $document->mime_type ?: 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$document->original_name.'"',
+        ]);
     }
 
     public function destroy(Job $job, JobDocument $document)

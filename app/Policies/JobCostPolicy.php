@@ -37,4 +37,9 @@ class JobCostPolicy
     {
         return $this->update($user, $cost);
     }
+
+    public function approve(User $user, JobCost $cost): bool
+    {
+        return $user->hasPermission('jobs.close') && $cost->status === 'draft' && ! $cost->trashed();
+    }
 }

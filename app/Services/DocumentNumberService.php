@@ -35,4 +35,26 @@ class DocumentNumberService
 
         return ($prefix ?? strtoupper($key)).$delimiter.$period.$delimiter.str_pad((string) $next, $pad, '0', STR_PAD_LEFT);
     }
+
+    public function nextBankJournal(string $accountCode, string $accountName, bool $incoming, ?\DateTimeInterface $date = null): string
+    {
+        if (DB::transactionLevel() === 0) {
+            throw new \LogicException('Document numbering requires a transaction.');
+        }
+
+        $date ??= now();
+        $account = strtoupper($accountCode.' '.$accountName);
+        $bank = str_contains($account, 'MANDIRI') || str_contains($account, 'MDR') ? 'MDR' : (str_contains($account, 'PETTY') || str_contains($account, 'KAS KECIL') ? 'PETTY' : 'BCA');
+        $direction = $incoming ? 'M' : 'K';
+        $period = $date->format('Ym');
+        $type = 'jrn-'.$bank.'-idr-'.$direction;
+        DB::table('document_sequences')->insertOrIgnore(['type' => $type, 'period' => $period, 'counter' => 0]);
+        $sequence = DB::table('document_sequences')->where('type', $type)->where('period', $period)->lockForUpdate()->first();
+        $next = $sequence->counter + 1;
+        DB::table('document_sequences')->where('id', $sequence->id)->update(['counter' => $next]);
+
+        $prefix = $bank === 'PETTY' ? 'PETTY CASH IDR' : $bank.'.IDR';
+
+        return $prefix.'.'.$direction.str_pad((string) $next, 4, '0', STR_PAD_LEFT).'/'.$date->format('m/Y');
+    }
 }

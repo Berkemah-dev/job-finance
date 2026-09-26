@@ -97,9 +97,7 @@ class CustomerController extends Controller
 
     public function approve(Request $request, Customer $customer, MasterDataService $service)
     {
-        if (! $request->user()?->hasRole(['finance-manager', 'finance', 'super-admin', 'admin'])) {
-            abort(403);
-        }
+        abort_unless($request->user()?->can('customers.approve'), 403);
 
         DB::transaction(function () use ($request, $customer, $service) {
             $customer = Customer::query()->lockForUpdate()->findOrFail($customer->id);

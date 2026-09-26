@@ -41,6 +41,23 @@
     @endcan
 </div>
 
+@if((float) $invoice->tax > 0 && $charges->isNotEmpty())
+<section class="panel" style="margin-bottom:20px;">
+    <div class="panel-heading"><div><h2>XML Coretax dari Charges Terpilih</h2><p>Pilih charge yang akan digabungkan menjadi satu XML Coretax untuk invoice ini.</p></div></div>
+    <form method="POST" action="{{ route('invoices.coretax.selected', $invoice) }}" style="padding:0 24px 20px;">
+        @csrf
+        @foreach($charges as $charge)
+            <label style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #e2e8f0;cursor:pointer;">
+                <input type="checkbox" name="item_ids[]" value="{{ $charge->id }}" checked>
+                <span style="flex:1;"><strong>{{ $charge->description }}</strong> · {{ \App\Support\Money::format($charge->quantity) }} {{ $charge->unit }}</span>
+                <strong>Rp {{ \App\Support\Money::format($charge->amount) }}</strong>
+            </label>
+        @endforeach
+        <div style="margin-top:14px;"><button class="button button-secondary"><x-icon name="download"/> Unduh XML charges terpilih</button></div>
+    </form>
+</section>
+@endif
+
 {{-- PANEL UTAMA TAMPILAN INVOICE SESUAI FORMAT DOCX --}}
 <section class="panel" style="overflow: hidden; margin-bottom: 24px;">
     {{-- HEADER KOP RESMI PERUSAHAAN --}}
@@ -400,7 +417,7 @@
 </div>
 <section class="panel" style="margin-bottom: 24px;">
     <div style="padding: 24px;">
-        <form method="POST" action="{{ route('invoices.delivery', $invoice) }}">
+        <form method="POST" action="{{ route('invoices.delivery', $invoice) }}" enctype="multipart/form-data">
             @csrf
             <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
                 <div class="field">
@@ -426,6 +443,15 @@
                 <div class="field span-2">
                     <label for="delivery_notes">Catatan Pengiriman</label>
                     <textarea id="delivery_notes" name="delivery_notes" rows="2" placeholder="Catatan penerima atau ekspedisi...">{{ old('delivery_notes', $invoice->delivery_notes) }}</textarea>
+                </div>
+                <div class="field">
+                    <label for="tax_invoice_number">No. Faktur Pajak</label>
+                    <input id="tax_invoice_number" name="tax_invoice_number" type="text" maxlength="100" value="{{ old('tax_invoice_number', $invoice->tax_invoice_number) }}" placeholder="Nomor faktur pajak">
+                </div>
+                <div class="field">
+                    <label for="tax_invoice_file">Upload Faktur Pajak</label>
+                    <input id="tax_invoice_file" name="tax_invoice_file" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                    @if($invoice->tax_invoice_file)<a class="text-link" target="_blank" href="{{ route('invoices.tax-invoice', $invoice) }}">Lihat faktur pajak</a>@endif
                 </div>
             </div>
             <div style="margin-top: 16px; text-align: right;">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Services\CoretaxService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
@@ -78,6 +79,14 @@ class InvoiceController extends Controller
         return response($xml, 200, ['Content-Type' => 'text/plain; charset=utf-8', 'X-Robots-Tag' => 'noindex']);
     }
 
+    public function coretaxSelected(Request $request, Invoice $invoice, CoretaxService $service)
+    {
+        $data = $request->validate(['item_ids' => ['required', 'array', 'min:1'], 'item_ids.*' => ['integer']]);
+        $items = $invoice->items()->whereIn('id', $data['item_ids'])->where('type', 'provision')->get();
+        $xml = $service->generate($invoice, $request->user(), true, $items);
+        return response($xml, 200, ['Content-Type' => 'application/xml', 'Content-Disposition' => 'attachment; filename=faktur-'.$invoice->number.'-charges.xml']);
+    }
+
     public function preview(Invoice $invoice)
     {
         return view('documents.pdf-preview', [
@@ -108,11 +117,27 @@ class InvoiceController extends Controller
             'received_at'      => ['nullable', 'date'],
             'tracking_number'  => ['nullable', 'string', 'max:100'],
             'delivery_notes'   => ['nullable', 'string', 'max:2000'],
+            'tax_invoice_number' => ['nullable', 'string', 'max:100'],
+            'tax_invoice_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:3072'],
         ]);
+
+        if ($request->hasFile('tax_invoice_file')) {
+            $validated['tax_invoice_file'] = $request->file('tax_invoice_file')->store('invoice-tax-documents', 'private');
+        }
 
         $validated['sent_by'] = $request->user()->id;
         $invoice->update($validated);
 
         return back()->with('success', 'Status pengiriman invoice berhasil diperbarui.');
+    }
+
+    public function taxInvoiceFile(Invoice $invoice)
+    {
+        abort_unless($invoice->tax_invoice_file && Storage::disk('private')->exists($invoice->tax_invoice_file), 404);
+
+        return response(Storage::disk('private')->get($invoice->tax_invoice_file), 200, [
+            'Content-Type' => Storage::disk('private')->mimeType($invoice->tax_invoice_file) ?: 'application/pdf',
+            'Content-Disposition' => 'inline; filename="faktur-pajak-'.$invoice->number.'"',
+        ]);
     }
 }

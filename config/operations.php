@@ -19,7 +19,7 @@ return [
         'behandle'      => 'Behandle (Pemeriksaan Fisik)',
         'sppb'          => 'SPPB Terbit',
     ],
-    'cost_statuses' => ['draft' => 'Draft', 'final' => 'Final'],
+    'cost_statuses' => ['draft' => 'Draft', 'approved' => 'Approved', 'final' => 'Closed'],
     'service_types' => [
         'exp_sea' => 'EXPORT SEA',
         'exp_air' => 'EXPORT AIR',
@@ -43,6 +43,7 @@ return [
     ],
     'terms_of_delivery' => [
         'EXW' => 'EXW (Ex Works)',
+        'FCA' => 'FCA (Free Carrier)',
         'FOB' => 'FOB (Free On Board)',
         'CFR' => 'CFR (Cost and Freight)',
         'CIF' => 'CIF (Cost, Insurance and Freight)',

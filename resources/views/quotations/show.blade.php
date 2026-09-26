@@ -38,7 +38,7 @@
 </section>
 <div class="quote-actions">
 @can('update',$quotation)<a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">{{ in_array($quotation->status, [\App\Enums\QuotationStatus::Approved, \App\Enums\QuotationStatus::Converted, \App\Enums\QuotationStatus::Submitted], true) ? 'Edit Quotation' : 'Edit draft' }}</a>@endcan
-<form method="POST" action="{{ route('quotations.duplicate',$quotation) }}" data-confirm="Buat salinan draft baru dari quotation ini?">@csrf<button class="button button-secondary">Duplikat draft</button></form>
+@can('create', \App\Models\Quotation::class)<form method="POST" action="{{ route('quotations.duplicate',$quotation) }}" data-confirm="Buat salinan draft baru dari quotation ini?">@csrf<button class="button button-secondary">Duplikat draft</button></form>@endcan
 <a class="button button-secondary" href="{{ route('quotations.preview',$quotation) }}" target="_blank">🖨 Preview PDF</a>
 @can('submit',$quotation)<form method="POST" action="{{ route('quotations.submit',$quotation) }}" data-confirm="Ajukan quotation ini? Draft tidak dapat diedit setelah diajukan.">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Ajukan quotation</button></form>@endcan
 @can('approve',$quotation)

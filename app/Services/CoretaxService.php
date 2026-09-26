@@ -14,16 +14,23 @@ class CoretaxService
 {
     public function __construct(private MasterDataService $master) {}
 
-    public function generate(Invoice $invoice, User $actor, bool $log = true): string
+    public function generate(Invoice $invoice, User $actor, bool $log = true, ?iterable $selectedItems = null): string
     {
+        $invoice->loadMissing('items');
+        $selected = $selectedItems === null ? $invoice->items : collect($selectedItems);
+        if ($selected->isEmpty()) {
+            throw ValidationException::withMessages(['items' => 'Pilih minimal satu charge untuk XML Coretax.']);
+        }
         if (Money::decimal($invoice->tax)->isZero()) {
             throw ValidationException::withMessages(['invoice' => 'Invoice tidak memiliki PPN sehingga tidak dapat diekspor ke Coretax.']);
         }
-        $subtotal = Money::decimal($invoice->subtotal);
+        $subtotal = Money::decimal($selected->sum('amount'));
         if ($subtotal->isZero()) {
             throw ValidationException::withMessages(['invoice' => 'DPP invoice nol sehingga tidak dapat diekspor ke Coretax.']);
         }
-        $rate = Money::decimal($invoice->tax)->multipliedBy('100')->dividedBy($subtotal, 2, RoundingMode::HalfUp);
+        $invoiceSubtotal = Money::decimal($invoice->subtotal);
+        $rate = Money::decimal($invoice->tax)->multipliedBy('100')->dividedBy($invoiceSubtotal, 2, RoundingMode::HalfUp);
+        $tax = $subtotal->multipliedBy($rate)->dividedBy('100', 2, RoundingMode::HalfUp);
         $seller = config('accounting.coretax');
         $buyer = $invoice->customer_snapshot;
 
@@ -58,7 +65,7 @@ class CoretaxService
         $this->leaf($doc, $invoiceNode, 'StatusFaktur', 'Normal');
 
         $items = $this->element($doc, 'Items', $root);
-        foreach ($invoice->items as $item) {
+        foreach ($selected as $item) {
             $node = $this->element($doc, 'Item', $items);
             $this->leaf($doc, $node, 'Description', $item->description);
             $this->leaf($doc, $node, 'Quantity', Money::format($item->quantity));
@@ -71,11 +78,11 @@ class CoretaxService
         $this->leaf($doc, $summary, 'SubTotal', Money::format($invoice->subtotal));
         $this->leaf($doc, $summary, 'TotalDiscount', '0.00');
         $this->leaf($doc, $summary, 'Dpp', Money::format($invoice->subtotal));
-        $this->leaf($doc, $summary, 'Ppn', Money::format($invoice->tax));
+        $this->leaf($doc, $summary, 'Ppn', Money::format((string) $tax));
         $this->leaf($doc, $summary, 'PpnRate', $rate->toScale(2, RoundingMode::HalfUp));
         $this->leaf($doc, $summary, 'Currency', $invoice->currency);
         $this->leaf($doc, $summary, 'ExchangeRate', $invoice->exchange_rate);
-        $this->leaf($doc, $summary, 'GrandTotal', Money::format($invoice->total));
+        $this->leaf($doc, $summary, 'GrandTotal', Money::format((string) $subtotal->plus($tax)));
 
         if ($log) {
             $this->master->log($actor, 'invoice.coretax.exported', 'Ekspor XML Coretax '.$invoice->number, ['module' => 'invoice', 'record_id' => $invoice->id, 'after' => ['dpp' => Money::format($invoice->subtotal), 'ppn' => Money::format($invoice->tax), 'currency' => $invoice->currency]]);

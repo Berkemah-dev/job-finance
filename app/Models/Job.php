@@ -42,6 +42,11 @@ class Job extends Model
         return $this->hasMany(JobDocument::class);
     }
 
+    public function deliveryOrders(): HasMany
+    {
+        return $this->hasMany(DeliveryOrder::class)->latest('id');
+    }
+
     public function closingSnapshot(): HasOne
     {
         return $this->hasOne(JobClosingSnapshot::class);

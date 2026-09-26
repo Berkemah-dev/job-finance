@@ -42,13 +42,24 @@ class JobClosingService
             if ($job->costs()->count() === 0) {
                 throw ValidationException::withMessages(['costs' => 'Job belum memiliki detail biaya.']);
             }
-            // Auto-finalize any draft costs so closing can proceed directly with job costs
+            $workflowDrafts = $job->costs()->where('status', 'draft')->whereIn('cost_category', ['payment_request', 'reimbursement', 'debit_note', 'credit_note'])->lockForUpdate()->count();
+            if ($workflowDrafts > 0) {
+                throw ValidationException::withMessages(['costs' => 'Payment Request, Reimbursement, Debit Note, dan Credit Note harus disetujui sebelum Closing Job.']);
+            }
+            // Convert approved transactions and ordinary draft costs to Closed during Closing Job.
             $draftCosts = $job->costs()->where('status', 'draft')->lockForUpdate()->get();
             foreach ($draftCosts as $draftCost) {
                 $draftCost->status = 'final';
                 $draftCost->finalized_by = $actor->id;
                 $draftCost->finalized_at = now();
                 $draftCost->save();
+            }
+            $approvedCosts = $job->costs()->where('status', 'approved')->lockForUpdate()->get();
+            foreach ($approvedCosts as $approvedCost) {
+                $approvedCost->status = 'final';
+                $approvedCost->finalized_by = $actor->id;
+                $approvedCost->finalized_at = now();
+                $approvedCost->save();
             }
             $rows = $job->costs()->orderBy('id')->lockForUpdate()->get();
             $summary = $this->costs->summary($job)['final'];
@@ -58,7 +69,7 @@ class JobClosingService
             if ($total->isZero()) {
                 throw ValidationException::withMessages(['total' => 'Total invoice harus lebih besar dari nol.']);
             }
-            $maps = $this->journals->mapped(['temporary', 'provision_wip', 'receivable', 'revenue', 'cogs', 'tax_payable', $data['funding_account']]);
+            $maps = $this->journals->mapped(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'revenue', 'cogs', 'tax_payable', $data['funding_account']]);
             $currency = (string) ($job->quotation_snapshot['currency'] ?? 'IDR');
             if (! in_array($currency, array_keys(config('operations.currencies')), true)) {
                 throw ValidationException::withMessages(['job' => 'Mata uang quotation tidak valid untuk invoice.']);
@@ -86,12 +97,16 @@ class JobClosingService
             foreach ($rows as $i => $cost) {
                 $invoice->items()->create(['position' => $i + 1, 'description' => $cost->description, 'type' => $cost->type, 'quantity' => $cost->quantity, 'unit' => $cost->unit, 'unit_price' => $cost->type === 'temporary' ? $cost->unit_cost : $cost->unit_price, 'amount' => $cost->type === 'temporary' ? $cost->total_cost : $cost->total_price]);
             }
-            $fund = Money::decimal($summary['temporary'])->plus($summary['provision_cost']);
+            $draftPaymentRequest = Money::decimal((string) $rows->where('cost_category', 'payment_request')->sum('total_cost'));
+            $draftReimbursement = Money::decimal((string) $rows->where('cost_category', 'reimbursement')->sum('total_cost'));
+            $capitalizedTemporary = Money::decimal($summary['temporary'])->minus($draftReimbursement);
+            $capitalizedProvision = Money::decimal($summary['provision_cost'])->minus($draftPaymentRequest);
+            $fund = $capitalizedTemporary->plus($capitalizedProvision);
             if (! $fund->isZero()) {
                 $this->journals->post('job_cost_capitalization', Job::class, $job->id, $data['closing_date'], 'Kapitalisasi biaya '.$job->number, [
-                    ['account_id' => $maps['temporary']->id, 'description' => 'Temporary '.$job->number, 'debit' => $summary['temporary'], 'credit' => 0],
-                    ['account_id' => $maps['provision_wip']->id, 'description' => 'Provision WIP '.$job->number, 'debit' => $summary['provision_cost'], 'credit' => 0],
-                    ['account_id' => $maps[$data['funding_account']]->id, 'description' => 'Sumber dana '.$job->number, 'debit' => 0, 'credit' => (string) $fund]], $actor);
+                    ['account_id' => $maps['temporary']->id, 'description' => 'Temporary '.$job->number, 'debit' => $capitalizedTemporary, 'credit' => 0],
+                    ['account_id' => $maps['provision_wip']->id, 'description' => 'Provision WIP '.$job->number, 'debit' => $capitalizedProvision, 'credit' => 0],
+                    ['account_id' => $maps['vendor_payable']->id, 'description' => 'Hutang vendor '.$job->number, 'debit' => 0, 'credit' => (string) $fund]], $actor);
             }
             $this->journals->post('job_closing', Job::class, $job->id, $data['closing_date'], 'Closing '.$job->number, [
                 ['account_id' => $maps['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $total, 'credit' => 0],
@@ -100,6 +115,13 @@ class JobClosingService
                 ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi WIP', 'debit' => 0, 'credit' => $summary['provision_cost']],
                 ['account_id' => $maps['revenue']->id, 'description' => 'Pendapatan provision', 'debit' => 0, 'credit' => $summary['provision_sell']],
                 ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran', 'debit' => 0, 'credit' => (string) $tax]], $actor);
+            $categoryTotals = $rows->groupBy(fn ($cost) => $cost->cost_category ?: ($cost->type === 'temporary' ? 'reimbursement' : 'payment_request'));
+            $reimbursement = Money::decimal((string) ($categoryTotals->get('reimbursement', collect())->sum('total_cost')));
+            $debitNote = Money::decimal((string) ($categoryTotals->get('debit_note', collect())->sum('total_price')));
+            $creditNote = Money::decimal((string) ($categoryTotals->get('credit_note', collect())->sum('total_cost')));
+            if (! $reimbursement->isZero()) $this->journals->post('temporary_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Temporary '.$job->number, [['account_id'=>$maps['temporary_receivable']->id,'description'=>'Piutang temporary '.$job->number,'debit'=>(string)$reimbursement,'credit'=>0],['account_id'=>$maps['receivable']->id,'description'=>'Reklasifikasi piutang temporary '.$job->number,'debit'=>0,'credit'=>(string)$reimbursement]], $actor);
+            if (! $debitNote->isZero()) $this->journals->post('agent_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Agent '.$job->number, [['account_id'=>$maps['agent_receivable']->id,'description'=>'Piutang agent '.$job->number,'debit'=>(string)$debitNote,'credit'=>0],['account_id'=>$maps['receivable']->id,'description'=>'Reklasifikasi debit note '.$job->number,'debit'=>0,'credit'=>(string)$debitNote]], $actor);
+            if (! $creditNote->isZero()) $this->journals->post('agent_payable_recognition', Job::class, $job->id, $data['closing_date'], 'Hutang Agent '.$job->number, [['account_id'=>$maps['revenue']->id,'description'=>'Credit note agent '.$job->number,'debit'=>(string)$creditNote,'credit'=>0],['account_id'=>$maps['agent_payable']->id,'description'=>'Hutang agent '.$job->number,'debit'=>0,'credit'=>(string)$creditNote]], $actor);
             $job->status = 'closed';
             $job->closed_by = $actor->id;
             $job->closed_at = now();

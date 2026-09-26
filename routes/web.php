@@ -25,7 +25,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PricingSuggestionController;
 use App\Http\Controllers\QuotationController;
-use App\Http\Controllers\ReimbursementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AwbController;
 use App\Http\Controllers\BillOfLadingController;
@@ -33,11 +32,11 @@ use App\Http\Controllers\DnpController;
 use App\Http\Controllers\ShippingInstructionController;
 use App\Http\Controllers\ServiceTypeController;
 use App\Http\Controllers\StatementOfAccountController;
-use App\Http\Controllers\TpsController;
 use App\Http\Controllers\TruckingPriceController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\VendorTruckController;
 use App\Http\Controllers\CustomerAddressController;
+use App\Http\Controllers\DeliveryOrderController;
 use App\Http\Controllers\WeeklyPricingController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,22 +53,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->middleware('can:invoices.manage')->name('invoices.preview');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->middleware('can:invoices.manage')->name('invoices.pdf');
     Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])->middleware('can:invoices.manage')->name('invoices.delivery');
+    Route::get('/invoices/{invoice}/tax-invoice', [InvoiceController::class, 'taxInvoiceFile'])->middleware('can:invoices.manage')->name('invoices.tax-invoice');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'show'])->middleware('can:invoices.manage');
     Route::get('/invoices/{invoice}/coretax', [InvoiceController::class, 'coretax'])->middleware('can:invoices.manage')->name('invoices.coretax');
     Route::get('/invoices/{invoice}/coretax/preview', [InvoiceController::class, 'coretaxPreview'])->middleware('can:invoices.manage')->name('invoices.coretax.preview');
+    Route::post('/invoices/{invoice}/coretax/selected', [InvoiceController::class, 'coretaxSelected'])->middleware('can:invoices.manage')->name('invoices.coretax.selected');
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('can:payments.manage')->name('payments.index');
     Route::get('/invoices/{invoice}/payments/create', [PaymentController::class, 'create'])->middleware('can:payments.manage')->name('payments.create');
     Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->middleware('can:payments.manage')->name('payments.store');
-    Route::middleware('can:reimbursements.manage')->group(function () {
-        Route::get('/reimbursements', [ReimbursementController::class, 'index'])->name('reimbursements.index');
-        Route::get('/reimbursements/create', [ReimbursementController::class, 'create'])->name('reimbursements.create');
-        Route::post('/reimbursements', [ReimbursementController::class, 'store'])->name('reimbursements.store');
-        Route::get('/reimbursements/{reimbursement}', [ReimbursementController::class, 'show'])->name('reimbursements.show');
-        Route::get('/reimbursements/{reimbursement}/attachment', [ReimbursementController::class, 'downloadAttachment'])->name('reimbursements.attachment');
-        Route::post('/reimbursements/{reimbursement}/approve', [ReimbursementController::class, 'approve'])->name('reimbursements.approve');
-        Route::post('/reimbursements/{reimbursement}/reject', [ReimbursementController::class, 'reject'])->name('reimbursements.reject');
-        Route::post('/reimbursements/{reimbursement}/pay', [ReimbursementController::class, 'pay'])->name('reimbursements.pay');
-    });
     Route::resource('journals', JournalController::class)->only(['index', 'create', 'store', 'show'])->middleware('can:journals.manage');
     Route::post('/journals/{journal}/reverse', [JournalController::class, 'reverse'])->middleware('can:journals.manage')->name('journals.reverse');
     Route::middleware('can:reports.view')->prefix('reports')->name('reports.')->group(function () {
@@ -104,33 +95,39 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/calculators/packages', [CalculatorController::class, 'packages'])->name('calculators.api.packages');
     Route::get('/api/calculators/lcl', [CalculatorController::class, 'lclApi'])->name('calculators.api.lcl');
     Route::get('/api/calculators/tax', [CalculatorController::class, 'taxApi'])->name('calculators.api.tax');
-    Route::resource('quotations', QuotationController::class)->except('destroy')->middleware('can:quotations.manage');
-    Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])->name('quotations.print');
+    // Finance may view quotations, while editing remains limited to quotation operators.
+    Route::get('/quotations', [QuotationController::class, 'index'])->middleware('can:quotations.view')->name('quotations.index');
+    Route::get('/quotations/create', [QuotationController::class, 'create'])->middleware('can:quotations.manage')->name('quotations.create');
+    Route::post('/quotations', [QuotationController::class, 'store'])->middleware('can:quotations.manage')->name('quotations.store');
+    Route::get('/quotations/{quotation}/edit', [QuotationController::class, 'edit'])->middleware('can:quotations.manage')->name('quotations.edit');
+    Route::put('/quotations/{quotation}', [QuotationController::class, 'update'])->middleware('can:quotations.manage')->name('quotations.update');
+    Route::get('/quotations/{quotation}', [QuotationController::class, 'show'])->middleware('can:quotations.view')->name('quotations.show');
+    Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])->middleware('can:quotations.view')->name('quotations.print');
     Route::post('/quotations/{quotation}/submit', [QuotationController::class, 'submit'])->middleware('can:quotations.manage')->name('quotations.submit');
     Route::post('/quotations/{quotation}/duplicate', [QuotationController::class, 'duplicate'])->middleware('can:quotations.manage')->name('quotations.duplicate');
-    Route::get('/quotations/{quotation}/preview', [QuotationController::class, 'preview'])->middleware('can:quotations.manage')->name('quotations.preview');
-    Route::get('/api/quotations/{quotation}/pdf', [QuotationController::class, 'pdf'])->middleware('can:quotations.manage')->name('quotations.pdf');
+    Route::get('/quotations/{quotation}/preview', [QuotationController::class, 'preview'])->middleware('can:quotations.view')->name('quotations.preview');
+    Route::get('/api/quotations/{quotation}/pdf', [QuotationController::class, 'pdf'])->middleware('can:quotations.view')->name('quotations.pdf');
     foreach (['approve', 'reject', 'revise'] as $action) {
         Route::post('/quotations/{quotation}/'.$action, [QuotationController::class, $action])->middleware('can:quotations.approve')->name('quotations.'.$action);
     }
     Route::get('/quotations/{quotation}/approve', fn(Quotation $quotation) => redirect()->route('quotations.show', $quotation));
     Route::post('/quotations/{quotation}/convert', [QuotationController::class, 'convert'])->middleware(['can:quotations.manage', 'can:jobs.manage'])->name('quotations.convert');
     // Booking Confirmation
-    Route::resource('booking-confirmations', BookingConfirmationController::class)->middleware('can:jobs.view');
-    Route::get('/booking-confirmations/{bookingConfirmation}/preview', [BookingConfirmationController::class, 'preview'])->middleware('can:jobs.view')->name('booking-confirmations.preview');
-    Route::get('/api/booking-confirmations/{bookingConfirmation}/pdf', [BookingConfirmationController::class, 'pdf'])->middleware('can:jobs.view')->name('booking-confirmations.pdf');
+    Route::resource('booking-confirmations', BookingConfirmationController::class)->middleware('can:export-documents.manage');
+    Route::get('/booking-confirmations/{bookingConfirmation}/preview', [BookingConfirmationController::class, 'preview'])->middleware('can:export-documents.manage')->name('booking-confirmations.preview');
+    Route::get('/api/booking-confirmations/{bookingConfirmation}/pdf', [BookingConfirmationController::class, 'pdf'])->middleware('can:export-documents.manage')->name('booking-confirmations.pdf');
     // Shipping Instruction
-    Route::resource('shipping-instructions', ShippingInstructionController::class)->middleware('can:jobs.view');
-    Route::get('/shipping-instructions/{shippingInstruction}/preview', [ShippingInstructionController::class, 'preview'])->middleware('can:jobs.view')->name('shipping-instructions.preview');
-    Route::get('/api/shipping-instructions/{shippingInstruction}/pdf', [ShippingInstructionController::class, 'pdf'])->middleware('can:jobs.view')->name('shipping-instructions.pdf');
+    Route::resource('shipping-instructions', ShippingInstructionController::class)->middleware('can:export-documents.manage');
+    Route::get('/shipping-instructions/{shippingInstruction}/preview', [ShippingInstructionController::class, 'preview'])->middleware('can:export-documents.manage')->name('shipping-instructions.preview');
+    Route::get('/api/shipping-instructions/{shippingInstruction}/pdf', [ShippingInstructionController::class, 'pdf'])->middleware('can:export-documents.manage')->name('shipping-instructions.pdf');
     // AWB — Air Waybill (Export Air)
-    Route::resource('awbs', AwbController::class)->middleware('can:jobs.view');
-    Route::get('/awbs/{awb}/preview', [AwbController::class, 'preview'])->middleware('can:jobs.view')->name('awbs.preview');
-    Route::get('/api/awbs/{awb}/pdf', [AwbController::class, 'pdf'])->middleware('can:jobs.view')->name('awbs.pdf');
+    Route::resource('awbs', AwbController::class)->middleware('can:export-documents.manage');
+    Route::get('/awbs/{awb}/preview', [AwbController::class, 'preview'])->middleware('can:export-documents.manage')->name('awbs.preview');
+    Route::get('/api/awbs/{awb}/pdf', [AwbController::class, 'pdf'])->middleware('can:export-documents.manage')->name('awbs.pdf');
     // Bill of Lading — B/L (Export Sea)
-    Route::resource('bills-of-lading', BillOfLadingController::class)->parameters(['bills-of-lading' => 'billOfLading'])->middleware('can:jobs.view');
-    Route::get('/bills-of-lading/{billOfLading}/preview', [BillOfLadingController::class, 'preview'])->middleware('can:jobs.view')->name('bills-of-lading.preview');
-    Route::get('/api/bills-of-lading/{billOfLading}/pdf', [BillOfLadingController::class, 'pdf'])->middleware('can:jobs.view')->name('bills-of-lading.pdf');
+    Route::resource('bills-of-lading', BillOfLadingController::class)->parameters(['bills-of-lading' => 'billOfLading'])->middleware('can:export-documents.manage');
+    Route::get('/bills-of-lading/{billOfLading}/preview', [BillOfLadingController::class, 'preview'])->middleware('can:export-documents.manage')->name('bills-of-lading.preview');
+    Route::get('/api/bills-of-lading/{billOfLading}/pdf', [BillOfLadingController::class, 'pdf'])->middleware('can:export-documents.manage')->name('bills-of-lading.pdf');
     // DNP — Deklarasi Nilai Pabean (Import)
     Route::resource('dnps', DnpController::class)->middleware('can:jobs.view');
     Route::get('/dnps/{dnp}/pdf', [DnpController::class, 'previewPdf'])->middleware('can:jobs.view')->name('dnps.pdf');
@@ -147,8 +144,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/jobs/{job}/reopen', [JobController::class, 'reopen'])->middleware('can:jobs.close')->name('jobs.reopen');
     Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.confirm-do')->name('jobs.confirm-do');
     Route::post('/jobs/{job}/upload-surat-jalan', [JobController::class, 'uploadSuratJalan'])->middleware('can:jobs.view')->name('jobs.surat-jalan.upload');
+    Route::post('/jobs/{job}/delivery-orders', [DeliveryOrderController::class, 'store'])->middleware('can:jobs.manage')->name('jobs.delivery-orders.store');
+    Route::get('/delivery-orders/{deliveryOrder}/pdf', [DeliveryOrderController::class, 'pdf'])->middleware('can:jobs.view')->name('delivery-orders.pdf');
     // Job Documents
     Route::post('/jobs/{job}/documents', [JobDocumentController::class, 'store'])->middleware('can:jobs.view')->name('jobs.documents.store');
+    Route::get('/jobs/{job}/documents/{document}/preview', [JobDocumentController::class, 'preview'])->middleware('can:jobs.view')->name('jobs.documents.preview');
     Route::get('/jobs/{job}/documents/{document}/download', [JobDocumentController::class, 'download'])->middleware('can:jobs.view')->name('jobs.documents.download');
     Route::delete('/jobs/{job}/documents/{document}', [JobDocumentController::class, 'destroy'])->middleware('can:jobs.manage')->name('jobs.documents.destroy');
     // Document Type Master
@@ -178,17 +178,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/service-types/{serviceType}', [ServiceTypeController::class, 'destroy'])->middleware('can:master-data.manage')->name('service-types.destroy');
     Route::get('/service-types/{serviceType}/edit', [ServiceTypeController::class, 'edit'])->middleware('can:master-data.manage')->name('service-types.edit');
     Route::put('/service-types/{serviceType}', [ServiceTypeController::class, 'update'])->middleware('can:master-data.manage')->name('service-types.update');
-    Route::resource('tps', TpsController::class)->except('show')->parameters(['tps' => 'tps'])->middleware('can:tps.manage');
-    Route::post('/jobs/{job}/shipment-status', [JobController::class, 'shipmentStatus'])->middleware('can:jobs.manage')->name('jobs.shipment-status');
     Route::get('/costs', [JobCostController::class, 'overview'])->middleware('can:costs.manage')->name('costs.overview');
     Route::middleware('can:costs.manage')->scopeBindings()->group(function () {
         Route::resource('jobs.costs', JobCostController::class);
+        Route::post('/jobs/{job}/costs/{cost}/approve', [JobCostController::class, 'approve'])->name('jobs.costs.approve');
+        Route::post('/jobs/{job}/costs/{cost}/pay', [JobCostController::class, 'pay'])->name('jobs.costs.pay');
         Route::post('/jobs/{job}/costs/{cost}/finalize', [JobCostController::class, 'finalize'])->name('jobs.costs.finalize');
     });
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('can:customers.view')->name('customers.index');
     Route::get('/customers/create', [CustomerController::class, 'create'])->middleware('can:customers.manage')->name('customers.create');
     Route::post('/customers', [CustomerController::class, 'store'])->middleware('can:customers.manage')->name('customers.store');
-    Route::post('/customers/{customer}/approve', [CustomerController::class, 'approve'])->middleware('can:customers.view')->name('customers.approve');
+    Route::post('/customers/{customer}/approve', [CustomerController::class, 'approve'])->middleware('can:customers.approve')->name('customers.approve');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('can:customers.view')->name('customers.show');
     Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->middleware('can:customers.manage')->name('customers.edit');
     Route::put('/customers/{customer}', [CustomerController::class, 'update'])->middleware('can:customers.manage')->name('customers.update');
@@ -269,16 +269,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/users/{user}/generate-password', [AccessController::class, 'generatePassword'])->middleware('can:users.manage')->name('users.generate-password');
     Route::get('/activity', [AccessController::class, 'activity'])->middleware('can:activity.view')->name('activity.index');
 
-    // Master TPS Air/Sea
-    Route::middleware('can:jobs.manage')->prefix('tps')->name('tps.')->group(function () {
-        Route::get('/', [TpsController::class, 'index'])->name('index');
-        Route::get('/create', [TpsController::class, 'create'])->name('create');
-        Route::post('/', [TpsController::class, 'store'])->name('store');
-        Route::get('/{tps}/edit', [TpsController::class, 'edit'])->name('edit');
-        Route::put('/{tps}', [TpsController::class, 'update'])->name('update');
-        Route::post('/{tps}/toggle', [TpsController::class, 'toggle'])->name('toggle');
-        Route::delete('/{tps}', [TpsController::class, 'destroy'])->name('destroy');
-    });
 
     // Invoice PDF
     Route::get('/api/invoices/{invoice}/pdf', [OperationalDocumentController::class, 'invoicePdf'])

@@ -5,8 +5,8 @@
     tag="SALES & CUSTOMER"
     title="Quotation & Penawaran"
     description="Susun penawaran harga, pantau status persetujuan, dan konversi ke Job Order dengan rapi."
-    :action-url="route('quotations.create')"
-    action-label="Buat Quotation"
+    :action-url="auth()->user()->can('create', \App\Models\Quotation::class) ? route('quotations.create') : null"
+    :action-label="auth()->user()->can('create', \App\Models\Quotation::class) ? 'Buat Quotation' : null"
     action-icon="plus"
     icon="file"
     art-title="Penawaran akurat,"
@@ -101,14 +101,14 @@
                                 <a class="btn-action btn-action-primary" href="{{ route('quotations.show', $quotation) }}" title="Detail Quotation" data-tooltip="Detail" aria-label="Detail Quotation">
                                     <x-icon name="eye"/>
                                 </a>
-                                @if(auth()->user()->can('quotations.manage') || auth()->user()->can('create', \App\Models\Quotation::class))
+                                @can('create', \App\Models\Quotation::class)
                                     <form method="POST" action="{{ route('quotations.duplicate', $quotation) }}" data-confirm="Buat salinan draft baru dari quotation {{ $quotation->number }}?">
                                         @csrf
                                         <button type="submit" class="btn-action" title="Duplikat Quote" data-tooltip="Duplikat" aria-label="Duplikat Quote">
                                             <x-icon name="copy"/>
                                         </button>
                                     </form>
-                                @endif
+                                @endcan
                                 @can('convert', $quotation)
                                     @if(!$quotation->job)
                                         <form method="POST" action="{{ route('quotations.convert', $quotation) }}" data-confirm="Konversi quotation ini ke Job Order? Status job akan langsung Open.">

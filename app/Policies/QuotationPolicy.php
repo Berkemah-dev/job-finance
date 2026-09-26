@@ -10,7 +10,9 @@ class QuotationPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermission('quotations.manage') || $user->hasRole(['operational', 'super-admin', 'admin']);
+        return $user->hasPermission('quotations.view')
+            || $user->hasPermission('quotations.manage')
+            || $user->hasRole(['super-admin', 'admin']);
     }
 
     public function view(User $user, Quotation $quotation): bool
@@ -28,12 +30,21 @@ class QuotationPolicy
 
     public function create(User $user): bool
     {
-        return $this->viewAny($user);
+        return $this->viewAny($user)
+            && ! $user->hasRole(['customer-service', 'finance', 'finance-manager']);
     }
 
     public function update(User $user, Quotation $quotation): bool
     {
         if (! $this->view($user, $quotation)) {
+            return false;
+        }
+
+        if ($user->hasRole('customer-service')) {
+            return false;
+        }
+
+        if ($user->hasRole(['finance', 'finance-manager']) && ! $user->hasRole(['super-admin', 'admin'])) {
             return false;
         }
 

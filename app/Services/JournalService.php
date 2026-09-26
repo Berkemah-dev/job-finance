@@ -82,7 +82,7 @@ class JournalService
         return $result;
     }
 
-    public function post(string $type, string $sourceType, int $sourceId, string $date, string $description, array $entries, User $actor): Journal
+    public function post(string $type, string $sourceType, int $sourceId, string $date, string $description, array $entries, User $actor, ?string $number = null): Journal
     {
         if (DB::transactionLevel() === 0) {
             throw new \LogicException('Journal posting requires a transaction.');
@@ -96,7 +96,7 @@ class JournalService
         if (! $debit->isEqualTo($credit) || $debit->isZero()) {
             throw ValidationException::withMessages(['journal' => 'Jurnal harus seimbang dan tidak boleh bernilai nol.']);
         }
-        $journal = Journal::create(['number' => $this->numbers->next('jrn'), 'journal_date' => $date, 'type' => $type, 'source_type' => $sourceType, 'source_id' => $sourceId, 'description' => $description, 'status' => 'posted', 'posted_by' => $actor->id, 'posted_at' => now()]);
+        $journal = Journal::create(['number' => $number ?? $this->numbers->next('jrn'), 'journal_date' => $date, 'type' => $type, 'source_type' => $sourceType, 'source_id' => $sourceId, 'description' => $description, 'status' => 'posted', 'posted_by' => $actor->id, 'posted_at' => now()]);
         foreach ($entries as $entry) {
             if (Money::decimal($entry['debit'] ?? 0)->isZero() && Money::decimal($entry['credit'] ?? 0)->isZero()) {
                 continue;

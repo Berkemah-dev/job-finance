@@ -13,6 +13,8 @@ class WeeklyPricingController extends Controller
 {
     public function index(Request $request)
     {
+        abort_if($request->user()?->hasRole(['finance', 'finance-manager']) && ! $request->user()?->hasRole(['super-admin', 'admin']), 403);
+
         $query = WeeklyPricing::query();
         $search = mb_substr($request->string('search')->toString(), 0, 80);
         if ($search !== '') {

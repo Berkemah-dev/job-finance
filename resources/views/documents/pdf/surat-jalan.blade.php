@@ -1,4 +1,5 @@
 @php
+    $deliveryOrder = $deliveryOrder ?? null;
     $customer = $job->customer ?? $quotation?->customer;
     $snapshot = $quotation?->customer_snapshot ?? [];
 
@@ -13,7 +14,7 @@
     $hasPhysicalCargo = !empty($job->cargo_description) || !empty($job->package_count);
     $items = $hasPhysicalCargo ? [] : ($job->quotation_snapshot['items'] ?? []);
 
-    $vehicle = strtoupper(trim($job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: '')));
+    $vehicle = strtoupper(trim($deliveryOrder?->vehicle_type ?: ($job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: ''))));
     if (str_contains($vehicle, 'TRAILER')) {
         $isFcl = true;
         $isLcl = false;
@@ -236,12 +237,12 @@
                     <tr>
                         <td style="width: 135pt; font-weight: bold;">Nomor Delivery Order</td>
                         <td style="width: 12pt; text-align: center; font-weight: bold;">:</td>
-                        <td style="font-weight: bold; color: #0f172a;">DO-RDX/{{ $job->job_date?->format('Y') ?? now()->format('Y') }}/{{ str_pad($job->id, 4, '0', STR_PAD_LEFT) }}</td>
+                        <td style="font-weight: bold; color: #0f172a;">{{ $deliveryOrder?->number ?: 'DO-RDX/'.($job->job_date?->format('Y') ?? now()->format('Y')).'/'.str_pad($job->id, 4, '0', STR_PAD_LEFT) }}</td>
                     </tr>
                     <tr>
                         <td style="font-weight: bold; padding-top: 3pt;">Tanggal Delivery Order</td>
                         <td style="text-align: center; font-weight: bold; padding-top: 3pt;">:</td>
-                        <td style="padding-top: 3pt;">{{ $job->job_date?->format('d/m/Y') ?? now()->format('d/m/Y') }}</td>
+                        <td style="padding-top: 3pt;">{{ $deliveryOrder?->issued_at?->format('d/m/Y') ?: ($job->job_date?->format('d/m/Y') ?? now()->format('d/m/Y')) }}</td>
                     </tr>
                 </table>
             </td>
@@ -270,27 +271,27 @@
         <tr>
             <td class="col-label">Nomor Truk</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '—') }}</td>
+            <td>{{ $deliveryOrder?->truck_plate_number ?: ($job->truck_plate_number ?: ($job->vendorTruck?->plate_number ?: '—')) }}</td>
         </tr>
         <tr>
             <td class="col-label">Nomor Container</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->container_number ?: ($job->container_type ? strtoupper($job->container_type) : '—') }}</td>
+            <td>{{ $deliveryOrder?->container_number ?: ($job->container_number ?: ($job->container_type ? strtoupper($job->container_type) : '—')) }}</td>
         </tr>
         <tr>
             <td class="col-label">Nama Supir</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->vendorTruck?->driver_name ?: ($job->driver_name ?: '—') }}</td>
+            <td>{{ $deliveryOrder?->driver_name ?: ($job->vendorTruck?->driver_name ?: ($job->driver_name ?: '—')) }}</td>
         </tr>
         <tr>
             <td class="col-label">Nomor Telepon Supir</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->vendorTruck?->driver_phone ?: ($job->driver_phone ?: '—') }}</td>
+            <td>{{ $deliveryOrder?->driver_phone ?: ($job->vendorTruck?->driver_phone ?: ($job->driver_phone ?: '—')) }}</td>
         </tr>
         <tr>
             <td class="col-label">Jenis Kendaraan</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: '—') }}</td>
+            <td>{{ $deliveryOrder?->vehicle_type ?: ($job->vehicle_type ?: ($job->vendorTruck?->vehicle_type ?: '—')) }}</td>
         </tr>
         <tr>
             <td class="col-label">Dari Gudang</td>
@@ -300,7 +301,7 @@
         <tr>
             <td class="col-label">Tujuan Pengiriman</td>
             <td class="col-sep">:</td>
-            <td>{{ $job->delivery_address ?: $consigneeAddress }}</td>
+            <td>{{ $deliveryOrder?->delivery_address ?: ($job->delivery_address ?: $consigneeAddress) }}</td>
         </tr>
     </table>
 

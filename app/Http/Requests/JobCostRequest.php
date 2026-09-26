@@ -19,12 +19,13 @@ class JobCostRequest extends FormRequest
         $money = ['required', 'regex:/^\\d{1,9}(\\.\\d{1,2})?$/'];
 
         return ['job_version' => ['required', 'integer', 'min:0'], 'lock_version' => [$this->route('cost') ? 'required' : 'nullable', 'integer', 'min:0'],
-            'description' => ['required', 'string', 'max:255'], 'type' => ['required', Rule::enum(CostType::class)],
-            'cost_category' => ['nullable', 'string', 'in:reimbursement,debit_note,payment_request,credit_note'],
+            'description' => ['required', 'string', 'max:255'], 'type' => ['nullable', Rule::enum(CostType::class)],
+            'cost_category' => ['required', 'string', 'in:reimbursement,debit_note,payment_request,credit_note'],
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'cost_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:'.$this->route('job')->job_date->format('Y-m-d')],
             'quantity' => ['required', 'regex:/^\\d{1,6}(\\.\\d{1,2})?$/', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', 'max:30'], 'unit_cost' => $money, 'unit_price' => $money,
+            'pph23_amount' => ['nullable', 'numeric', 'min:0'],
             'payee' => ['nullable', 'string', 'max:255'], 'reference' => ['nullable', 'string', 'max:100'], 'notes' => ['nullable', 'string', 'max:2000']];
     }
 

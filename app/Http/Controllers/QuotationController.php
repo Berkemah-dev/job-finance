@@ -50,6 +50,8 @@ class QuotationController extends Controller
 
     public function create()
     {
+        Gate::authorize('create', Quotation::class);
+
         return view('quotations.form', [
             'quotation' => new Quotation,
             'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']),
@@ -151,6 +153,8 @@ class QuotationController extends Controller
 
     public function duplicate(Request $request, Quotation $quotation, QuotationService $service)
     {
+        Gate::authorize('create', Quotation::class);
+
         $copy = $service->duplicate($quotation, $request->user());
 
         return redirect()->route('quotations.edit', $copy)->with('success', 'Draft quotation disalin. Nomor <strong>'.$copy->number.'</strong> dihasilkan otomatis.');

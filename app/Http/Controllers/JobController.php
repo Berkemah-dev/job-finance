@@ -49,10 +49,13 @@ class JobController extends Controller
     {
         $job->load([
             'quotation', 'customer.addresses', 'sales', 'cs', 'bookingConfirmations', 'shippingInstructions', 
-            'awbs', 'billsOfLading', 'dnps', 'vendorTrucking.trucks', 'vendorTruck', 'deliveryAddressLocation',
+            'awbs', 'billsOfLading', 'dnps', 'deliveryOrders.createdBy', 'vendorTrucking.trucks', 'vendorTruck', 'deliveryAddressLocation',
             'statusHistory.user', 'shipmentStatusHistory.user', 'documents.documentType', 'documents.uploader'
         ]);
-        $documentTypes = \App\Models\DocumentType::active()->forService($job->service_type)->orderBy('sort_order')->get();
+        $allDocumentTypes = \App\Models\DocumentType::active()->forService($job->service_type)->orderBy('sort_order')->get();
+        $isCustomsType = fn ($type) => preg_match('/\b(PIB|PEB|NPE|SPJM|SPPB|SLIM|BILLING)\b/i', $type->code.' '.$type->name) === 1;
+        $documentTypes = $allDocumentTypes->reject($isCustomsType)->values();
+        $customsDocumentTypes = $allDocumentTypes->filter($isCustomsType)->values();
         $truckingVendors = \App\Models\Vendor::where(function ($q) {
             $q->where('type', 'trucking')->orWhereHas('categories', fn ($cq) => $cq->where('category', 'trucking'));
         })->with(['trucks' => fn ($tq) => $tq->where('is_active', true)])->orderBy('name')->get(['id', 'name', 'code']);
@@ -75,6 +78,7 @@ class JobController extends Controller
             'documentTypes' => $documentTypes,
             'truckingVendors' => $truckingVendors,
             'customerAddresses' => $customerAddresses,
+            'customsDocumentTypes' => $customsDocumentTypes,
         ]);
     }
 

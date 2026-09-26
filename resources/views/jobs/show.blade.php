@@ -48,7 +48,9 @@
     $quotationVolume = $quotation?->items?->sum(fn($i) => (float)($i->volume ?? 0));
     $volumeStr = $job->volume ? $job->volume . ' M3' : ($quotationVolume > 0 ? $quotationVolume . ' M3' : '—');
     $commodityStr = $job->cargo_description ?? $quotation?->commodity ?? 'General Cargo';
-    $noteContent = $job->operational_notes ?? $quotation?->notes ?? '';
+    $noteContent = $quotation?->notes ?? $job->operational_notes ?? '';
+    $isCsRole = auth()->user()?->hasRole('customer-service');
+    $isOperationalRole = auth()->user()?->hasRole('operational');
 @endphp
 
 <div class="page-heading">
@@ -84,7 +86,7 @@
     @endif
 
 {{-- TOP ACTION BUTTONS --}}
-<div class="quote-actions" style="margin-bottom: 20px;">
+@unless($isCsRole)<div class="quote-actions" style="margin-bottom: 20px;">
     @can('update',$job)
         <a class="button button-secondary" href="{{ route('jobs.edit',$job) }}">Edit Operasional</a>
     @endcan
@@ -128,7 +130,7 @@
             <x-icon name="x"/> Batalkan Job
         </button>
     @endcan
-</div>
+</div>@endunless
 
 @can('cancel', $job)
 <dialog id="modal-cancel-job" class="modal-dialog" style="max-width: 520px !important;">
@@ -263,26 +265,20 @@ document.addEventListener('DOMContentLoaded', function() {
     @if($isImport)
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PIB</button>
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Surat Kuasa</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Deklarasi Nilai Pabean</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Surat Kuasa</button>@endunless
+        @unless($isCsRole)<button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 5.@endif Deklarasi Nilai Pabean</button>@endunless
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)5.@elseif($isCsRole)6.@else 7.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @elseif($isExportSea)
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button><button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button><button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button><button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 8.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @elseif($isExportAir)
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">8. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button><button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button><button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button><button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 8.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @else
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. Document Upload</button>
         <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Surat Jalan / Tanda Terima</button>
@@ -550,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="subtle">{{ $isImport ? 'Nomor Pengajuan AJU, Nopen, SPJM/SPPB' : 'No AJU 6 digit terakhir, NOPEN PEB, tanggal PEB, dan NPE' }}</span>
         </div>
         @if(auth()->user()->can('update', $job))
-            <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="margin-bottom: 24px;">
+            <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="display:none; margin-bottom: 24px;">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="lock_version" value="{{ old('lock_version', $job->lock_version) }}">
@@ -601,39 +597,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button class="button button-primary">Simpan Data Kepabeanan</button>
                 </div>
             </form>
+            @if($customsDocumentTypes->isNotEmpty())
+            <form class="data-form" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data" style="border-top:1px solid #e2e8f0;padding-top:18px;">
+                @csrf
+                <input type="hidden" name="customs_upload" value="1">
+                <div class="panel-heading" style="margin-bottom:12px;"><h2>Upload Dokumen {{ $isImport ? 'PIB' : 'PEB' }}</h2><span class="subtle">Upload PIB/PEB, NPE, SPJM, SLIM, atau SPPB. Status akan diperbarui otomatis.</span></div>
+                <div class="form-grid"><div class="field"><label>Jenis Dokumen</label><select name="document_type_id" required><option value="">Pilih dokumen kepabeanan</option>@foreach($customsDocumentTypes as $dt)<option value="{{ $dt->id }}">{{ $dt->name }}</option>@endforeach</select></div><div class="field"><label>File PDF</label><input type="file" name="file" accept="application/pdf,.pdf" required></div><div class="field span-2"><label>Catatan</label><input name="notes" maxlength="500" placeholder="Opsional"></div></div><button class="button button-primary">Upload Dokumen Kepabeanan</button>
+            </form>
+            @endif
         @else
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No AJU (6 digit terakhir)</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $noAju }}</div></div>
                 <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }} @if($isImport && $job->nopen_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $nopenDate }})</span>@elseif(!$isImport && $job->peb_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $pebDate }})</span>@endif</div></div>
             </div>
         @endif
-        {{-- FORM UPDATE STATUS KEPABEANAN --}}
-        @if($job->status === 'open' && auth()->user()->can('update', $job))
-            <form class="transition-form" method="POST" action="{{ route('jobs.shipment-status',$job) }}" style="padding-top: 16px; border-top: 1px solid #e2e8f0;">
-                @csrf
-                <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
-                <label for="shipment_status_customs" style="font-weight: 700;">Update Status Kepabeanan / Pengiriman</label>
-                @if($isImport)
-                    <select name="shipment_status" id="shipment_status_customs">
-                        <option value="pib_submitted" @selected($job->shipment_status==='pib_submitted')>PIB Diajukan (Menunggu Billing BC)</option>
-                        <option value="billing" @selected($job->shipment_status==='billing')>Billing BC Diterima (Menunggu Penjaluran)</option>
-                        <option value="spjm" @selected($job->shipment_status==='spjm')>SPJM — Menunggu Pemeriksaan Fisik</option>
-                        <option value="behandle" @selected($job->shipment_status==='behandle')>Pemeriksaan Fisik — Menunggu SPPB</option>
-                        <option value="sppb" @selected($job->shipment_status==='sppb')>SPPB Terbit — Selesai</option>
-                    </select>
-                    <p class="form-help">Alur Import: <strong>PIB</strong> → <strong>Billing BC</strong> → <strong>Penjaluran</strong> (SPPB langsung selesai | SPJM → Pemeriksaan Fisik → SPPB)</p>
-                @else
-                    <select name="shipment_status" id="shipment_status_customs">
-                        @foreach(config('operations.shipment_statuses') as $value=>$label)
-                            @continue(in_array($value, ['pib_submitted','billing','spjm','sppb','behandle'], true))
-                            <option value="{{ $value }}" @selected($job->shipment_status===$value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    <p class="form-help">Pilih status untuk mencatat progress pengiriman export.</p>
-                @endif
-                <button class="button button-secondary">Simpan Status Kepabeanan</button>
-            </form>
-        @endif
+        <p class="form-help" style="margin:0;">Status kepabeanan diperbarui otomatis saat dokumen PIB, PEB, NPE, SPJM, SLIM, atau SPPB diunggah.</p>
     </section>
 </div>
 
@@ -671,7 +649,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td>{{ $doc->created_at->format('d/m/Y H:i') }}</td>
                             <td>
                                 <div class="table-actions">
-                                    <a class="btn-action btn-action-primary" href="{{ route('jobs.documents.download', [$job, $doc]) }}" target="_blank" title="Download Dokumen" data-tooltip="Download" aria-label="Download Dokumen"><x-icon name="download"/></a>
+                                    <a class="btn-action btn-action-primary" href="{{ route('jobs.documents.preview', [$job, $doc]) }}" target="_blank" title="Lihat Dokumen" data-tooltip="Lihat" aria-label="Lihat Dokumen"><x-icon name="eye"/></a>
+                                    <a class="btn-action" href="{{ route('jobs.documents.download', [$job, $doc]) }}" title="Download Dokumen" data-tooltip="Download" aria-label="Download Dokumen"><x-icon name="download"/></a>
                                     @can('update',$job)
                                         <form method="POST" action="{{ route('jobs.documents.destroy', [$job, $doc]) }}" data-confirm="Hapus dokumen ini?">
                                             @csrf @method('DELETE')
@@ -999,17 +978,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p style="font-size: 12px; color: #64748b; line-height: 1.7; margin: 12px 0 16px;">Pengisian data armada, nomor container fisik, supir, dan alamat tujuan dari master alamat customer.</p>
 
                     @if(auth()->user()->can('update', $job))
-                        <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                        @php
+                            $selectedDeliveryAddressId = old('customer_address_id', $job->customer_address_id ?: $customerAddresses->first()?->id);
+                            $manualDeliveryAddress = (bool) old('use_manual_delivery_address', false);
+                        @endphp
+                        <form class="data-form" method="POST" action="{{ route('jobs.delivery-orders.store', $job) }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
                             @csrf
-                            @method('PUT')
-                            <input type="hidden" name="lock_version" value="{{ old('lock_version', $job->lock_version) }}">
-                            <input type="hidden" name="subject" value="{{ old('subject', $job->subject) }}">
-                            <input type="hidden" name="job_date" value="{{ old('job_date', $job->job_date?->format('Y-m-d')) }}">
-                            <input type="hidden" name="redirect_tab" value="delivery">
 
                             <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
                                 <x-icon name="file" style="width: 14px; height: 14px; color: #2563eb;"/>
-                                <span>Input Data Delivery Order (Import Sea / Delivery)</span>
+                                <span>Buat Surat Jalan Baru</span>
                             </div>
 
                             {{-- 1. Nomor Container Manual --}}
@@ -1027,9 +1005,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     @endif
                                 </label>
                                 <select name="customer_address_id" id="customer_address_id" style="font-size: 12.5px;" onchange="onDeliveryAddressSelected(this)">
-                                    <option value="">— Gunakan Alamat Standar Consignee / Manual —</option>
+                                    <option value="">— Gunakan alamat default customer —</option>
                                     @foreach($customerAddresses as $ca)
-                                        <option value="{{ $ca->id }}" data-address="{{ $ca->address }}" @selected(old('customer_address_id', $job->customer_address_id) == $ca->id)>
+                                        <option value="{{ $ca->id }}" data-address="{{ $ca->address }}" @selected($selectedDeliveryAddressId == $ca->id)>
                                             {{ $ca->location_name }} — {{ \Illuminate\Support\Str::limit($ca->address, 50) }}
                                         </option>
                                     @endforeach
@@ -1037,8 +1015,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
 
                             <div class="field" style="margin-bottom: 10px;">
-                                <label for="delivery_address" style="font-size: 11.5px; font-weight: 600; color: #475569;">Alamat Lengkap Tujuan Pengiriman</label>
-                                <textarea name="delivery_address" id="delivery_address" rows="2" placeholder="Alamat lengkap lokasi bongkar..." style="font-size: 12px;">{{ old('delivery_address', $job->delivery_address ?: ($job->deliveryAddressLocation?->address ?: $job->consignee_address)) }}</textarea>
+                                <label style="font-size: 11.5px; font-weight: 600; color: #475569; display:flex; gap:8px; align-items:center;"><input type="checkbox" name="use_manual_delivery_address" value="1" id="use_manual_delivery_address" style="width:auto;" @checked($manualDeliveryAddress)> Gunakan alamat tujuan manual</label>
+                                <textarea name="delivery_address" id="delivery_address" rows="2" placeholder="Isi alamat manual bila diperlukan..." style="font-size: 12px;" {{ $manualDeliveryAddress ? '' : 'disabled' }}>{{ old('delivery_address') }}</textarea>
+                                <small class="form-help">Alamat Surat Jalan otomatis diambil dari master alamat customer. Centang manual hanya bila alamat belum tersedia.</small>
                             </div>
 
                             {{-- 3. Vendor Trucking & Supir / Plat Nomor (Otomatis dari Master Vendor Truk) --}}
@@ -1099,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             <div style="display: flex; justify-content: flex-end;">
                                 <button type="submit" class="button button-primary" style="font-size: 12px; padding: 7px 16px;">
-                                    <x-icon name="check"/> Simpan Data Delivery Order
+                                    <x-icon name="plus"/> Buat Surat Jalan
                                 </button>
                             </div>
                         </form>
@@ -1119,11 +1098,39 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     @endif
                 </div>
-                <div style="padding-top: 6px;">
-                    <a class="button button-primary" href="{{ route('jobs.surat-jalan.pdf', $job) }}" target="_blank" style="width: 100%; justify-content: center;">
-                        <x-icon name="file"/> Preview / Cetak Delivery Order
-                    </a>
+            </article>
+
+            <article class="report-card" style="grid-column: 1 / -1;">
+                <div class="report-card-head">
+                    <div class="report-card-title">
+                        <span class="report-icon blue"><x-icon name="file"/></span>
+                        <div>
+                            <h2>Surat Jalan pada Job Ini</h2>
+                            <small>Satu Job Order dapat memiliki Surat Jalan tanpa batas.</small>
+                        </div>
+                    </div>
                 </div>
+                @if($job->deliveryOrders->isEmpty())
+                    <p style="margin:12px 0 0;color:#64748b;font-size:13px;">Belum ada Surat Jalan dibuat.</p>
+                @else
+                    <div class="table-wrap" style="margin-top:14px;">
+                        <table>
+                            <thead><tr><th>No. Surat Jalan</th><th>Tanggal</th><th>Tujuan</th><th>Supir / Plat</th><th>Dibuat oleh</th><th>Aksi</th></tr></thead>
+                            <tbody>
+                                @foreach($job->deliveryOrders as $deliveryOrder)
+                                    <tr>
+                                        <td><strong>{{ $deliveryOrder->number }}</strong></td>
+                                        <td>{{ $deliveryOrder->issued_at?->format('d/m/Y') }}</td>
+                                        <td>{{ $deliveryOrder->address_label ?: \Illuminate\Support\Str::limit($deliveryOrder->delivery_address, 55) }}</td>
+                                        <td>{{ $deliveryOrder->driver_name ?: '—' }}<br><small>{{ $deliveryOrder->truck_plate_number ?: '—' }}</small></td>
+                                        <td>{{ $deliveryOrder->createdBy?->name ?: '—' }}</td>
+                                        <td><a class="button button-secondary button-sm" href="{{ route('delivery-orders.pdf', $deliveryOrder) }}" target="_blank"><x-icon name="eye"/> View</a></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </article>
             @endif
 
@@ -1623,7 +1630,17 @@ function onDeliveryAddressSelected(selectEl) {
     if (fullAddress && deliveryAddressField) {
         deliveryAddressField.value = fullAddress;
     }
+    const manual = document.getElementById('use_manual_delivery_address');
+    if (manual && selectEl.value) {
+        manual.checked = false;
+        deliveryAddressField.disabled = true;
+    }
 }
+
+document.getElementById('use_manual_delivery_address')?.addEventListener('change', function () {
+    const field = document.getElementById('delivery_address');
+    if (field) field.disabled = ! this.checked;
+});
 
 function onVendorTruckingSelected(selectEl) {
     const vendorId = selectEl.value;

@@ -15,18 +15,24 @@ class JobCostController extends Controller
     public function overview(Request $request)
     {
         $search = mb_substr($request->string('search')->toString(), 0, 100);
-        $jobs = Job::withCount(['costs', 'costs as draft_costs_count' => fn ($q) => $q->where('status', 'draft'), 'costs as final_costs_count' => fn ($q) => $q->where('status', 'final')])
+        $category = in_array($request->input('category'), ['payment_request', 'reimbursement', 'debit_note', 'credit_note'], true) ? $request->input('category') : null;
+        $scope = fn ($q) => $category ? $q->where('cost_category', $category) : $q;
+        $jobs = Job::withCount([
+            'costs' => $scope,
+            'costs as draft_costs_count' => fn ($q) => $scope($q)->where('status', 'draft'),
+            'costs as final_costs_count' => fn ($q) => $scope($q)->where('status', 'final'),
+        ])
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('number', 'like', '%'.$search.'%')->orWhere('subject', 'like', '%'.$search.'%')))
             ->when(in_array($request->input('status'), array_keys(config('operations.job_statuses')), true), fn ($q) => $q->where('status', $request->input('status')))
             ->latest('id')->paginate(10)->withQueryString();
 
-        return view('costs.overview', compact('jobs', 'search'));
+        return view('costs.overview', compact('jobs', 'search', 'category'));
     }
 
     public function index(Request $request, Job $job, JobCostService $service)
     {
         $costs = $job->costs()->with('creator')->when(in_array($request->input('status'), ['draft', 'final'], true), fn ($q) => $q->where('status', $request->input('status')))
-            ->when(in_array($request->input('type'), ['temporary', 'provision'], true), fn ($q) => $q->where('type', $request->input('type')))
+            ->when(in_array($request->input('category'), ['payment_request', 'reimbursement', 'debit_note', 'credit_note'], true), fn ($q) => $q->where('cost_category', $request->input('category')))
             ->latest('id')->paginate(10)->withQueryString();
 
         return view('costs.index', ['job' => $job, 'costs' => $costs, 'summary' => $service->summary($job)]);
@@ -52,7 +58,8 @@ class JobCostController extends Controller
     {
         Gate::authorize('view', $cost);
 
-        return view('costs.show', ['job' => $job, 'cost' => $cost->load(['creator', 'finalizer'])]);
+        $bankAccounts = \App\Models\ChartOfAccount::where('type', 'asset')->where(fn ($q) => $q->where('name', 'like', '%Bank%')->orWhere('name', 'like', '%Kas%')->orWhere('name', 'like', '%Cash%'))->orderBy('code')->get();
+        return view('costs.show', ['job' => $job, 'cost' => $cost->load(['creator', 'finalizer', 'paymentAccount']), 'bankAccounts' => $bankAccounts]);
     }
 
     public function edit(Job $job, JobCost $cost)
@@ -83,5 +90,18 @@ class JobCostController extends Controller
         $service->finalize($job, $cost, $request->validated(), $request->user());
 
         return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya berhasil difinalisasi dan dikunci.');
+    }
+
+    public function approve(CostVersionRequest $request, Job $job, JobCost $cost, JobCostService $service)
+    {
+        $service->approve($job, $cost, $request->validated(), $request->user());
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Transaksi disetujui dan siap ditutup bersama Job.');
+    }
+
+    public function pay(Request $request, Job $job, JobCost $cost, JobCostService $service)
+    {
+        $data = $request->validate(['job_version'=>['required','integer'],'paid_date'=>['required','date','before_or_equal:today'],'payment_account_id'=>['required','integer','exists:chart_of_accounts,id'],'pph23_amount'=>['nullable','numeric','min:0']]);
+        $service->markPaid($job,$cost,$data,$request->user());
+        return redirect()->route('jobs.costs.show',[$job,$cost])->with('success','Biaya ditandai PAID dan jurnal pembayaran dibuat.');
     }
 }

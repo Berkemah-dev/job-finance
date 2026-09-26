@@ -4,7 +4,7 @@
 <div class="page-heading"><div><p class="eyebrow">{{ $job->number }}</p><h1>{{ $cost->exists?'Edit biaya Draft':'Tambah biaya' }}</h1><p>{{ $job->subject }}</p></div><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" data-cost-form method="POST" action="{{ $cost->exists?route('jobs.costs.update',[$job,$cost]):route('jobs.costs.store',$job) }}">@csrf @if($cost->exists) @method('PUT') @endif
 <input type="hidden" name="job_version" value="{{ old('job_version',$job->lock_version) }}"><input type="hidden" name="lock_version" value="{{ old('lock_version',$cost->lock_version ?? 0) }}">
-<div class="info-note">Reimburse ditagihkan kembali sebesar modal (Temporary Payment). Non Reimburse memiliki modal dan nilai jual; selisihnya menjadi estimasi profit job.</div>
+<div class="info-note">Pilih kategori transaksi. Sistem menetapkan jenis pencatatan dan COA secara otomatis.</div>
 <div class="form-grid">
 <div class="field span-2">
     <label for="description">Uraian biaya <span class="required">*</span></label>
@@ -22,13 +22,7 @@
     <p class="form-help">Pilih dari Master Cost (jenis biaya) atau ketik deskripsi.</p>
 </div>
 
-<div class="field">
-    <label for="type">Jenis biaya</label>
-    <select id="type" name="type" data-cost-type>
-        <option value="provision" @selected(old('type',$cost->type)==='provision')>Non Reimburse (Modal & Nilai Jual)</option>
-        <option value="temporary" @selected(old('type',$cost->type)==='temporary')>Reimburse (Reimbursement)</option>
-    </select>
-</div>
+<input type="hidden" id="type" name="type" data-cost-type value="{{ old('type', $cost->type ?? 'provision') }}">
 
 <div class="field" id="category_field">
     <label for="cost_category">Kategori Transaksi (Alur COA)</label>
@@ -45,6 +39,7 @@
 <div class="field"><label for="unit">Satuan</label><input id="unit" name="unit" value="{{ old('unit',$cost->unit ?? 'Layanan') }}" maxlength="30" required></div>
 <div class="field"><label for="unit_cost">Modal per unit (Rp)</label><input id="unit_cost" name="unit_cost" type="number" min="0" max="999999999.99" step="0.01" value="{{ old('unit_cost',$cost->unit_cost ?? '0') }}" data-unit-cost required></div>
 <div class="field"><label for="unit_price">Nilai jual per unit (Rp)</label><input id="unit_price" name="unit_price" type="number" min="0" max="999999999.99" step="0.01" value="{{ old('unit_price',$cost->unit_price ?? '0') }}" data-unit-price required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
+<div class="field"><label for="pph23_amount">Potong PPh 23 (Payment Request)</label><input id="pph23_amount" name="pph23_amount" type="number" min="0" step="0.01" value="{{ old('pph23_amount',$cost->pph23_amount ?? '0') }}"><p class="form-help">Dicatat ke Utang Pajak saat Draft Payment Request.</p></div>
 
 <div class="field">
     <label for="vendor_id">Penerima / Vendor</label>
@@ -99,22 +94,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (typeSelect && catSelect) {
         function syncCategory() {
-            const isTemp = typeSelect.value === 'temporary';
-            Array.from(catSelect.options).forEach(opt => {
-                const optType = opt.getAttribute('data-cost-type');
-                if (isTemp) {
-                    opt.hidden = (optType !== 'temporary');
-                } else {
-                    opt.hidden = (optType === 'temporary');
-                }
-            });
-            if (isTemp && catSelect.value !== 'reimbursement') {
-                catSelect.value = 'reimbursement';
-            } else if (!isTemp && catSelect.value === 'reimbursement') {
-                catSelect.value = 'payment_request';
-            }
+            const isTemp = catSelect.value === 'reimbursement';
+            typeSelect.value = isTemp ? 'temporary' : 'provision';
         }
-        typeSelect.addEventListener('change', syncCategory);
+        catSelect.addEventListener('change', syncCategory);
         syncCategory();
     }
 });
