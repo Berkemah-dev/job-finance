@@ -16,6 +16,10 @@ class XlsxTableReader
             return $this->readCsv($file->getRealPath());
         }
 
+        if (! class_exists(IOFactory::class)) {
+            throw ValidationException::withMessages(['file' => 'Pembaca file Excel belum terpasang di server. Jalankan composer install, lalu upload ulang file .xls atau .xlsx.']);
+        }
+
         try {
             $worksheet = IOFactory::load($file->getRealPath())->getSheet(0);
             return array_map(
