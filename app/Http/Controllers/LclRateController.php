@@ -75,12 +75,7 @@ class LclRateController extends Controller
 
     public function template()
     {
-        return response()->streamDownload(function () {
-            $stream = fopen('php://output', 'wb');
-            fputcsv($stream, ['POD', 'TRANSIT', 'LEAD TIME', 'O/F', 'GRI', 'Cfs (USD)', 'Others', 'Mekanik Charges', 'Adm']);
-            fputcsv($stream, ['Chittagong', 'Via Singapore', 15, 'USD 23/W/M', 'USD 19/W/M', '15/W/M (Min 2)', 'USD 50', 'IDR 250,000/W/M (Min 2)', 0]);
-            fclose($stream);
-        }, 'FOB-LCL-Rates-Template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return response()->download(public_path('templates/FOB-LCL-Rates-Template.xlsx'));
     }
 
     private function columns(array $headers): array
