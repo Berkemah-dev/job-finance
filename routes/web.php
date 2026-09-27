@@ -278,7 +278,7 @@ Route::middleware('auth')->group(function () {
 
     // Invoice PDF
     Route::get('/api/invoices/{invoice}/pdf', [OperationalDocumentController::class, 'invoicePdf'])
-        ->middleware('can:invoices.manage')->name('invoices.pdf');
+        ->middleware('can:invoices.manage')->name('invoices.api.pdf');
 
     // DNP & SK Pabean PDF (from Quotation)
     Route::get('/api/dokumen-job/{quotation}/dnp/pdf', [OperationalDocumentController::class, 'dnpPdf'])
