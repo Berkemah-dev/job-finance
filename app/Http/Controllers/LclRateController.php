@@ -20,17 +20,21 @@ class LclRateController extends Controller
 
     public function import(Request $request, XlsxTableReader $reader)
     {
-        $request->validate(['file' => ['required', 'file', 'mimes:xlsx,csv', 'max:5120']]);
+        $request->validate(['file' => ['required', 'file', 'mimes:xls,xlsx,csv', 'max:5120']]);
         $rows = $reader->read($request->file('file'));
-        if (count($rows) < 2) throw ValidationException::withMessages(['file' => 'File harus memiliki header dan minimal satu baris data.']);
+        $headerRow = collect($rows)->search(function (array $row) {
+            $headers = array_map(fn ($value) => $this->header((string) $value), $row);
+            return in_array('fob port', $headers, true) || in_array('fob', $headers, true) || in_array('pod', $headers, true);
+        });
+        if ($headerRow === false || ! isset($rows[$headerRow + 1])) throw ValidationException::withMessages(['file' => 'Header tarif tidak ditemukan. Gunakan kolom FOB Port atau POD.']);
 
-        $headers = array_map(fn ($value) => $this->header((string) $value), $rows[0]);
+        $headers = array_map(fn ($value) => $this->header((string) $value), $rows[$headerRow]);
         $columns = $this->columns($headers);
         if (! isset($columns['fob_port'])) throw ValidationException::withMessages(['file' => 'Kolom "FOB Port" wajib tersedia.']);
 
         $saved = 0;
-        DB::transaction(function () use ($rows, $columns, &$saved) {
-            foreach (array_slice($rows, 1) as $line => $row) {
+        DB::transaction(function () use ($rows, $columns, $headerRow, &$saved) {
+            foreach (array_slice($rows, $headerRow + 1) as $row) {
                 $port = trim((string) $this->cell($row, $columns, 'fob_port'));
                 if ($port === '') continue;
                 $subject = trim((string) $this->cell($row, $columns, 'subject'));

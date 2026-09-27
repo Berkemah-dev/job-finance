@@ -30,6 +30,7 @@ return [
         'users.view',
         'users.manage',
         'activity.view',
+        'tps.manage',
     ],
     'reimbursement_categories' => [
         'transport' => ['label' => 'Transportasi', 'icon' => 'truck'],
@@ -60,7 +61,7 @@ return [
             'pricing.view',
         ]],
         'operational' => ['label' => 'Operation', 'permissions' => [
-            'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
+            'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do', 'tps.manage',
         ]],
         'customer-service' => ['label' => 'Customer Service', 'permissions' => [
             'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',

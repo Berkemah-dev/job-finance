@@ -11,9 +11,9 @@
     <form class="data-form" method="POST" action="{{ route('lcl-rates.import') }}" enctype="multipart/form-data">
         @csrf
         <div class="form-grid">
-            <div class="field"><label for="file">File Excel</label><input id="file" name="file" type="file" accept=".xlsx,.csv" required>@error('file')<small class="input-error">{{ $message }}</small>@enderror</div>
+            <div class="field"><label for="file">File Excel</label><input id="file" name="file" type="file" accept=".xls,.xlsx,.csv" required>@error('file')<small class="input-error">{{ $message }}</small>@enderror</div>
         </div>
-        <p class="form-help">Kolom yang dibaca: <strong>Country, FOB Port, Subject, Customer, TT, O/F, GRI, CFS, Others, Mekanik Charges, Adm</strong>. Nilai seperti <em>USD 23/W/M</em> dan <em>IDR 250,000/W/M (Min 2)</em> akan dibaca otomatis.</p>
+        <p class="form-help">Menerima <strong>.xls, .xlsx, dan .csv</strong>. Kolom yang dibaca: <strong>Country, FOB Port, Subject, Customer, TT, O/F, GRI, CFS, Others, Mekanik Charges, Adm</strong>. Nilai seperti <em>USD 23/W/M</em> dan <em>IDR 250,000/W/M (Min 2)</em> akan dibaca otomatis.</p>
         <div class="form-actions"><button class="button button-primary">Upload tarif LCL</button></div>
     </form>
 </section>

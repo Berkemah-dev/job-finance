@@ -66,9 +66,9 @@
             'SALES & CUSTOMER' => $salesCustomerItems,
             'PRICING' => $isFinanceRole ? [['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']] : [['pricing.view','chart','Sales Pricing','pricing.weekly.index'],['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']],
             'KALKULATOR' => $isFinanceRole ? [] : [['dashboard.view','calculator','Kalkulator','calculators.index']],
-            'OPERASIONAL' => $isFinanceRole ? [] : [['jobs.view','briefcase','Job Order','jobs.index']],
+            'OPERASIONAL' => $isFinanceRole ? [] : [['jobs.view','briefcase','Job Order','jobs.index'],['tps.manage','database','Master TPS','tps.index']],
             'MASTER DATA' => [['master-data.manage','database','Data Port','ports.index'],['master-data.manage','file','Data Document','document-types.index'],['master-data.manage','briefcase','Data Service','service-types.index'],['master-data.manage','wallet','Data Cost','charge-types.index'],['master-data.manage','briefcase','Data Unit','container-units.index'],['master-data.manage','chart','Tarif LCL','lcl-rates.index']],
-            'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index']],
+            'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index']],
             'AKUNTANSI' => [['coa.manage','database','Data COA','accounts.index'],['coa.manage','file','Mapping Akun','accounts.mappings'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
             'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job'],['reports.view','calendar','Profit Bulanan','reports.profit-monthly'],['reports.view','wallet','Statement of Account','reports.soa']],
         ];

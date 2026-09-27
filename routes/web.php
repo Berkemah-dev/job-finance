@@ -39,6 +39,7 @@ use App\Http\Controllers\CustomerAddressController;
 use App\Http\Controllers\DeliveryOrderController;
 use App\Http\Controllers\WeeklyPricingController;
 use App\Http\Controllers\LclRateController;
+use App\Http\Controllers\TpsController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -180,6 +181,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/service-types/{serviceType}', [ServiceTypeController::class, 'destroy'])->middleware('can:master-data.manage')->name('service-types.destroy');
     Route::get('/service-types/{serviceType}/edit', [ServiceTypeController::class, 'edit'])->middleware('can:master-data.manage')->name('service-types.edit');
     Route::put('/service-types/{serviceType}', [ServiceTypeController::class, 'update'])->middleware('can:master-data.manage')->name('service-types.update');
+    Route::resource('tps', TpsController::class)->except('show')->middleware('can:tps.manage');
     Route::get('/master/lcl-rates', [LclRateController::class, 'index'])->middleware('can:master-data.manage')->name('lcl-rates.index');
     Route::post('/master/lcl-rates/import', [LclRateController::class, 'import'])->middleware('can:master-data.manage')->name('lcl-rates.import');
     Route::get('/costs', [JobCostController::class, 'overview'])->middleware('can:costs.manage')->name('costs.overview');
