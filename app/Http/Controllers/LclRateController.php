@@ -8,6 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class LclRateController extends Controller
 {
@@ -66,6 +68,27 @@ class LclRateController extends Controller
     public function options(): JsonResponse
     {
         return response()->json(LclRate::query()->where('is_active', true)->orderBy('fob_port')->orderBy('subject')->get());
+    }
+
+    public function template()
+    {
+        $book = new Spreadsheet;
+        $sheet = $book->getActiveSheet();
+        $sheet->setTitle('FOB LCL Rates');
+        $sheet->mergeCells('A1:I1')->setCellValue('A1', 'FOB LCL RATES');
+        $sheet->fromArray(['POD', 'TRANSIT', 'LEAD TIME', 'O/F', 'GRI', 'Cfs (USD)', 'Others', 'Mekanik Charges', 'Adm'], null, 'A4');
+        $sheet->fromArray(['', '', '(days)', '(USD)', '(USD)', '', 'per set', '', ''], null, 'A5');
+        $sheet->fromArray(['Chittagong', 'Via Singapore', 15, 'USD 23/W/M', 'USD 19/W/M', '15/W/M (Min 2)', 'USD 50', 'IDR 250,000/W/M (Min 2)', 0], null, 'A6');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A4:I4')->getFont()->setBold(true);
+        $sheet->getStyle('A4:I5')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A4:I5')->getFill()->setFillType('solid')->getStartColor()->setRGB('DCE8FA');
+        foreach (range('A', 'I') as $column) $sheet->getColumnDimension($column)->setAutoSize(true);
+        $sheet->freezePane('A6');
+
+        $path = tempnam(sys_get_temp_dir(), 'fob-lcl-template-');
+        (new Xlsx($book))->save($path);
+        return response()->download($path, 'FOB-LCL-Rates-Template.xlsx')->deleteFileAfterSend(true);
     }
 
     private function columns(array $headers): array

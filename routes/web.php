@@ -183,6 +183,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/service-types/{serviceType}', [ServiceTypeController::class, 'update'])->middleware('can:master-data.manage')->name('service-types.update');
     Route::resource('tps', TpsController::class)->except('show')->middleware('can:tps.manage');
     Route::get('/master/lcl-rates', [LclRateController::class, 'index'])->middleware('can:master-data.manage')->name('lcl-rates.index');
+    Route::get('/master/lcl-rates/template', [LclRateController::class, 'template'])->middleware('can:master-data.manage')->name('lcl-rates.template');
     Route::post('/master/lcl-rates/import', [LclRateController::class, 'import'])->middleware('can:master-data.manage')->name('lcl-rates.import');
     Route::get('/costs', [JobCostController::class, 'overview'])->middleware('can:costs.manage')->name('costs.overview');
     Route::middleware('can:costs.manage')->scopeBindings()->group(function () {
