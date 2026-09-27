@@ -62,29 +62,13 @@
             ['vendors.manage','users','Vendor','vendors.index'],
         ];
         $isFinanceRole = auth()->user()->hasRole(['finance', 'finance-manager']) && ! auth()->user()->hasRole(['super-admin', 'admin']);
-        $operationalItems = match ($currentRole) {
-            'customer-service' => [
-                ['jobs.view','briefcase','Job Order','jobs.index'],
-                ['jobs.view','file','PIB / Document Upload','jobs.index?service_type=imp_sea'],
-                ['jobs.view','file','Surat Kuasa & Surat Jalan','jobs.index?service_type=imp_sea'],
-                ['jobs.view','file','Rincian Tagihan','jobs.index'],
-            ],
-            'operational' => [
-                ['jobs.view','briefcase','Import: Job Order / PIB','jobs.index?service_type=imp_sea'],
-                ['jobs.view','file','Import: Document / DNP / Tagihan','jobs.index?service_type=imp_sea'],
-                ['jobs.view','briefcase','Export: Job Order / PEB','jobs.index?service_type=exp_sea'],
-                ['jobs.view','file','Export: Document / Tagihan','jobs.index?service_type=exp_sea'],
-            ],
-            default => [['jobs.view','briefcase','Job Order','jobs.index']],
-        };
-
         $groups = [
             'SALES & CUSTOMER' => $salesCustomerItems,
-            'PRICING' => $isFinanceRole ? [['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']] : [['pricing.view','chart','Pricing Mingguan','pricing.weekly.index'],['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']],
+            'PRICING' => $isFinanceRole ? [['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']] : [['pricing.view','chart','Sales Pricing','pricing.weekly.index'],['pricing.view','briefcase','List Harga Trucking','pricing.trucking.index']],
             'KALKULATOR' => $isFinanceRole ? [] : [['dashboard.view','calculator','Kalkulator','calculators.index']],
-            'OPERASIONAL' => $isFinanceRole ? [] : $operationalItems,
-            'MASTER DATA' => [['master-data.manage','database','Data Port','ports.index'],['master-data.manage','file','Data Document','document-types.index'],['master-data.manage','briefcase','Data Service','service-types.index'],['master-data.manage','wallet','Data Cost','charge-types.index'],['master-data.manage','briefcase','Data Unit','container-units.index']],
-            'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['costs.manage','file','Payment Request','costs.overview?category=payment_request'],['costs.manage','file','Reimbursement','costs.overview?category=reimbursement'],['costs.manage','file','Debit Note','costs.overview?category=debit_note'],['costs.manage','file','Credit Note','costs.overview?category=credit_note'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index']],
+            'OPERASIONAL' => $isFinanceRole ? [] : [['jobs.view','briefcase','Job Order','jobs.index']],
+            'MASTER DATA' => [['master-data.manage','database','Data Port','ports.index'],['master-data.manage','file','Data Document','document-types.index'],['master-data.manage','briefcase','Data Service','service-types.index'],['master-data.manage','wallet','Data Cost','charge-types.index'],['master-data.manage','briefcase','Data Unit','container-units.index'],['master-data.manage','chart','Tarif LCL','lcl-rates.index']],
+            'KEUANGAN' => [['costs.manage','wallet','Biaya Job','costs.overview'],['jobs.close','check','Closing Job','closing.index'],['invoices.manage','file','Invoice','invoices.index'],['payments.manage','wallet','Pembayaran','payments.index']],
             'AKUNTANSI' => [['coa.manage','database','Data COA','accounts.index'],['coa.manage','file','Mapping Akun','accounts.mappings'],['journals.manage','file','Jurnal','journals.index'],['reports.view','chart','Buku Besar','reports.ledger'],['reports.view','chart','Neraca Saldo','reports.trial-balance']],
             'Laporan Keuangan' => [['reports.view','chart','Neraca','reports.balance-sheet'],['reports.view','chart','Laba Rugi','reports.income-statement'],['reports.view','wallet','Arus Kas','reports.cash-flow'],['reports.view','briefcase','Profit per Job','reports.profit-per-job'],['reports.view','calendar','Profit Bulanan','reports.profit-monthly'],['reports.view','wallet','Statement of Account','reports.soa']],
         ];

@@ -53,7 +53,7 @@ return [
         ]],
         'sales-manager' => ['label' => 'Sales Manager', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.view', 'quotations.manage', 'export-documents.manage',
-            'quotations.approve', 'jobs.view', 'jobs.manage', 'master-data.manage', 'vendors.manage', 'pricing.manage', 'pricing.view',
+            'quotations.approve', 'jobs.view', 'jobs.manage', 'vendors.manage', 'pricing.manage', 'pricing.view',
         ]],
         'sales' => ['label' => 'Sales', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.view', 'quotations.manage',
@@ -63,7 +63,7 @@ return [
             'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
         ]],
         'customer-service' => ['label' => 'Customer Service', 'permissions' => [
-            'dashboard.view', 'customers.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
+            'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
         ]],
         'management' => ['label' => 'Management', 'permissions' => ['dashboard.view']],
     ],

@@ -141,6 +141,17 @@ class CalculationService
         ];
     }
 
+    public function lclEstimate(array $packages, array $rates): array
+    {
+        $totals = $this->packageTotals($packages);
+        $basis = round(max((float) $totals['total_cbm'], (float) $totals['total_gross_weight'] / 1000), 4);
+        $cfsBasis = max($basis, (float) $rates['cfs_min_wm']);
+        $mechanicBasis = max($basis, (float) $rates['mechanic_min_wm']);
+        $usd = ['ocean_freight' => round($basis * (float) $rates['ocean_freight_rate'], 2), 'gri' => round($basis * (float) $rates['gri_rate'], 2), 'cfs' => round($cfsBasis * (float) $rates['cfs_rate'], 2), 'others' => round((float) $rates['others_per_set'], 2)];
+        $idr = ['mechanic' => round($mechanicBasis * (float) $rates['mechanic_rate'], 2), 'administration' => round((float) $rates['administration'], 2)];
+        return ['package_count'=>$totals['package_count'], 'total_gross_weight'=>$totals['total_gross_weight'], 'total_cbm'=>$totals['total_cbm'], 'chargeable_basis'=>$basis, 'cfs_basis'=>$cfsBasis, 'mechanic_basis'=>$mechanicBasis, 'usd'=>$usd, 'idr'=>$idr, 'total_usd'=>round(array_sum($usd),2), 'total_idr'=>round(array_sum($idr),2)];
+    }
+
     private function assertDimensions(float|int ...$values): void
     {
         foreach ($values as $value) {

@@ -1,75 +1,7 @@
 @extends('layouts.app')
 @section('title','Kalkulator Estimasi Biaya LCL')
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1></div>    <a class="button button-secondary" href="{{ route('calculators.index') }}">← Kembali</a></div>
-<section class="panel form-panel calculator-panel calc-detail-card">
-<div class="calc-detail-head"><div class="calc-icon-badge amber"><x-icon name="briefcase"/></div><h2>Input Muatan</h2></div>
-<form class="data-form calculator-form" id="lcl-form">
-<div class="form-grid">
-<div class="field span-2"><label for="rate_per_cbm">Tarif per m³ (IDR)</label><input id="rate_per_cbm" type="text" inputmode="decimal" placeholder="Kosongkan pakai default {{ number_format((float) config('operations.lcl.default_rate'), 0, ',', '.') }}"></div>
-</div>
-<div id="lcl-rows"><div class="calculator-row form-grid">
-<div class="field"><label>Qty</label><input type="number" class="row-qty" min="1" value="1"></div>
-<div class="field"><label>Panjang (cm)</label><input type="number" class="row-length" min="0" step="0.01" value="120"></div>
-<div class="field"><label>Lebar (cm)</label><input type="number" class="row-width" min="0" step="0.01" value="100"></div>
-<div class="field"><label>Tinggi (cm)</label><input type="number" class="row-height" min="0" step="0.01" value="100"></div>
-<div class="field"><label>Berat kotor (kg)</label><input type="number" class="row-gross" min="0" step="0.01" value="120"></div>
-<div class="field field-actions"><button type="button" class="button button-secondary row-remove" hidden>Hapus</button><button type="button" class="button button-secondary" id="lcl-add">+ Baris</button></div>
-</div></div>
-<div class="form-actions"><button class="button button-primary" type="submit">Hitung biaya LCL</button></div>
-</form>
-<div class="cost-summary-body calc-result-card" id="lcl-result" hidden><div class="stats-grid">
-<div class="stat-card"><p>Total CBM</p><strong id="r-cbm">—</strong></div>
-<div class="stat-card"><p>Berat kotor total</p><strong id="r-gross">—</strong></div>
-<div class="stat-card"><p>Basis tagihan (W/M)</p><strong id="r-basis">—</strong></div>
-<div class="stat-card"><p>Tarif per m³</p><strong id="r-rate">—</strong></div>
-<div class="stat-card"><p>Estimasi biaya</p><strong id="r-total">—</strong></div>
-</div></div></section>
-<script>
-(function(){
-    const form = document.getElementById('lcl-form');
-    const result = document.getElementById('lcl-result');
-    const rows = document.getElementById('lcl-rows');
-    function params() {
-        const p = new URLSearchParams();
-        const rate = document.getElementById('rate_per_cbm').value.trim();
-        if (rate) p.set('rate_per_cbm', rate);
-        rows.querySelectorAll('.calculator-row').forEach((row, i) => {
-            p.set('packages['+i+'][qty]', row.querySelector('.row-qty').value);
-            p.set('packages['+i+'][length]', row.querySelector('.row-length').value);
-            p.set('packages['+i+'][width]', row.querySelector('.row-width').value);
-            p.set('packages['+i+'][height]', row.querySelector('.row-height').value);
-            p.set('packages['+i+'][gross_weight]', row.querySelector('.row-gross').value);
-        });
-        return p;
-    }
-    document.getElementById('lcl-add').addEventListener('click', () => {
-        const template = rows.querySelector('.calculator-row');
-        const clone = template.cloneNode(true);
-        rows.appendChild(clone);
-        rows.querySelectorAll('.calculator-row').forEach((row) => row.querySelector('.row-remove').hidden = rows.querySelectorAll('.calculator-row').length === 1);
-    });
-    rows.addEventListener('click', (e) => {
-        if (!e.target.classList.contains('row-remove')) return;
-        e.target.closest('.calculator-row').remove();
-        const remaining = rows.querySelectorAll('.calculator-row');
-        remaining.forEach((row) => row.querySelector('.row-remove').hidden = remaining.length === 1);
-    });
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        fetch('/api/calculators/lcl?'+params(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.json().then(d => ({ ok: r.ok, d })))
-            .then(({ ok, d }) => {
-                result.hidden = !ok;
-                if (!ok) { alert('Periksa kembali input.'); return; }
-                const idr = new Intl.NumberFormat('id-ID');
-                document.getElementById('r-cbm').textContent = d.total_cbm.toLocaleString('id-ID', { maximumFractionDigits: 4 }) + ' m³';
-                document.getElementById('r-gross').textContent = d.total_gross_weight.toLocaleString('id-ID') + ' kg';
-                document.getElementById('r-basis').textContent = d.chargeable_basis.toLocaleString('id-ID', { maximumFractionDigits: 4 }) + (d.basis_note ? ' ('+d.basis_note+')' : '');
-                document.getElementById('r-rate').textContent = 'Rp ' + idr.format(d.rate_per_cbm);
-                document.getElementById('r-total').textContent = 'Rp ' + idr.format(d.total_cost);
-            });
-    });
-})();
-</script>
+<div class="page-heading"><div><p class="eyebrow">KALKULATOR</p><h1>Estimasi Biaya LCL</h1><p>Pilih POD dari daftar FOB Port yang diunggah admin. Tarif dan transit terisi dari Excel.</p></div><a class="button button-secondary" href="{{ route('calculators.index') }}">← Kembali</a></div>
+<section class="panel form-panel calculator-panel calc-detail-card"><form class="data-form calculator-form" id="lcl-form"><div class="calc-detail-head"><div class="calc-icon-badge amber"><x-icon name="briefcase"/></div><h2>Rute dan Tarif LCL</h2></div><div class="form-grid"><div class="field"><label>POL</label><input value="Jakarta" readonly></div><div class="field"><label for="lcl_rate_id">POD / FOB Port</label><select id="lcl_rate_id" required><option value="">Pilih POD dari FOB Port</option></select></div><div class="field"><label>Transit</label><input id="transit" readonly placeholder="Terisi dari Subject Excel"></div><div class="field"><label>Lead Time</label><input id="lead_time" readonly placeholder="Terisi dari TT Excel"></div></div><div class="form-grid" style="margin-top:16px"><div class="field"><label>O/F (USD / W/M)</label><input id="ocean_freight_rate" type="number" value="0" readonly required></div><div class="field"><label>GRI (USD / W/M)</label><input id="gri_rate" type="number" value="0" readonly required></div><div class="field"><label>CFS (USD / W/M)</label><input id="cfs_rate" type="number" value="0" readonly required></div><div class="field"><label>Minimum CFS (W/M)</label><input id="cfs_min_wm" type="number" value="2" readonly required></div><div class="field"><label>Others (USD / set)</label><input id="others_per_set" type="number" value="0" readonly required></div><div class="field"><label>Mekanik (IDR / W/M)</label><input id="mechanic_rate" type="number" value="0" readonly required></div><div class="field"><label>Minimum Mekanik (W/M)</label><input id="mechanic_min_wm" type="number" value="2" readonly required></div><div class="field"><label>Admin (IDR)</label><input id="administration" type="number" value="0" readonly required></div></div><p class="form-help">POL selalu Jakarta. POD memakai FOB Port, Transit memakai Subject, Lead Time memakai TT. Tarif memakai data Excel.</p><div class="section-heading"><h2>Rincian Muatan</h2><button type="button" class="button button-secondary button-small" id="lcl-add">+ Baris</button></div><div id="lcl-rows"><div class="calculator-row form-grid"><div class="field"><label>Qty</label><input class="row-qty" type="number" min="1" value="1"></div><div class="field"><label>Panjang (cm)</label><input class="row-length" type="number" min="0" value="120"></div><div class="field"><label>Lebar (cm)</label><input class="row-width" type="number" min="0" value="100"></div><div class="field"><label>Tinggi (cm)</label><input class="row-height" type="number" min="0" value="100"></div><div class="field"><label>Berat kotor (kg)</label><input class="row-gross" type="number" min="0" value="120"></div><div class="field field-actions"><button type="button" class="button button-secondary row-remove" hidden>Hapus</button></div></div></div><div class="form-actions"><button class="button button-primary">Hitung estimasi LCL</button></div></form><div class="cost-summary-body calc-result-card" id="lcl-result" hidden><div class="stats-grid"><div class="stat-card"><p>Total CBM</p><strong id="r-cbm">—</strong></div><div class="stat-card"><p>Berat kotor</p><strong id="r-gross">—</strong></div><div class="stat-card"><p>Basis W/M</p><strong id="r-basis">—</strong></div><div class="stat-card"><p>Total USD</p><strong id="r-usd">—</strong></div><div class="stat-card"><p>Total IDR</p><strong id="r-idr">—</strong></div></div><div class="summary-box" style="margin-top:16px"><div class="summary-row"><span>O/F</span><strong id="r-of">—</strong></div><div class="summary-row"><span>GRI</span><strong id="r-gri">—</strong></div><div class="summary-row"><span>CFS</span><strong id="r-cfs">—</strong></div><div class="summary-row"><span>Others</span><strong id="r-others">—</strong></div><div class="summary-row"><span>Mekanik</span><strong id="r-mechanic">—</strong></div><div class="summary-row"><span>Admin</span><strong id="r-administration">—</strong></div></div></div></section>
+<script>(()=>{const f=document.getElementById('lcl-form'),rows=document.getElementById('lcl-rows'),select=document.getElementById('lcl_rate_id'),fields=['ocean_freight_rate','gri_rate','cfs_rate','cfs_min_wm','others_per_set','mechanic_rate','mechanic_min_wm','administration'];let rates=[];const n=v=>Number(v||0),refresh=()=>rows.querySelectorAll('.row-remove').forEach(x=>x.hidden=rows.children.length===1);fetch('{{ route('lcl-rates.options') }}').then(r=>r.json()).then(data=>{rates=data;data.forEach(rate=>{let o=document.createElement('option');o.value=rate.id;o.textContent=[rate.fob_port,rate.country,rate.customer,rate.subject].filter(Boolean).join(' — ');select.append(o)})});select.onchange=()=>{let rate=rates.find(x=>x.id===n(select.value));if(!rate)return;document.getElementById('transit').value=rate.subject||'—';document.getElementById('lead_time').value=(rate.lead_time_days||0)+' hari';fields.forEach(k=>document.getElementById(k).value=rate[k]??0)};document.getElementById('lcl-add').onclick=()=>{rows.append(rows.firstElementChild.cloneNode(true));refresh()};rows.onclick=e=>{if(e.target.classList.contains('row-remove')){e.target.closest('.calculator-row').remove();refresh()}};f.onsubmit=e=>{e.preventDefault();if(!select.value)return select.focus();let p=new URLSearchParams;p.set('lcl_rate_id',select.value);fields.forEach(k=>p.set(k,document.getElementById(k).value));rows.querySelectorAll('.calculator-row').forEach((r,i)=>['qty','length','width','height','gross_weight'].forEach(k=>p.set(`packages[${i}][${k}]`,r.querySelector('.row-'+(k==='gross_weight'?'gross':k)).value)));fetch('{{ route('calculators.api.lcl') }}?'+p).then(r=>r.json()).then(d=>{if(!d.total_cbm)return;let u=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}),i=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR'});document.getElementById('lcl-result').hidden=false;[['r-cbm',d.total_cbm+' m³'],['r-gross',d.total_gross_weight+' kg'],['r-basis',d.chargeable_basis+' W/M'],['r-usd',u.format(d.total_usd)],['r-idr',i.format(d.total_idr)],['r-of',u.format(d.usd.ocean_freight)],['r-gri',u.format(d.usd.gri)],['r-cfs',u.format(d.usd.cfs)+' ('+d.cfs_basis+' W/M)'],['r-others',u.format(d.usd.others)],['r-mechanic',i.format(d.idr.mechanic)+' ('+d.mechanic_basis+' W/M)'],['r-administration',i.format(d.idr.administration)]].forEach(([id,v])=>document.getElementById(id).textContent=v)})}})();</script>
 @endsection

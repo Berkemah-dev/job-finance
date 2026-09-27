@@ -38,6 +38,7 @@ use App\Http\Controllers\VendorTruckController;
 use App\Http\Controllers\CustomerAddressController;
 use App\Http\Controllers\DeliveryOrderController;
 use App\Http\Controllers\WeeklyPricingController;
+use App\Http\Controllers\LclRateController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -94,6 +95,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/kalkulator/pajak', [CalculatorController::class, 'tax'])->name('calculators.tax');
     Route::get('/api/calculators/packages', [CalculatorController::class, 'packages'])->name('calculators.api.packages');
     Route::get('/api/calculators/lcl', [CalculatorController::class, 'lclApi'])->name('calculators.api.lcl');
+    Route::get('/api/lcl-rates', [LclRateController::class, 'options'])->middleware('can:dashboard.view')->name('lcl-rates.options');
     Route::get('/api/calculators/tax', [CalculatorController::class, 'taxApi'])->name('calculators.api.tax');
     // Finance may view quotations, while editing remains limited to quotation operators.
     Route::get('/quotations', [QuotationController::class, 'index'])->middleware('can:quotations.view')->name('quotations.index');
@@ -178,6 +180,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/service-types/{serviceType}', [ServiceTypeController::class, 'destroy'])->middleware('can:master-data.manage')->name('service-types.destroy');
     Route::get('/service-types/{serviceType}/edit', [ServiceTypeController::class, 'edit'])->middleware('can:master-data.manage')->name('service-types.edit');
     Route::put('/service-types/{serviceType}', [ServiceTypeController::class, 'update'])->middleware('can:master-data.manage')->name('service-types.update');
+    Route::get('/master/lcl-rates', [LclRateController::class, 'index'])->middleware('can:master-data.manage')->name('lcl-rates.index');
+    Route::post('/master/lcl-rates/import', [LclRateController::class, 'import'])->middleware('can:master-data.manage')->name('lcl-rates.import');
     Route::get('/costs', [JobCostController::class, 'overview'])->middleware('can:costs.manage')->name('costs.overview');
     Route::middleware('can:costs.manage')->scopeBindings()->group(function () {
         Route::resource('jobs.costs', JobCostController::class);
