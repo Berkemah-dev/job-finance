@@ -22,8 +22,12 @@ class LclRateController extends Controller
 
     public function import(Request $request, XlsxTableReader $reader)
     {
-        $request->validate(['file' => ['required', 'file', 'mimes:xls,xlsx,csv', 'max:5120']]);
-        $rows = $reader->read($request->file('file'));
+        $request->validate(['file' => ['required', 'file', 'max:5120']]);
+        $file = $request->file('file');
+        if (! in_array(strtolower($file->getClientOriginalExtension()), ['xls', 'xlsx', 'csv'], true)) {
+            throw ValidationException::withMessages(['file' => 'Format file harus .xls, .xlsx, atau .csv.']);
+        }
+        $rows = $reader->read($file);
         $headerRow = collect($rows)->search(function (array $row) {
             $headers = array_map(fn ($value) => $this->header((string) $value), $row);
             return in_array('fob port', $headers, true) || in_array('fob', $headers, true) || in_array('pod', $headers, true);
@@ -35,10 +39,11 @@ class LclRateController extends Controller
         if (! isset($columns['fob_port'])) throw ValidationException::withMessages(['file' => 'Kolom "FOB Port" wajib tersedia.']);
 
         $saved = 0;
-        DB::transaction(function () use ($rows, $columns, $headerRow, &$saved) {
+        $skipped = 0;
+        DB::transaction(function () use ($rows, $columns, $headerRow, &$saved, &$skipped) {
             foreach (array_slice($rows, $headerRow + 1) as $row) {
                 $port = trim((string) $this->cell($row, $columns, 'fob_port'));
-                if ($port === '') continue;
+                if ($port === '') { $skipped++; continue; }
                 $subject = trim((string) $this->cell($row, $columns, 'subject'));
                 $customer = trim((string) $this->cell($row, $columns, 'customer'));
                 LclRate::updateOrCreate(
@@ -62,7 +67,7 @@ class LclRateController extends Controller
         });
 
         if (! $saved) throw ValidationException::withMessages(['file' => 'Tidak ada baris dengan FOB Port yang dapat diimpor.']);
-        return redirect()->route('lcl-rates.index')->with('success', "$saved tarif LCL berhasil diimpor.");
+        return redirect()->route('lcl-rates.index')->with('success', "$saved tarif LCL berhasil diimpor. $skipped baris kosong dilewati.");
     }
 
     public function options(): JsonResponse
