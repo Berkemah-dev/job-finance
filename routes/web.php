@@ -280,12 +280,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/invoices/{invoice}/pdf', [OperationalDocumentController::class, 'invoicePdf'])
         ->middleware('can:invoices.manage')->name('invoices.api.pdf');
 
-    // DNP & SK Pabean PDF (from Quotation)
-    Route::get('/api/dokumen-job/{quotation}/dnp/pdf', [OperationalDocumentController::class, 'dnpPdf'])
-        ->middleware('can:jobs.view')->name('documents.dnp.pdf');
-    Route::get('/api/dokumen-job/{quotation}/sk-pabean/pdf', [OperationalDocumentController::class, 'skPabeaPdf'])
-        ->middleware('can:jobs.view')->name('documents.sk-pabean.pdf');
-
     // Job Direct Document PDFs
     Route::get('/api/jobs/{job}/surat-jalan/pdf', [OperationalDocumentController::class, 'jobSuratJalanPdf'])
         ->middleware('can:jobs.view')->name('jobs.surat-jalan.pdf');
@@ -298,11 +292,4 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/jobs/{job}/sk-pabean/pdf', [OperationalDocumentController::class, 'jobSkPabeanPdf'])
         ->middleware('can:jobs.view')->name('jobs.sk-pabean.pdf');
 
-    // Invoice delivery status update
-    Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])
-        ->middleware('can:invoices.manage')->name('invoices.delivery');
-
-    // SOA PDF download
-    Route::get('/api/reports/soa/{customer}/pdf', [OperationalDocumentController::class, 'soaPdf'])
-        ->middleware('can:reports.view')->name('reports.soa.pdf');
 });
