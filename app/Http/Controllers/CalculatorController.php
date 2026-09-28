@@ -49,12 +49,7 @@ class CalculatorController extends Controller
     {
         $data = $request->validate([
             'lcl_rate_id' => ['nullable', 'integer', 'exists:lcl_rates,id'],
-            'packages' => ['required', 'array', 'min:1', 'max:50'],
-            'packages.*.qty' => ['required', 'integer', 'min:1', 'max:999999'],
-            'packages.*.length' => ['required', 'numeric', 'min:0', 'max:999999'],
-            'packages.*.width' => ['required', 'numeric', 'min:0', 'max:999999'],
-            'packages.*.height' => ['required', 'numeric', 'min:0', 'max:999999'],
-            'packages.*.gross_weight' => ['required', 'numeric', 'min:0', 'max:99999999'],
+            'cbm' => ['required', 'numeric', 'gt:0', 'max:999999'],
             'ocean_freight_rate' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'gri_rate' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'cfs_rate' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
@@ -79,7 +74,7 @@ class CalculatorController extends Controller
             ]);
         }
 
-        return response()->json($this->calc->lclEstimate($data['packages'], $data));
+        return response()->json($this->calc->lclEstimate((float) $data['cbm'], $data));
     }
 
     public function taxApi(Request $request): JsonResponse
