@@ -16,6 +16,8 @@
 
 @include('dashboard.partials.charts')
 
+@include('dashboard.partials.balance-overview')
+
 <div class="stats-grid">
     <article class="stat-card">
         <div class="stat-top"><span>Invoice Belum Lunas</span><span class="stat-icon amber"><x-icon name="wallet"/></span></div>

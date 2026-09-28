@@ -51,6 +51,14 @@ class DashboardService
         $revenue = Money::decimal(0);
         $cogs = Money::decimal(0);
         $profit = Money::decimal(0);
+        $balanceOverview = [
+            'as_of' => today()->toDateString(),
+            'assets' => '0.00',
+            'liabilities' => '0.00',
+            'equity' => '0.00',
+            'earnings' => '0.00',
+            'equity_total' => '0.00',
+        ];
         $monthly = collect(range(5, 0))->mapWithKeys(fn ($monthsAgo) => [today()->subMonths($monthsAgo)->format('Y-m') => ['label' => today()->subMonths($monthsAgo)->locale('id')->translatedFormat('M'), 'revenue' => Money::decimal(0), 'profit' => Money::decimal(0)]]);
         $operationalMonthly = $monthly->map(fn ($row) => ['label' => $row['label'], 'open' => 0, 'final' => 0]);
         Job::select(['id', 'status', 'created_at'])->withCount(['costs as non_final_costs_count' => fn ($q) => $q->where('status', '!=', 'final')])->chunkById(500, function ($jobs) use (&$operationalMonthly) {
@@ -71,6 +79,17 @@ class DashboardService
         $canViewFinance = ($user && Gate::forUser($user)->allows('financial.view')) || in_array($role, ['finance', 'finance-manager', 'super-admin']);
 
         if ($canViewFinance) {
+            // Ringkasan dashboard dan Neraca memakai saldo jurnal/COA yang sama.
+            $balanceSheet = app(FinancialReportService::class)->balanceSheet(today()->toDateString());
+            $balanceOverview = [
+                'as_of' => today()->toDateString(),
+                'assets' => $balanceSheet['assets'],
+                'liabilities' => $balanceSheet['liabilities'],
+                'equity' => $balanceSheet['equity'],
+                'earnings' => $balanceSheet['earnings'],
+                'equity_total' => (string) Money::decimal($balanceSheet['equity'])->plus($balanceSheet['earnings']),
+            ];
+
             $costTotals = JobCost::where('status', 'final')
                 ->whereHas('job', fn ($q) => $q->where('status', 'open'))
                 ->select('type')
@@ -149,6 +168,7 @@ class DashboardService
             'revenueBalance' => (string) $revenue,
             'cogsBalance' => (string) $cogs,
             'profitBalance' => (string) $profit,
+            'balanceOverview' => $balanceOverview,
             'monthlyPerformance' => $monthly->map(fn ($row) => ['label' => $row['label'], 'revenue' => (string) $row['revenue'], 'profit' => (string) $row['profit']])->values(),
             'unpaidInvoices' => $canViewFinance ? Invoice::where('balance', '>', 0)->orderBy('due_date')->limit(6)->get() : collect(),
             'draftJobs' => (int) ($counts['draft'] ?? 0),

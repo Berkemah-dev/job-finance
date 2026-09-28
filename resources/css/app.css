@@ -3,8 +3,10 @@
 @import './forms.css';
 @import './operations.css';
 @import './reports.css';
+@import './balance-sheet.css';
 @import './coa.css';
 @import './dashboard-charts.css';
+@import './dashboard-balance.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';

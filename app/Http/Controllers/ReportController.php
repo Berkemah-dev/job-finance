@@ -34,9 +34,9 @@ class ReportController extends Controller
 
     public function balanceSheet(ReportFilterRequest $request, FinancialReportService $service)
     {
-        $to = $request->input('to', today()->toDateString());
+        [$from, $to] = $this->period($request);
 
-        return view('reports.balance-sheet', $service->balanceSheet($to) + compact('to'));
+        return view('reports.balance-sheet', $service->balanceSheet($to) + compact('from', 'to'));
     }
 
     public function incomeStatement(ReportFilterRequest $request, FinancialReportService $service)

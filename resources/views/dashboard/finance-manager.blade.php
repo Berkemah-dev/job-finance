@@ -16,6 +16,8 @@
 
 @include('dashboard.partials.charts')
 
+@include('dashboard.partials.balance-overview')
+
 <div class="stats-grid">
     <article class="stat-card"><span>Profit Job</span><strong class="stat-number"><small>Rp</small> {{ \App\Support\Money::format($profitBalance) }}</strong><p>Total profit dari job closing.</p></article>
     <article class="stat-card"><span>Pendapatan</span><strong class="stat-number"><small>Rp</small> {{ \App\Support\Money::format($revenueBalance) }}</strong><p>Total pendapatan dari closing.</p></article>

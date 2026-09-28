@@ -93,13 +93,28 @@ class FinancialReportService
 
     public function balanceSheet(string $to): array
     {
-        $rows = $this->accountBalances($to)->groupBy('type');
+        $allAccounts = $this->accountBalances($to)->map(function ($account) {
+            $account->report_balance = $this->net($account->type, $account->debit, $account->credit);
+            return $account;
+        });
+        $rows = $allAccounts->groupBy('type');
         $assets = $this->sumNet($rows->get('asset', collect()), true);
         $liabilities = $this->sumNet($rows->get('liability', collect()), false);
         $equity = $this->sumNet($rows->get('equity', collect()), false);
         $earnings = Money::decimal($this->sumNet($rows->get('revenue', collect()), false))->minus($this->sumNet($rows->get('cogs', collect()), true))->minus($this->sumNet($rows->get('expense', collect()), true));
 
-        return ['assets' => $assets, 'liabilities' => $liabilities, 'equity' => $equity, 'earnings' => (string) $earnings, 'liabilities_equity' => (string) Money::decimal($liabilities)->plus($equity)->plus($earnings)];
+        $assetRows = $rows->get('asset', collect())->reject(fn ($account) => $account->code === '1');
+        $currentAssets = $assetRows->filter(fn ($account) => str_starts_with((string) $account->code, '11'))->values();
+        $nonCurrentAssets = $assetRows->filter(fn ($account) => str_starts_with((string) $account->code, '12'))->values();
+        $otherAssets = $assetRows->reject(fn ($account) => str_starts_with((string) $account->code, '11') || str_starts_with((string) $account->code, '12'))->values();
+
+        return [
+            'assets' => $assets, 'liabilities' => $liabilities, 'equity' => $equity, 'earnings' => (string) $earnings,
+            'liabilities_equity' => (string) Money::decimal($liabilities)->plus($equity)->plus($earnings),
+            'currentAssets' => $currentAssets, 'nonCurrentAssets' => $nonCurrentAssets, 'otherAssets' => $otherAssets,
+            'liabilityRows' => $rows->get('liability', collect())->reject(fn ($account) => $account->code === '2')->values(),
+            'equityRows' => $rows->get('equity', collect())->reject(fn ($account) => $account->code === '3')->values(),
+        ];
     }
 
     public function cashFlow(string $from, string $to): array
