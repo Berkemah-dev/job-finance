@@ -21,6 +21,7 @@
     </form>
 
     <div class="table-scroll">
+        @php $ledgerFrom = \Carbon\Carbon::parse($to)->startOfYear()->toDateString(); @endphp
         <table>
             <thead>
                 <tr>
@@ -34,8 +35,8 @@
             <tbody>
                 @foreach($rows as $row)
                     <tr>
-                        <td><strong>{{ $row->code }}</strong></td>
-                        <td>{{ $row->name }}</td>
+                        <td><a class="text-link" href="{{ route('reports.ledger', ['account_id' => $row->id, 'from' => $ledgerFrom, 'to' => $to]) }}" title="Lihat rincian jurnal {{ $row->code }}"><strong>{{ $row->code }}</strong></a></td>
+                        <td><a class="text-link" href="{{ route('reports.ledger', ['account_id' => $row->id, 'from' => $ledgerFrom, 'to' => $to]) }}" title="Lihat rincian jurnal {{ $row->name }}">{{ $row->name }}</a></td>
                         <td><span class="badge-pill">{{ config('accounting.types.'.$row->type) }}</span></td>
                         <td class="money">{{ \App\Support\Money::format($row->closing_debit) }}</td>
                         <td class="money">{{ \App\Support\Money::format($row->closing_credit) }}</td>
