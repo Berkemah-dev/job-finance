@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('journals', JournalController::class)->only(['index', 'create', 'store', 'show'])->middleware('can:journals.manage');
     Route::post('/journals/{journal}/reverse', [JournalController::class, 'reverse'])->middleware('can:journals.manage')->name('journals.reverse');
     Route::middleware('can:reports.view')->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/ledger/pdf', [ReportController::class, 'ledgerPdf'])->name('ledger.pdf');
         Route::get('/ledger', [ReportController::class, 'ledger'])->name('ledger');
         Route::get('/trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
         Route::get('/balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');

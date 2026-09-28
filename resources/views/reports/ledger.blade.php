@@ -26,6 +26,7 @@
             <input type="date" name="to" value="{{ $to }}" aria-label="Sampai tanggal" title="Sampai tanggal">
         </div>
         <button class="button button-primary">Terapkan</button>
+        <a class="button button-secondary" target="_blank" href="{{ route('reports.ledger.pdf', ['account_id' => $account->id, 'from' => $from, 'to' => $to]) }}"><x-icon name="printer"/> Export PDF</a>
     </form>
 
     <div class="panel-heading">

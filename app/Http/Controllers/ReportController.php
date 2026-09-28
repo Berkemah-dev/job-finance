@@ -6,6 +6,7 @@ use App\Http\Requests\ReportFilterRequest;
 use App\Models\ChartOfAccount;
 use App\Services\FinancialReportService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
@@ -23,6 +24,23 @@ class ReportController extends Controller
         $accountId = (int) ($request->input('account_id') ?: $accounts->first()?->id);
 
         return view('reports.ledger', $service->ledger($accountId, $from, $to) + compact('accounts', 'from', 'to'));
+    }
+
+    public function ledgerPdf(ReportFilterRequest $request, FinancialReportService $service)
+    {
+        [$from, $to] = $this->period($request);
+        $accountId = (int) $request->input('account_id');
+        abort_if($accountId < 1, 422, 'Pilih akun terlebih dahulu.');
+
+        $report = $service->ledgerExport($accountId, $from, $to);
+        $pdf = app('dompdf.wrapper')
+            ->loadView('reports.pdf.ledger', $report + compact('from', 'to'))
+            ->setPaper('a4', 'landscape');
+        $filename = 'Buku_Besar_'.$report['account']->code.'_'.$from.'_sd_'.$to.'.pdf';
+
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
     }
 
     public function trialBalance(ReportFilterRequest $request, FinancialReportService $service)
