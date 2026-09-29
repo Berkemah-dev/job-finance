@@ -274,6 +274,7 @@ class JobService
             $cost->number = $this->numbers->next('cst');
             $cost->description = (string) $item['description'];
             $cost->type = (string) $item['type'];
+            $cost->cost_category = $cost->type === 'temporary' ? 'reimbursement' : 'payment_request';
             $cost->status = 'draft';
             $cost->cost_date = $job->job_date->toDateString();
             $cost->unit = (string) $item['unit'];
