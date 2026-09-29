@@ -50,6 +50,7 @@ class DemoDataSeeder extends Seeder
             'sales_manager' => ['Sales Manager Demo', 'sales-manager'],
             'operation' => ['Operation Demo', 'operational'],
             'finance' => ['Finance Demo', 'finance'],
+            'finance_manager' => ['Finance Manager Demo', 'finance-manager'],
         ];
 
         foreach ($map as $key => [$name, $roleName]) {
@@ -287,7 +288,7 @@ class DemoDataSeeder extends Seeder
             }
 
             if ($key === 'exp_sea') {
-                $invoice = $closingService->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '0'], $users['finance']);
+                $invoice = $closingService->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '0'], $users['finance_manager']);
                 $paymentService->create($invoice, ['lock_version' => $invoice->fresh()->lock_version, 'payment_date' => today()->toDateString(), 'amount' => '3000000', 'deposit_account' => 'bank', 'method' => 'transfer', 'reference' => 'DEMO-PAY-001'], $users['finance']);
             }
 

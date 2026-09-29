@@ -24,6 +24,7 @@ class BusinessDemoSeeder extends Seeder
             $salesManager = User::where('email', 'sales-manager@jobfinance.test')->firstOrFail();
             $operation = User::where('email', 'operational@jobfinance.test')->firstOrFail();
             $finance = User::where('email', 'finance@jobfinance.test')->firstOrFail();
+            $financeManager = User::whereHas('role', fn ($query) => $query->where('name', 'finance-manager'))->firstOrFail();
             $customer = app(MasterDataService::class)->save(new Customer, ['code' => 'DEMO-001', 'name' => 'PT Nusantara Logistik', 'contact_name' => 'Budi Santoso', 'email' => 'finance@nusantara.test', 'phone' => '021-555-0101', 'address' => 'Jakarta'], $sales);
             $quotation = app(QuotationService::class)->save(null, ['customer_id' => $customer->id, 'subject' => 'Pengiriman Jakarta ke Surabaya', 'quotation_date' => today()->toDateString(), 'valid_until' => today()->addDays(30)->toDateString(), 'notes' => 'Data demo alur lengkap JobFinance', 'items' => [
                 ['description' => 'Dokumen dan reimbursement', 'type' => 'temporary', 'unit' => 'Paket', 'quantity' => '1', 'unit_cost' => '5000000', 'unit_price' => '5000000'],
@@ -40,7 +41,7 @@ class BusinessDemoSeeder extends Seeder
                 $costService->finalize($job, $cost, ['job_version' => $job->fresh()->lock_version, 'lock_version' => $cost->lock_version], $finance);
             }
 
-            $invoice = app(JobClosingService::class)->close($job, ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '0'], $finance);
+            $invoice = app(JobClosingService::class)->close($job, ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => '0'], $financeManager);
             app(PaymentService::class)->create($invoice, ['lock_version' => $invoice->fresh()->lock_version, 'payment_date' => today()->toDateString(), 'amount' => '4000000', 'deposit_account' => 'bank', 'method' => 'transfer', 'reference' => 'DEMO-PAYMENT'], $finance);
         }, 3);
     }
