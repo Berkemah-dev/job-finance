@@ -56,7 +56,10 @@
 <div class="page-heading">
     <div>
         <p class="eyebrow">OPERASIONAL / JOB ORDER · {{ $serviceCategoryTitle }}</p>
-        <h1>{{ $job->number }}</h1>
+        <h1 style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span>{{ $job->number }}</span>
+            <x-service-badge :service="$job->service_type" style="font-size: 13px; padding: 4px 10px;" />
+        </h1>
         <p>{{ $job->subject }} · Customer: <strong>{{ $customerName }}</strong>@if($job->pol || $job->pod) · {{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}@elseif($job->origin || $job->destination) · {{ $job->origin ?? '—' }} → {{ $job->destination ?? '—' }}@endif</p>
     </div>
     <a class="button button-secondary" href="{{ route('jobs.index') }}">← Kembali</a>
@@ -1187,57 +1190,80 @@ document.addEventListener('DOMContentLoaded', function() {
                 @endphp
 
                 @if($suratJalanDoc)
-                    <div style="margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: #f0fdf4; border: 1px solid #86efac; font-size: 13px; color: #166534; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="margin-top: 14px; padding: 14px 18px; border-radius: 10px; background: #f0fdf4; border: 1px solid #86efac; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                         <div>
-                            <strong>✓ Berkas Surat Jalan Terupload:</strong>
-                            <span style="font-weight: 600;">{{ $suratJalanDoc->original_name }}</span>
-                            <small style="color: #64748b; margin-left: 6px;">({{ $suratJalanDoc->created_at->format('d/m/Y H:i') }})</small>
+                            <div style="font-weight: 700; color: #166534; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
+                                <x-icon name="check-circle" style="width: 16px; height: 16px; color: #16a34a;"/>
+                                <span>Berkas Surat Jalan Terunggah</span>
+                            </div>
+                            <div style="margin-top: 4px; font-size: 12.5px; color: #374151;">
+                                <strong>{{ $suratJalanDoc->original_name }}</strong>
+                                <small style="color: #64748b; margin-left: 6px;">({{ $suratJalanDoc->created_at->format('d/m/Y H:i') }})</small>
+                            </div>
                         </div>
-                        <a class="button button-secondary button-sm" href="{{ route('jobs.documents.download', [$job, $suratJalanDoc]) }}" target="_blank" style="font-size: 12px; padding: 4px 10px;">
-                            <x-icon name="download"/> Unduh Berkas
-                        </a>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <a class="button button-secondary button-sm" href="{{ route('jobs.documents.download', [$job, $suratJalanDoc]) }}" target="_blank" style="font-size: 12px; padding: 6px 12px;">
+                                <x-icon name="download"/> Unduh Berkas
+                            </a>
+                        </div>
                     </div>
-                @else
-                    <div style="margin-top: 14px; padding: 14px 16px; border-radius: 8px; background: #fff5f5; border: 1.5px solid #fca5a5; font-size: 13px; color: #991b1b; line-height: 1.6;">
-                        <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; margin-bottom: 6px;">
-                            <span style="font-size: 16px;">⚠️</span> Berkas Surat Jalan Wajib Diunggah
-                        </div>
-                        <p style="margin: 0 0 10px; color: #7f1d1d; font-size: 12.5px;">
-                            Wajib mengunggah (upload) berkas Surat Jalan (scan/foto bertanda tangan atau stempel penerima) sebelum mengonfirmasi penyelesaian job.
+
+                    @if($job->do_confirmed_at)
+                        <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 12px;">
+                            ✓ DO telah dikonfirmasi selesai pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.
                         </p>
-                        @can('update', $job)
-                            <form method="POST" action="{{ route('jobs.surat-jalan.upload', $job) }}" enctype="multipart/form-data" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    @elseif($job->status === 'open')
+                        @can('jobs.confirm-do')
+                            <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai dan barang telah diterima?" style="margin-top: 14px;">
                                 @csrf
-                                <input type="file" name="surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
-                                <button type="submit" class="button button-primary button-sm" style="font-size: 12px; padding: 7px 14px;">
-                                    <x-icon name="upload"/> Upload Berkas Sekarang
+                                <button type="submit" class="button button-primary" style="background: #16a34a; border-color: #16a34a; font-size: 13px; padding: 9px 18px;">
+                                    <x-icon name="check"/> Konfirmasi DO Selesai
                                 </button>
                             </form>
+                        @endcan
+                    @endif
+                @else
+                    {{-- 1 Menu Tunggal: Upload Berkas Surat Jalan --}}
+                    <div style="margin-top: 14px; padding: 16px 20px; border-radius: 10px; background: #fff5f5; border: 1.5px solid #fca5a5;">
+                        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #991b1b; font-size: 14px; margin-bottom: 6px;">
+                            <x-icon name="file-text" style="width: 18px; height: 18px;"/>
+                            <span>Menu Unggah Surat Jalan</span>
+                        </div>
+                        <p style="margin: 0 0 14px; color: #7f1d1d; font-size: 12.5px; line-height: 1.5;">
+                            Wajib mengunggah berkas Surat Jalan (scan/foto bertanda tangan atau stempel penerima) sebelum mengonfirmasi penyelesaian Delivery Order (DO).
+                        </p>
+
+                        @can('update', $job)
+                            <form method="POST" action="{{ route('jobs.surat-jalan.upload', $job) }}" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 14px;">
+                                @csrf
+                                <div>
+                                    <label for="single_surat_jalan_file" style="display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 6px;">
+                                        Pilih Berkas Surat Jalan <span style="color: #dc2626;">*</span> <small style="color: #64748b; font-weight: normal;">(Format: PDF, JPG, JPEG, PNG · Maks. 5MB)</small>
+                                    </label>
+                                    <input type="file" id="single_surat_jalan_file" name="surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12.5px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; width: 100%; max-width: 480px; box-sizing: border-box;">
+                                </div>
+
+                                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                    <button type="submit" class="button button-primary" style="font-size: 12.5px; padding: 8px 16px;">
+                                        <x-icon name="upload"/> Upload Surat Jalan
+                                    </button>
+
+                                    @if($job->status === 'open')
+                                        @can('jobs.confirm-do')
+                                            <button type="submit" formaction="{{ route('jobs.confirm-do', $job) }}" class="button button-primary" style="background: #16a34a; border-color: #16a34a; font-size: 12.5px; padding: 8px 16px;" onclick="return confirm('Upload berkas dan langsung konfirmasi bahwa Delivery Order (DO) telah selesai?')">
+                                                <x-icon name="check"/> Upload & Konfirmasi DO Selesai
+                                            </button>
+                                        @endcan
+                                    @endif
+                                </div>
+                            </form>
+                        @else
+                            <p style="color: #64748b; font-size: 12px; margin: 0;">Anda tidak memiliki akses untuk mengunggah berkas pada Job ini.</p>
                         @endcan
                     </div>
                 @endif
 
-                @if($job->do_confirmed_at)
-                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 10px;">Dikonfirmasi pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.</p>
-                @elseif($job->status === 'open')
-                    @can('jobs.confirm-do')
-                        <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" enctype="multipart/form-data" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai dan barang telah diterima?" style="margin-top: 16px; padding: 14px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0;">
-                            @csrf
-                            @if(!$suratJalanDoc)
-                                <div class="field" style="margin-bottom: 12px;">
-                                    <label for="confirm_surat_jalan_file" style="font-size: 12.5px; font-weight: 700; color: #991b1b; display: block; margin-bottom: 4px;">
-                                        Upload Berkas Surat Jalan (Wajib) <span class="required">*</span>
-                                    </label>
-                                    <input type="file" name="surat_jalan_file" id="confirm_surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #fca5a5; border-radius: 6px; background: #fff; width: 100%;">
-                                    <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 3px;">Lampirkan berkas scan/foto Surat Jalan yang telah ditandatangani.</small>
-                                </div>
-                            @endif
-                            <button class="button button-primary" style="background:#16a34a;border-color:#16a34a">
-                                <x-icon name="check"/> Konfirmasi DO Selesai
-                            </button>
-                        </form>
-                    @endcan
-                @elseif($job->status === 'draft')
+                @if($job->status === 'draft')
                     <div style="margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; font-size: 13px; color: #1e40af; line-height: 1.6;">
                         <strong>Perhatian:</strong> Job Order ini saat ini masih berstatus <strong>Draft</strong>. Untuk dapat mengonfirmasi DO selesai dan mencatat biaya pengiriman, Job Order perlu dibuka (diaktifkan) terlebih dahulu.
                     </div>

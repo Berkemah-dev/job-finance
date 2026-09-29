@@ -29,7 +29,7 @@
                 @forelse($arrivalSoon as $job)
                 <tr>
                     <td><a class="text-link" href="{{ route('jobs.show',$job) }}"><strong>{{ $job->number }}</strong></a></td>
-                    <td><span class="badge-pill">{{ \App\Models\ServiceType::label($job->service_type) }}</span></td>
+                    <td><x-service-badge :service="$job->service_type" /></td>
                     <td>{{ $job->eta ? $job->eta->format('d/m/Y') : '—' }}</td>
                     <td>{{ $job->customer?->name ?? $job->quotation_snapshot['customer']['name'] ?? '—' }}</td>
                     <td>

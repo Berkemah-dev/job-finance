@@ -86,9 +86,7 @@
             @endif
         </td>
         <td>
-            <span class="status-badge" style="background:#e0f2fe; color:#0369a1; font-weight:600;">
-                {{ \App\Models\ServiceType::label($job->service_type) }}
-            </span>
+            <x-service-badge :service="$job->service_type" />
             @if($job->pol || $job->pod)
                 <br><small class="muted-cell">{{ $job->pol ?? '—' }} → {{ $job->pod ?? '—' }}</small>
             @endif

@@ -77,9 +77,7 @@
                             @endif
                         </td>
                         <td>
-                            <span class="badge-pill" style="font-weight: 600;">
-                                {{ \App\Models\ServiceType::label($quotation->service_type) }}
-                            </span>
+                            <x-service-badge :service="$quotation->service_type" />
                         </td>
                         <td>{{ $quotation->origin ?? '—' }}</td>
                         <td>{{ $quotation->destination ?? '—' }}</td>

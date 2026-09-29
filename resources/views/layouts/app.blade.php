@@ -16,6 +16,11 @@
         dialog.modal-dialog::backdrop{background:rgba(15,23,42,0.55)!important;backdrop-filter:blur(4px)!important;-webkit-backdrop-filter:blur(4px)!important}
         .theme-dark dialog.modal-dialog{background:#172033!important;border-color:#334155!important;color:#f8fafc!important}
         .panel + .panel, .panel + section.panel, section.panel + section.panel, section.panel + .panel { margin-top: 24px !important; }
+        .theme-dark .service-badge-exp_sea { background: rgba(6, 95, 70, 0.35) !important; color: #6ee7b7 !important; border-color: rgba(110, 231, 183, 0.3) !important; }
+        .theme-dark .service-badge-imp_sea { background: rgba(30, 58, 138, 0.35) !important; color: #93c5fd !important; border-color: rgba(147, 197, 253, 0.3) !important; }
+        .theme-dark .service-badge-exp_air { background: rgba(91, 33, 182, 0.35) !important; color: #c4b5fd !important; border-color: rgba(196, 181, 253, 0.3) !important; }
+        .theme-dark .service-badge-imp_air { background: rgba(154, 52, 18, 0.35) !important; color: #fdba74 !important; border-color: rgba(253, 186, 116, 0.3) !important; }
+        .theme-dark .service-badge-domestic { background: rgba(51, 65, 85, 0.45) !important; color: #cbd5e1 !important; border-color: rgba(203, 213, 225, 0.3) !important; }
     </style>
 </head>
 <body>
