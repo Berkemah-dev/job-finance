@@ -15,11 +15,14 @@ class DemoUserSeeder extends Seeder
         }
         foreach (Role::all() as $role) {
             $email = ($role->name === 'super-admin' ? 'admin' : $role->name).'@jobfinance.test';
-            if (! User::where('email', $email)->exists()) {
-                $user = new User(['name' => $role->label, 'email' => $email, 'password' => 'JobFinance!2026']);
-                $user->role()->associate($role);
-                $user->save();
+            $user = User::firstOrNew(['email' => $email]);
+            if (! $user->exists) {
+                $user->name = $role->label;
+                $user->password = 'JobFinance!2026';
             }
+            $user->role()->associate($role);
+            $user->is_active = true;
+            $user->save();
         }
     }
 }

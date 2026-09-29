@@ -48,7 +48,7 @@
     $quotationVolume = $quotation?->items?->sum(fn($i) => (float)($i->volume ?? 0));
     $volumeStr = $job->volume ? $job->volume . ' M3' : ($quotationVolume > 0 ? $quotationVolume . ' M3' : '—');
     $commodityStr = $job->cargo_description ?? $quotation?->commodity ?? 'General Cargo';
-    $noteContent = $quotation?->notes ?? $job->operational_notes ?? '';
+    $noteContent = $quotation?->internal_notes ?: ($job->operational_notes ?? '');
     $isCsRole = auth()->user()?->hasRole('customer-service');
     $isOperationalRole = auth()->user()?->hasRole('operational');
 @endphp
@@ -117,6 +117,8 @@
     @can('invoices.manage')
         @if($job->invoice)
             <a class="button button-primary" href="{{ route('invoices.show',$job->invoice) }}">Lihat Invoice</a>
+        @elseif($job->status === 'open')
+            <a class="button button-primary" href="{{ route('jobs.invoices.create', $job) }}"><x-icon name="file"/> Buat Invoice</a>
         @endif
     @endcan
     @if($job->status==='open' && !$job->do_confirmed_at)

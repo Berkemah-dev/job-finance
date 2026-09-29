@@ -128,6 +128,7 @@ class JobOrderTest extends TestCase
         $this->post('/jobs/'.$job->id.'/open', ['lock_version' => 0])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('job_status_history', ['job_id' => $job->id, 'from_status' => 'draft', 'to_status' => 'open']);
         $this->get('/jobs/'.$job->id)->assertSee('Riwayat status')->assertSee('Draft → Open');
+        $this->actingAs($this->manager);
         $this->post('/jobs/'.$job->id.'/cancel', ['lock_version' => 1, 'reason' => 'Permintaan customer'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('job_status_history', ['job_id' => $job->id, 'from_status' => 'open', 'to_status' => 'cancelled', 'note' => 'Permintaan customer']);
         $this->get('/jobs/'.$job->id)->assertSee('Open → Dibatalkan')->assertSee('Permintaan customer');

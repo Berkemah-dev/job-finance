@@ -19,7 +19,12 @@ use Illuminate\Validation\ValidationException;
 
 class JobService
 {
-    public function __construct(private MasterDataService $master, private DocumentNumberService $numbers) {}
+    private JournalService $journals;
+
+    public function __construct(private MasterDataService $master, private DocumentNumberService $numbers, ?JournalService $journals = null)
+    {
+        $this->journals = $journals ?? app(JournalService::class);
+    }
 
     public function update(Job $job, array $data, User $actor): Job
     {
@@ -30,8 +35,7 @@ class JobService
             if ($job->status === 'open' && $job->job_date->format('Y-m-d') !== $data['job_date']) {
                 throw ValidationException::withMessages(['job_date' => 'Tanggal job tidak dapat diubah setelah job dibuka.']);
             }
-            // Customer, quotation, document number, snapshot and workflow fields are never editable here.
-            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'sk_pabean_number', 'commercial_invoice_number', 'commercial_invoice_date', 'packing_list_number', 'packing_list_date', 'invoice_issuer', 'invoice_amount', 'incoterm', 'package_count', 'gross_weight', 'volume', 'container_type', 'container_number', 'vendor_trucking_id', 'vendor_truck_id', 'customer_address_id', 'truck_plate_number', 'driver_name', 'driver_phone', 'vehicle_type', 'delivery_address', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes']));
+            $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'sk_pabean_number', 'commercial_invoice_number', 'commercial_invoice_date', 'packing_list_number', 'packing_list_date', 'invoice_issuer', 'invoice_amount', 'incoterm', 'package_count', 'gross_weight', 'volume', 'container_type', 'container_number', 'vendor_trucking_id', 'vendor_truck_id', 'customer_address_id', 'truck_plate_number', 'driver_name', 'driver_phone', 'vehicle_type', 'delivery_address', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes', 'booking_reference', 'nopen', 'nopen_date', 'npe_number', 'peb_number', 'peb_date']));
             if (!empty($job->vendor_truck_id)) {
                 $vt = \App\Models\VendorTruck::find($job->vendor_truck_id);
                 if ($vt) {
@@ -289,6 +293,18 @@ class JobService
             $cost->lock_version = 0;
             $cost->save();
             $created[] = $cost->number;
+
+            // Buat pencatatan akrual Hutang Vendor & Provision/Temporary agar biaya quotation langsung muncul di Hutang Vendor/Provisi
+            if (! Money::decimal($cost->total_cost)->isZero() && in_array($cost->cost_category, ['payment_request', 'reimbursement'], true)) {
+                $maps = $this->journals->mapped([$cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary', 'vendor_payable']);
+                $debitKey = $cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary';
+                $entries = [
+                    ['account_id' => $maps[$debitKey]->id, 'description' => ($cost->cost_category === 'payment_request' ? 'Provisional Payment ' : 'Temporary Payment ').$cost->number, 'debit' => (string) $cost->total_cost, 'credit' => 0],
+                    ['account_id' => $maps['vendor_payable']->id, 'description' => 'Hutang vendor '.$cost->number, 'debit' => 0, 'credit' => (string) $cost->total_cost],
+                ];
+                $this->journals->post('job_cost_draft', JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Draft '.$cost->number, $entries, $actor);
+            }
+
             $this->master->log($actor, 'job_cost.created', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => null, 'after' => array_merge($cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price']), ['quotation_id' => $cost->quotation_id, 'quotation_item_id' => $cost->quotation_item_id])]);
         }
         if (count($created) > 0) {

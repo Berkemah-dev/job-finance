@@ -223,7 +223,7 @@ class QuotationService
                 'gross_weight' => $grossWeight,
                 'volume' => $volume,
                 'package_count' => $packageCount,
-                'operational_notes' => $quotation->notes,
+                'operational_notes' => $quotation->internal_notes ?: $quotation->notes,
                 'created_by' => $actor->id,
                 'updated_by' => $actor->id,
             ]);

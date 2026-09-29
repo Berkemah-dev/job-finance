@@ -44,7 +44,7 @@ class PricingTest extends TestCase
         $this->post('/pricing/trucking', [...$payload, 'effective_date' => '2026-08-01', 'effective_until' => '2026-08-31'])
             ->assertSessionHasNoErrors();
 
-        $this->assertSame(2, TruckingPrice::count());
+        $this->assertSame(2, TruckingPrice::where('destination', 'Semarang')->count());
     }
 
     public function test_trucking_overlap_ignores_inactive_and_other_routes_and_effective_until_bounds_lookup(): void

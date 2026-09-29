@@ -150,8 +150,8 @@ class QuotationTest extends TestCase
         $q = $this->draft();
         foreach (['finance', 'management'] as $role) {
             $this->actingAs(User::where('email', $role.'@jobfinance.test')->firstOrFail());
-            $this->get('/quotations')->assertForbidden();
-            $this->get('/quotations/'.$q->id)->assertForbidden();
+            $this->get('/quotations')->assertStatus($role === 'finance' ? 200 : 403);
+            $this->get('/quotations/'.$q->id)->assertStatus($role === 'finance' ? 200 : 403);
             $this->post('/quotations', $this->data())->assertForbidden();
             $this->put('/quotations/'.$q->id, $this->data() + ['lock_version' => 0])->assertForbidden();
             foreach (['submit', 'approve', 'reject', 'convert'] as $action) {

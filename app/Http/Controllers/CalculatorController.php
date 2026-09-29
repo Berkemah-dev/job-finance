@@ -47,6 +47,20 @@ class CalculatorController extends Controller
 
     public function lclApi(Request $request): JsonResponse
     {
+        if ($request->has('packages')) {
+            $data = $request->validate([
+                'rate_per_cbm' => ['nullable', 'numeric', 'min:0'],
+                'packages' => ['required', 'array', 'min:1', 'max:50'],
+                'packages.*.qty' => ['required', 'integer', 'min:1', 'max:999999'],
+                'packages.*.length' => ['required', 'numeric', 'min:0', 'max:999999'],
+                'packages.*.width' => ['required', 'numeric', 'min:0', 'max:999999'],
+                'packages.*.height' => ['required', 'numeric', 'min:0', 'max:999999'],
+                'packages.*.gross_weight' => ['required', 'numeric', 'min:0', 'max:99999999'],
+            ]);
+
+            return response()->json($this->calc->lcl($data['packages'], $data['rate_per_cbm'] ?? null));
+        }
+
         $data = $request->validate([
             'lcl_rate_id' => ['nullable', 'integer', 'exists:lcl_rates,id'],
             'cbm' => ['required', 'numeric', 'gt:0', 'max:999999'],

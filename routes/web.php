@@ -25,6 +25,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PricingSuggestionController;
 use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\ReimbursementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AwbController;
 use App\Http\Controllers\BillOfLadingController;
@@ -56,7 +57,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->middleware('can:invoices.manage')->name('invoices.pdf');
     Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])->middleware('can:invoices.manage')->name('invoices.delivery');
     Route::get('/invoices/{invoice}/tax-invoice', [InvoiceController::class, 'taxInvoiceFile'])->middleware('can:invoices.manage')->name('invoices.tax-invoice');
-    Route::resource('invoices', InvoiceController::class)->only(['index', 'show'])->middleware('can:invoices.manage');
+    Route::get('/jobs/{job}/invoices/create', [InvoiceController::class, 'create'])->middleware('can:invoices.manage')->name('jobs.invoices.create');
+    Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show'])->middleware('can:invoices.manage');
     Route::get('/invoices/{invoice}/coretax', [InvoiceController::class, 'coretax'])->middleware('can:invoices.manage')->name('invoices.coretax');
     Route::get('/invoices/{invoice}/coretax/preview', [InvoiceController::class, 'coretaxPreview'])->middleware('can:invoices.manage')->name('invoices.coretax.preview');
     Route::post('/invoices/{invoice}/coretax/selected', [InvoiceController::class, 'coretaxSelected'])->middleware('can:invoices.manage')->name('invoices.coretax.selected');
@@ -65,6 +67,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->middleware('can:payments.manage')->name('payments.store');
     Route::resource('journals', JournalController::class)->only(['index', 'create', 'store', 'show'])->middleware('can:journals.manage');
     Route::post('/journals/{journal}/reverse', [JournalController::class, 'reverse'])->middleware('can:journals.manage')->name('journals.reverse');
+    Route::middleware('can:reimbursements.manage')->group(function () {
+        Route::get('/reimbursements', [ReimbursementController::class, 'index'])->name('reimbursements.index');
+        Route::get('/reimbursements/create', [ReimbursementController::class, 'create'])->name('reimbursements.create');
+        Route::post('/reimbursements', [ReimbursementController::class, 'store'])->name('reimbursements.store');
+        Route::get('/reimbursements/{reimbursement}', [ReimbursementController::class, 'show'])->name('reimbursements.show');
+        Route::post('/reimbursements/{reimbursement}/approve', [ReimbursementController::class, 'approve'])->name('reimbursements.approve');
+        Route::post('/reimbursements/{reimbursement}/reject', [ReimbursementController::class, 'reject'])->name('reimbursements.reject');
+        Route::post('/reimbursements/{reimbursement}/pay', [ReimbursementController::class, 'pay'])->name('reimbursements.pay');
+        Route::get('/reimbursements/{reimbursement}/attachment', [ReimbursementController::class, 'downloadAttachment'])->name('reimbursements.attachment');
+    });
     Route::middleware('can:reports.view')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/ledger/pdf', [ReportController::class, 'ledgerPdf'])->name('ledger.pdf');
         Route::get('/ledger', [ReportController::class, 'ledger'])->name('ledger');
@@ -146,6 +158,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/jobs/{job}/cancel', [JobController::class, 'cancel'])->middleware('can:cancel,job')->name('jobs.cancel');
     Route::post('/jobs/{job}/reopen', [JobController::class, 'reopen'])->middleware('can:jobs.close')->name('jobs.reopen');
     Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.confirm-do')->name('jobs.confirm-do');
+    Route::post('/jobs/{job}/shipment-status', [JobController::class, 'shipmentStatus'])->middleware('can:jobs.manage')->name('jobs.shipment-status');
     Route::post('/jobs/{job}/upload-surat-jalan', [JobController::class, 'uploadSuratJalan'])->middleware('can:jobs.view')->name('jobs.surat-jalan.upload');
     Route::post('/jobs/{job}/delivery-orders', [DeliveryOrderController::class, 'store'])->middleware('can:jobs.manage')->name('jobs.delivery-orders.store');
     Route::get('/delivery-orders/{deliveryOrder}/pdf', [DeliveryOrderController::class, 'pdf'])->middleware('can:jobs.view')->name('delivery-orders.pdf');
@@ -182,7 +195,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/service-types/{serviceType}', [ServiceTypeController::class, 'destroy'])->middleware('can:master-data.manage')->name('service-types.destroy');
     Route::get('/service-types/{serviceType}/edit', [ServiceTypeController::class, 'edit'])->middleware('can:master-data.manage')->name('service-types.edit');
     Route::put('/service-types/{serviceType}', [ServiceTypeController::class, 'update'])->middleware('can:master-data.manage')->name('service-types.update');
-    Route::resource('tps', TpsController::class)->except('show')->middleware('can:tps.manage');
+    Route::post('/tps/{tps}/toggle', [TpsController::class, 'toggle'])->middleware('can:tps.manage')->name('tps.toggle');
+    Route::resource('tps', TpsController::class)->parameters(['tps' => 'tps'])->except('show')->middleware('can:tps.manage');
     Route::get('/master/lcl-rates', [LclRateController::class, 'index'])->middleware('can:master-data.manage')->name('lcl-rates.index');
     Route::get('/master/lcl-rates/template', [LclRateController::class, 'template'])->middleware('can:master-data.manage')->name('lcl-rates.template');
     Route::post('/master/lcl-rates/import', [LclRateController::class, 'import'])->middleware('can:master-data.manage')->name('lcl-rates.import');

@@ -22,7 +22,7 @@ class JournalService
             Gate::forUser($actor)->authorize('journals.manage');
             $ids = collect($data['entries'])->pluck('account_id');
             $accounts = ChartOfAccount::whereIn('id', $ids)->lockForUpdate()->get()->keyBy('id');
-            $entries = collect($data['entries'])->map(function ($entry) use ($accounts) {
+            $entries = collect($data['entries'])->map(function ($entry) use ($accounts, $data) {
                 if (! $accounts->has((int) $entry['account_id'])) {
                     throw ValidationException::withMessages(['entries' => 'Seluruh akun jurnal harus aktif.']);
                 }
@@ -32,7 +32,7 @@ class JournalService
                     throw ValidationException::withMessages(['entries' => 'Setiap baris harus memiliki tepat satu nilai debit atau kredit.']);
                 }
 
-                return ['account_id' => (int) $entry['account_id'], 'description' => $entry['description'], 'debit' => (string) $debit, 'credit' => (string) $credit];
+                return ['account_id' => (int) $entry['account_id'], 'description' => ! empty($entry['description']) ? $entry['description'] : $data['description'], 'debit' => (string) $debit, 'credit' => (string) $credit];
             })->all();
             $source = JournalAdjustment::create(['description' => $data['description'], 'created_by' => $actor->id]);
             $journal = $this->post('adjustment', JournalAdjustment::class, $source->id, $data['journal_date'], $data['description'], $entries, $actor);

@@ -44,18 +44,18 @@ return [
     'roles' => [
         'super-admin' => ['label' => 'Super Admin', 'permissions' => ['*']],
         'finance' => ['label' => 'Finance', 'permissions' => [
-            'dashboard.view', 'quotations.view', 'costs.manage',
-            'invoices.manage', 'payments.manage', 'journals.manage', 'reports.view',
+            'dashboard.view', 'customers.view', 'quotations.view', 'jobs.view', 'costs.manage', 'jobs.close',
+            'invoices.manage', 'payments.manage', 'journals.manage', 'reimbursements.manage', 'reports.view',
             'financial.view', 'pricing.view', 'email.manage', 'activity.view',
         ]],
         'finance-manager' => ['label' => 'Finance Manager', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.approve', 'quotations.view', 'jobs.view', 'jobs.cancel', 'costs.manage', 'jobs.close',
-            'invoices.manage', 'payments.manage', 'journals.manage', 'reports.view',
+            'invoices.manage', 'payments.manage', 'journals.manage', 'reimbursements.manage', 'reports.view',
             'financial.view', 'pricing.view', 'email.manage', 'activity.view', 'users.view',
         ]],
         'sales-manager' => ['label' => 'Sales Manager', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.view', 'quotations.manage', 'export-documents.manage',
-            'quotations.approve', 'jobs.view', 'jobs.manage', 'jobs.cancel', 'vendors.manage', 'pricing.manage', 'pricing.view',
+            'quotations.approve', 'jobs.view', 'jobs.manage', 'jobs.cancel', 'vendors.manage', 'pricing.manage', 'pricing.view', 'master-data.manage',
         ]],
         'sales' => ['label' => 'Sales', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.view', 'quotations.manage',

@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\ChartOfAccount;
+use App\Models\Job;
 use App\Models\JobClosingSnapshot;
+use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
@@ -111,7 +113,48 @@ class FinancialReportService
         $expense = Money::decimal($rows->get('expense')->debit ?? 0)->minus($rows->get('expense')->credit ?? 0);
         $gross = $revenue->minus($cogs);
 
-        return ['revenue' => (string) $revenue, 'cogs' => (string) $cogs, 'gross' => (string) $gross, 'expense' => (string) $expense, 'net' => (string) $gross->minus($expense)];
+        $accounts = ChartOfAccount::query()
+            ->whereIn('type', ['revenue', 'cogs', 'expense'])
+            ->with(['entries' => function ($q) use ($from, $to) {
+                $q->whereHas('journal', fn ($j) => $j->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to)->whereNull('reversal_of_id'));
+            }])
+            ->orderBy('code')
+            ->get();
+
+        $accountDetails = $accounts->map(function ($acc) {
+            $debit = Money::decimal((string) $acc->entries->sum(fn ($e) => (float) $e->debit));
+            $credit = Money::decimal((string) $acc->entries->sum(fn ($e) => (float) $e->credit));
+            $balance = match ($acc->type) {
+                'revenue' => $credit->minus($debit),
+                default => $debit->minus($credit),
+            };
+
+            return (object) [
+                'id' => $acc->id,
+                'code' => $acc->code,
+                'name' => $acc->name,
+                'type' => $acc->type,
+                'debit' => (string) $debit,
+                'credit' => (string) $credit,
+                'balance' => (string) $balance,
+                'has_activity' => ! $debit->isZero() || ! $credit->isZero(),
+            ];
+        });
+
+        $revenueAccounts = $accountDetails->where('type', 'revenue')->values();
+        $cogsAccounts = $accountDetails->where('type', 'cogs')->values();
+        $expenseAccounts = $accountDetails->where('type', 'expense')->values();
+
+        return [
+            'revenue' => (string) $revenue,
+            'cogs' => (string) $cogs,
+            'gross' => (string) $gross,
+            'expense' => (string) $expense,
+            'net' => (string) $gross->minus($expense),
+            'revenueAccounts' => $revenueAccounts,
+            'cogsAccounts' => $cogsAccounts,
+            'expenseAccounts' => $expenseAccounts,
+        ];
     }
 
     public function balanceSheet(string $to): array
@@ -142,35 +185,187 @@ class FinancialReportService
 
     public function cashFlow(string $from, string $to): array
     {
-        $cashCodes = collect(config('accounting.mappings'))->only(['cash', 'bank'])->pluck('code');
-        $entries = JournalEntry::with('journal')->whereHas('account', fn (Builder $q) => $q->whereIn('code', $cashCodes))->whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))->get();
-        $groups = ['customer_payment' => Money::decimal(0), 'job_cost_capitalization' => Money::decimal(0), 'adjustment' => Money::decimal(0), 'other' => Money::decimal(0)];
+        $cashAccounts = ChartOfAccount::where('type', 'asset')
+            ->where(function ($q) {
+                $q->whereIn('code', ['1101', '1102', '11100', '11101', '11120', '11121', '11122', '11123'])
+                    ->orWhere('code', 'like', '1110%')
+                    ->orWhere('code', 'like', '1112%')
+                    ->orWhere('name', 'like', '%Bank%')
+                    ->orWhere('name', 'like', '%Cash%')
+                    ->orWhere('name', 'like', '%Kas%');
+            })
+            ->where('code', '!=', '1103')
+            ->get();
+        $cashIds = $cashAccounts->pluck('id');
+
+        $openingEntries = JournalEntry::whereIn('chart_of_account_id', $cashIds)
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '<', $from)->whereNull('reversal_of_id'))
+            ->get();
+        $openingBalance = Money::decimal((string) $openingEntries->sum(fn ($e) => (float) $e->debit - (float) $e->credit));
+
+        $entries = JournalEntry::with(['journal', 'account'])
+            ->whereIn('chart_of_account_id', $cashIds)
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to)->whereNull('reversal_of_id'))
+            ->orderBy(\App\Models\Journal::select('journal_date')->whereColumn('journals.id', 'journal_entries.journal_id')->limit(1))
+            ->get();
+
+        $groups = [
+            'customer_payment' => Money::decimal(0),
+            'job_cost_capitalization' => Money::decimal(0),
+            'job_cost_payment' => Money::decimal(0),
+            'adjustment' => Money::decimal(0),
+            'other' => Money::decimal(0),
+        ];
+
+        $inflow = Money::decimal(0);
+        $outflow = Money::decimal(0);
+
         foreach ($entries as $entry) {
             $key = array_key_exists($entry->journal->type, $groups) ? $entry->journal->type : 'other';
-            $groups[$key] = $groups[$key]->plus($entry->debit)->minus($entry->credit);
+            $netMovement = Money::decimal((string) $entry->debit)->minus(Money::decimal((string) $entry->credit));
+            $groups[$key] = $groups[$key]->plus($netMovement);
+
+            if ((float) $entry->debit > 0) {
+                $inflow = $inflow->plus(Money::decimal((string) $entry->debit));
+            }
+            if ((float) $entry->credit > 0) {
+                $outflow = $outflow->plus(Money::decimal((string) $entry->credit));
+            }
         }
 
-        return collect($groups)->map(fn ($amount) => (string) $amount)->all() + ['net' => (string) collect($groups)->reduce(fn ($sum, $amount) => $sum->plus($amount), Money::decimal(0))];
+        $net = $inflow->minus($outflow);
+        $closingBalance = $openingBalance->plus($net);
+
+        $openingPerAccount = JournalEntry::whereIn('chart_of_account_id', $cashIds)
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '<', $from)->whereNull('reversal_of_id'))
+            ->selectRaw('chart_of_account_id, SUM(debit) as total_debit, SUM(credit) as total_credit')
+            ->groupBy('chart_of_account_id')
+            ->get()
+            ->keyBy('chart_of_account_id');
+
+        $periodPerAccount = JournalEntry::whereIn('chart_of_account_id', $cashIds)
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to)->whereNull('reversal_of_id'))
+            ->selectRaw('chart_of_account_id, SUM(debit) as total_debit, SUM(credit) as total_credit')
+            ->groupBy('chart_of_account_id')
+            ->get()
+            ->keyBy('chart_of_account_id');
+
+        $accountBreakdown = $cashAccounts->map(function ($acc) use ($openingPerAccount, $periodPerAccount) {
+            $opRow = $openingPerAccount->get($acc->id);
+            $op = (float) ($opRow->total_debit ?? 0) - (float) ($opRow->total_credit ?? 0);
+
+            $periodRow = $periodPerAccount->get($acc->id);
+            $inflow = (float) ($periodRow->total_debit ?? 0);
+            $outflow = (float) ($periodRow->total_credit ?? 0);
+            $net = $inflow - $outflow;
+            $closing = $op + $net;
+
+            return (object) [
+                'id' => $acc->id,
+                'code' => $acc->code,
+                'name' => $acc->name,
+                'opening' => (string) Money::decimal((string) $op),
+                'inflow' => (string) Money::decimal((string) $inflow),
+                'outflow' => (string) Money::decimal((string) $outflow),
+                'net' => (string) Money::decimal((string) $net),
+                'closing' => (string) Money::decimal((string) $closing),
+            ];
+        });
+
+        return [
+            'customer_payment' => (string) $groups['customer_payment'],
+            'job_cost_capitalization' => (string) $groups['job_cost_capitalization'],
+            'job_cost_payment' => (string) $groups['job_cost_payment'],
+            'adjustment' => (string) $groups['adjustment'],
+            'other' => (string) $groups['other'],
+            'inflow' => (string) $inflow,
+            'outflow' => (string) $outflow,
+            'net' => (string) $net,
+            'opening' => (string) $openingBalance,
+            'closing' => (string) $closingBalance,
+            'accounts' => $accountBreakdown,
+            'entries' => $entries,
+        ];
     }
 
     public function profitPerJob(string $from, string $to): array
     {
-        $query = JobClosingSnapshot::with('job')
+        $snapshots = JobClosingSnapshot::with('job.customer')
             ->whereDate('closing_date', '>=', $from)
             ->whereDate('closing_date', '<=', $to)
-            ->orderByDesc('closing_date');
+            ->orderByDesc('closing_date')
+            ->get();
 
-        $all = $query->get();
+        $rows = $snapshots->map(function ($s) {
+            return (object) [
+                'id' => 'closed_'.$s->id,
+                'date' => $s->closing_date,
+                'job_number' => $s->job?->number ?? '—',
+                'job_id' => $s->job_id,
+                'status' => 'closed',
+                'customer_name' => $s->customer_snapshot['name'] ?? ($s->job?->customer?->name ?? '—'),
+                'total_temporary' => (float) $s->total_temporary,
+                'total_provision_cost' => (float) $s->total_provision_cost,
+                'total_provision_sell' => (float) $s->total_provision_sell,
+                'profit' => (float) $s->profit,
+                'margin' => (float) $s->margin,
+            ];
+        });
+
+        $closedJobIds = $snapshots->pluck('job_id')->filter();
+        $openJobs = Job::where('status', 'open')
+            ->whereNotIn('id', $closedJobIds)
+            ->whereDate('job_date', '>=', $from)
+            ->whereDate('job_date', '<=', $to)
+            ->with(['costs', 'customer'])
+            ->orderByDesc('job_date')
+            ->get();
+
+        $costService = app(JobCostService::class);
+        $openRows = $openJobs->map(function ($job) use ($costService) {
+            $summary = $costService->summary($job)['all'];
+            return (object) [
+                'id' => 'open_'.$job->id,
+                'date' => $job->job_date,
+                'job_number' => $job->number,
+                'job_id' => $job->id,
+                'status' => 'open',
+                'customer_name' => $job->quotation_snapshot['customer']['name'] ?? ($job->customer?->name ?? '—'),
+                'total_temporary' => (float) (string) $summary['temporary'],
+                'total_provision_cost' => (float) (string) $summary['provision_cost'],
+                'total_provision_sell' => (float) (string) $summary['provision_sell'],
+                'profit' => (float) (string) $summary['profit'],
+                'margin' => (float) (string) $summary['margin'],
+            ];
+        });
+
+        $all = $rows->concat($openRows)->sortByDesc('date')->values();
         $totalJobs = $all->count();
-        $totalTemporary = $all->sum(fn ($row) => (float) $row->total_temporary);
-        $totalCost = $all->sum(fn ($row) => (float) $row->total_provision_cost);
-        $totalRevenue = $all->sum(fn ($row) => (float) $row->total_provision_sell);
-        $totalProfit = $all->sum(fn ($row) => (float) $row->profit);
+        $totalTemporary = $all->sum(fn ($row) => $row->total_temporary);
+        $totalCost = $all->sum(fn ($row) => $row->total_provision_cost);
+        $totalRevenue = $all->sum(fn ($row) => $row->total_provision_sell);
+        $totalProfit = $all->sum(fn ($row) => $row->profit);
         $totalMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
 
-        $rows = $query->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
+        $perPage = min(100, max(5, (int) request('per_page', 10)));
+        $page = (int) request('page', 1);
+        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $all->forPage($page, $perPage),
+            $all->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
-        return compact('rows', 'totalJobs', 'totalTemporary', 'totalCost', 'totalRevenue', 'totalProfit', 'totalMargin');
+        return [
+            'rows' => $paginated,
+            'totalJobs' => $totalJobs,
+            'totalTemporary' => $totalTemporary,
+            'totalCost' => $totalCost,
+            'totalRevenue' => $totalRevenue,
+            'totalProfit' => $totalProfit,
+            'totalMargin' => $totalMargin,
+        ];
     }
 
     public function monthlyProfit(int $year): array

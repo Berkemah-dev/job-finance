@@ -47,4 +47,122 @@
         <div class="report-bar-row"><span>Laba bersih</span><div class="report-bar-track"><span class="report-bar-fill blue" style="--bar: {{ round(($netValue / $maxValue) * 100, 2) }}%"></span></div><strong class="report-bar-value">Rp {{ \App\Support\Money::format($net) }}</strong></div>
     </div>
 </section>
+
+<section class="panel report-table-panel" style="margin-top: 24px;">
+    <div class="panel-heading" style="margin-bottom: 16px;">
+        <h2>Breakdown Laba Rugi per Akun</h2>
+        <span class="subtle">Rincian mutasi setiap akun Chart of Account (COA) pendapatan, HPP, dan beban</span>
+    </div>
+
+    {{-- 1. PENDAPATAN JASA --}}
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 16px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #0f172a; font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em;">Pendapatan Jasa</span>
+        <strong style="color: #0f172a; font-size: 14.5px;">Rp {{ \App\Support\Money::format($revenue) }}</strong>
+    </div>
+    <div class="table-scroll" style="margin-bottom: 20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Kode Akun</th>
+                    <th style="width: 45%;">Nama Akun</th>
+                    <th class="money" style="width: 20%;">Debet</th>
+                    <th class="money" style="width: 20%;">Kredit / Saldo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($revenueAccounts ?? [] as $acc)
+                    @if($acc->has_activity)
+                        <tr>
+                            <td><strong>{{ $acc->code }}</strong></td>
+                            <td>{{ $acc->name }}</td>
+                            <td class="money">Rp {{ \App\Support\Money::format($acc->debit) }}</td>
+                            <td class="money" style="font-weight: 700; color: #0f172a;">Rp {{ \App\Support\Money::format($acc->balance) }}</td>
+                        </tr>
+                    @endif
+                @empty
+                    <tr><td colspan="4" class="text-center" style="color: #64748b;">Belum ada mutasi akun pendapatan</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- 2. HPP JOB --}}
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 16px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #0f172a; font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em;">Harga Pokok Penjualan (HPP)</span>
+        <strong style="color: #0f172a; font-size: 14.5px;">Rp {{ \App\Support\Money::format($cogs) }}</strong>
+    </div>
+    <div class="table-scroll" style="margin-bottom: 20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Kode Akun</th>
+                    <th style="width: 45%;">Nama Akun</th>
+                    <th class="money" style="width: 20%;">Debet / Modal</th>
+                    <th class="money" style="width: 20%;">Kredit</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($cogsAccounts ?? [] as $acc)
+                    @if($acc->has_activity)
+                        <tr>
+                            <td><strong>{{ $acc->code }}</strong></td>
+                            <td>{{ $acc->name }}</td>
+                            <td class="money" style="font-weight: 700; color: #0f172a;">Rp {{ \App\Support\Money::format($acc->balance) }}</td>
+                            <td class="money">Rp {{ \App\Support\Money::format($acc->credit) }}</td>
+                        </tr>
+                    @endif
+                @empty
+                    <tr><td colspan="4" class="text-center" style="color: #64748b;">Belum ada mutasi akun HPP</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- LABA KOTOR SUB-CARD --}}
+    <div style="background: #f1f5f9; border-top: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; padding: 12px 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 14px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.025em;">Laba Kotor (Gross Profit)</span>
+        <span style="font-size: 15px; font-weight: 800; color: {{ (float)$gross >= 0 ? '#16a34a' : '#dc2626' }};">Rp {{ \App\Support\Money::format($gross) }}</span>
+    </div>
+
+    {{-- 3. BEBAN OPERASIONAL --}}
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 16px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #0f172a; font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em;">Beban Operasional</span>
+        <strong style="color: #0f172a; font-size: 14.5px;">Rp {{ \App\Support\Money::format($expense) }}</strong>
+    </div>
+    <div class="table-scroll" style="margin-bottom: 20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Kode Akun</th>
+                    <th style="width: 45%;">Nama Akun</th>
+                    <th class="money" style="width: 20%;">Debet / Beban</th>
+                    <th class="money" style="width: 20%;">Kredit</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($expenseAccounts ?? [] as $acc)
+                    @if($acc->has_activity)
+                        <tr>
+                            <td><strong>{{ $acc->code }}</strong></td>
+                            <td>{{ $acc->name }}</td>
+                            <td class="money" style="font-weight: 700; color: #0f172a;">Rp {{ \App\Support\Money::format($acc->balance) }}</td>
+                            <td class="money">Rp {{ \App\Support\Money::format($acc->credit) }}</td>
+                        </tr>
+                    @endif
+                @empty
+                    <tr><td colspan="4" class="text-center" style="color: #64748b;">Belum ada mutasi beban operasional</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- LABA BERSIH TOTAL CARD --}}
+    <div style="background: #0f172a; color: #ffffff; padding: 14px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <span style="font-size: 14.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #ffffff;">Laba Bersih (Net Profit)</span>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: #94a3b8;">Pendapatan – HPP – Beban Operasional</p>
+        </div>
+        <span style="font-size: 18px; font-weight: 900; color: {{ (float)$net >= 0 ? '#4ade80' : '#f87171' }};">Rp {{ \App\Support\Money::format($net) }}</span>
+    </div>
+</section>
 @endsection

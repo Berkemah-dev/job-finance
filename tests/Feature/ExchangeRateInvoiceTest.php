@@ -89,7 +89,7 @@ class ExchangeRateInvoiceTest extends TestCase
 
         $this->assertDatabaseHas('activity_logs', ['action' => 'job.closed', 'record_id' => $invoice->snapshot->id]);
         $journal = Journal::where('source_type', Job::class)->where('source_id', $invoice->job_id)->where('type', 'job_closing')->firstOrFail();
-        $this->assertSame('10600000.00', $journal->entries()->where('description', 'Piutang '.$invoice->number)->firstOrFail()->debit);
+        $this->assertEquals(10600000, $journal->entries()->where('description', 'like', 'Piutang%'.$invoice->number)->sum('debit'));
     }
 
     public function test_idr_quotation_produces_idr_invoice_defaults(): void

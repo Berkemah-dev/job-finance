@@ -26,14 +26,14 @@ class VendorTest extends TestCase
     public function test_vendor_with_multi_category_country_notes_and_show_page(): void
     {
         $this->login('admin');
-        $this->post('/vendors', [
+        $response = $this->post('/vendors', [
             'code' => 'VND-001', 'name' => 'PT Mitra Laut', 'type' => 'shipping_line',
             'country' => 'Singapura', 'notes' => 'Agent utama.',
             'categories' => ['shipping_line', 'national_agent'],
             'email' => 'laut@mitra.test',
-        ])->assertSessionHasNoErrors()->assertRedirect('/vendors/1');
-
-        $vendor = Vendor::firstOrFail();
+        ]);
+        $vendor = Vendor::where('code', 'VND-001')->firstOrFail();
+        $response->assertSessionHasNoErrors()->assertRedirect('/vendors/'.$vendor->id);
         $this->assertEqualsCanonicalizing(['shipping_line', 'national_agent'], $vendor->categories->pluck('category')->all());
         $this->get('/vendors/'.$vendor->id)->assertOk()->assertSee('Singapura')->assertSee('National Agent')->assertSee('Agent utama.');
         $this->get('/vendors?category=shipping_line')->assertOk()->assertSee('PT Mitra Laut');

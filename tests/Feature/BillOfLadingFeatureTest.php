@@ -29,7 +29,7 @@ class BillOfLadingFeatureTest extends TestCase
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
 
-        $this->actor = User::where('email', 'operational@jobfinance.test')->firstOrFail();
+        $this->actor = User::where('email', 'customer-service@jobfinance.test')->firstOrFail();
         $this->actingAs($this->actor);
 
         $this->customer = Customer::factory()->create([

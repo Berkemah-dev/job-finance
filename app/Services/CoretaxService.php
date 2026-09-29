@@ -30,7 +30,9 @@ class CoretaxService
         }
         $invoiceSubtotal = Money::decimal($invoice->subtotal);
         $rate = Money::decimal($invoice->tax)->multipliedBy('100')->dividedBy($invoiceSubtotal, 2, RoundingMode::HalfUp);
-        $tax = $subtotal->multipliedBy($rate)->dividedBy('100', 2, RoundingMode::HalfUp);
+        $tax = ($selectedItems === null || $selected->count() === $invoice->items->count())
+            ? Money::decimal($invoice->tax)
+            : $subtotal->multipliedBy(Money::decimal($invoice->tax))->dividedBy($invoiceSubtotal, 2, RoundingMode::HalfUp);
         $seller = config('accounting.coretax');
         $buyer = $invoice->customer_snapshot;
 

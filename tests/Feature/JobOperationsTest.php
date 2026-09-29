@@ -63,7 +63,8 @@ class JobOperationsTest extends TestCase
         $this->put('/jobs/'.$job->id, $this->data($job))->assertSessionHasErrors('lock_version');
         $job->refresh();
         $this->put('/jobs/'.$job->id, array_replace($this->data($job), ['job_date' => today()->subDay()->toDateString()]))->assertSessionHasErrors('job_date');
-        $this->post('/jobs/'.$job->id.'/cancel', ['lock_version' => 1])->assertSessionHasErrors('reason');
+        $manager = User::where('email', 'sales-manager@jobfinance.test')->firstOrFail();
+        $this->actingAs($manager)->post('/jobs/'.$job->id.'/cancel', ['lock_version' => 1])->assertSessionHasErrors('reason');
     }
 
     public function test_open_requires_active_customer_and_nonfuture_date(): void
@@ -77,11 +78,12 @@ class JobOperationsTest extends TestCase
 
     public function test_cancel_requires_no_active_costs_and_locks_the_job(): void
     {
+        $manager = User::where('email', 'sales-manager@jobfinance.test')->firstOrFail();
         $job = Job::factory()->open()->create();
         $cost = JobCost::factory()->create(['job_id' => $job->id, 'created_by' => $this->operator->id, 'updated_by' => $this->operator->id]);
-        $this->post('/jobs/'.$job->id.'/cancel', ['lock_version' => 0, 'reason' => 'Permintaan customer'])->assertSessionHasErrors('costs');
+        $this->actingAs($manager)->post('/jobs/'.$job->id.'/cancel', ['lock_version' => 0, 'reason' => 'Permintaan customer'])->assertSessionHasErrors('costs');
         $cost->delete();
-        $this->post('/jobs/'.$job->id.'/cancel', ['lock_version' => 0, 'reason' => 'Permintaan customer'])->assertSessionHasNoErrors();
+        $this->actingAs($manager)->post('/jobs/'.$job->id.'/cancel', ['lock_version' => 0, 'reason' => 'Permintaan customer'])->assertSessionHasNoErrors();
         $this->assertSame('cancelled', $job->fresh()->status);
         $this->get('/jobs/'.$job->id)->assertSee('Permintaan customer');
         $this->put('/jobs/'.$job->id, $this->data($job->fresh()))->assertForbidden();

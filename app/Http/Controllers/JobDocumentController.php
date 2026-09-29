@@ -34,10 +34,11 @@ class JobDocumentController extends Controller
         $docType = DocumentType::findOrFail($request->document_type_id);
         $docText = strtoupper($docType->code.' '.$docType->name);
         $isCustomsDocument = $this->detectCustomsKind($docText) !== '';
-        if ($isCustomsDocument && ! $request->boolean('customs_upload')) {
+        $isCustomsUpload = $request->boolean('customs_upload') || $request->filled('customs_document_kind');
+        if ($isCustomsDocument && ! $isCustomsUpload) {
             return back()->withErrors(['document_type_id' => 'Dokumen kepabeanan hanya dapat diunggah melalui tab PIB/PEB.'])->withInput();
         }
-        if (! $isCustomsDocument && $request->boolean('customs_upload')) {
+        if (! $isCustomsDocument && $request->boolean('customs_upload') && ! $request->filled('customs_document_kind')) {
             return back()->withErrors(['document_type_id' => 'Pilih dokumen kepabeanan pada tab PIB/PEB.'])->withInput();
         }
         $kind = (string) $request->input('customs_document_kind', '');

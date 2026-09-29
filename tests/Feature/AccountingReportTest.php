@@ -138,4 +138,26 @@ class AccountingReportTest extends TestCase
         $this->get('/reports/income-statement')->assertForbidden();
         $this->get('/journals')->assertForbidden();
     }
+
+    public function test_adjustment_succeeds_without_line_description_using_main_description(): void
+    {
+        $expense = ChartOfAccount::where('code', '6101')->firstOrFail();
+        $bank = ChartOfAccount::where('code', '1102')->firstOrFail();
+
+        $data = [
+            'journal_date' => today()->toDateString(),
+            'description' => 'Penyesuaian Biaya Listrik',
+            'entries' => [
+                ['account_id' => $expense->id, 'debit' => '250000', 'credit' => '0'],
+                ['account_id' => $bank->id, 'debit' => '0', 'credit' => '250000'],
+            ],
+        ];
+
+        $response = $this->post('/journals', $data);
+        $response->assertSessionHasNoErrors();
+        $journal = Journal::with('entries')->where('description', 'Penyesuaian Biaya Listrik')->firstOrFail();
+        $this->assertSame('Penyesuaian Biaya Listrik', $journal->description);
+        $this->assertCount(2, $journal->entries);
+        $this->assertSame('Penyesuaian Biaya Listrik', $journal->entries->first()->description);
+    }
 }

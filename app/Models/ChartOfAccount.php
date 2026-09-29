@@ -19,6 +19,11 @@ class ChartOfAccount extends Model
         return $this->hasMany(AccountMapping::class);
     }
 
+    public function entries(): HasMany
+    {
+        return $this->hasMany(JournalEntry::class, 'chart_of_account_id');
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');

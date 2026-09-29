@@ -24,9 +24,11 @@ class SuratJalanImportSeaTest extends TestCase
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
         $this->actor = User::where('email', 'sales-manager@jobfinance.test')->firstOrFail();
+        $sales = User::where('email', 'sales@jobfinance.test')->firstOrFail();
         $this->customer = Customer::factory()->create([
-            'created_by' => $this->actor->id,
-            'updated_by' => $this->actor->id,
+            'created_by' => $sales->id,
+            'updated_by' => $sales->id,
+            'approval_status' => 'approved',
         ]);
         $this->actingAs($this->actor);
     }

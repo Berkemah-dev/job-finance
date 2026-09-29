@@ -8,6 +8,7 @@ use App\Models\Job;
 use App\Models\Quotation;
 use App\Services\MasterDataService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class OperationalDocumentController extends Controller
 {

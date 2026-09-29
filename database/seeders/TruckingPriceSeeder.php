@@ -11,11 +11,17 @@ class TruckingPriceSeeder extends Seeder
 {
     public function run(): void
     {
+        $superAdminRole = \App\Models\Role::where('name', 'super-admin')->first();
         $admin = User::first() ?? User::forceCreate([
             'name' => 'Admin',
             'email' => 'admin@jobfinance.test',
             'password' => bcrypt('JobFinance!2026'),
+            'role_id' => $superAdminRole?->id,
+            'is_active' => true,
         ]);
+        if (! $admin->role_id && $superAdminRole) {
+            $admin->update(['role_id' => $superAdminRole->id, 'is_active' => true]);
+        }
 
         $vendor = Vendor::firstOrCreate(
             ['code' => 'VND-TRK-01'],

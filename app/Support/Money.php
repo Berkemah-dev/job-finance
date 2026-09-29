@@ -30,6 +30,17 @@ class Money
         return preg_replace('/\\B(?=(\\d{3})+(?!\\d))/', '.', $whole).','.$fraction;
     }
 
+    public static function rupiah(string|int|float|null $value, bool $parentheses = false): string
+    {
+        $decimal = (float) ($value ?? 0);
+        $formatted = self::format(abs($decimal));
+        if ($decimal < 0) {
+            return $parentheses ? '(Rp '.$formatted.')' : '-Rp '.$formatted;
+        }
+
+        return 'Rp '.$formatted;
+    }
+
     public static function terbilang(string|int|float|null $value, string $currency = 'IDR'): string
     {
         $num = (float) abs((float) ($value ?? 0));
