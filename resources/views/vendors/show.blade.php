@@ -37,7 +37,7 @@
                 <tr>
                     <th>Plat Nomor Truk</th>
                     <th>Nama Supir</th>
-                    <th>No. Telepon / HP Supir</th>
+                    <th>No. Supir (Telepon / HP)</th>
                     <th>Jenis Kendaraan</th>
                     <th>Catatan</th>
                     <th>Status</th>
@@ -134,7 +134,7 @@
                         <input type="text" id="new_driver_name" name="driver_name" placeholder="contoh: Bambang Supriyadi" required maxlength="160">
                     </div>
                     <div class="field">
-                        <label for="new_driver_phone" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Nomor Telepon / HP Supir</label>
+                        <label for="new_driver_phone" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">No. Supir (Telepon / HP)</label>
                         <input type="text" id="new_driver_phone" name="driver_phone" placeholder="contoh: 0812-3456-7890" maxlength="50">
                     </div>
                 </div>
@@ -197,7 +197,7 @@
                         <input type="text" id="edit_driver_name" name="driver_name" required maxlength="160">
                     </div>
                     <div class="field">
-                        <label for="edit_driver_phone" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Nomor Telepon / HP Supir</label>
+                        <label for="edit_driver_phone" style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">No. Supir (Telepon / HP)</label>
                         <input type="text" id="edit_driver_phone" name="driver_phone" maxlength="50">
                     </div>
                 </div>

@@ -39,6 +39,10 @@ class VendorRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'categories' => ['nullable', 'array'],
             'categories.*' => ['string', Rule::in($types)],
+            'initial_plate_number' => ['nullable', 'string', 'max:30'],
+            'initial_driver_name' => ['nullable', 'string', 'max:160'],
+            'initial_driver_phone' => ['nullable', 'string', 'max:50'],
+            'initial_vehicle_type' => ['nullable', 'string', 'max:60'],
             'is_active' => ['boolean'],
             'lock_version' => [$this->isMethod('PUT') ? 'required' : 'nullable', 'integer', 'min:0'],
         ];
@@ -55,6 +59,10 @@ class VendorRequest extends FormRequest
             'bank_account_number' => 'nomor rekening',
             'bank_account_name' => 'nama pemilik rekening',
             'pic' => 'PIC',
+            'initial_plate_number' => 'plat nomor truk',
+            'initial_driver_name' => 'nama supir',
+            'initial_driver_phone' => 'nomor telepon supir',
+            'initial_vehicle_type' => 'jenis kendaraan',
             'is_active' => 'status aktif',
             'lock_version' => 'versi data',
         ];

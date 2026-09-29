@@ -244,6 +244,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/weekly/{weeklyPricing}', [WeeklyPricingController::class, 'destroy'])->name('weekly.destroy');
         Route::get('/trucking/create', [TruckingPriceController::class, 'create'])->name('trucking.create');
         Route::post('/trucking', [TruckingPriceController::class, 'store'])->name('trucking.store');
+        Route::post('/trucking/vendor-cost', [TruckingPriceController::class, 'saveVendorCost'])->name('trucking.save-vendor-cost');
+        Route::delete('/trucking/vendor-cost', [TruckingPriceController::class, 'deleteVendorCost'])->name('trucking.delete-vendor-cost');
         Route::get('/trucking/{truckingPrice}/edit', [TruckingPriceController::class, 'edit'])->whereNumber('truckingPrice')->name('trucking.edit');
         Route::put('/trucking/{truckingPrice}', [TruckingPriceController::class, 'update'])->whereNumber('truckingPrice')->name('trucking.update');
         Route::post('/trucking/{truckingPrice}/toggle', [TruckingPriceController::class, 'toggle'])->whereNumber('truckingPrice')->name('trucking.toggle');

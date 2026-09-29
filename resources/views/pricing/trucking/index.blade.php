@@ -42,8 +42,9 @@
 <thead>
     <tr>
         <th>Rute</th>
+        <th>Harga Jual (Semua Tipe)</th>
         @unless($isSalesOnly)
-            <th>Vendor Trucking</th>
+            <th>Modal Vendor</th>
         @endunless
         <th>Tgl Berlaku</th>
         <th>Status</th>
@@ -55,15 +56,30 @@
     <tr>
         <td>
             <strong>{{ $item->port_origin }}</strong> → {{ $item->destination }}
-            <br><small class="muted-cell">{{ \App\Models\ContainerUnit::label($item->container_type) }} · {{ $item->overweight ? 'Overweight' : 'Normal' }}</small>
+            <br><small class="muted-cell">20GP / 40FT / 40HQ · {{ $item->total_entries ?? 1 }} entri</small>
+        </td>
+        <td>
+            <strong style="color: #16a34a; font-size: 13.5px;">
+                {{ $item->selling_price ? $item->currency . ' ' . number_format((float) $item->selling_price, 0, ',', '.') : 'Belum diset' }}
+            </strong>
+            <br><small class="muted-cell">1 harga jual rute</small>
         </td>
         @unless($isSalesOnly)
-            <td>{{ $item->vendor?->name ?? '—' }}</td>
+            <td>
+                @if(($item->vendors_count ?? 0) > 0)
+                    <span class="badge-pill" style="font-weight: 600; color: #1e293b;">
+                        {{ $item->vendors_count }} Vendor
+                    </span>
+                    <br><small class="muted-cell">{{ implode(', ', array_slice($item->vendor_names ?? [], 0, 2)) }}{{ count($item->vendor_names ?? []) > 2 ? '...' : '' }}</small>
+                @else
+                    <span class="badge-pill" style="color: #b45309; background: #fef3c7; font-size: 11px;">Belum ada modal</span>
+                @endif
+            </td>
         @endunless
         <td>
-            {{ $item->effective_date?->format('d/m/Y') }}
+            {{ $item->effective_date ? (is_string($item->effective_date) ? \Carbon\Carbon::parse($item->effective_date)->format('d/m/Y') : $item->effective_date->format('d/m/Y')) : '—' }}
             @if($item->effective_until)
-                <br><small class="muted-cell">s/d {{ $item->effective_until->format('d/m/Y') }}</small>
+                <br><small class="muted-cell">s/d {{ is_string($item->effective_until) ? \Carbon\Carbon::parse($item->effective_until)->format('d/m/Y') : $item->effective_until->format('d/m/Y') }}</small>
             @endif
         </td>
         <td>
@@ -75,20 +91,20 @@
         </td>
         <td>
             <div class="table-actions">
-                <a class="btn-action btn-action-primary" href="{{ route('pricing.trucking.show', $item) }}" title="Lihat Detail Tarif (20GP / 40FT / 40HQ)" data-tooltip="Lihat Detail" aria-label="Lihat Detail"><x-icon name="eye"/></a>
+                <a class="btn-action btn-action-primary" href="{{ route('pricing.trucking.show', $item->id) }}" title="Buka Rute & Lihat List Modal Vendor" data-tooltip="Buka Rute" aria-label="Buka Rute"><x-icon name="eye"/></a>
                 @can('pricing.manage')
-                    <a class="btn-action" href="{{ route('pricing.trucking.edit', $item) }}" title="Edit Trucking Price" data-tooltip="Edit" aria-label="Edit Trucking Price"><x-icon name="edit"/></a>
-                    <form method="POST" action="{{ route('pricing.trucking.toggle', $item) }}" data-confirm="{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }} trucking price ini?">
+                    <a class="btn-action" href="{{ route('pricing.trucking.edit', $item->id) }}" title="Edit Trucking Price" data-tooltip="Edit" aria-label="Edit Trucking Price"><x-icon name="edit"/></a>
+                    <form method="POST" action="{{ route('pricing.trucking.toggle', $item->id) }}" data-confirm="{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }} rute trucking ini?">
                         @csrf
-                        <input type="hidden" name="lock_version" value="{{ $item->lock_version }}">
+                        <input type="hidden" name="lock_version" value="{{ $item->lock_version ?? 0 }}">
                         <button class="btn-action {{ $item->is_active ? 'btn-action-warning' : 'btn-action-success' }}" title="{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" data-tooltip="{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" aria-label="{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}">
                             <x-icon name="{{ $item->is_active ? 'power' : 'check' }}"/>
                         </button>
                     </form>
-                    <form method="POST" action="{{ route('pricing.trucking.destroy', $item) }}" data-confirm="Hapus trucking price ini?">
+                    <form method="POST" action="{{ route('pricing.trucking.destroy', $item->id) }}" data-confirm="Hapus trucking price ini?">
                         @csrf
                         @method('DELETE')
-                        <input type="hidden" name="lock_version" value="{{ $item->lock_version }}">
+                        <input type="hidden" name="lock_version" value="{{ $item->lock_version ?? 0 }}">
                         <button class="btn-action btn-action-danger" title="Hapus Trucking Price" data-tooltip="Hapus" aria-label="Hapus Trucking Price">
                             <x-icon name="trash"/>
                         </button>
@@ -99,7 +115,7 @@
     </tr>
 @empty
     <tr>
-        <td colspan="{{ $isSalesOnly ? 4 : 5 }}">
+        <td colspan="{{ $isSalesOnly ? 5 : 6 }}">
             <div class="empty-state">
                 <x-icon name="briefcase"/>
                 <h3>Belum ada trucking price</h3>

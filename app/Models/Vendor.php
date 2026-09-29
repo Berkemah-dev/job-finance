@@ -67,6 +67,10 @@ class Vendor extends Model
             return true;
         }
 
+        if ($this->relationLoaded('categories')) {
+            return $this->categories->contains('category', 'trucking');
+        }
+
         return $this->categories()->where('category', 'trucking')->exists();
     }
 }

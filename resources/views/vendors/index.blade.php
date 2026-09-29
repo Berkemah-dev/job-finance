@@ -37,6 +37,7 @@
                 <th>Kode</th>
                 <th>Nama Partner</th>
                 <th>Kategori</th>
+                <th>Armada & No. Supir</th>
                 <th>Status</th>
                 <th>Aksi</th>
             </tr>
@@ -50,6 +51,30 @@
                         @foreach($vendor->categoryLabels() as $label)
                             <span class="badge-pill">{{ $label }}</span>
                         @endforeach
+                    </td>
+                    <td>
+                        @if($vendor->isTrucking() || $vendor->trucks->isNotEmpty())
+                            @if($vendor->trucks->isNotEmpty())
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    @foreach($vendor->trucks->take(2) as $trk)
+                                        <div style="font-size: 11.5px; line-height: 1.3;">
+                                            <strong style="color: #0f172a; letter-spacing: 0.3px;">{{ $trk->plate_number }}</strong>
+                                            <span style="color: #475569;">· {{ $trk->driver_name }}</span>
+                                            @if($trk->driver_phone)
+                                                <br><small style="color: #2563eb; font-weight: 500;">📞 {{ $trk->driver_phone }}</small>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                    @if($vendor->trucks->count() > 2)
+                                        <small style="color: #64748b; font-size: 11px;">+{{ $vendor->trucks->count() - 2 }} armada lainnya</small>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="badge-pill" style="color: #b45309; background: #fef3c7; font-size: 11px;">Belum ada supir & plat</span>
+                            @endif
+                        @else
+                            <span class="muted-cell">—</span>
+                        @endif
                     </td>
                     <td>
                         @if($vendor->trashed())
@@ -77,7 +102,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         <div class="empty-state">
                             <x-icon name="users"/>
                             <h3>Belum ada partner yang sesuai</h3>

@@ -18,7 +18,7 @@ class VendorController extends Controller
         $status = $request->boolean('archived') ? 'archived' : (string) $request->input('status', '');
         $category = (string) $request->input('category', '');
         $vendors = Vendor::query()
-            ->with('categories')
+            ->with(['categories', 'trucks'])
             ->when($status === 'archived', fn ($q) => $q->onlyTrashed())
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('code', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%')->orWhere('country', 'like', '%'.$search.'%')))
             ->when($category !== '' && array_key_exists($category, config('operations.vendor_types')), fn ($q) => $q->where('type', $category))
@@ -47,6 +47,18 @@ class VendorController extends Controller
                     $vendor->categories()->create(['category' => $cat]);
                 }
             }
+
+            // Khusus vendor trucking: simpan armada & no supir awal jika diisi
+            if (($vendor->type === 'trucking' || in_array('trucking', $request->input('categories', []))) && ! empty($validated['initial_plate_number'])) {
+                $vendor->trucks()->create([
+                    'plate_number' => strtoupper(trim($validated['initial_plate_number'])),
+                    'driver_name' => $validated['initial_driver_name'] ?: 'Supir Utama',
+                    'driver_phone' => $validated['initial_driver_phone'] ?: null,
+                    'vehicle_type' => $validated['initial_vehicle_type'] ?: null,
+                    'is_active' => true,
+                ]);
+            }
+
             return $vendor;
         }, 3);
 
