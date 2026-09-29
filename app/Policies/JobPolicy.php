@@ -29,6 +29,12 @@ class JobPolicy
 
     public function cancel(User $user, Job $job): bool
     {
-        return ($user->hasPermission('jobs.manage') || $user->hasRole(['sales-manager', 'super-admin', 'admin'])) && $job->status === 'open';
+        // CS Tidak dapat membatalkan job, hanya Sales Manager / Finance Manager (dan super-admin / admin)
+        if ($user->hasRole('customer-service')) {
+            return false;
+        }
+
+        return ($user->hasRole(['sales-manager', 'finance-manager', 'super-admin', 'admin']) || $user->hasPermission('jobs.cancel'))
+            && $job->status === 'open';
     }
 }

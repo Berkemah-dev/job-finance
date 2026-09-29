@@ -142,9 +142,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/job-orders', [JobController::class, 'index'])->middleware('can:jobs.view')->name('job-orders.index');
     Route::get('/job-orders/{job}', [JobController::class, 'show'])->middleware('can:jobs.view')->name('job-orders.show');
     Route::get('/job-orders/{job}/edit', [JobController::class, 'edit'])->middleware('can:jobs.manage')->name('job-orders.edit');
-    foreach (['open', 'cancel'] as $action) {
-        Route::post('/jobs/{job}/'.$action, [JobController::class, $action])->middleware('can:jobs.manage')->name('jobs.'.$action);
-    }
+    Route::post('/jobs/{job}/open', [JobController::class, 'open'])->middleware('can:jobs.manage')->name('jobs.open');
+    Route::post('/jobs/{job}/cancel', [JobController::class, 'cancel'])->middleware('can:cancel,job')->name('jobs.cancel');
     Route::post('/jobs/{job}/reopen', [JobController::class, 'reopen'])->middleware('can:jobs.close')->name('jobs.reopen');
     Route::post('/jobs/{job}/confirm-do', [JobController::class, 'confirmDo'])->middleware('can:jobs.confirm-do')->name('jobs.confirm-do');
     Route::post('/jobs/{job}/upload-surat-jalan', [JobController::class, 'uploadSuratJalan'])->middleware('can:jobs.view')->name('jobs.surat-jalan.upload');

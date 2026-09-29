@@ -137,7 +137,7 @@
                     <a class="btn-action btn-action-purple" href="{{ route('shipping-instructions.preview', $job->shippingInstructions->first()) }}" target="_blank" title="Cetak Shipping Instruction ({{ $job->shippingInstructions->first()->number }})" data-tooltip="Cetak SI" aria-label="Cetak Shipping Instruction"><x-icon name="file"/></a>
                 @endif
                 @can('update',$job)
-                    <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job" data-tooltip="Edit" aria-label="Edit Job"><x-icon name="edit"/></a>
+                    <a class="btn-action" href="{{ route('jobs.edit',$job) }}" title="Edit Job Order" data-tooltip="Edit Job Order" aria-label="Edit Job Order"><x-icon name="edit"/></a>
                 @endcan
                 <a class="btn-action btn-action-purple" href="{{ route('jobs.preview',$job) }}" target="_blank" title="Cetak PDF Job" data-tooltip="Cetak" aria-label="Cetak PDF Job"><x-icon name="printer"/></a>
             </div>

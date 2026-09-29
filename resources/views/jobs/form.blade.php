@@ -12,7 +12,7 @@
         default => 'DOMESTIC / TRUCKING' 
     }; 
 @endphp
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL · {{ $serviceCategoryTitle }}</p><h1>JOB ORDER</h1><p>{{ $job->number }} · Perbarui informasi operasional pengiriman.</p></div><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">← Kembali</a></div>
+<div class="page-heading"><div><p class="eyebrow">JOB ORDER · {{ $serviceCategoryTitle }}</p><h1>Edit Job Order</h1><p>{{ $job->number }} · Perbarui informasi Job Order.</p></div><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">← Kembali</a></div>
 <section class="panel form-panel">
 <form class="data-form" method="POST" action="{{ route('jobs.update',$job) }}">
 @csrf
@@ -21,9 +21,9 @@
 <input type="hidden" name="subject" value="{{ old('subject',$job->subject) }}">
 <input type="hidden" name="job_date" value="{{ old('job_date',$job->job_date?->format('Y-m-d')) }}">
 
-<div class="info-note">Isi data operasional yang berubah. Informasi customer, service, rute, dan dokumen tetap tersimpan di Job Order.</div>
+<div class="info-note">Isi data Job Order yang berubah. Informasi customer, service, rute, dan dokumen tetap tersimpan di Job Order.</div>
 
-<div class="form-section-heading"><h2>Data Operasional & Routing</h2><p>Lengkapi informasi pengiriman, pelabuhan, dan muatan.</p></div>
+<div class="form-section-heading"><h2>Informasi Job Order & Routing</h2><p>Lengkapi informasi pengiriman, pelabuhan, dan muatan.</p></div>
 <div class="form-grid">
     @php
         $isImport = str_contains($serviceTypeRaw, 'imp');
@@ -150,7 +150,7 @@
         <textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000" placeholder="Catatan operasional atau instruksi penanganan khusus...">{{ old('operational_notes', $job->operational_notes) }}</textarea>
     </div>
 </div>
-<div class="form-actions"><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">Batal</a><button class="button button-primary">Simpan operasional</button></div>
+<div class="form-actions"><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">Batal</a><button class="button button-primary">Simpan Job Order</button></div>
 </form>
 </section>
 

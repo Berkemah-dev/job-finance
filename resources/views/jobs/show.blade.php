@@ -86,9 +86,9 @@
     @endif
 
 {{-- TOP ACTION BUTTONS --}}
-@unless($isCsRole)<div class="quote-actions" style="margin-bottom: 20px;">
+<div class="quote-actions" style="margin-bottom: 20px;">
     @can('update',$job)
-        <a class="button button-secondary" href="{{ route('jobs.edit',$job) }}">Edit Operasional</a>
+        <a class="button button-secondary" href="{{ route('jobs.edit',$job) }}">Edit Job Order</a>
     @endcan
     <a class="button button-secondary" href="{{ route('jobs.preview', $job) }}" target="_blank">🖨 Preview PDF Job</a>
     
@@ -130,7 +130,7 @@
             <x-icon name="x"/> Batalkan Job
         </button>
     @endcan
-</div>@endunless
+</div>
 
 @can('cancel', $job)
 <dialog id="modal-cancel-job" class="modal-dialog" style="max-width: 520px !important;">
@@ -1267,7 +1267,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
             @else
-                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+                @if(auth()->user()->hasRole(['customer-service', 'super-admin', 'admin']))
+                    <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+                @endif
             @endif
         </div>
         @if($job->bookingConfirmations->isNotEmpty())
@@ -1304,7 +1306,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▣</div>
                 <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Booking Confirmation</h3>
                 <p style="margin:0 0 16px;color:#64748b;">Dokumen BC yang terhubung dengan Job Order akan tampil di sini.</p>
-                <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+                @if(auth()->user()->hasRole(['customer-service', 'super-admin', 'admin']))
+                    <a class="button button-primary" href="{{ route('booking-confirmations.create', ['job_id' => $job->id]) }}">+ Buat Booking Confirmation</a>
+                @endif
             </div>
         @endif
     </section>
@@ -1318,7 +1322,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     ✓ Dokumen Dibuat (Maks 1x)
                 </span>
             @else
-                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+                @if(auth()->user()->hasRole(['customer-service', 'super-admin', 'admin']))
+                    <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+                @endif
             @endif
         </div>
         @if($job->shippingInstructions->isNotEmpty())
@@ -1357,7 +1363,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="width:54px;height:54px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#e0ecff;color:#2563eb;font-size:25px;">▤</div>
                 <h3 style="margin:0 0 7px;color:#0f172a;">Belum ada Shipping Instruction</h3>
                 <p style="margin:0 0 16px;color:#64748b;">Instruksi pengiriman yang terhubung dengan Job Order akan tampil di sini.</p>
-                <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+                @if(auth()->user()->hasRole(['customer-service', 'super-admin', 'admin']))
+                    <a class="button button-primary" href="{{ route('shipping-instructions.create', ['job_id' => $job->id]) }}">+ Buat Shipping Instruction</a>
+                @endif
             </div>
         @endif
     </section>

@@ -13,6 +13,7 @@ return [
         'export-documents.manage',
         'jobs.view',
         'jobs.manage',
+        'jobs.cancel',
         'jobs.confirm-do',
         'master-data.manage',
         'costs.manage',
@@ -48,13 +49,13 @@ return [
             'financial.view', 'pricing.view', 'email.manage', 'activity.view',
         ]],
         'finance-manager' => ['label' => 'Finance Manager', 'permissions' => [
-            'dashboard.view', 'customers.view', 'customers.approve', 'quotations.view', 'costs.manage', 'jobs.close',
+            'dashboard.view', 'customers.view', 'customers.approve', 'quotations.view', 'jobs.view', 'jobs.cancel', 'costs.manage', 'jobs.close',
             'invoices.manage', 'payments.manage', 'journals.manage', 'reports.view',
             'financial.view', 'pricing.view', 'email.manage', 'activity.view', 'users.view',
         ]],
         'sales-manager' => ['label' => 'Sales Manager', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.view', 'quotations.manage', 'export-documents.manage',
-            'quotations.approve', 'jobs.view', 'jobs.manage', 'vendors.manage', 'pricing.manage', 'pricing.view',
+            'quotations.approve', 'jobs.view', 'jobs.manage', 'jobs.cancel', 'vendors.manage', 'pricing.manage', 'pricing.view',
         ]],
         'sales' => ['label' => 'Sales', 'permissions' => [
             'dashboard.view', 'customers.view', 'customers.manage', 'quotations.view', 'quotations.manage',
@@ -64,7 +65,7 @@ return [
             'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do', 'tps.manage',
         ]],
         'customer-service' => ['label' => 'Customer Service', 'permissions' => [
-            'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do',
+            'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do', 'export-documents.manage',
         ]],
         'management' => ['label' => 'Management', 'permissions' => ['dashboard.view']],
     ],

@@ -63,16 +63,27 @@ class ShippingInstructionController extends Controller
 
     public function create(Request $request)
     {
-        $selectedJob = null;
-        if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'quotation', 'bookingConfirmations', 'shippingInstructions'])->find($jobId);
-            if ($selectedJob && $selectedJob->shippingInstructions->isNotEmpty()) {
-                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-si')
-                    ->with('warning', 'Job Order ini sudah memiliki Shipping Instruction (' . $selectedJob->shippingInstructions->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
-            }
+        if (! $request->user()->hasRole(['customer-service', 'super-admin', 'admin'])) {
+            abort(403, 'Hanya Customer Service (CS) yang dapat membuat Shipping Instruction.');
         }
 
-        $jobs = Job::with(['customer', 'bookingConfirmations', 'shippingInstructions'])->latest('id')->limit(50)->get();
+        $jobId = $request->query('job_id');
+        if (! $jobId) {
+            return redirect()->route('jobs.index')
+                ->with('warning', 'Pembuatan Shipping Instruction hanya dapat dilakukan dari dalam Job Order.');
+        }
+
+        $selectedJob = Job::with(['customer', 'quotation', 'bookingConfirmations', 'shippingInstructions'])->find($jobId);
+        if (! $selectedJob) {
+            return redirect()->route('jobs.index')
+                ->with('warning', 'Job Order tidak ditemukan.');
+        }
+
+        if ($selectedJob->shippingInstructions->isNotEmpty()) {
+            return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-si')
+                ->with('warning', 'Job Order ini sudah memiliki Shipping Instruction (' . $selectedJob->shippingInstructions->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+        }
+
         $customers = Customer::orderBy('name')->get();
         $shippingLines = Vendor::where(function ($q) {
             $q->where('type', 'shipping_line')
@@ -84,7 +95,7 @@ class ShippingInstructionController extends Controller
 
         return view('shipping-instructions.create', [
             'selectedJob'   => $selectedJob,
-            'jobs'          => $jobs,
+            'jobs'          => collect([$selectedJob]),
             'customers'     => $customers,
             'carriers'      => $shippingLines,
             'shippingLines' => $shippingLines,
@@ -95,10 +106,19 @@ class ShippingInstructionController extends Controller
 
     public function store(Request $request)
     {
+        if (! $request->user()->hasRole(['customer-service', 'super-admin', 'admin'])) {
+            abort(403, 'Hanya Customer Service (CS) yang dapat membuat Shipping Instruction.');
+        }
+
+        if (! $request->filled('job_id')) {
+            return redirect()->route('jobs.index')
+                ->with('warning', 'Pembuatan Shipping Instruction hanya dapat dilakukan dari dalam Job Order.');
+        }
+
         $validated = $request->validate([
             'number'            => 'required|string|max:60|unique:shipping_instructions,number',
             'si_date'           => 'required|date',
-            'job_id'            => 'nullable|exists:jobs,id',
+            'job_id'            => 'required|exists:jobs,id',
             'to_carrier'        => 'required|string|max:160',
             'carrier_attn'      => 'nullable|string|max:120',
             'shipper_name'      => 'required|string|max:160',

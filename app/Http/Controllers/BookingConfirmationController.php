@@ -63,16 +63,27 @@ class BookingConfirmationController extends Controller
 
     public function create(Request $request)
     {
-        $selectedJob = null;
-        if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'quotation', 'bookingConfirmations'])->find($jobId);
-            if ($selectedJob && $selectedJob->bookingConfirmations->isNotEmpty()) {
-                return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-booking')
-                    ->with('warning', 'Job Order ini sudah memiliki Booking Confirmation (' . $selectedJob->bookingConfirmations->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
-            }
+        if (! $request->user()->hasRole(['customer-service', 'super-admin', 'admin'])) {
+            abort(403, 'Hanya Customer Service (CS) yang dapat membuat Booking Confirmation.');
         }
 
-        $jobs = Job::with(['customer', 'bookingConfirmations'])->latest('id')->limit(50)->get();
+        $jobId = $request->query('job_id');
+        if (! $jobId) {
+            return redirect()->route('jobs.index')
+                ->with('warning', 'Pembuatan Booking Confirmation hanya dapat dilakukan dari dalam Job Order.');
+        }
+
+        $selectedJob = Job::with(['customer', 'quotation', 'bookingConfirmations'])->find($jobId);
+        if (! $selectedJob) {
+            return redirect()->route('jobs.index')
+                ->with('warning', 'Job Order tidak ditemukan.');
+        }
+
+        if ($selectedJob->bookingConfirmations->isNotEmpty()) {
+            return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-booking')
+                ->with('warning', 'Job Order ini sudah memiliki Booking Confirmation (' . $selectedJob->bookingConfirmations->first()->number . '). Dokumen hanya dapat dibuat 1 kali per Job Order.');
+        }
+
         $customers = Customer::orderBy('name')->get();
         $carriers = Vendor::where(function ($q) {
             $q->where('type', 'shipping_line')
@@ -84,7 +95,7 @@ class BookingConfirmationController extends Controller
 
         return view('booking-confirmations.create', [
             'selectedJob'   => $selectedJob,
-            'jobs'          => $jobs,
+            'jobs'          => collect([$selectedJob]),
             'customers'     => $customers,
             'carriers'      => $carriers,
             'ports'         => $ports,
@@ -94,10 +105,19 @@ class BookingConfirmationController extends Controller
 
     public function store(Request $request)
     {
+        if (! $request->user()->hasRole(['customer-service', 'super-admin', 'admin'])) {
+            abort(403, 'Hanya Customer Service (CS) yang dapat membuat Booking Confirmation.');
+        }
+
+        if (! $request->filled('job_id')) {
+            return redirect()->route('jobs.index')
+                ->with('warning', 'Pembuatan Booking Confirmation hanya dapat dilakukan dari dalam Job Order.');
+        }
+
         $validated = $request->validate([
             'number'              => 'required|string|max:60|unique:booking_confirmations,number',
             'booking_date'        => 'required|date',
-            'job_id'              => 'nullable|exists:jobs,id',
+            'job_id'              => 'required|exists:jobs,id',
             'customer_id'         => 'nullable|exists:customers,id',
             'contact_person'      => 'nullable|string|max:120',
             'customer_ref'        => 'nullable|string|max:100',
