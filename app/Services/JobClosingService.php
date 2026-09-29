@@ -26,8 +26,8 @@ class JobClosingService
             if ($job->status !== 'open') {
                 throw ValidationException::withMessages(['job' => 'Hanya job Open yang dapat ditutup.']);
             }
-            if ($job->closingSnapshot()->exists() || $job->invoice()->exists()) {
-                throw ValidationException::withMessages(['job' => 'Job sudah memiliki closing atau invoice.']);
+            if ($job->closingSnapshot()->exists()) {
+                throw ValidationException::withMessages(['job' => 'Job sudah memiliki closing.']);
             }
             if (! $job->customer()->withTrashed()->exists()) {
                 throw ValidationException::withMessages(['customer' => 'Customer job tidak tersedia.']);
@@ -90,36 +90,72 @@ class JobClosingService
                 'total_temporary' => $summary['temporary'], 'total_provision_cost' => $summary['provision_cost'], 'total_provision_sell' => $summary['provision_sell'],
                 'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'profit' => $summary['profit'], 'margin' => $summary['margin'],
                 'funding_account_id' => $maps[$data['funding_account']]->id, 'closed_by' => $actor->id, 'closed_at' => now()]);
-            $invoice = Invoice::create(['number' => $this->numbers->next('inv'), 'job_id' => $job->id, 'job_closing_snapshot_id' => $snapshot->id, 'customer_id' => $job->customer_id,
-                'customer_snapshot' => $job->quotation_snapshot['customer'], 'invoice_date' => $data['closing_date'], 'due_date' => $data['due_date'], 'status' => 'issued',
-                'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
-                'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'paid_amount' => '0.00', 'balance' => Money::checked($total), 'created_by' => $actor->id, 'issued_at' => now()]);
-            foreach ($rows as $i => $cost) {
-                $invoice->items()->create(['position' => $i + 1, 'description' => $cost->description, 'type' => $cost->type, 'quantity' => $cost->quantity, 'unit' => $cost->unit, 'unit_price' => $cost->type === 'temporary' ? $cost->unit_cost : $cost->unit_price, 'amount' => $cost->type === 'temporary' ? $cost->total_cost : $cost->total_price]);
+
+            $invoice = $job->invoice()->first();
+            if ($invoice) {
+                $invoice->job_closing_snapshot_id = $snapshot->id;
+                $invoice->save();
+            } else {
+                $invoice = Invoice::create(['number' => $this->numbers->next('inv'), 'job_id' => $job->id, 'job_closing_snapshot_id' => $snapshot->id, 'customer_id' => $job->customer_id,
+                    'customer_snapshot' => $job->quotation_snapshot['customer'], 'invoice_date' => $data['closing_date'], 'due_date' => $data['due_date'], 'status' => 'issued',
+                    'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
+                    'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'paid_amount' => '0.00', 'balance' => Money::checked($total), 'created_by' => $actor->id, 'issued_at' => now()]);
+                foreach ($rows as $i => $cost) {
+                    $invoice->items()->create(['position' => $i + 1, 'description' => $cost->description, 'type' => $cost->type, 'quantity' => $cost->quantity, 'unit' => $cost->unit, 'unit_price' => $cost->type === 'temporary' ? $cost->unit_cost : $cost->unit_price, 'amount' => $cost->type === 'temporary' ? $cost->total_cost : $cost->total_price]);
+                }
             }
-            $draftPaymentRequest = Money::decimal((string) $rows->where('cost_category', 'payment_request')->sum('total_cost'));
-            $draftReimbursement = Money::decimal((string) $rows->where('cost_category', 'reimbursement')->sum('total_cost'));
-            $capitalizedTemporary = Money::decimal($summary['temporary'])->minus($draftReimbursement);
-            $capitalizedProvision = Money::decimal($summary['provision_cost'])->minus($draftPaymentRequest);
+
+            $alreadyJournalizedCostIds = Journal::where('source_type', \App\Models\JobCost::class)
+                ->whereIn('source_id', $rows->pluck('id'))
+                ->whereNull('reversal_of_id')
+                ->pluck('source_id');
+            $uncapitalizedRows = $rows->whereNotIn('id', $alreadyJournalizedCostIds);
+            $capitalizedTemporary = Money::decimal((string) $uncapitalizedRows->where('type', 'temporary')->sum('total_cost'));
+            $capitalizedProvision = Money::decimal((string) $uncapitalizedRows->where('type', '!=', 'temporary')->sum('total_cost'));
             $fund = $capitalizedTemporary->plus($capitalizedProvision);
             if (! $fund->isZero()) {
                 $this->journals->post('job_cost_capitalization', Job::class, $job->id, $data['closing_date'], 'Kapitalisasi biaya '.$job->number, [
                     ['account_id' => $maps['temporary']->id, 'description' => 'Temporary '.$job->number, 'debit' => $capitalizedTemporary, 'credit' => 0],
                     ['account_id' => $maps['provision_wip']->id, 'description' => 'Provision WIP '.$job->number, 'debit' => $capitalizedProvision, 'credit' => 0],
-                    ['account_id' => $maps['vendor_payable']->id, 'description' => 'Hutang vendor '.$job->number, 'debit' => 0, 'credit' => (string) $fund]], $actor);
+                    ['account_id' => $maps[$data['funding_account']]->id, 'description' => 'Sumber dana '.$job->number, 'debit' => 0, 'credit' => (string) $fund]], $actor);
             }
-            $this->journals->post('job_closing', Job::class, $job->id, $data['closing_date'], 'Closing '.$job->number, [
-                ['account_id' => $maps['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $total, 'credit' => 0],
-                ['account_id' => $maps['cogs']->id, 'description' => 'HPP '.$job->number, 'debit' => $summary['provision_cost'], 'credit' => 0],
-                ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary', 'debit' => 0, 'credit' => $summary['temporary']],
-                ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi WIP', 'debit' => 0, 'credit' => $summary['provision_cost']],
-                ['account_id' => $maps['revenue']->id, 'description' => 'Pendapatan provision', 'debit' => 0, 'credit' => $summary['provision_sell']],
-                ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran', 'debit' => 0, 'credit' => (string) $tax]], $actor);
+
+            $temporary = Money::decimal($summary['temporary']);
+            $provisionSell = Money::decimal($summary['provision_sell']);
+            $customerReceivable = $provisionSell->plus($tax);
+
+            $closingEntries = [];
+            // If invoice was already created earlier, receivable, revenue, tax and temporary WIP were already posted in job_invoice
+            $hasInvoiceJournal = Journal::where('source_type', Job::class)->where('source_id', $job->id)->where('type', 'job_invoice')->whereNull('reversal_of_id')->exists();
+            if (! $hasInvoiceJournal) {
+                if ($customerReceivable->isPositive()) {
+                    $closingEntries[] = ['account_id' => $maps['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
+                }
+                if ($temporary->isPositive()) {
+                    $closingEntries[] = ['account_id' => $maps['temporary_receivable']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
+                }
+                if ($temporary->isPositive()) {
+                    $closingEntries[] = ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary', 'debit' => 0, 'credit' => (string) $temporary];
+                }
+                if ($provisionSell->isPositive()) {
+                    $closingEntries[] = ['account_id' => $maps['revenue']->id, 'description' => 'Pendapatan provision', 'debit' => 0, 'credit' => (string) $provisionSell];
+                }
+                if ($tax->isPositive()) {
+                    $closingEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran', 'debit' => 0, 'credit' => (string) $tax];
+                }
+            }
+            if (Money::decimal($summary['provision_cost'])->isPositive()) {
+                $closingEntries[] = ['account_id' => $maps['cogs']->id, 'description' => 'HPP '.$job->number, 'debit' => $summary['provision_cost'], 'credit' => 0];
+                $closingEntries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi WIP', 'debit' => 0, 'credit' => $summary['provision_cost']];
+            }
+
+            if (! empty($closingEntries)) {
+                $this->journals->post('job_closing', Job::class, $job->id, $data['closing_date'], 'Closing '.$job->number, $closingEntries, $actor);
+            }
+
             $categoryTotals = $rows->groupBy(fn ($cost) => $cost->cost_category ?: ($cost->type === 'temporary' ? 'reimbursement' : 'payment_request'));
-            $reimbursement = Money::decimal((string) ($categoryTotals->get('reimbursement', collect())->sum('total_cost')));
             $debitNote = Money::decimal((string) ($categoryTotals->get('debit_note', collect())->sum('total_price')));
             $creditNote = Money::decimal((string) ($categoryTotals->get('credit_note', collect())->sum('total_cost')));
-            if (! $reimbursement->isZero()) $this->journals->post('temporary_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Temporary '.$job->number, [['account_id'=>$maps['temporary_receivable']->id,'description'=>'Piutang temporary '.$job->number,'debit'=>(string)$reimbursement,'credit'=>0],['account_id'=>$maps['receivable']->id,'description'=>'Reklasifikasi piutang temporary '.$job->number,'debit'=>0,'credit'=>(string)$reimbursement]], $actor);
             if (! $debitNote->isZero()) $this->journals->post('agent_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Agent '.$job->number, [['account_id'=>$maps['agent_receivable']->id,'description'=>'Piutang agent '.$job->number,'debit'=>(string)$debitNote,'credit'=>0],['account_id'=>$maps['receivable']->id,'description'=>'Reklasifikasi debit note '.$job->number,'debit'=>0,'credit'=>(string)$debitNote]], $actor);
             if (! $creditNote->isZero()) $this->journals->post('agent_payable_recognition', Job::class, $job->id, $data['closing_date'], 'Hutang Agent '.$job->number, [['account_id'=>$maps['revenue']->id,'description'=>'Credit note agent '.$job->number,'debit'=>(string)$creditNote,'credit'=>0],['account_id'=>$maps['agent_payable']->id,'description'=>'Hutang agent '.$job->number,'debit'=>0,'credit'=>(string)$creditNote]], $actor);
             $job->status = 'closed';
@@ -155,7 +191,7 @@ class JobClosingService
 
             $journals = Journal::where('source_type', Job::class)
                 ->where('source_id', $job->id)
-                ->whereIn('type', ['job_closing', 'job_cost_capitalization'])
+                ->whereIn('type', ['job_closing', 'job_cost_capitalization', 'job_invoice'])
                 ->whereNull('reversal_of_id')
                 ->get();
 
@@ -208,6 +244,125 @@ class JobClosingService
             ]);
 
             return $job;
+        }, 3);
+    }
+
+    public function createInvoiceForJob(Job $job, array $data, User $actor): Invoice
+    {
+        return DB::transaction(function () use ($job, $data, $actor) {
+            $job = Job::lockForUpdate()->findOrFail($job->id);
+            Gate::forUser($actor)->authorize('invoices.manage');
+            $this->master->checkVersion($job, $data);
+            if ($job->status !== 'open') {
+                throw ValidationException::withMessages(['job' => 'Hanya job Open yang dapat dibuatkan invoice pra-closing.']);
+            }
+            if ($job->invoice()->exists()) {
+                throw ValidationException::withMessages(['job' => 'Job sudah memiliki invoice: '.$job->invoice->number]);
+            }
+            if (! $job->customer()->withTrashed()->exists()) {
+                throw ValidationException::withMessages(['customer' => 'Customer job tidak tersedia.']);
+            }
+            if ($job->costs()->count() === 0 && ! empty($job->quotation_snapshot['items'])) {
+                app(JobService::class)->seedQuotationCharges($job, $actor);
+            }
+            if ($job->costs()->count() === 0) {
+                throw ValidationException::withMessages(['costs' => 'Job belum memiliki detail biaya untuk invoice.']);
+            }
+            $rows = $job->costs()->orderBy('id')->get();
+            $summary = $this->costs->summary($job)['all'];
+            $tax = Money::decimal($data['tax'] ?? 0);
+            $total = Money::decimal($summary['subtotal'])->plus($tax);
+            Money::checked($total);
+            if ($total->isZero()) {
+                throw ValidationException::withMessages(['total' => 'Total invoice harus lebih besar dari nol.']);
+            }
+            $fundingAcc = $data['funding_account'] ?? 'bank';
+            $maps = $this->journals->mapped(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'revenue', 'cogs', 'tax_payable', $fundingAcc]);
+            $currency = (string) ($job->quotation_snapshot['currency'] ?? 'IDR');
+            if (! in_array($currency, array_keys(config('operations.currencies')), true)) {
+                throw ValidationException::withMessages(['job' => 'Mata uang quotation tidak valid untuk invoice.']);
+            }
+            $rate = Money::decimal((string) ($job->quotation_snapshot['exchange_rate'] ?? '1'));
+            if (! empty($data['exchange_rate_override'])) {
+                if ($currency === 'IDR' && ! Money::decimal($data['exchange_rate_override'])->isEqualTo(1)) {
+                    throw ValidationException::withMessages(['exchange_rate_override' => 'Override kurs hanya berlaku untuk invoice valas; invoice Rupiah memakai kurs 1.']);
+                }
+                $rate = Money::decimal($data['exchange_rate_override']);
+            }
+            if ($rate->isZero()) {
+                throw ValidationException::withMessages(['job' => 'Kurs quotation nol sehingga invoice tidak dapat dibuat.']);
+            }
+
+            $invoiceDate = $data['invoice_date'] ?? today()->toDateString();
+            $dueDate = $data['due_date'] ?? today()->addDays(30)->toDateString();
+
+            $invoice = Invoice::create([
+                'number' => $this->numbers->next('inv'),
+                'job_id' => $job->id,
+                'job_closing_snapshot_id' => null,
+                'customer_id' => $job->customer_id,
+                'customer_snapshot' => $job->quotation_snapshot['customer'],
+                'invoice_date' => $invoiceDate,
+                'due_date' => $dueDate,
+                'status' => 'issued',
+                'currency' => $currency,
+                'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
+                'subtotal' => $summary['subtotal'],
+                'tax' => (string) $tax,
+                'total' => Money::checked($total),
+                'paid_amount' => '0.00',
+                'balance' => Money::checked($total),
+                'created_by' => $actor->id,
+                'issued_at' => now(),
+            ]);
+
+            foreach ($rows as $i => $cost) {
+                $invoice->items()->create([
+                    'position' => $i + 1,
+                    'description' => $cost->description,
+                    'type' => $cost->type,
+                    'quantity' => $cost->quantity,
+                    'unit' => $cost->unit,
+                    'unit_price' => $cost->type === 'temporary' ? $cost->unit_cost : $cost->unit_price,
+                    'amount' => $cost->type === 'temporary' ? $cost->total_cost : $cost->total_price,
+                ]);
+            }
+
+            $temporary = Money::decimal($summary['temporary']);
+            $provisionSell = Money::decimal($summary['provision_sell']);
+            $customerReceivable = $provisionSell->plus($tax);
+
+            $invoiceEntries = [];
+            if ($customerReceivable->isPositive()) {
+                $invoiceEntries[] = ['account_id' => $maps['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
+            }
+            if ($temporary->isPositive()) {
+                $invoiceEntries[] = ['account_id' => $maps['temporary_receivable']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
+            }
+            if ($temporary->isPositive()) {
+                $invoiceEntries[] = ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary '.$invoice->number, 'debit' => 0, 'credit' => (string) $temporary];
+            }
+            if ($provisionSell->isPositive()) {
+                $invoiceEntries[] = ['account_id' => $maps['revenue']->id, 'description' => 'Pendapatan provision '.$invoice->number, 'debit' => 0, 'credit' => (string) $provisionSell];
+            }
+            if ($tax->isPositive()) {
+                $invoiceEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran '.$invoice->number, 'debit' => 0, 'credit' => (string) $tax];
+            }
+
+            $this->journals->post('job_invoice', Job::class, $job->id, $invoiceDate, 'Invoice '.$invoice->number.' untuk '.$job->number, $invoiceEntries, $actor);
+
+            $this->master->log($actor, 'invoice.created', $job->number.' → '.$invoice->number, [
+                'module' => 'invoice',
+                'record_id' => $invoice->id,
+                'after' => [
+                    'invoice' => $invoice->number,
+                    'subtotal' => $summary['subtotal'],
+                    'tax' => (string) $tax,
+                    'total' => $invoice->total,
+                ],
+            ]);
+
+            return $invoice;
         }, 3);
     }
 }

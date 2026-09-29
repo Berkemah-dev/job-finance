@@ -28,6 +28,60 @@ class InvoiceController extends Controller
         return view('invoices.index', ['invoices' => $q, 'search' => $search, 'status' => $status, 'deliveryStatus' => $deliveryStatus]);
     }
 
+    public function create(Request $request, ?\App\Models\Job $job = null)
+    {
+        $jobId = $job?->id ?: $request->input('job_id');
+        $selectedJob = null;
+        $costs = collect();
+        $summary = null;
+
+        if ($jobId) {
+            $selectedJob = \App\Models\Job::with(['costs', 'customer'])->findOrFail($jobId);
+            if ($selectedJob->status !== 'open') {
+                return redirect()->route('invoices.index')->with('error', 'Hanya job Open yang dapat dibuatkan invoice pra-closing.');
+            }
+            if ($selectedJob->invoice) {
+                return redirect()->route('invoices.show', $selectedJob->invoice)->with('info', 'Job ini sudah memiliki invoice.');
+            }
+            if ($selectedJob->costs()->count() === 0 && ! empty($selectedJob->quotation_snapshot['items'])) {
+                app(\App\Services\JobService::class)->seedQuotationCharges($selectedJob, $request->user());
+            }
+            $costs = $selectedJob->costs()->orderBy('id')->get();
+            $summary = app(\App\Services\JobCostService::class)->summary($selectedJob)['all'];
+        }
+
+        $openJobs = \App\Models\Job::where('status', 'open')
+            ->whereDoesntHave('invoice')
+            ->with('customer')
+            ->latest('id')
+            ->get();
+
+        return view('invoices.create', [
+            'job' => $selectedJob,
+            'costs' => $costs,
+            'summary' => $summary,
+            'openJobs' => $openJobs,
+        ]);
+    }
+
+    public function store(Request $request, \App\Services\JobClosingService $service)
+    {
+        $data = $request->validate([
+            'job_id' => ['required', 'exists:jobs,id'],
+            'lock_version' => ['required', 'integer', 'min:0'],
+            'invoice_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'due_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:invoice_date'],
+            'tax' => ['required', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+            'funding_account' => ['nullable', 'in:cash,bank'],
+            'exchange_rate_override' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,4})?$/', 'gt:0'],
+        ]);
+
+        $job = \App\Models\Job::findOrFail($data['job_id']);
+        $invoice = $service->createInvoiceForJob($job, $data, $request->user());
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice pra-closing berhasil dibuat. Job tetap berstatus Open.');
+    }
+
     public function coretaxIndex(Request $request)
     {
         $q = Invoice::query()->with('job')->where('tax', '>', 0)->where('subtotal', '>', 0)->latest('id');

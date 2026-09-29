@@ -18,7 +18,13 @@
     <div>
         <p class="eyebrow">FINANCE / INVOICE</p>
         <h1>{{ $invoice->number }}</h1>
-        <p>{{ $invoice->customer_snapshot['name'] }} · Job: <a class="text-link" href="{{ route('jobs.show', $job) }}">{{ $job?->number ?? '—' }}</a></p>
+        <p>{{ $invoice->customer_snapshot['name'] }} · Job: <a class="text-link" style="color: #93c5fd; font-weight: 600; text-decoration: underline;" href="{{ route('jobs.show', $job) }}">{{ $job?->number ?? '—' }}</a>
+        @if($job)
+            <span class="status-badge status-{{ $job->status }}" style="margin-left: 8px; font-size: 11px; padding: 2px 8px; vertical-align: middle;">
+                Job {{ ucfirst(config('operations.job_statuses.'.$job->status, $job->status)) }}
+            </span>
+        @endif
+        </p>
     </div>
     <a class="button button-secondary" href="{{ route('invoices.index') }}">← Kembali</a>
 </div>
@@ -554,7 +560,9 @@
             <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
                 <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">Payment Amount :</label>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <input type="number" id="pay_amount" name="amount" min="0.01" max="{{ $invoice->balance }}" step="0.01" value="{{ old('amount', $invoice->balance) }}" required style="width: 140px; text-align: right; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; background: #fff;">
+                    <input type="text" inputmode="decimal" id="pay_amount" name="amount" value="{{ old('amount', preg_replace('/,00$/', '', \App\Support\Money::format($invoice->balance))) }}" placeholder="0" data-currency-input required style="width: 140px; text-align: right; border: 1px solid #94a3b8; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; background: #fff;">
+                    <button type="button" class="button button-secondary" style="font-size: 11px; padding: 3px 8px; cursor: pointer;" onclick="setPaymentAmount('{{ preg_replace('/,00$/', '', \App\Support\Money::format($invoice->balance)) }}')">Lunas (100%)</button>
+                    <button type="button" class="button button-secondary" style="font-size: 11px; padding: 3px 8px; cursor: pointer;" onclick="setPaymentAmount('0')">Reset (0)</button>
                     <select name="currency" id="pay_currency" style="border: 1px solid #94a3b8; padding: 5px 8px; font-size: 12.5px; font-weight: 600; border-radius: 3px; background: #fff;">
                         <option value="IDR" @selected($invoice->currency === 'IDR')>IDR</option>
                         <option value="USD" @selected($invoice->currency === 'USD')>USD</option>
@@ -568,7 +576,7 @@
             <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px 12px; align-items: center; margin-bottom: 12px;">
                 <label style="text-align: right; font-weight: bold; font-size: 12.5px; color: #334155;">PPH 23 :</label>
                 <div style="display: flex; gap: 6px; align-items: center;">
-                    <input type="number" id="pay_pph23" name="pph23_amount" min="0" step="0.01" value="{{ old('pph23_amount', '0') }}" placeholder="0" style="width: 140px; text-align: right; border: 1px solid #d97706; background: #fef3c7; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; color: #78350f;">
+                    <input type="text" inputmode="decimal" id="pay_pph23" name="pph23_amount" value="{{ old('pph23_amount', '') }}" placeholder="0" data-currency-input style="width: 140px; text-align: right; border: 1px solid #d97706; background: #fef3c7; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; color: #78350f;">
                     <span style="border: 1px solid #94a3b8; background: #f8fafc; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 3px; color: #334155;">IDR</span>
                     <small style="color: #64748b; font-size: 11px; margin-left: 6px;">(Auto jurnal ke COA PPH 23 Dibayar Dimuka)</small>
                 </div>
@@ -650,6 +658,16 @@ dialog.modal-dialog::backdrop {
 </style>
 
 <script>
+function setPaymentAmount(val) {
+    const input = document.getElementById('pay_amount');
+    if (input) {
+        input.value = val;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+        input.select();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const payModal = document.getElementById('modal-add-payment');
     if (payModal) {
@@ -661,6 +679,13 @@ document.addEventListener('DOMContentLoaded', function() {
         @if(request('add_payment') == '1' || $errors->any())
             payModal.showModal();
         @endif
+    }
+
+    const payAmountInput = document.getElementById('pay_amount');
+    if (payAmountInput) {
+        payAmountInput.addEventListener('focus', function() {
+            this.select();
+        });
     }
 });
 </script>

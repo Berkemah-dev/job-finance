@@ -104,9 +104,26 @@
                     <option value="cash" @selected(old('funding_account') === 'cash')>Kas</option>
                 </select>
             </div>
-            <div class="field">
-                <label>Pajak (Rp)</label>
-                <input type="number" name="tax" min="0" max="999999999.99" step=".01" value="{{ old('tax', '0') }}" required>
+            <div class="field span-2" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 16px;">
+                <label style="font-size: 13.5px; font-weight: 700; color: #166534; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Input PPN (Rp) <span class="required">*</span></span>
+                    <small style="font-weight: 500; color: #15803d;">Akun: Piutang Cust (D) · PPN Keluaran (K)</small>
+                </label>
+                <input type="number" id="tax_input_closing" name="tax" min="0" max="999999999.99" step="0.01" value="{{ old('tax', '0') }}" required style="font-size: 16px; font-weight: 700; color: #15803d; margin-top: 6px;">
+                <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                    <button type="button" class="button button-secondary" style="font-size: 11.5px; padding: 4px 10px;" onclick="calculatePpnClosing(0.11)">
+                        Hitung 11% (dari Jual Provision)
+                    </button>
+                    <button type="button" class="button button-secondary" style="font-size: 11.5px; padding: 4px 10px;" onclick="calculatePpnClosing(0.011)">
+                        Hitung 1.1% (Freight Forwarding)
+                    </button>
+                    <button type="button" class="button button-secondary" style="font-size: 11.5px; padding: 4px 10px;" onclick="document.getElementById('tax_input_closing').value='0.00'">
+                        Tanpa PPN (0)
+                    </button>
+                </div>
+                <small style="color: #4b5563; font-size: 11.5px; margin-top: 6px; display: block;">
+                    💡 <em>PPN Keluaran akan otomatis diposting ke COA 2102 (PPN Keluaran) dan menambah tagihan Piutang Customer (COA 1103).</em>
+                </small>
             </div>
             @if(($job->quotation_snapshot['currency'] ?? 'IDR') !== 'IDR')
                 <div class="field">
@@ -122,4 +139,12 @@
         </div>
     </form>
 </section>
+
+<script>
+function calculatePpnClosing(rate) {
+    const provisionSell = parseFloat("{{ $summary['provision_sell'] }}") || 0;
+    const ppn = Math.round(provisionSell * rate * 100) / 100;
+    document.getElementById('tax_input_closing').value = ppn.toFixed(2);
+}
+</script>
 @endsection

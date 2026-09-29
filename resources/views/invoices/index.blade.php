@@ -30,6 +30,7 @@
         </select>
         <button class="button button-primary">Cari</button>
         <a class="text-link" href="{{ route('invoices.index') }}">Reset</a>
+        <a class="button button-primary" href="{{ route('invoices.create') }}" style="margin-left: auto;"><x-icon name="plus"/> Buat Invoice</a>
     </form>
     <div class="table-scroll">
         <table>
