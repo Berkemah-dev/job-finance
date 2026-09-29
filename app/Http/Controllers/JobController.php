@@ -54,7 +54,8 @@ class JobController extends Controller
         ]);
         $allDocumentTypes = \App\Models\DocumentType::active()->forService($job->service_type)->orderBy('sort_order')->get();
         $isCustomsType = fn ($type) => preg_match('/\b(PIB|PEB|NPE|SPJM|SPPB|SLIM|BILLING)\b/i', $type->code.' '.$type->name) === 1;
-        $documentTypes = $allDocumentTypes->reject($isCustomsType)->values();
+        $isSuratJalanType = fn ($type) => preg_match('/\b(SURAT JALAN|SJ)\b/i', $type->code.' '.$type->name) === 1;
+        $documentTypes = $allDocumentTypes->reject($isCustomsType)->reject($isSuratJalanType)->values();
         $customsDocumentTypes = $allDocumentTypes->filter($isCustomsType)->values();
         $truckingVendors = \App\Models\Vendor::where(function ($q) {
             $q->where('type', 'trucking')->orWhereHas('categories', fn ($cq) => $cq->where('category', 'trucking'));

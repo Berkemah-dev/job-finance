@@ -639,90 +639,103 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         {{-- FILE LAMPIRAN BL / CIPL / COO DLL --}}
-        <div class="panel-heading" style="margin-bottom: 12px;">
-            <h2>File Lampiran Dokumen (BL, Packing List, CIPL, dll)</h2>
-        </div>
-        <div class="table-scroll">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tipe Dokumen</th>
-                        <th>Nama File</th>
-                        <th>Ukuran</th>
-                        <th>Waktu Upload</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($job->documents as $doc)
-                        <tr>
-                            <td><strong style="font-weight: 600; color: #0f172a;">{{ $doc->documentType->name }}</strong></td>
-                            <td><strong>{{ $doc->original_name }}</strong><br><small>Oleh: {{ $doc->uploader?->name ?? 'Sistem' }}</small>@if($doc->notes)<p class="form-help" style="margin-top:4px">{{ $doc->notes }}</p>@endif</td>
-                            <td>{{ $doc->file_size_formatted }}</td>
-                            <td>{{ $doc->created_at->format('d/m/Y H:i') }}</td>
-                            <td>
-                                <div class="table-actions">
-                                    <a class="btn-action btn-action-primary" href="{{ route('jobs.documents.preview', [$job, $doc]) }}" target="_blank" title="Lihat Dokumen" data-tooltip="Lihat" aria-label="Lihat Dokumen"><x-icon name="eye"/></a>
-                                    <a class="btn-action" href="{{ route('jobs.documents.download', [$job, $doc]) }}" title="Download Dokumen" data-tooltip="Download" aria-label="Download Dokumen"><x-icon name="download"/></a>
-                                    @can('update',$job)
-                                        <form method="POST" action="{{ route('jobs.documents.destroy', [$job, $doc]) }}" data-confirm="Hapus dokumen ini?">
-                                            @csrf @method('DELETE')
-                                            <button class="btn-action btn-action-danger" title="Hapus Dokumen" data-tooltip="Hapus" aria-label="Hapus Dokumen"><x-icon name="trash"/></button>
-                                        </form>
-                                    @endcan
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5">
-                                <div class="empty-state">
-                                    <x-icon name="file"/>
-                                    <h3>Belum ada lampiran dokumen</h3>
-                                    <p>Unggah dokumen PDF maksimal 3 MB sesuai jenis dokumen service.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <div class="panel-heading" style="margin-bottom: 0;">
+                <h2>File Lampiran Dokumen (BL, Packing List, CIPL, dll)</h2>
+            </div>
+            @if($job->documents->isNotEmpty())
+                <button type="submit" form="form-merge-docs" class="button button-primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px;">
+                    <x-icon name="file-text"/> Jadikan 1 PDF (Dokumen Terpilih)
+                </button>
+            @endif
         </div>
 
-        @if($isImport && !empty($checklist['items']))
-            <div style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0;">
-                <div class="panel-heading" style="margin-bottom:12px;">
-                    <h2>Status Customs</h2>
-                    <span class="subtle">{{ $checklist['status_summary'] }}</span>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">
-                    @foreach($checklist['items'] as $item)
-                        <div style="padding:14px;border-radius:14px;border:1px solid {{ $item['completed'] ? '#bbf7d0' : (($item['active'] ?? false) ? '#fca5a5' : '#e2e8f0') }};background:{{ $item['completed'] ? '#f0fdf4' : (($item['active'] ?? false) ? '#fff7ed' : '#f8fafc') }};">
-                            <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-                                <div>
-                                    <strong style="display:block;color:#0f172a;font-size:14px;">{{ $item['label'] }}</strong>
-                                    <small style="display:block;color:#64748b;margin-top:4px;line-height:1.5;">{{ $item['sublabel'] }}</small>
-                                </div>
-                                <span style="white-space:nowrap;font-size:11px;font-weight:700;padding:5px 8px;border-radius:999px;background:{{ $item['badge_bg'] }};color:{{ $item['badge_color'] }};">{{ $item['badge_text'] }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+        <form id="form-merge-docs" method="POST" action="{{ route('jobs.documents.merge-pdf', $job) }}" target="_blank">
+            @csrf
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">
+                                <input type="checkbox" id="check-all-docs" title="Pilih Semua" checked style="cursor: pointer;">
+                            </th>
+                            <th>Tipe Dokumen</th>
+                            <th>Nama File</th>
+                            <th>Ukuran</th>
+                            <th>Waktu Upload</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($job->documents as $doc)
+                            <tr>
+                                <td style="text-align: center;">
+                                    <input type="checkbox" name="document_ids[]" value="{{ $doc->id }}" class="doc-checkbox" checked style="cursor: pointer;">
+                                </td>
+                                <td><strong style="font-weight: 600; color: #0f172a;">{{ $doc->documentType->name }}</strong></td>
+                                <td><strong>{{ $doc->original_name }}</strong><br><small>Oleh: {{ $doc->uploader?->name ?? 'Sistem' }}</small>@if($doc->notes)<p class="form-help" style="margin-top:4px">{{ $doc->notes }}</p>@endif</td>
+                                <td>{{ $doc->file_size_formatted }}</td>
+                                <td>{{ $doc->created_at->format('d/m/Y H:i') }}</td>
+                                <td>
+                                    <div class="table-actions">
+                                        <a class="btn-action btn-action-primary" href="{{ route('jobs.documents.preview', [$job, $doc]) }}" target="_blank" title="Lihat Dokumen" data-tooltip="Lihat" aria-label="Lihat Dokumen"><x-icon name="eye"/></a>
+                                        <a class="btn-action" href="{{ route('jobs.documents.download', [$job, $doc]) }}" title="Download Dokumen" data-tooltip="Download" aria-label="Download Dokumen"><x-icon name="download"/></a>
+                                        @can('update',$job)
+                                            <button type="submit" form="form-delete-doc-{{ $doc->id }}" class="btn-action btn-action-danger" title="Hapus Dokumen" data-tooltip="Hapus" aria-label="Hapus Dokumen"><x-icon name="trash"/></button>
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <x-icon name="file"/>
+                                        <h3>Belum ada lampiran dokumen</h3>
+                                        <p>Unggah dokumen PDF maksimal 3 MB sesuai jenis dokumen service.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        @endif
+        </form>
+
+        @foreach($job->documents as $doc)
+            @can('update',$job)
+                <form id="form-delete-doc-{{ $doc->id }}" method="POST" action="{{ route('jobs.documents.destroy', [$job, $doc]) }}" data-confirm="Hapus dokumen ini?" style="display:none;">
+                    @csrf @method('DELETE')
+                </form>
+            @endcan
+        @endforeach
+
+        <script>
+        document.getElementById('check-all-docs')?.addEventListener('change', function() {
+            document.querySelectorAll('.doc-checkbox').forEach(cb => cb.checked = this.checked);
+        });
+        document.getElementById('form-merge-docs')?.addEventListener('submit', function(e) {
+            const checked = document.querySelectorAll('.doc-checkbox:checked');
+            if (checked.length === 0) {
+                e.preventDefault();
+                alert('Pilih minimal satu dokumen untuk digabungkan menjadi 1 PDF.');
+            }
+        });
+        </script>
 
         @can('update',$job)
             <form class="data-form" style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="panel-heading" style="margin-bottom:12px;">
                     <h2>Upload Dokumen Lampiran</h2>
-                    <span class="subtle">Unggah file dokumen operasional (BL/AWB, Invoice, Packing List, SPPB, Surat Jalan, dll).</span>
+                    <span class="subtle">Unggah file dokumen operasional (BL/AWB, Invoice, Packing List, SPPB, dll).</span>
                 </div>
                 <div class="form-grid">
                     <div class="field">
                         <label for="document_type_id">Jenis Dokumen <span class="required">*</span></label>
                         <select name="document_type_id" id="document_type_id" required>
                             <option value="">Pilih tipe dokumen</option>
-                            @foreach($documentTypes as $dt)
+                            @foreach($documentTypes->reject(fn($dt) => str_contains(strtoupper($dt->name), 'SURAT JALAN') || str_contains(strtoupper($dt->code), 'SJ')) as $dt)
                                 <option value="{{ $dt->id }}">{{ $dt->name }}</option>
                             @endforeach
                         </select>
@@ -907,7 +920,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p style="margin:0;color:#64748b;">Dokumen deklarasi nilai transaksi pabean resmi untuk kelengkapan dokumen PIB.</p>
                 </div>
             </div>
-            <a class="button button-primary" href="{{ route('dnps.create', ['job_id' => $job->id]) }}">+ Buat Deklarasi Nilai Pabean (DNP)</a>
+            @if($job->dnps->isNotEmpty())
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#166534;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;border:1px solid #bbf7d0;">
+                    ✓ Dokumen Dibuat (Maks 1x)
+                </span>
+            @else
+                <a class="button button-primary" href="{{ route('dnps.create', ['job_id' => $job->id]) }}">+ Buat Deklarasi Nilai Pabean (DNP)</a>
+            @endif
         </div>
 
         @if($job->dnps->isNotEmpty())

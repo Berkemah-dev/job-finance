@@ -44,10 +44,17 @@ class DnpController extends Controller
     {
         $selectedJob = null;
         if ($jobId = $request->query('job_id')) {
-            $selectedJob = Job::with(['customer', 'quotation'])->find($jobId);
+            $selectedJob = Job::with(['customer', 'quotation', 'dnps'])->find($jobId);
+            if ($selectedJob && $selectedJob->dnps->isNotEmpty()) {
+                return redirect()->route('dnps.show', $selectedJob->dnps->first())
+                    ->with('warning', 'Deklarasi Nilai Pabean untuk Job ' . $selectedJob->number . ' sudah pernah dibuat (hanya dapat dibuat 1x per Job Order).');
+            }
         }
 
-        $jobs = Job::with(['customer', 'quotation'])->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'quotation'])->whereDoesntHave('dnps')->latest('id')->limit(50)->get();
+        if ($selectedJob && ! $jobs->contains('id', $selectedJob->id)) {
+            $jobs->prepend($selectedJob);
+        }
         $defaultNumber = Dnp::generateNumber();
         $supportingDocsList = Dnp::defaultSupportingDocuments();
 
@@ -89,6 +96,14 @@ class DnpController extends Controller
                                   + (float)($validated['insurance'] ?? 0);
         $validated['created_by'] = $request->user()->id;
 
+        if (!empty($validated['job_id'])) {
+            $existing = Dnp::where('job_id', $validated['job_id'])->first();
+            if ($existing) {
+                return redirect()->route('dnps.show', $existing)
+                    ->with('warning', 'Deklarasi Nilai Pabean untuk Job ini sudah pernah dibuat (hanya dapat dibuat 1x per Job Order).');
+            }
+        }
+
         $dnp = Dnp::create($validated);
 
         return redirect()->route('dnps.show', $dnp)
@@ -105,7 +120,11 @@ class DnpController extends Controller
 
     public function edit(Dnp $dnp)
     {
-        $jobs = Job::with(['customer', 'quotation'])->latest('id')->limit(50)->get();
+        $jobs = Job::with(['customer', 'quotation'])
+            ->where(function ($q) use ($dnp) {
+                $q->whereDoesntHave('dnps')->orWhere('id', $dnp->job_id);
+            })
+            ->latest('id')->limit(50)->get();
         $supportingDocsList = Dnp::defaultSupportingDocuments();
 
         return view('dnps.edit', compact('dnp', 'jobs', 'supportingDocsList'));
@@ -138,6 +157,13 @@ class DnpController extends Controller
             'status'                  => 'nullable|string|in:draft,submitted,approved,completed,cancelled',
             'notes'                   => 'nullable|string',
         ]);
+
+        if (!empty($validated['job_id'])) {
+            $duplicate = Dnp::where('job_id', $validated['job_id'])->where('id', '!=', $dnp->id)->first();
+            if ($duplicate) {
+                return back()->withInput()->withErrors(['job_id' => 'Job Order ini sudah memiliki Deklarasi Nilai Pabean lain (DNP hanya dapat dibuat 1x per Job Order).']);
+            }
+        }
 
         $validated['status'] = $validated['status'] ?? ($dnp->status ?? 'draft');
         $validated['is_repeated_transaction'] = $request->boolean('is_repeated_transaction');

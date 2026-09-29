@@ -256,4 +256,61 @@ class JobDocumentController extends Controller
 
         return back()->with('success', 'Dokumen berhasil dihapus.');
     }
+
+    public function mergePdf(Request $request, Job $job)
+    {
+        Gate::authorize('view', $job);
+
+        $request->validate([
+            'document_ids'   => 'required|array|min:1',
+            'document_ids.*' => 'integer|exists:job_documents,id',
+            'mode'           => 'nullable|string|in:inline,download',
+        ], [
+            'document_ids.required' => 'Pilih minimal satu dokumen untuk digabungkan menjadi PDF.',
+            'document_ids.min'      => 'Pilih minimal satu dokumen untuk digabungkan menjadi PDF.',
+        ]);
+
+        $docIds = $request->input('document_ids', []);
+        $documents = $job->documents()->whereIn('id', $docIds)->get();
+
+        if ($documents->isEmpty()) {
+            return back()->with('error', 'Pilih minimal satu dokumen lampiran untuk digabungkan.');
+        }
+
+        $pdf = new \setasign\Fpdi\Fpdi();
+        $addedPages = 0;
+
+        foreach ($documents as $doc) {
+            $filePath = Storage::disk('private')->path($doc->file_path);
+            if (! file_exists($filePath)) {
+                continue;
+            }
+
+            try {
+                $pageCount = $pdf->setSourceFile($filePath);
+                for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                    $templateId = $pdf->importPage($pageNo);
+                    $size = $pdf->getTemplateSize($templateId);
+                    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                    $pdf->useTemplate($templateId);
+                    $addedPages++;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Gagal merge PDF {$doc->original_name}: " . $e->getMessage());
+            }
+        }
+
+        if ($addedPages === 0) {
+            return back()->with('error', 'Dokumen yang dipilih tidak memiliki berkas PDF yang valid untuk digabungkan.');
+        }
+
+        $mergedContent = $pdf->Output('S');
+        $filename = 'DOKUMEN_GABUNGAN_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $job->number) . '.pdf';
+        $disposition = $request->input('mode') === 'download' ? 'attachment' : 'inline';
+
+        return response($mergedContent, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
+        ]);
+    }
 }
