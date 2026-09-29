@@ -45,6 +45,7 @@ class PaymentService
             }
 
             $receivableAccount = $this->journals->mapped(['receivable'])['receivable'];
+            $temporaryReceivableAccount = $this->journals->mapped(['temporary_receivable'])['temporary_receivable'];
             $pph23Account = null;
             if ($pph23Amount->isPositive()) {
                 $pph23Account = $this->journals->mapped(['pph23_prepaid'])['pph23_prepaid'];
@@ -73,13 +74,59 @@ class PaymentService
             $invoice->lock_version++;
             $invoice->save();
 
+            // Split credit between Piutang Customer and Piutang Temporary based on invoice structure
+            $invoiceTotal = Money::decimal($invoice->total);
+            $tempTotal = Money::decimal((string) ($invoice->items()->where('type', 'temporary')->sum('amount') ?: '0.00'));
+            $custTotal = $invoiceTotal->minus($tempTotal);
+
+            $prevPaymentIds = $invoice->payments()->where('id', '!=', $payment->id)->pluck('id');
+            $alreadyCreditedTemp = Money::decimal((string) \App\Models\JournalEntry::whereHas('journal', function ($q) use ($prevPaymentIds) {
+                $q->where('source_type', Payment::class)->whereIn('source_id', $prevPaymentIds)->whereNull('reversal_of_id');
+            })->where('chart_of_account_id', $temporaryReceivableAccount->id)->sum('credit'));
+
+            $alreadyCreditedCust = Money::decimal((string) \App\Models\JournalEntry::whereHas('journal', function ($q) use ($prevPaymentIds) {
+                $q->where('source_type', Payment::class)->whereIn('source_id', $prevPaymentIds)->whereNull('reversal_of_id');
+            })->where('chart_of_account_id', $receivableAccount->id)->sum('credit'));
+
+            $remainingTemp = $tempTotal->minus($alreadyCreditedTemp);
+            if ($remainingTemp->isNegative()) {
+                $remainingTemp = Money::decimal(0);
+            }
+            $remainingCust = $custTotal->minus($alreadyCreditedCust);
+            if ($remainingCust->isNegative()) {
+                $remainingCust = Money::decimal(0);
+            }
+
+            if ($totalDeduction->isEqualTo($balance)) {
+                $creditTemp = $remainingTemp;
+                $creditCust = $totalDeduction->minus($creditTemp);
+            } else {
+                $tempShare = ($tempTotal->isPositive() && $invoiceTotal->isPositive())
+                    ? $totalDeduction->multipliedBy($tempTotal)->dividedBy($invoiceTotal, 2, \Brick\Math\RoundingMode::HalfUp)
+                    : Money::decimal(0);
+                if ($tempShare->isGreaterThan($remainingTemp)) {
+                    $tempShare = $remainingTemp;
+                }
+                $creditTemp = $tempShare;
+                $creditCust = $totalDeduction->minus($creditTemp);
+                if ($creditCust->isGreaterThan($remainingCust)) {
+                    $creditCust = $remainingCust;
+                    $creditTemp = $totalDeduction->minus($creditCust);
+                }
+            }
+
             $journalEntries = [
                 ['account_id' => $depositAccount->id, 'description' => 'Penerimaan kas/bank '.$invoice->number, 'debit' => (string) $amount, 'credit' => 0],
             ];
             if ($pph23Account && $pph23Amount->isPositive()) {
                 $journalEntries[] = ['account_id' => $pph23Account->id, 'description' => 'PPh 23 dibayar dimuka '.$invoice->number, 'debit' => (string) $pph23Amount, 'credit' => 0];
             }
-            $journalEntries[] = ['account_id' => $receivableAccount->id, 'description' => 'Pelunasan piutang '.$invoice->number, 'debit' => 0, 'credit' => (string) $totalDeduction];
+            if ($creditTemp->isPositive()) {
+                $journalEntries[] = ['account_id' => $temporaryReceivableAccount->id, 'description' => 'Pelunasan piutang temporary '.$invoice->number, 'debit' => 0, 'credit' => (string) $creditTemp];
+            }
+            if ($creditCust->isPositive()) {
+                $journalEntries[] = ['account_id' => $receivableAccount->id, 'description' => 'Pelunasan piutang '.$invoice->number, 'debit' => 0, 'credit' => (string) $creditCust];
+            }
 
             $journalNumber = $this->numbers->nextBankJournal($depositAccount->code, $depositAccount->name, true, \Carbon\Carbon::parse($data['payment_date']));
             $this->journals->post('customer_payment', Payment::class, $payment->id, $data['payment_date'], 'Pembayaran '.$payment->number.' untuk '.$invoice->number, $journalEntries, $actor, $journalNumber);

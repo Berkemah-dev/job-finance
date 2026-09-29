@@ -45,7 +45,7 @@ class StatementOfAccountService
             if ($unpaidOnly && Money::decimal($totals['balance'])->isZero()) {
                 continue;
             }
-            foreach (array_merge(self::AGING_BUCKETS, ['invoices']) as $key) {
+            foreach (array_merge(['total', 'paid', 'balance', 'invoices'], self::AGING_BUCKETS) as $key) {
                 $this->addTo($grand, $totals, $key);
             }
             $totals['customer'] = $customer;
@@ -77,7 +77,8 @@ class StatementOfAccountService
                 $opening = $opening->plus(Money::decimal($invoice->total));
                 foreach ($invoice->payments as $payment) {
                     if ($payment->payment_date->lt($from)) {
-                        $opening = $opening->minus(Money::decimal($payment->amount));
+                        $deduction = Money::decimal($payment->amount)->plus(Money::decimal($payment->pph23_amount ?? 0));
+                        $opening = $opening->minus($deduction);
                     }
                 }
             }
@@ -102,17 +103,34 @@ class StatementOfAccountService
             }
             foreach ($invoice->payments as $payment) {
                 if ($payment->payment_date->between($from, $to)) {
-                    $paid = $paid->plus(Money::decimal($payment->amount));
+                    $paidAmount = Money::decimal($payment->amount);
+                    $pph23Amount = Money::decimal($payment->pph23_amount ?? 0);
+                    $totalPaymentDeduction = $paidAmount->plus($pph23Amount);
+                    $paid = $paid->plus($totalPaymentDeduction);
+
                     $rows[] = [
                         'date' => $payment->payment_date,
                         'number' => $payment->number,
                         'description' => 'Pembayaran '.$payment->number.' · '.ucfirst($payment->method),
                         'type' => 'payment',
-                        'debit' => (string) $payment->amount,
+                        'debit' => (string) $paidAmount,
                         'credit' => '0.00',
                         'invoice' => $invoice,
                         'is_overdue' => false,
                     ];
+
+                    if ($pph23Amount->isPositive()) {
+                        $rows[] = [
+                            'date' => $payment->payment_date,
+                            'number' => $payment->number.'-PPH',
+                            'description' => 'Potongan PPh 23 '.$payment->number.' (Invoice '.$invoice->number.')',
+                            'type' => 'pph23',
+                            'debit' => (string) $pph23Amount,
+                            'credit' => '0.00',
+                            'invoice' => $invoice,
+                            'is_overdue' => false,
+                        ];
+                    }
                 }
             }
         }
@@ -133,7 +151,8 @@ class StatementOfAccountService
             }
             foreach ($invoice->payments as $payment) {
                 if ($payment->payment_date->lte($to)) {
-                    $closing = $closing->minus(Money::decimal($payment->amount));
+                    $deduction = Money::decimal($payment->amount)->plus(Money::decimal($payment->pph23_amount ?? 0));
+                    $closing = $closing->minus($deduction);
                 }
             }
         }

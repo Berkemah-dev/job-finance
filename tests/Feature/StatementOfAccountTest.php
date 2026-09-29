@@ -174,5 +174,39 @@ class StatementOfAccountTest extends TestCase
         $this->assertStringContainsString('attachment', $downloadResponse->headers->get('Content-Disposition'));
         $this->assertStringContainsString('Statement_of_Account_'.$this->customer->code, $downloadResponse->headers->get('Content-Disposition'));
     }
+
+    public function test_payment_with_pph23_reduces_soa_balance_and_shows_in_detail_rows(): void
+    {
+        $invoice = $this->invoice(today()->subDays(5)->toDateString(), today()->addDays(25)->toDateString());
+        // Total invoice is 9.500.000 (5jt temporary + 4.5jt provision sell)
+        // Pay 9.310.000 transfer + 190.000 PPh 23 = 9.500.000 total deduction
+        $this->post('/invoices/'.$invoice->id.'/payments', [
+            'lock_version' => $invoice->lock_version,
+            'payment_date' => today()->subDays(2)->toDateString(),
+            'amount' => '9310000',
+            'pph23_amount' => '190000',
+            'deposit_account' => 'bank',
+            'method' => 'transfer',
+            'reference' => 'TRX-SOA-PPH',
+        ])->assertSessionHasNoErrors();
+
+        $totals = app(StatementOfAccountService::class)->statement($this->customer, today()->subDays(10), today());
+
+        // Invoiced: 9.500.000, Paid: 9.500.000, Closing balance: 0.00
+        $this->assertSame('9500000.00', $totals['invoiced']);
+        $this->assertSame('9500000.00', $totals['paid']);
+        $this->assertSame('0.00', $totals['closing']);
+
+        $items = $totals['rows'] instanceof \Illuminate\Contracts\Pagination\Paginator ? $totals['rows']->items() : $totals['rows'];
+        // Should have 3 items: Invoice, Payment, Potongan PPh 23
+        $this->assertCount(3, $items);
+        $this->assertSame('0.00', end($items)['balance']);
+
+        // Check web page
+        $this->get('/reports/statement-of-account/'.$this->customer->id)
+            ->assertOk()
+            ->assertSee('Potongan PPh 23')
+            ->assertSee('190.000,00');
+    }
 }
 
