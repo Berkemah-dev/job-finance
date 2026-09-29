@@ -19,7 +19,6 @@ use App\Models\VendorTruck;
 use App\Models\WeeklyPricing;
 use App\Services\JobClosingService;
 use App\Services\JobCostService;
-use App\Services\JobService;
 use App\Services\PaymentService;
 use App\Services\QuotationService;
 use Illuminate\Database\Seeder;
@@ -209,7 +208,6 @@ class DemoDataSeeder extends Seeder
     private function jobs(array $customers, array $users): array
     {
         $quotationService = app(QuotationService::class);
-        $jobService = app(JobService::class);
         $costService = app(JobCostService::class);
         $closingService = app(JobClosingService::class);
         $paymentService = app(PaymentService::class);

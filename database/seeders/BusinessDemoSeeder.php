@@ -6,7 +6,6 @@ use App\Models\Customer;
 use App\Models\User;
 use App\Services\JobClosingService;
 use App\Services\JobCostService;
-use App\Services\JobService;
 use App\Services\MasterDataService;
 use App\Services\PaymentService;
 use App\Services\QuotationService;
