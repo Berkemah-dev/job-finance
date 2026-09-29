@@ -23,19 +23,13 @@
         <button class="button button-primary">Cari</button>
         <a class="text-link" href="{{ route('customers.index') }}">Reset</a>
 
-        <div style="margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            @if(($pendingCount ?? 0) > 0 && auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin']))
+        @if(($pendingCount ?? 0) > 0 && auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin']))
+            <div style="margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <a class="button button-secondary button-sm" href="{{ route('customers.index', ['status' => 'pending']) }}" style="{{ $status === 'pending' ? 'background: #fff7ed; border-color: #f97316; color: #c2410c; font-weight: 700;' : '' }}" title="Lihat Customer Menunggu Approval">
                     <x-icon name="check"/> Approval <span style="background: #ea580c; color: #fff; border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 800; margin-left: 2px;">{{ $pendingCount }}</span>
                 </a>
-            @endif
-            <a class="button button-secondary button-sm" href="{{ route('customer-contacts.index') }}" title="Kelola Kontak Shipper & Consignee">
-                <x-icon name="users"/> Shipper & Consignee
-            </a>
-            <a class="button button-secondary button-sm" href="{{ route('customer-addresses.index') }}" title="Kelola Master Alamat Pengiriman Customer">
-                <x-icon name="map-pin"/> Master Alamat Customer
-            </a>
-        </div>
+            </div>
+        @endif
     </form>
 <div class="table-scroll">
     <table>

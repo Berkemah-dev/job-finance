@@ -41,10 +41,17 @@ class CustomerContactController extends Controller
         $validated = $this->validated($request);
         abort_unless(Customer::findOrFail($validated['customer_id'])->isAccessibleBy($request->user()), 403);
 
-        DB::transaction(function () use ($validated, $request, $service) {
+        $contact = DB::transaction(function () use ($validated, $request, $service) {
             $contact = CustomerContact::create($validated);
             $service->log($request->user(), 'customer.contact_created', 'Menambahkan '.$contact->type.' '.$contact->name, ['module' => 'customer', 'record_id' => $contact->customer_id]);
+
+            return $contact;
         }, 3);
+
+        $backUrl = $request->input('redirect_to');
+        if ($backUrl) {
+            return redirect($backUrl)->with('success', ucfirst($contact->type).' '.$contact->name.' berhasil ditambahkan.');
+        }
 
         return redirect()->route('customer-contacts.index')->with('success', 'Kontak berhasil ditambahkan.');
     }
@@ -80,6 +87,11 @@ class CustomerContactController extends Controller
             $service->log($request->user(), 'customer.contact_updated', 'Memperbarui '.$customerContact->type.' '.$customerContact->name, ['module' => 'customer', 'record_id' => $customerContact->customer_id]);
         }, 3);
 
+        $backUrl = $request->input('redirect_to');
+        if ($backUrl) {
+            return redirect($backUrl)->with('success', ucfirst($customerContact->type).' '.$customerContact->name.' berhasil diperbarui.');
+        }
+
         return redirect()->route('customer-contacts.show', $customerContact)->with('success', 'Kontak berhasil diperbarui.');
     }
 
@@ -94,6 +106,11 @@ class CustomerContactController extends Controller
             $service->log($request->user(), 'customer.contact_deleted', 'Menghapus '.$customerContact->type.' '.$customerContact->name, ['module' => 'customer', 'record_id' => $customerContact->customer_id]);
             $customerContact->delete();
         }, 3);
+
+        $backUrl = $request->input('redirect_to');
+        if ($backUrl) {
+            return redirect($backUrl)->with('success', ucfirst($customerContact->type).' '.$customerContact->name.' berhasil dihapus.');
+        }
 
         return redirect()->route('customer-contacts.index')->with('success', 'Kontak dihapus.');
     }
