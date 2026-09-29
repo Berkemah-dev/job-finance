@@ -21,27 +21,56 @@ class JobCostService
     public function markPaid(Job $job, JobCost $cost, array $data, User $actor): void
     {
         DB::transaction(function () use ($job, $cost, $data, $actor) {
-            Gate::forUser($actor)->authorize('costs.manage'); $job = $this->lockJob($job, $data);
+            Gate::forUser($actor)->authorize('costs.manage');
+            $job = $this->lockJob($job, $data);
             $cost = $job->costs()->lockForUpdate()->findOrFail($cost->id);
-            if ($cost->paid_at) throw ValidationException::withMessages(['cost' => 'Biaya ini sudah dibayar.']);
+            if ($cost->paid_at) {
+                throw ValidationException::withMessages(['cost' => 'Biaya ini sudah dibayar.']);
+            }
+
             $hasDraftPayable = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)->where('type', 'job_cost_draft')->exists();
-            if ($job->status !== 'closed' && ! $hasDraftPayable) {
-                throw ValidationException::withMessages(['cost' => 'Biaya biasa dapat dibayar setelah Closing Job. Payment Request dan Reimbursement dapat dibayar sejak Draft karena Hutang Vendor sudah terbentuk.']);
+            $pph = Money::decimal($data['pph23_amount'] ?? $cost->pph23_amount ?? 0);
+            $amount = Money::decimal($cost->total_cost);
+            if ($pph->isGreaterThan($amount)) {
+                throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi biaya.']);
             }
+
+            // Jika belum memiliki draft payable (misalnya biaya quotation terdahulu), buatkan pengakuan Hutang Vendor & Provision WIP/Temporary
+            if (! $hasDraftPayable) {
+                $mapsDraft = $this->journals->mapped([$cost->type === 'temporary' ? 'temporary' : 'provision_wip', 'vendor_payable', 'tax_payable']);
+                $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
+                $draftVendorPayable = $amount->minus($pph);
+                $draftEntries = [
+                    ['account_id' => $mapsDraft[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => (string) $amount, 'credit' => 0],
+                    ['account_id' => $mapsDraft['vendor_payable']->id, 'description' => 'Hutang vendor '.$cost->number, 'debit' => 0, 'credit' => (string) $draftVendorPayable],
+                ];
+                if ($pph->isPositive()) {
+                    $draftEntries[] = ['account_id' => $mapsDraft['tax_payable']->id, 'description' => 'PPh 23 hutang '.$cost->number, 'debit' => 0, 'credit' => (string) $pph];
+                }
+                $costDate = $cost->cost_date ? $cost->cost_date->format('Y-m-d') : $data['paid_date'];
+                $this->journals->post('job_cost_draft', JobCost::class, $cost->id, $costDate, 'Draft '.$cost->number, $draftEntries, $actor);
+                $hasDraftPayable = true;
+            }
+
             $account = \App\Models\ChartOfAccount::where('type', 'asset')->findOrFail($data['payment_account_id']);
-            $amount = Money::decimal($cost->total_cost); $pph = Money::decimal($data['pph23_amount'] ?? 0);
-            if ($pph->isGreaterThan($amount)) throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi biaya.']);
-            if ($hasDraftPayable && ! $pph->isEqualTo(Money::decimal($cost->pph23_amount ?? 0))) {
-                throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 ditetapkan saat Draft Payment Request dan tidak dapat diubah saat pembayaran.']);
-            }
-            $maps = $this->journals->mapped(['vendor_payable','tax_payable']);
-            $vendorSettlement = $hasDraftPayable ? $amount->minus($pph) : $amount;
-            $entries = [['account_id'=>$maps['vendor_payable']->id,'description'=>'Pelunasan hutang vendor '.$cost->number,'debit'=>(string)$vendorSettlement,'credit'=>0], ['account_id'=>$account->id,'description'=>'Pembayaran biaya job '.$cost->number,'debit'=>0,'credit'=>(string)$vendorSettlement]];
-            if (! $hasDraftPayable && $pph->isPositive()) $entries[]=['account_id'=>$maps['tax_payable']->id,'description'=>'PPh 23 hutang '.$cost->number,'debit'=>0,'credit'=>(string)$pph];
-            $number = $this->numbers->nextBankJournal($account->code,$account->name,false,\Carbon\Carbon::parse($data['paid_date']));
-            $this->journals->post('job_cost_payment', JobCost::class,$cost->id,$data['paid_date'],'Pembayaran '.$cost->number,$entries,$actor,$number);
-            $cost->update(['paid_date'=>$data['paid_date'],'paid_at'=>now(),'payment_account_id'=>$account->id,'pph23_amount'=>(string)$pph]); $this->touchJob($job,$actor);
-        },3);
+            $maps = $this->journals->mapped(['vendor_payable', 'tax_payable']);
+            $vendorSettlement = $amount->minus($pph);
+
+            $entries = [
+                ['account_id' => $maps['vendor_payable']->id, 'description' => 'Pelunasan hutang vendor '.$cost->number, 'debit' => (string) $vendorSettlement, 'credit' => 0],
+                ['account_id' => $account->id, 'description' => 'Pembayaran biaya job '.$cost->number, 'debit' => 0, 'credit' => (string) $vendorSettlement],
+            ];
+
+            $number = $this->numbers->nextBankJournal($account->code, $account->name, false, \Carbon\Carbon::parse($data['paid_date']));
+            $this->journals->post('job_cost_payment', JobCost::class, $cost->id, $data['paid_date'], 'Pembayaran '.$cost->number, $entries, $actor, $number);
+            $cost->update([
+                'paid_date' => $data['paid_date'],
+                'paid_at' => now(),
+                'payment_account_id' => $account->id,
+                'pph23_amount' => (string) $pph,
+            ]);
+            $this->touchJob($job, $actor);
+        }, 3);
     }
 
     private function lockJob(Job $job, array $data): Job
@@ -65,7 +94,7 @@ class JobCostService
             Gate::forUser($actor)->authorize('costs.manage');
             $job = $this->lockJob($job, $data);
             $new = $cost === null;
-            $costCategory = $data['cost_category'];
+            $costCategory = $data['cost_category'] ?? ($cost?->cost_category ?? (($data['type'] ?? 'provision') === 'temporary' ? 'reimbursement' : 'payment_request'));
             if ($new) {
                 Gate::forUser($actor)->authorize('create', [JobCost::class, $job]);
                 $cost = new JobCost;
@@ -84,8 +113,8 @@ class JobCostService
                 Gate::forUser($actor)->authorize('update', $cost);
                 $this->master->checkVersion($cost, $data);
                 $before = $cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
-                if (Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)->where('type', 'job_cost_draft')->exists()) {
-                    throw ValidationException::withMessages(['cost' => 'Transaksi Draft yang sudah memiliki jurnal tidak dapat diedit. Buat transaksi koreksi baru.']);
+                if ($cost->paid_at) {
+                    throw ValidationException::withMessages(['cost' => 'Biaya yang sudah dibayar tidak dapat diedit.']);
                 }
             }
             $date = Carbon::parse($data['cost_date']);
@@ -112,6 +141,7 @@ class JobCostService
             $cost->updated_by = $actor->id;
             $cost->lock_version = $new ? 0 : $cost->lock_version + 1;
             $cost->save();
+            $draftJournal = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)->where('type', 'job_cost_draft')->first();
             if ($new && in_array($cost->cost_category, ['payment_request', 'reimbursement'], true)) {
                 $pph = Money::decimal($cost->pph23_amount ?? 0);
                 if ($pph->isGreaterThan(Money::decimal($cost->total_cost))) throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi total biaya.']);
@@ -120,6 +150,22 @@ class JobCostService
                 $entries = [['account_id'=>$maps[$debitKey]->id,'description'=>($cost->cost_category === 'payment_request' ? 'Provisional Payment ' : 'Temporary Payment ').$cost->number,'debit'=>$cost->total_cost,'credit'=>0],['account_id'=>$maps['vendor_payable']->id,'description'=>'Hutang vendor '.$cost->number,'debit'=>0,'credit'=>(string) Money::decimal($cost->total_cost)->minus($pph)]];
                 if ($pph->isPositive()) $entries[]=['account_id'=>$maps['tax_payable']->id,'description'=>'PPh 23 hutang '.$cost->number,'debit'=>0,'credit'=>(string)$pph];
                 $this->journals->post('job_cost_draft', JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Draft '.$cost->number, $entries, $actor);
+            } elseif (! $new && $draftJournal) {
+                $pph = Money::decimal($cost->pph23_amount ?? 0);
+                $maps = $this->journals->mapped([$cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary', 'vendor_payable', 'tax_payable']);
+                $debitKey = $cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary';
+                $entries = [['account_id'=>$maps[$debitKey]->id,'description'=>($cost->cost_category === 'payment_request' ? 'Provisional Payment ' : 'Temporary Payment ').$cost->number,'debit'=>$cost->total_cost,'credit'=>0],['account_id'=>$maps['vendor_payable']->id,'description'=>'Hutang vendor '.$cost->number,'debit'=>0,'credit'=>(string) Money::decimal($cost->total_cost)->minus($pph)]];
+                if ($pph->isPositive()) $entries[]=['account_id'=>$maps['tax_payable']->id,'description'=>'PPh 23 hutang '.$cost->number,'debit'=>0,'credit'=>(string)$pph];
+                $draftJournal->entries()->delete();
+                foreach ($entries as $i => $entry) {
+                    $draftJournal->entries()->create([
+                        'position' => $i + 1,
+                        'chart_of_account_id' => $entry['account_id'],
+                        'description' => $entry['description'],
+                        'debit' => $entry['debit'],
+                        'credit' => $entry['credit'],
+                    ]);
+                }
             }
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
             $this->touchJob($job, $actor);

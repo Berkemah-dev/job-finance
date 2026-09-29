@@ -58,7 +58,21 @@ class JobCostController extends Controller
     {
         Gate::authorize('view', $cost);
 
-        $bankAccounts = \App\Models\ChartOfAccount::where('type', 'asset')->where(fn ($q) => $q->where('name', 'like', '%Bank%')->orWhere('name', 'like', '%Kas%')->orWhere('name', 'like', '%Cash%'))->orderBy('code')->get();
+        $bankAccounts = \App\Models\ChartOfAccount::where('type', 'asset')
+            ->where(function ($q) {
+                $q->whereIn('code', ['1101', '1102', '11100', '11101', '11120', '11121', '11122', '11123'])
+                    ->orWhere('code', 'like', '1110%')
+                    ->orWhere('code', 'like', '1112%')
+                    ->orWhere('name', 'like', '%Kas%')
+                    ->orWhere('name', 'like', '%Cash%')
+                    ->orWhere('name', 'like', '%Bank%')
+                    ->orWhere('name', 'like', '%BCA%')
+                    ->orWhere('name', 'like', '%Mandiri%');
+            })
+            ->where('code', '!=', '1103')
+            ->whereDoesntHave('children')
+            ->orderBy('code')
+            ->get();
         return view('costs.show', ['job' => $job, 'cost' => $cost->load(['creator', 'finalizer', 'paymentAccount']), 'bankAccounts' => $bankAccounts]);
     }
 
@@ -100,8 +114,41 @@ class JobCostController extends Controller
 
     public function pay(Request $request, Job $job, JobCost $cost, JobCostService $service)
     {
-        $data = $request->validate(['job_version'=>['required','integer'],'paid_date'=>['required','date','before_or_equal:today'],'payment_account_id'=>['required','integer','exists:chart_of_accounts,id'],'pph23_amount'=>['nullable','numeric','min:0']]);
-        $service->markPaid($job,$cost,$data,$request->user());
-        return redirect()->route('jobs.costs.show',[$job,$cost])->with('success','Biaya ditandai PAID dan jurnal pembayaran dibuat.');
+        if ($request->has('pph23_amount') && is_string($request->input('pph23_amount'))) {
+            $val = trim($request->input('pph23_amount'));
+            $val = preg_replace('/^Rp\s*/i', '', $val);
+            if (str_contains($val, '.') && str_contains($val, ',')) {
+                if (strrpos($val, ',') > strrpos($val, '.')) {
+                    $val = str_replace('.', '', $val);
+                    $val = str_replace(',', '.', $val);
+                } else {
+                    $val = str_replace(',', '', $val);
+                }
+            } elseif (str_contains($val, '.')) {
+                if ((substr_count($val, '.') > 1) || preg_match('/\.\d{3}$/', $val) || preg_match('/^[0-9]\d{0,2}(\.\d{3})+$/', $val)) {
+                    $val = str_replace('.', '', $val);
+                }
+            } elseif (str_contains($val, ',')) {
+                if ((substr_count($val, ',') > 1) || preg_match('/,\d{3}$/', $val) || preg_match('/^[0-9]\d{0,2}(,\d{3})+$/', $val)) {
+                    $val = str_replace(',', '', $val);
+                } else {
+                    $val = str_replace(',', '.', $val);
+                }
+            }
+            if (preg_match('/^0+[1-9]/', $val)) {
+                $val = ltrim($val, '0');
+            }
+            $request->merge(['pph23_amount' => $val !== '' ? $val : null]);
+        }
+
+        $data = $request->validate([
+            'job_version' => ['required', 'integer'],
+            'paid_date' => ['required', 'date', 'before_or_equal:today'],
+            'payment_account_id' => ['required', 'integer', 'exists:chart_of_accounts,id'],
+            'pph23_amount' => ['nullable', 'numeric', 'min:0', 'max:'.$cost->total_cost],
+        ]);
+        $service->markPaid($job, $cost, $data, $request->user());
+
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya ditandai PAID dan jurnal pembayaran dibuat.');
     }
 }

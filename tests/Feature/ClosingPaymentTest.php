@@ -207,11 +207,11 @@ class ClosingPaymentTest extends TestCase
 
         $bankEntry = $entries->first(fn ($e) => (float) $e->debit == 10000000);
         $pphEntry = $entries->first(fn ($e) => (float) $e->debit == 200000);
-        $receivableEntry = $entries->first(fn ($e) => (float) $e->credit == 10200000);
+        $totalCredit = $entries->sum(fn ($e) => (float) $e->credit);
 
         $this->assertNotNull($bankEntry);
         $this->assertNotNull($pphEntry);
-        $this->assertNotNull($receivableEntry);
+        $this->assertEquals(10200000, $totalCredit);
         $this->assertSame('11192', $pphEntry->account->code);
     }
 

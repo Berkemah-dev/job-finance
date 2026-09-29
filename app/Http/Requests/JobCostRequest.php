@@ -14,6 +14,47 @@ class JobCostRequest extends FormRequest
         return $this->route('cost') ? $this->user()->can('update', $this->route('cost')) : $this->user()->can('create', [JobCost::class, $this->route('job')]);
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('cost_category')) {
+            $this->merge([
+                'cost_category' => $this->input('type') === 'temporary' ? 'reimbursement' : 'payment_request',
+            ]);
+        }
+
+        foreach (['unit_cost', 'unit_price', 'pph23_amount'] as $field) {
+            if ($this->has($field) && is_string($this->input($field))) {
+                $val = trim($this->input($field));
+                if ($val === '') {
+                    continue;
+                }
+                $val = preg_replace('/^Rp\s*/i', '', $val);
+                if (str_contains($val, '.') && str_contains($val, ',')) {
+                    if (strrpos($val, ',') > strrpos($val, '.')) {
+                        $val = str_replace('.', '', $val);
+                        $val = str_replace(',', '.', $val);
+                    } else {
+                        $val = str_replace(',', '', $val);
+                    }
+                } elseif (str_contains($val, '.')) {
+                    if ((substr_count($val, '.') > 1) || preg_match('/^[1-9]\d{0,2}(\.\d{3})+$/', $val)) {
+                        $val = str_replace('.', '', $val);
+                    }
+                } elseif (str_contains($val, ',')) {
+                    if ((substr_count($val, ',') > 1) || preg_match('/^[1-9]\d{0,2}(,\d{3})+$/', $val)) {
+                        $val = str_replace(',', '', $val);
+                    } else {
+                        $val = str_replace(',', '.', $val);
+                    }
+                }
+                if (preg_match('/^0+[1-9]/', $val)) {
+                    $val = ltrim($val, '0');
+                }
+                $this->merge([$field => $val]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         $money = ['required', 'regex:/^\\d{1,9}(\\.\\d{1,2})?$/'];

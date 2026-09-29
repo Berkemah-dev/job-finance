@@ -18,7 +18,7 @@ class JournalAdjustmentRequest extends FormRequest
             'description' => ['required', 'string', 'max:255'],
             'entries' => ['required', 'array', 'min:2', 'max:50'],
             'entries.*.account_id' => ['required', 'integer', 'distinct', 'exists:chart_of_accounts,id'],
-            'entries.*.description' => ['required', 'string', 'max:255'],
+            'entries.*.description' => ['nullable', 'string', 'max:255'],
             'entries.*.debit' => ['nullable', 'regex:/^\d{1,16}(\.\d{1,2})?$/'],
             'entries.*.credit' => ['nullable', 'regex:/^\d{1,16}(\.\d{1,2})?$/'],
         ];

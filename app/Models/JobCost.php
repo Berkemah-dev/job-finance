@@ -11,7 +11,7 @@ class JobCost extends Model
 {
     use HasFactory,SoftDeletes;
 
-    protected $fillable = ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes', 'quotation_id', 'quotation_item_id'];
+    protected $guarded = ['id'];
 
     protected function casts(): array
     {

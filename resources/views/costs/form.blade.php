@@ -27,19 +27,19 @@
 <div class="field" id="category_field">
     <label for="cost_category">Kategori Transaksi (Alur COA)</label>
     <select id="cost_category" name="cost_category">
-        <option value="payment_request" @selected(old('cost_category', $cost->cost_category ?? 'payment_request') === 'payment_request') data-cost-type="provision">Payment Request (Provisional → Piutang Customer)</option>
-        <option value="debit_note" @selected(old('cost_category', $cost->cost_category) === 'debit_note') data-cost-type="provision">Debit Note (Provisional → Piutang Agent)</option>
+        <option value="payment_request" @selected(old('cost_category', $cost->cost_category ?? 'payment_request') === 'payment_request') data-cost-type="provision">Payment Request (Non Reimburse / Provisional → Piutang Customer)</option>
+        <option value="debit_note" @selected(old('cost_category', $cost->cost_category) === 'debit_note') data-cost-type="provision">Debit Note (Non Reimburse / Provisional → Piutang Agent)</option>
         <option value="credit_note" @selected(old('cost_category', $cost->cost_category) === 'credit_note') data-cost-type="provision">Credit Note (Hutang Agent)</option>
-        <option value="reimbursement" @selected(old('cost_category', $cost->cost_category ?? 'reimbursement') === 'reimbursement') data-cost-type="temporary">Reimbursement (Temporary Payment → Piutang Temporary)</option>
+        <option value="reimbursement" @selected(old('cost_category', $cost->cost_category ?? 'reimbursement') === 'reimbursement') data-cost-type="temporary">Reimbursement (Reimburse / Temporary Payment → Piutang Temporary)</option>
     </select>
 </div>
 
 <div class="field"><label for="cost_date">Tanggal biaya</label><input id="cost_date" name="cost_date" type="date" value="{{ old('cost_date',$cost->cost_date?->format('Y-m-d') ?? now()->toDateString()) }}" min="{{ $job->job_date->format('Y-m-d') }}" max="{{ now()->toDateString() }}" required></div>
 <div class="field"><label for="quantity">Jumlah</label><input id="quantity" name="quantity" type="number" min="0.01" max="999999.99" step="0.01" value="{{ old('quantity',$cost->quantity ?? '1') }}" data-quantity required></div>
 <div class="field"><label for="unit">Satuan</label><input id="unit" name="unit" value="{{ old('unit',$cost->unit ?? 'Layanan') }}" maxlength="30" required></div>
-<div class="field"><label for="unit_cost">Modal per unit (Rp)</label><input id="unit_cost" name="unit_cost" type="number" min="0" max="999999999.99" step="0.01" value="{{ old('unit_cost',$cost->unit_cost ?? '0') }}" data-unit-cost required></div>
-<div class="field"><label for="unit_price">Nilai jual per unit (Rp)</label><input id="unit_price" name="unit_price" type="number" min="0" max="999999999.99" step="0.01" value="{{ old('unit_price',$cost->unit_price ?? '0') }}" data-unit-price required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
-<div class="field"><label for="pph23_amount">Potong PPh 23 (Payment Request)</label><input id="pph23_amount" name="pph23_amount" type="number" min="0" step="0.01" value="{{ old('pph23_amount',$cost->pph23_amount ?? '0') }}"><p class="form-help">Dicatat ke Utang Pajak saat Draft Payment Request.</p></div>
+<div class="field"><label for="unit_cost">Modal per unit (Rp)</label><input id="unit_cost" name="unit_cost" type="text" inputmode="decimal" value="{{ old('unit_cost', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_cost)) : '') }}" placeholder="0" data-unit-cost data-currency-input required></div>
+<div class="field"><label for="unit_price">Nilai jual per unit (Rp)</label><input id="unit_price" name="unit_price" type="text" inputmode="decimal" value="{{ old('unit_price', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_price)) : '') }}" placeholder="0" data-unit-price data-currency-input required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
+<div class="field"><label for="pph23_amount">Potong PPh 23 (Payment Request)</label><input id="pph23_amount" name="pph23_amount" type="text" inputmode="decimal" value="{{ old('pph23_amount', $cost->exists && $cost->pph23_amount ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->pph23_amount)) : '') }}" placeholder="0" data-currency-input><p class="form-help">Dicatat ke Utang Pajak saat Draft Payment Request.</p></div>
 
 <div class="field">
     <label for="vendor_id">Penerima / Vendor</label>
