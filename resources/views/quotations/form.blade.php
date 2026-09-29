@@ -54,17 +54,17 @@
 .port-autocomplete-field input:focus { border-color: #dbe3ef; box-shadow: none; }
 </style>
 
-<div class="field" style="grid-column: 1 / -1;"><label for="notes">Catatan Khusus (Dicetak di PDF)</label><textarea id="notes" name="notes" rows="2" placeholder="Masukkan catatan tambahan jika ada (akan dicetak di bagian REMARKS)...">{{ old('notes', $quotation->notes) }}</textarea><small class="subtle" style="font-size:12px;color:#64748b;">Catatan ini akan <strong>dicetak di PDF</strong> Penawaran Client.</small></div>
+<div class="field" style="grid-column: 1 / -1;"><label for="notes">Catatan Khusus (Dicetak di PDF)</label><textarea id="notes" name="notes" rows="2" placeholder="Masukkan catatan tambahan jika ada">{{ old('notes', $quotation->notes) }}</textarea><small class="subtle" style="font-size:12px;color:#64748b;">Catatan ini akan <strong>dicetak di PDF</strong> Penawaran Client.</small></div>
 <div class="field" style="grid-column: 1 / -1;"><label for="internal_notes" style="color: #1e3a8a; font-weight: 700;">Catatan Internal (TIDAK Muncul di PDF, Akan Muncul di CS / Job Order)</label><textarea id="internal_notes" name="internal_notes" rows="2" placeholder="Masukkan catatan khusus tim internal (misal: instruksi khusus CS/Ops, catatan vendor, dll)..." style="border-color: #93c5fd; background: #f8fafc;">{{ old('internal_notes', $quotation->internal_notes) }}</textarea><small class="subtle" style="font-size:12px;color:#1e40af;">Catatan ini <strong>TIDAK akan dicetak pada PDF</strong> penawaran, tetapi akan tampil pada detail Quotation dan <strong>CS / Job Order</strong>.</small></div>
 
 </div>
 
 
 {{-- KOTAK INPUT SATU ITEM BIAYA --}}
-<div class="panel" id="single-item-input-panel" data-can-manage-cost="{{ $canManageCost ? '1' : '0' }}" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 18px 20px; margin-top: 25px; margin-bottom: 20px;">
+<div class="panel" id="single-item-input-panel" data-can-manage-cost="{{ ($canManageCost && !$isSalesOnly) ? '1' : '0' }}" data-is-sales="{{ $isSalesOnly ? '1' : '0' }}" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 18px 20px; margin-top: 25px; margin-bottom: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
         <div>
-            <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1e3a8a;">➕ Input Item Biaya Penawaran</h3>
+            <h3 style="margin: 0; font-size: 13.5px; font-weight: 700; color: #1e3a8a;">Input Item Biaya Penawaran</h3>
             <span class="subtle" style="font-size: 11.5px;">Isi detail biaya & mata uang di bawah, lalu klik <strong>"+ Tambah Item ke Daftar"</strong>.</span>
         </div>
     </div>
@@ -99,7 +99,7 @@
     </div>
 
     {{-- BARIS 2: MULTI CURRENCY, KURS, MODAL (JIKA ADA AKSES), HARGA JUAL --}}
-    <div class="form-grid" style="grid-template-columns: 1fr 1.2fr {{ $canManageCost ? '1.5fr' : '' }} 1.5fr; gap: 12px; align-items: flex-start;">
+    <div class="form-grid" style="grid-template-columns: 1fr 1.2fr {{ ($canManageCost && !$isSalesOnly) ? '1.5fr' : '' }} 1.5fr; gap: 12px; align-items: flex-start;">
         <div class="field">
             <label for="input_item_currency">Mata Uang <span class="required">*</span></label>
             <select id="input_item_currency">
@@ -114,7 +114,7 @@
             <small class="subtle" style="font-size: 10px;" id="item_rate_hint">Kurs 1.00 untuk IDR</small>
         </div>
 
-        @if($canManageCost)
+        @if($canManageCost && !$isSalesOnly)
             <div class="field">
                 <label for="input_item_cost">Modal / Unit <span class="subtle" id="label_cost_currency">(IDR)</span></label>
                 <input id="input_item_cost" type="text" inputmode="decimal" value="0" autocomplete="off">
@@ -130,13 +130,13 @@
     </div>
 
     <div id="trucking-pricing-fields" hidden style="margin-top: 14px; padding: 14px; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff;">
-        <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; margin-bottom: 10px;">Tarif Trucking dari Master Harga</div>
-        <div style="display:grid; grid-template-columns: repeat({{ $canManageCost ? 5 : 4 }}, minmax(0, 1fr)); gap: 12px; align-items:end;">
-            <div class="field"><label for="input_trucking_origin">Asal / POL <span class="required">*</span></label><input id="input_trucking_origin" type="text" placeholder="Contoh: PRIOK" autocomplete="off"></div>
-            <div class="field"><label for="input_trucking_destination">Tujuan / POD <span class="required">*</span></label><input id="input_trucking_destination" type="text" placeholder="Contoh: SURABAYA" autocomplete="off"></div>
-            <div class="field"><label for="input_trucking_container_type">Tipe Armada <span class="required">*</span></label><select id="input_trucking_container_type">@foreach($containerUnits ?? \App\Models\ContainerUnit::options() as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
-            <div class="field"><label for="input_trucking_overweight">Kategori <span class="required">*</span></label><select id="input_trucking_overweight"><option value="0">Normal</option><option value="1">Overweight</option></select></div>
-            @if($canManageCost)
+        <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; margin-bottom: 10px;">Tarif Trucking dari Master Harga <span style="font-weight: normal; color: #2563eb;">(Opsional / Bisa Langsung Isi Manual)</span></div>
+        <div style="display:grid; grid-template-columns: repeat({{ ($canManageCost && !$isSalesOnly) ? 5 : 4 }}, minmax(0, 1fr)); gap: 12px; align-items:end;">
+            <div class="field"><label for="input_trucking_origin">Asal / POL (Opsional)</label><input id="input_trucking_origin" type="text" placeholder="Contoh: PRIOK" autocomplete="off"></div>
+            <div class="field"><label for="input_trucking_destination">Tujuan / POD (Opsional)</label><input id="input_trucking_destination" type="text" placeholder="Contoh: SURABAYA" autocomplete="off"></div>
+            <div class="field"><label for="input_trucking_container_type">Tipe Armada</label><select id="input_trucking_container_type">@foreach($containerUnits ?? \App\Models\ContainerUnit::options() as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
+            <div class="field"><label for="input_trucking_overweight">Kategori</label><select id="input_trucking_overweight"><option value="0">Normal</option><option value="1">Overweight</option></select></div>
+            @if($canManageCost && !$isSalesOnly)
             <div class="field">
                 <label for="input_trucking_vendor">Pilihan Vendor (Modal)</label>
                 <select id="input_trucking_vendor">
@@ -150,14 +150,16 @@
         </div>
         <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px;">
             <button type="button" class="button button-secondary" id="btn_fetch_trucking" style="padding: 7px 14px;">Ambil harga trucking</button>
-            <span id="trucking_pricing_status" style="font-size:12px; color:#64748b;">Isi asal, tujuan, dan tipe armada. Harga akan dicari otomatis.</span>
+            <span id="trucking_pricing_status" style="font-size:12px; color:#64748b;">Opsional: Isi asal & tujuan untuk mencari tarif otomatis dari master, atau langsung isi harga jual di atas secara manual.</span>
+            @if($canManageCost && !$isSalesOnly)
             <span id="trucking_pricing_vendor" style="display:none; font-size:12px; font-weight:700; color:#1e40af; background:#dbeafe; padding:4px 10px; border-radius:6px; border:1px solid #93c5fd; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"></span>
+            @endif
         </div>
     </div>
 
     <div style="margin-top: 14px; text-align: right;">
         <button type="button" class="button button-primary" id="btn_submit_single_item" style="padding: 8px 24px; font-weight: 600;">
-            ➕ Tambah Item ke Daftar
+            Tambah Item ke Daftar
         </button>
     </div>
 </div>

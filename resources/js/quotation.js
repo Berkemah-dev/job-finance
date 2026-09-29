@@ -81,6 +81,7 @@ if (form) {
     // ==========================================
     const singleItemPanel = document.getElementById('single-item-input-panel');
     const canManageCost = singleItemPanel?.dataset?.canManageCost === '1';
+    const isSales = singleItemPanel?.dataset?.isSales === '1';
     const tbody = document.getElementById('quotation_items_tbody');
     const itemsCountDisplay = document.getElementById('items_count_display');
     const previewTotal = form.querySelector('[data-preview-total]');
@@ -144,7 +145,7 @@ if (form) {
         if (!active) { 
             truckingPricing = null; 
             if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
-            setTruckingStatus('Isi asal, tujuan, dan tipe armada. Harga akan dicari otomatis.'); 
+            setTruckingStatus('Opsional: Isi asal & tujuan untuk mencari tarif otomatis dari master, atau langsung isi harga jual di bawah.'); 
         }
         else if (truckingOrigin?.value && truckingDestination?.value) scheduleTruckingLookup();
     };
@@ -161,7 +162,7 @@ if (form) {
                 container_type: truckingContainer.value,
                 overweight: truckingOverweight.value,
             });
-            if (truckingVendor && truckingVendor.value) {
+            if (truckingVendor && truckingVendor.value && canManageCost && !isSales) {
                 params.set('vendor_id', truckingVendor.value);
             }
             const response = await fetch(`${endpoint}?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
@@ -169,13 +170,11 @@ if (form) {
             if (!response.ok || !data.found) {
                 truckingPricing = null;
                 if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
-                if (inputCost) inputCost.value = '0';
-                inputPrice.value = '0';
-                setTruckingStatus('Tarif belum tersedia untuk rute, armada, dan kategori ini.', '#b45309');
+                setTruckingStatus('Tarif master tidak ditemukan (opsional). Anda dapat langsung menginput harga jual secara manual di bawah.', '#64748b');
                 return;
             }
             truckingPricing = data;
-            if (inputCost) inputCost.value = data.unit_cost ?? 0;
+            if (inputCost && canManageCost && !isSales) inputCost.value = data.unit_cost ?? 0;
             inputPrice.value = data.unit_price ?? 0;
             if (inputCurrency && data.currency) {
                 inputCurrency.value = data.currency;
@@ -184,7 +183,7 @@ if (form) {
             if (inputExchangeRate && data.exchange_rate) {
                 inputExchangeRate.value = data.exchange_rate;
             }
-            if (data.vendor_name) {
+            if (data.vendor_name && canManageCost && !isSales) {
                 if (truckingVendorBadge) {
                     truckingVendorBadge.textContent = '🚚 Vendor: ' + data.vendor_name;
                     truckingVendorBadge.style.display = 'inline-block';
@@ -192,12 +191,12 @@ if (form) {
                 setTruckingStatus(`✓ Tarif ditemukan: ${data.port_origin} → ${data.destination}. Modal & harga jual terisi.`, '#15803d');
             } else {
                 if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
-                setTruckingStatus(`✓ Tarif ditemukan: ${data.port_origin} → ${data.destination}. Modal & harga jual terisi.`, '#15803d');
+                setTruckingStatus(`✓ Tarif ditemukan: ${data.port_origin} → ${data.destination}. Harga jual otomatis terisi (dapat disesuaikan).`, '#15803d');
             }
         } catch (error) {
             truckingPricing = null;
             if (truckingVendorBadge) truckingVendorBadge.style.display = 'none';
-            setTruckingStatus('Tarif belum bisa diambil. Periksa koneksi atau Master Trucking.', '#b91c1c');
+            setTruckingStatus('Gagal menghubungkan ke master tarif. Anda tetap dapat menginput harga jual secara manual.', '#64748b');
         } finally { if (fetchTruckingButton) fetchTruckingButton.disabled = false; }
     };
     function scheduleTruckingLookup() {
@@ -276,7 +275,8 @@ if (form) {
                 </td>
             ` : `<input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost || 0}">`;
 
-            const vendorName = item.vendor_name || item.pricing_snapshot?.vendor_name || (typeof item.pricing_snapshot === 'string' && item.pricing_snapshot.includes('"vendor_name"') ? JSON.parse(item.pricing_snapshot).vendor_name : null);
+            const showVendor = canManageCost && !isSales;
+            const vendorName = showVendor ? (item.vendor_name || item.pricing_snapshot?.vendor_name || (typeof item.pricing_snapshot === 'string' && item.pricing_snapshot.includes('"vendor_name"') ? JSON.parse(item.pricing_snapshot).vendor_name : null)) : null;
 
             tr.innerHTML = `
                 <td style="text-align: center; padding: 10px 8px; color: #64748b; font-weight: 600;">${index + 1}</td>
@@ -395,12 +395,6 @@ if (form) {
             return;
         }
 
-        if (trucking && !truckingPricing) {
-            fetchTruckingPrice();
-            alert('Tarif trucking belum ditemukan. Isi asal dan tujuan, lalu tunggu harga muncul.');
-            return;
-        }
-
         addItem({
             description: desc,
             note: inputNote?.value?.trim() || '',
@@ -409,16 +403,16 @@ if (form) {
             unit_cost: String(cost),
             unit_price: String(price),
             type: 'provision',
-            pricing_source: trucking ? 'trucking' : 'manual',
-            pricing_id: trucking ? (truckingPricing?.pricing_id || '') : '',
-            pricing_snapshot: trucking ? (truckingPricing?.snapshot || truckingPricing) : null,
+            pricing_source: (trucking && truckingPricing) ? 'trucking' : 'manual',
+            pricing_id: (trucking && truckingPricing) ? (truckingPricing?.pricing_id || '') : '',
+            pricing_snapshot: (trucking && truckingPricing) ? (truckingPricing?.snapshot || truckingPricing) : null,
             currency: curr,
             exchange_rate: String(rate),
-            container_type: trucking ? truckingContainer.value : '',
-            overweight: trucking ? truckingOverweight.value === '1' : false,
-            port_origin: trucking ? truckingOrigin.value.trim() : '',
-            destination: trucking ? truckingDestination.value.trim() : '',
-            vendor_name: trucking ? (truckingPricing?.vendor_name || '') : '',
+            container_type: trucking ? (truckingContainer?.value || '') : '',
+            overweight: trucking ? (truckingOverweight?.value === '1') : false,
+            port_origin: trucking ? (truckingOrigin?.value?.trim() || '') : '',
+            destination: trucking ? (truckingDestination?.value?.trim() || '') : '',
+            vendor_name: (trucking && truckingPricing && canManageCost && !isSales) ? (truckingPricing?.vendor_name || '') : '',
         });
 
         // Reset inputs

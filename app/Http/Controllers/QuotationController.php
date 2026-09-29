@@ -80,7 +80,7 @@ class QuotationController extends Controller
             'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
-            'truckingVendors' => $this->truckingVendors(),
+            'truckingVendors' => (request()->user()?->hasRole('sales') && !request()->user()?->hasRole(['sales-manager', 'super-admin', 'admin'])) ? collect() : $this->truckingVendors(),
         ]);
     }
 
@@ -135,7 +135,7 @@ class QuotationController extends Controller
             'containerUnits' => ContainerUnit::options(),
             'charges' => ChargeType::where('is_active', true)->orderBy('name')->get(['name']),
             'serviceTypes' => ServiceType::options(),
-            'truckingVendors' => $this->truckingVendors(),
+            'truckingVendors' => (request()->user()?->hasRole('sales') && !request()->user()?->hasRole(['sales-manager', 'super-admin', 'admin'])) ? collect() : $this->truckingVendors(),
         ]);
     }
 
