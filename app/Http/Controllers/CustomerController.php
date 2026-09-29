@@ -25,7 +25,7 @@ class CustomerController extends Controller
         $actor = $request->user();
         $customers = Customer::query()
             ->with('approver')
-            ->when($actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin']), fn ($q) => $q->where(fn ($q) => $q->where('created_by', $actor->id)->orWhereHas('quotations', fn ($quotation) => $quotation->where('sales_id', $actor->id)->orWhere(fn ($nested) => $nested->whereNull('sales_id')->where('created_by', $actor->id)))))
+            ->forUser($actor)
             ->when($onlyTrashed, fn ($q) => $q->onlyTrashed())
             ->when(! $onlyTrashed && $pending, fn ($q) => $q->where('approval_status', 'pending'))
             ->when(! $onlyTrashed && ! $pending, fn ($q) => $q->where('approval_status', 'approved'))
@@ -33,7 +33,7 @@ class CustomerController extends Controller
                 ->orWhere('email', 'like', '%'.$search.'%')->orWhere('tax_number', 'like', '%'.$search.'%')->orWhere('phone', 'like', '%'.$search.'%')))
             ->orderBy('name')->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
 
-        $pendingCount = Customer::where('approval_status', 'pending')->count();
+        $pendingCount = Customer::where('approval_status', 'pending')->forUser($actor)->count();
 
         return view('customers.index', compact('customers', 'search', 'status', 'pendingCount'));
     }
@@ -118,6 +118,7 @@ class CustomerController extends Controller
 
     public function destroy(VersionRequest $request, Customer $customer, MasterDataService $service)
     {
+        $this->authorizeSalesCustomer($customer);
         $service->archive($customer, $request->validated(), $request->user());
 
         return redirect()->route('customers.index')->with('success', 'Customer diarsipkan. Histori tetap tersimpan.');
@@ -126,6 +127,7 @@ class CustomerController extends Controller
     public function restore(VersionRequest $request, int $id, MasterDataService $service)
     {
         $customer = Customer::withTrashed()->findOrFail($id);
+        $this->authorizeSalesCustomer($customer);
         $service->restore($customer, $request->validated(), $request->user());
 
         return redirect()->route('customers.show', $customer)->with('success', 'Customer diaktifkan kembali.');
@@ -152,17 +154,7 @@ class CustomerController extends Controller
 
     private function authorizeSalesCustomer(Customer $customer): void
     {
-        $user = request()->user();
-        if (! $user?->hasRole('sales') || $user->hasRole(['sales-manager', 'super-admin', 'admin'])) {
-            return;
-        }
-
-        $allowed = $customer->created_by === $user->id
-            || $customer->quotations()
-                ->where(fn ($q) => $q->where('sales_id', $user->id)->orWhere(fn ($nested) => $nested->whereNull('sales_id')->where('created_by', $user->id)))
-                ->exists();
-
-        abort_unless($allowed, 403);
+        abort_unless($customer->isAccessibleBy(request()->user()), 403);
     }
 
     private function handleUploads(Customer $customer, Request $request, Filesystem $filesystem, ?User $user): void

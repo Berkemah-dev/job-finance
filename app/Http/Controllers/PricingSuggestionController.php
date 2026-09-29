@@ -39,8 +39,13 @@ class PricingSuggestionController extends Controller
 
         if (! $canManageCost && ($suggestion['found'] ?? false)) {
             $suggestion['unit_cost'] = '0.00';
-            if (isset($suggestion['snapshot']['price'])) {
-                unset($suggestion['snapshot']['price']);
+            unset($suggestion['vendor_name']);
+            if (isset($suggestion['snapshot'])) {
+                unset(
+                    $suggestion['snapshot']['price'],
+                    $suggestion['snapshot']['vendor_id'],
+                    $suggestion['snapshot']['vendor_name']
+                );
             }
         }
 

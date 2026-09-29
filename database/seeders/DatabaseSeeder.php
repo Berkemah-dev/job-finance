@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call(RolePermissionSeeder::class);
         $this->call(ChartOfAccountSeeder::class);
         $this->call(MasterDataSeeder::class);
+        $this->call(TruckingPriceSeeder::class);
         if (app()->environment(['local', 'testing'])) {
             $this->call(DemoUserSeeder::class);
             $this->call(TeamUserSeeder::class);

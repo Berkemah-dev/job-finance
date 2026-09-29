@@ -21,7 +21,11 @@ class OperationalDocumentController extends Controller
         $periodFrom = (string) $request->input('period_from', '');
         $periodTo = (string) $request->input('period_to', '');
         $myJobs = $request->boolean('my_jobs');
+        $actor = $request->user();
+        $isSalesOnly = $actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin']);
+
         $documents = Quotation::with(['customer', 'job.invoice', 'job.closingSnapshot'])
+            ->when($isSalesOnly, fn ($query) => $query->where(fn ($q) => $q->where('sales_id', $actor->id)->orWhere(fn ($nested) => $nested->whereNull('sales_id')->where('created_by', $actor->id))))
             ->when($myJobs, function ($query) use ($request) {
                 $query->where(function ($q) use ($request) {
                     $q->where('created_by', $request->user()->id)
@@ -48,7 +52,9 @@ class OperationalDocumentController extends Controller
             ->withQueryString();
 
         $baseJobQuery = Job::query()->when($myJobs, fn ($q) => $q->where(fn ($wq) => $wq->where('cs_id', $request->user()->id)->orWhere('sales_id', $request->user()->id)));
-        $baseQuoteQuery = Quotation::query()->when($myJobs, fn ($q) => $q->where('created_by', $request->user()->id));
+        $baseQuoteQuery = Quotation::query()
+            ->when($isSalesOnly, fn ($q) => $q->where(fn ($sub) => $sub->where('sales_id', $actor->id)->orWhere(fn ($nested) => $nested->whereNull('sales_id')->where('created_by', $actor->id))))
+            ->when($myJobs, fn ($q) => $q->where('created_by', $request->user()->id));
 
         $quoteStatusCounts = (clone $baseQuoteQuery)
             ->selectRaw('status, count(*) as total')
@@ -59,6 +65,7 @@ class OperationalDocumentController extends Controller
             ->whereIn('status', ['open', 'closed'])
             ->groupBy('status')
             ->pluck('total', 'status');
+
         $summary = [
             'total' => (int) $quoteStatusCounts->sum(),
             'draft' => (int) ($quoteStatusCounts[QuotationStatus::Draft->value] ?? 0),
@@ -67,13 +74,15 @@ class OperationalDocumentController extends Controller
             'running' => (int) ($jobStatusCounts['open'] ?? 0),
             'done' => (int) ($jobStatusCounts['closed'] ?? 0),
         ];
-        $customers = Customer::orderBy('name')->get(['id', 'name', 'code']);
+        $customers = Customer::forUser($actor)->orderBy('name')->get(['id', 'name', 'code']);
 
         return view('documents.index', compact('documents', 'summary', 'customers', 'search', 'myJobs'));
     }
 
     public function show(Quotation $quotation)
     {
+        Gate::authorize('view', $quotation);
+
         return view('documents.show', [
             'quotation' => $quotation->load(['items', 'customer', 'job.invoice', 'job.closingSnapshot', 'creator', 'approver']),
         ]);
@@ -81,6 +90,7 @@ class OperationalDocumentController extends Controller
 
     public function quotationPreview(Quotation $quotation)
     {
+        Gate::authorize('view', $quotation);
         return view('documents.pdf-preview', [
             'title' => 'Quotation '.$quotation->number,
             'backUrl' => route('documents.show', $quotation),
@@ -103,6 +113,7 @@ class OperationalDocumentController extends Controller
 
     public function quotationPdf(Request $request, Quotation $quotation, MasterDataService $master)
     {
+        Gate::authorize('view', $quotation);
         $quotation->load(['items', 'customer', 'creator', 'approver']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $quotation])->setPaper('a4');
         $date = $quotation->quotation_date ? $quotation->quotation_date->format('d-m-Y') : now()->format('d-m-Y');

@@ -2,11 +2,21 @@
 @section('title', 'Detail Tarif Trucking ' . $truckingPrice->port_origin . ' → ' . $truckingPrice->destination)
 @section('content')
 
+@php
+    $isSalesOnly = auth()->user()?->hasRole('sales') && ! auth()->user()?->hasRole(['sales-manager', 'super-admin', 'admin']);
+    $showTruckingCost = ! $isSalesOnly && (auth()->user()?->hasRole(['sales-manager', 'finance', 'finance-manager', 'super-admin', 'admin']) || auth()->user()?->can('pricing.manage'));
+@endphp
+
 <div class="page-heading">
     <div>
         <p class="eyebrow">PRICING & LOGISTIK / TRUCKING</p>
         <h1>{{ $truckingPrice->port_origin }} → {{ $truckingPrice->destination }}</h1>
-        <p>Vendor: <strong>{{ $truckingPrice->vendor?->name ?? 'Tarif Standar / Umum' }}</strong> · Status: <span class="status-badge {{ $truckingPrice->is_active ? 'status-active' : 'status-inactive' }}">{{ $truckingPrice->is_active ? 'Aktif' : 'Nonaktif' }}</span></p>
+        <p>
+            @unless($isSalesOnly)
+                Vendor: <strong>{{ $truckingPrice->vendor?->name ?? 'Tarif Standar / Umum' }}</strong> ·
+            @endunless
+            Status: <span class="status-badge {{ $truckingPrice->is_active ? 'status-active' : 'status-inactive' }}">{{ $truckingPrice->is_active ? 'Aktif' : 'Nonaktif' }}</span>
+        </p>
     </div>
     <a class="button button-secondary" href="{{ route('pricing.trucking.index') }}">← Kembali</a>
 </div>
@@ -23,15 +33,12 @@
         </form>
     @endcan
 </div>
-@php
-    $showTruckingCost = ! auth()->user()?->hasRole('sales') || auth()->user()?->hasRole(['sales-manager', 'finance', 'finance-manager', 'super-admin', 'admin']);
-@endphp
 
 {{-- INFORMASI RUTE & VENDOR --}}
 <section class="panel" style="margin-bottom: 24px;">
     <div class="panel-heading">
         <h2>Informasi Rute & Masa Berlaku</h2>
-        <span class="subtle">Rincian rute dan vendor armada</span>
+        <span class="subtle">{{ $isSalesOnly ? 'Rincian rute dan masa berlaku' : 'Rincian rute dan vendor armada' }}</span>
     </div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding: 20px;">
         <div>
@@ -42,10 +49,12 @@
             <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Tujuan / Area</span>
             <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 4px;">{{ $truckingPrice->destination }}</div>
         </div>
+        @unless($isSalesOnly)
         <div>
             <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Vendor Trucking</span>
             <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 4px;">{{ $truckingPrice->vendor?->name ?? 'Tarif Umum (Tanpa Vendor)' }}</div>
         </div>
+        @endunless
         <div>
             <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Masa Berlaku</span>
             <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 4px;">

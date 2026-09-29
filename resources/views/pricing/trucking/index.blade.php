@@ -12,17 +12,23 @@
     art-title="Rute & armada,"
     art-subtitle="harga transparan."
 />
+@php
+    $isSalesOnly = auth()->user()?->hasRole('sales') && ! auth()->user()?->hasRole(['sales-manager', 'super-admin', 'admin']);
+@endphp
+
 <section class="panel">
 <form class="filter-bar" method="GET">
-    <input name="search" value="{{ $search ?? request('search') }}" placeholder="Cari rute, vendor, atau mata uang" aria-label="Cari trucking price">
+    <input name="search" value="{{ $search ?? request('search') }}" placeholder="{{ $isSalesOnly ? 'Cari rute atau mata uang' : 'Cari rute, vendor, atau mata uang' }}" aria-label="Cari trucking price">
     <input name="port_origin" value="{{ request('port_origin') }}" placeholder="Pelabuhan asal" aria-label="Pelabuhan asal">
     <input name="destination" value="{{ request('destination') }}" placeholder="Tujuan" aria-label="Tujuan">
+    @unless($isSalesOnly)
     <select name="vendor_id" aria-label="Vendor">
         <option value="">Semua vendor</option>
         @foreach($vendors ?? [] as $vendor)
             <option value="{{ $vendor->id }}" @selected((int) request('vendor_id')===$vendor->id)>{{ $vendor->name }}</option>
         @endforeach
     </select>
+    @endunless
     <select name="status" aria-label="Status">
         <option value="">Aktif & nonaktif</option>
         <option value="inactive" @selected(request('status')==='inactive')>Nonaktif saja</option>
@@ -36,7 +42,9 @@
 <thead>
     <tr>
         <th>Rute</th>
-        <th>Vendor Trucking</th>
+        @unless($isSalesOnly)
+            <th>Vendor Trucking</th>
+        @endunless
         <th>Tgl Berlaku</th>
         <th>Status</th>
         <th>Aksi</th>
@@ -49,7 +57,9 @@
             <strong>{{ $item->port_origin }}</strong> → {{ $item->destination }}
             <br><small class="muted-cell">{{ \App\Models\ContainerUnit::label($item->container_type) }} · {{ $item->overweight ? 'Overweight' : 'Normal' }}</small>
         </td>
-        <td>{{ $item->vendor?->name ?? '—' }}</td>
+        @unless($isSalesOnly)
+            <td>{{ $item->vendor?->name ?? '—' }}</td>
+        @endunless
         <td>
             {{ $item->effective_date?->format('d/m/Y') }}
             @if($item->effective_until)
@@ -89,7 +99,7 @@
     </tr>
 @empty
     <tr>
-        <td colspan="5">
+        <td colspan="{{ $isSalesOnly ? 4 : 5 }}">
             <div class="empty-state">
                 <x-icon name="briefcase"/>
                 <h3>Belum ada trucking price</h3>

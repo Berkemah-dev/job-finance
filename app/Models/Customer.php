@@ -79,4 +79,46 @@ class Customer extends Model
     {
         return $this->hasMany(CustomerAddress::class);
     }
+
+    public function scopeForUser($query, ?User $user)
+    {
+        if (! $user) {
+            return $query;
+        }
+
+        if ($user->hasRole('sales') && ! $user->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+            return $query->where(function ($q) use ($user) {
+                $q->where('created_by', $user->id)
+                    ->orWhereHas('quotations', function ($quotation) use ($user) {
+                        $quotation->where('sales_id', $user->id)
+                            ->orWhere(function ($nested) use ($user) {
+                                $nested->whereNull('sales_id')->where('created_by', $user->id);
+                            });
+                    });
+            });
+        }
+
+        return $query;
+    }
+
+    public function isAccessibleBy(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if (! $user->hasRole('sales') || $user->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+            return true;
+        }
+
+        return $this->created_by === $user->id
+            || $this->quotations()
+                ->where(function ($q) use ($user) {
+                    $q->where('sales_id', $user->id)
+                        ->orWhere(function ($nested) use ($user) {
+                            $nested->whereNull('sales_id')->where('created_by', $user->id);
+                        });
+                })
+                ->exists();
+    }
 }

@@ -43,9 +43,28 @@ class QuotationController extends Controller
             ->when($dateTo, fn ($q) => $q->whereDate('quotation_date', '<=', $dateTo))
             ->latest('id')->paginate(min(100, max(5, (int) request('per_page', 10))))->withQueryString();
 
-        return view('quotations.index', ['quotations' => $quotations, 'search' => $search, 'status' => $status, 'customerId' => $customerId, 'salesId' => $salesId, 'serviceType' => $serviceType, 'serviceTypes' => $serviceTypes, 'dateFrom' => $dateFrom, 'dateTo' => $dateTo, 'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']), 'sales' => User::whereHas('role', function ($q) {
-            $q->whereIn('name', ['sales', 'sales-manager']);
-        })->orderBy('name')->get(['id', 'name'])]);
+        $customers = Customer::where('approval_status', 'approved')
+            ->forUser($actor)
+            ->orderBy('name')
+            ->get(['id', 'code', 'name', 'default_payment_terms']);
+
+        $salesList = $actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin'])
+            ? User::whereKey($actor->id)->get(['id', 'name'])
+            : User::whereHas('role', fn ($q) => $q->whereIn('name', ['sales', 'sales-manager']))->orderBy('name')->get(['id', 'name']);
+
+        return view('quotations.index', [
+            'quotations' => $quotations,
+            'search' => $search,
+            'status' => $status,
+            'customerId' => $customerId,
+            'salesId' => $salesId,
+            'serviceType' => $serviceType,
+            'serviceTypes' => $serviceTypes,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'customers' => $customers,
+            'sales' => $salesList,
+        ]);
     }
 
     public function create()
@@ -54,7 +73,7 @@ class QuotationController extends Controller
 
         return view('quotations.form', [
             'quotation' => new Quotation,
-            'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']),
+            'customers' => Customer::where('approval_status', 'approved')->forUser(request()->user())->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']),
             'sales' => $this->salesUsers(),
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
@@ -109,7 +128,7 @@ class QuotationController extends Controller
 
         return view('quotations.form', [
             'quotation' => $quotation->load('items'),
-            'customers' => Customer::where('approval_status', 'approved')->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']),
+            'customers' => Customer::where('approval_status', 'approved')->forUser(request()->user())->orderBy('name')->get(['id', 'code', 'name', 'default_payment_terms']),
             'sales' => $this->salesUsers(),
             'ports' => Port::orderBy('name')->get(['id', 'code', 'name']),
             'units' => ContainerUnit::where('is_active', true)->orderBy('name')->get(['name']),
@@ -154,6 +173,7 @@ class QuotationController extends Controller
     public function duplicate(Request $request, Quotation $quotation, QuotationService $service)
     {
         Gate::authorize('create', Quotation::class);
+        Gate::authorize('view', $quotation);
 
         $copy = $service->duplicate($quotation, $request->user());
 

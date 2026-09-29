@@ -35,7 +35,7 @@ class QuotationService
                 Gate::forUser($actor)->authorize('update', $quotation);
                 $this->master->checkVersion($quotation, $data);
             }
-            $customer = $this->activeCustomer($data['customer_id']);
+            $customer = $this->activeCustomer($data['customer_id'], $actor);
             if ($actor->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin'])) {
                 $data['sales_id'] = $actor->id;
             }
@@ -268,11 +268,17 @@ class QuotationService
         }, 3);
     }
 
-    private function activeCustomer(int|string $id): Customer
+    private function activeCustomer(int|string $id, ?User $actor = null): Customer
     {
         $customer = Customer::whereKey($id)->where('approval_status', 'approved')->lockForUpdate()->first();
         if (! $customer) {
             throw ValidationException::withMessages(['customer_id' => 'Customer belum aktif/approved. Pilih customer yang sudah disetujui Finance Manager.']);
+        }
+
+        if ($actor && $actor->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+            if (! $customer->isAccessibleBy($actor)) {
+                throw ValidationException::withMessages(['customer_id' => 'Anda hanya dapat memilih customer milik Anda sendiri.']);
+            }
         }
 
         return $customer;

@@ -18,8 +18,10 @@ class CustomerAddressController extends Controller
 
         $search = mb_substr($request->string('search')->toString(), 0, 80);
         $customerId = $request->integer('customer_id') ?: null;
+        $actor = $request->user();
 
         $addresses = CustomerAddress::with('customer')
+            ->when($actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin']), fn ($q) => $q->whereHas('customer', fn ($c) => $c->forUser($actor)))
             ->when($customerId, fn ($q) => $q->where('customer_id', $customerId))
             ->when($search !== '', fn ($q) => $q->where(fn ($sub) => $sub
                 ->where('location_name', 'like', "%{$search}%")
@@ -32,7 +34,7 @@ class CustomerAddressController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $customers = Customer::orderBy('name')->get(['id', 'name', 'code']);
+        $customers = Customer::forUser($actor)->orderBy('name')->get(['id', 'name', 'code']);
 
         return view('customer-addresses.index', compact('addresses', 'customers', 'search', 'customerId'));
     }
@@ -49,6 +51,8 @@ class CustomerAddressController extends Controller
             'pic_phone'     => 'nullable|string|max:50',
             'is_default'    => 'nullable|boolean',
         ]);
+
+        abort_unless(Customer::findOrFail($validated['customer_id'])->isAccessibleBy($request->user()), 403);
 
         $validated['is_default'] = $request->boolean('is_default');
         $validated['is_active'] = true;
@@ -71,6 +75,7 @@ class CustomerAddressController extends Controller
     public function update(Request $request, CustomerAddress $address): RedirectResponse
     {
         Gate::authorize('customers.manage');
+        abort_unless($address->customer->isAccessibleBy($request->user()), 403);
 
         $validated = $request->validate([
             'location_name' => 'required|string|max:160',
@@ -101,6 +106,7 @@ class CustomerAddressController extends Controller
     public function destroy(CustomerAddress $address): RedirectResponse
     {
         Gate::authorize('customers.manage');
+        abort_unless($address->customer->isAccessibleBy(request()->user()), 403);
 
         $name = $address->location_name;
         $address->delete();
@@ -110,6 +116,8 @@ class CustomerAddressController extends Controller
 
     public function apiList(Customer $customer): JsonResponse
     {
+        abort_unless($customer->isAccessibleBy(request()->user()), 403);
+
         $addresses = $customer->addresses()
             ->where('is_active', true)
             ->orderByDesc('is_default')

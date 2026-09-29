@@ -18,8 +18,10 @@ class CustomerContactController extends Controller
         $status = (string) $request->input('status', 'active');
         $customerId = (int) $request->input('customer_id', 0);
 
+        $actor = $request->user();
         $contacts = CustomerContact::query()
             ->with('customer')
+            ->when($actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin']), fn ($q) => $q->whereHas('customer', fn ($c) => $c->forUser($actor)))
             ->when($search, fn ($q) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$search.'%')->orWhere('company', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%')))
             ->when(in_array($type, ['shipper', 'consignee'], true), fn ($q) => $q->where('type', $type))
             ->when($status === 'inactive', fn ($q) => $q->where('is_active', false), fn ($q) => $q->where('is_active', true))
@@ -31,12 +33,14 @@ class CustomerContactController extends Controller
 
     public function create()
     {
-        return view('customer-contacts.form', ['contact' => new CustomerContact, 'customers' => Customer::orderBy('name')->get()]);
+        return view('customer-contacts.form', ['contact' => new CustomerContact, 'customers' => Customer::forUser(request()->user())->orderBy('name')->get()]);
     }
 
     public function store(Request $request, MasterDataService $service)
     {
         $validated = $this->validated($request);
+        abort_unless(Customer::findOrFail($validated['customer_id'])->isAccessibleBy($request->user()), 403);
+
         DB::transaction(function () use ($validated, $request, $service) {
             $contact = CustomerContact::create($validated);
             $service->log($request->user(), 'customer.contact_created', 'Menambahkan '.$contact->type.' '.$contact->name, ['module' => 'customer', 'record_id' => $contact->customer_id]);
@@ -47,6 +51,7 @@ class CustomerContactController extends Controller
 
     public function show(CustomerContact $customerContact)
     {
+        abort_unless($customerContact->customer->isAccessibleBy(request()->user()), 403);
         $customerContact->load('customer');
 
         return view('customer-contacts.show', ['contact' => $customerContact]);
@@ -54,12 +59,17 @@ class CustomerContactController extends Controller
 
     public function edit(CustomerContact $customerContact)
     {
-        return view('customer-contacts.form', ['contact' => $customerContact, 'customers' => Customer::orderBy('name')->get()]);
+        abort_unless($customerContact->customer->isAccessibleBy(request()->user()), 403);
+
+        return view('customer-contacts.form', ['contact' => $customerContact, 'customers' => Customer::forUser(request()->user())->orderBy('name')->get()]);
     }
 
     public function update(Request $request, CustomerContact $customerContact, MasterDataService $service)
     {
+        abort_unless($customerContact->customer->isAccessibleBy($request->user()), 403);
         $validated = $this->validated($request);
+        abort_unless(Customer::findOrFail($validated['customer_id'])->isAccessibleBy($request->user()), 403);
+
         if (! $this->versionValid($request, $customerContact)) {
             return back()->withInput()->withErrors(['lock_version' => 'Data telah diubah pihak lain. Muat ulang form.']);
         }
@@ -75,6 +85,8 @@ class CustomerContactController extends Controller
 
     public function destroy(Request $request, CustomerContact $customerContact, MasterDataService $service)
     {
+        abort_unless($customerContact->customer->isAccessibleBy($request->user()), 403);
+
         if (! $this->versionValid($request, $customerContact)) {
             return back()->withErrors(['lock_version' => 'Data telah diubah pihak lain. Muat ulang halaman.']);
         }
@@ -88,6 +100,8 @@ class CustomerContactController extends Controller
 
     public function forCustomer(Customer $customer): JsonResponse
     {
+        abort_unless($customer->isAccessibleBy(request()->user()), 403);
+
         return response()->json($customer->contacts()->orderBy('type')->orderBy('name')->get(['id', 'type', 'name', 'company', 'email', 'phone', 'address', 'country', 'notes']));
     }
 

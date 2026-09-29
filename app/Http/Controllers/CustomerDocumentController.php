@@ -12,6 +12,7 @@ class CustomerDocumentController extends Controller
     public function download(Customer $customer, CustomerDocument $document)
     {
         Gate::forUser(auth()->user())->authorize('customers.view');
+        abort_unless($customer->isAccessibleBy(request()->user()), 403);
         abort_unless($document->customer_id === $customer->id, 404);
         if (! \Storage::disk($document->disk)->exists($document->path)) {
             abort(404, 'File tidak ditemukan.');
@@ -23,6 +24,7 @@ class CustomerDocumentController extends Controller
     public function destroy(Customer $customer, CustomerDocument $document)
     {
         Gate::forUser(auth()->user())->authorize('customers.manage');
+        abort_unless($customer->isAccessibleBy(request()->user()), 403);
         abort_unless($document->customer_id === $customer->id, 404);
         if (\Storage::disk($document->disk)->exists($document->path)) {
             \Storage::disk($document->disk)->delete($document->path);

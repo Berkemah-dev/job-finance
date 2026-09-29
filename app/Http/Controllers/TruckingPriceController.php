@@ -14,14 +14,23 @@ class TruckingPriceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = TruckingPrice::with('vendor');
+        $actor = $request->user();
+        $isSalesOnly = $actor?->hasRole('sales') && ! $actor->hasRole(['sales-manager', 'super-admin', 'admin']);
+
+        $query = TruckingPrice::query();
+        if (! $isSalesOnly) {
+            $query->with('vendor');
+        }
+
         $search = mb_substr($request->string('search')->toString(), 0, 100);
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
+            $query->where(function ($q) use ($search, $isSalesOnly) {
                 $q->where('port_origin', 'like', '%'.$search.'%')
                     ->orWhere('destination', 'like', '%'.$search.'%')
-                    ->orWhere('currency', 'like', '%'.$search.'%')
-                    ->orWhereHas('vendor', fn ($vendor) => $vendor->where('name', 'like', '%'.$search.'%'));
+                    ->orWhere('currency', 'like', '%'.$search.'%');
+                if (! $isSalesOnly) {
+                    $q->orWhereHas('vendor', fn ($vendor) => $vendor->where('name', 'like', '%'.$search.'%'));
+                }
             });
         }
         if ($request->filled('port_origin')) {
@@ -36,14 +45,14 @@ class TruckingPriceController extends Controller
         if ($request->filled('overweight')) {
             $query->where('overweight', $request->boolean('overweight'));
         }
-        if ($request->filled('vendor_id')) {
+        if (! $isSalesOnly && $request->filled('vendor_id')) {
             $query->where('vendor_id', (int) $request->string('vendor_id')->toString());
         }
         if ($request->input('status') === 'inactive') {
             $query->where('is_active', false);
         }
         $items = $query->orderByDesc('effective_date')->orderByDesc('id')->paginate(10)->withQueryString();
-        $vendors = $this->truckingVendors();
+        $vendors = $isSalesOnly ? collect() : $this->truckingVendors();
 
         $containerUnits = ContainerUnit::options();
 
