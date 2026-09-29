@@ -262,7 +262,6 @@ class DemoDataSeeder extends Seeder
             $quotationService->transition($quotation, 'approve', ['lock_version' => $quotation->fresh()->lock_version], $users['sales_manager']);
             // Konversi quotation menjadi Job Order dilakukan oleh Operational.
             $job = $quotationService->convert($quotation, ['lock_version' => $quotation->fresh()->lock_version], $users['operation']);
-            $jobService->transition($job, 'open', ['lock_version' => $job->fresh()->lock_version], $users['operation']);
             $job = $job->fresh();
             $job->update([
                 'cs_id' => $users['operation']->id,

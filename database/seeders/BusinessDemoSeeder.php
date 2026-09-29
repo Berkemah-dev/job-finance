@@ -34,7 +34,6 @@ class BusinessDemoSeeder extends Seeder
             app(QuotationService::class)->transition($quotation, 'approve', ['lock_version' => $quotation->fresh()->lock_version], $salesManager);
             // Job Order dibuat oleh Operational sesuai policy convert quotation.
             $job = app(QuotationService::class)->convert($quotation, ['lock_version' => $quotation->fresh()->lock_version], $operation);
-            app(JobService::class)->transition($job, 'open', ['lock_version' => $job->fresh()->lock_version], $operation);
             $costService = app(JobCostService::class);
             $costService->save($job, null, ['job_version' => $job->fresh()->lock_version, 'description' => 'Dokumen dan reimbursement', 'type' => 'temporary', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Paket', 'unit_cost' => '5000000', 'unit_price' => '5000000'], $finance);
             $costService->save($job, null, ['job_version' => $job->fresh()->lock_version, 'description' => 'Jasa trucking', 'type' => 'provision', 'cost_date' => today()->toDateString(), 'quantity' => '1', 'unit' => 'Layanan', 'unit_cost' => '3000000', 'unit_price' => '4500000'], $finance);
