@@ -532,6 +532,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     {{ $noteContent ?: '—' }}
                 </div>
             </div>
+            @if(!empty($quotation?->internal_notes))
+                <div style="margin-top: 14px;">
+                    <div style="font-size: 13.5px; font-weight: 700; text-decoration: underline; color: #1e3a8a; margin-bottom: 6px;">
+                        CATATAN INTERNAL (DARI QUOTATION) :
+                    </div>
+                    <div style="border: 1px solid #93c5fd; min-height: 50px; padding: 12px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; background: #eff6ff; color: #1e3a8a; border-radius: 6px;">
+                        {{ $quotation->internal_notes }}
+                    </div>
+                </div>
+            @endif
         </div>
     </section>
 </div>

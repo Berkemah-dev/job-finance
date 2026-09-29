@@ -56,7 +56,7 @@ class QuotationRequest extends FormRequest
             'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->whereNull('deleted_at')],
             'sales_id' => ['nullable', 'integer', 'exists:users,id'],
             'subject' => ['required', 'string', 'max:255'], 'quotation_date' => ['required', 'date_format:Y-m-d'],
-            'valid_until' => ['required', 'date_format:Y-m-d', 'after_or_equal:quotation_date'], 'notes' => ['nullable', 'string', 'max:5000'],
+            'valid_until' => ['required', 'date_format:Y-m-d', 'after_or_equal:quotation_date'], 'notes' => ['nullable', 'string', 'max:5000'], 'internal_notes' => ['nullable', 'string', 'max:5000'],
             'shipper_name' => ['nullable', 'string', 'max:160'], 'shipper_address' => ['nullable', 'string', 'max:5000'],
             'consignee_name' => ['nullable', 'string', 'max:160'], 'consignee_address' => ['nullable', 'string', 'max:5000'],
             'service_type' => ['nullable', 'string', Rule::in(ServiceType::allowedKeys())],

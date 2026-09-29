@@ -54,7 +54,8 @@
 .port-autocomplete-field input:focus { border-color: #dbe3ef; box-shadow: none; }
 </style>
 
-<div class="field" style="grid-column: 1 / -1;"><label for="notes">Catatan / Remarks Khusus (Opsional)</label><textarea id="notes" name="notes" rows="2" placeholder="Masukkan catatan tambahan jika ada (akan dicetak di bagian REMARKS)...">{{ old('notes', $quotation->notes) }}</textarea><small class="subtle" style="font-size:12px;color:#64748b;">Jika dikosongkan, bagian REMARKS tidak akan dicetak pada dokumen penawaran.</small></div>
+<div class="field" style="grid-column: 1 / -1;"><label for="notes">Catatan Khusus (Dicetak di PDF)</label><textarea id="notes" name="notes" rows="2" placeholder="Masukkan catatan tambahan jika ada (akan dicetak di bagian REMARKS)...">{{ old('notes', $quotation->notes) }}</textarea><small class="subtle" style="font-size:12px;color:#64748b;">Catatan ini akan <strong>dicetak di PDF</strong> Penawaran Client.</small></div>
+<div class="field" style="grid-column: 1 / -1;"><label for="internal_notes" style="color: #1e3a8a; font-weight: 700;">Catatan Internal (TIDAK Muncul di PDF, Akan Muncul di CS / Job Order)</label><textarea id="internal_notes" name="internal_notes" rows="2" placeholder="Masukkan catatan khusus tim internal (misal: instruksi khusus CS/Ops, catatan vendor, dll)..." style="border-color: #93c5fd; background: #f8fafc;">{{ old('internal_notes', $quotation->internal_notes) }}</textarea><small class="subtle" style="font-size:12px;color:#1e40af;">Catatan ini <strong>TIDAK akan dicetak pada PDF</strong> penawaran, tetapi akan tampil pada detail Quotation dan <strong>CS / Job Order</strong>.</small></div>
 
 </div>
 
