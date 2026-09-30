@@ -40,11 +40,18 @@ class QuotationTest extends TestCase
 
     private function data(): array
     {
-        return ['customer_id' => $this->customer->id, 'subject' => 'Pengiriman Jakarta Surabaya', 'quotation_date' => '2026-09-08', 'valid_until' => '2026-10-08',
+        return [
+            'customer_id' => $this->customer->id,
+            'subject' => 'Pengiriman Jakarta Surabaya',
+            'quotation_date' => '2026-09-08',
+            'valid_until' => '2026-10-08',
+            'notes' => 'Free time demurrage 7 hari di pelabuhan',
+            'internal_notes' => 'Margin minimal 15%, vendor gunakan Buana Trucking',
             'items' => [
                 ['description' => 'Dokumen', 'type' => 'temporary', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '5000000', 'unit_price' => '5000000'],
                 ['description' => 'Pengiriman', 'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '3000000', 'unit_price' => '4500000'],
-            ]];
+            ],
+        ];
     }
 
     private function draft(): Quotation
@@ -76,9 +83,10 @@ class QuotationTest extends TestCase
         $this->assertSame('9500000.00', $q->subtotal);
         $this->assertSame('33.33', $q->margin);
         $this->assertSame(QuotationStatus::Draft, $q->status);
+        $this->assertSame('Margin minimal 15%, vendor gunakan Buana Trucking', $q->internal_notes);
         $this->get('/quotations?search='.$q->number)->assertOk()->assertSee($q->number);
-        $this->get('/quotations/'.$q->id)->assertOk()->assertSee('9.500.000,00')->assertSee('Ajukan quotation');
-        $this->get('/quotations/'.$q->id.'/edit')->assertOk()->assertSee('Pengiriman');
+        $this->get('/quotations/'.$q->id)->assertOk()->assertSee('9.500.000,00')->assertSee('Ajukan quotation')->assertSee('Margin minimal 15%, vendor gunakan Buana Trucking');
+        $this->get('/quotations/'.$q->id.'/edit')->assertOk()->assertSee('Pengiriman')->assertSee('Margin minimal 15%, vendor gunakan Buana Trucking');
         $this->assertDatabaseHas('activity_logs', ['action' => 'quotation.created', 'user_id' => $this->actor->id]);
     }
 
@@ -110,6 +118,7 @@ class QuotationTest extends TestCase
         $this->assertSame($q->id, $job->quotation_id);
         $this->assertSame('9500000.00', $job->quotation_snapshot['totals']['subtotal']);
         $this->assertCount(2, $job->quotation_snapshot['items']);
+        $this->assertSame('Margin minimal 15%, vendor gunakan Buana Trucking', $job->operational_notes);
         $this->assertSame(QuotationStatus::Converted, $q->fresh()->status);
         $this->actingAs($cs);
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertForbidden();

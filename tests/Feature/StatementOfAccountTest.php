@@ -63,8 +63,8 @@ class StatementOfAccountTest extends TestCase
     public function test_statement_running_balance_and_period_math(): void
     {
         $old = $this->invoice(today()->subDays(95)->toDateString(), today()->subDays(95)->toDateString());
-        $recent = $this->invoice(today()->subDays(3)->toDateString(), today()->subDays(1)->toDateString());
-        $this->pay($recent, today()->subDays(2)->toDateString(), '4000000');
+        $recent = $this->invoice(today()->toDateString(), today()->toDateString());
+        $this->pay($recent, today()->toDateString(), '4000000');
 
         $from = today()->startOfMonth()->toDateString();
         $this->get('/reports/statement-of-account/'.$this->customer->id.'?from='.$from.'&to='.today()->toDateString())
@@ -145,7 +145,7 @@ class StatementOfAccountTest extends TestCase
 
     public function test_archived_customer_statement_still_opens_for_historical_accounting(): void
     {
-        $invoice = $this->invoice(today()->subDays(5)->toDateString(), today()->addDays(25)->toDateString());
+        $invoice = $this->invoice(today()->toDateString(), today()->addDays(25)->toDateString());
         $this->actingAs(User::where('email', 'sales-manager@jobfinance.test')->firstOrFail());
         $this->delete('/customers/'.$this->customer->id, ['lock_version' => (int) $this->customer->lock_version])->assertSessionHasNoErrors();
         $this->assertSoftDeleted($this->customer);
@@ -177,12 +177,12 @@ class StatementOfAccountTest extends TestCase
 
     public function test_payment_with_pph23_reduces_soa_balance_and_shows_in_detail_rows(): void
     {
-        $invoice = $this->invoice(today()->subDays(5)->toDateString(), today()->addDays(25)->toDateString());
+        $invoice = $this->invoice(today()->toDateString(), today()->addDays(25)->toDateString());
         // Total invoice is 9.500.000 (5jt temporary + 4.5jt provision sell)
         // Pay 9.310.000 transfer + 190.000 PPh 23 = 9.500.000 total deduction
         $this->post('/invoices/'.$invoice->id.'/payments', [
             'lock_version' => $invoice->lock_version,
-            'payment_date' => today()->subDays(2)->toDateString(),
+            'payment_date' => today()->toDateString(),
             'amount' => '9310000',
             'pph23_amount' => '190000',
             'deposit_account' => 'bank',

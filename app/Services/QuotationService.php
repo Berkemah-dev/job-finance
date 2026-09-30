@@ -47,7 +47,7 @@ class QuotationService
                 $data['payment_terms'] = $customer->default_payment_terms;
             }
             $quotation->fill(Arr::only($data, [
-                'customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes',
+                'customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'internal_notes',
                 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address',
                 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms',
                 'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity',
@@ -182,7 +182,7 @@ class QuotationService
             $quotation->load('items');
             $snapshot = [
                 'number' => $quotation->number, 'customer' => $quotation->customer_snapshot, 'subject' => $quotation->subject,
-                'quotation_date' => $quotation->quotation_date->format('Y-m-d'), 'valid_until' => $quotation->valid_until->format('Y-m-d'), 'notes' => $quotation->notes,
+                'quotation_date' => $quotation->quotation_date->format('Y-m-d'), 'valid_until' => $quotation->valid_until->format('Y-m-d'), 'notes' => $quotation->notes, 'internal_notes' => $quotation->internal_notes,
                 'service_type' => $quotation->service_type, 'origin' => $quotation->origin, 'destination' => $quotation->destination,
                 'terms_of_delivery' => $quotation->terms_of_delivery, 'cargo_qty' => $quotation->cargo_qty, 'weight_meas' => $quotation->weight_meas, 'commodity' => $quotation->commodity,
                 'currency' => $quotation->currency, 'exchange_rate' => $quotation->exchange_rate, 'payment_terms' => $quotation->payment_terms,
@@ -223,7 +223,7 @@ class QuotationService
                 'gross_weight' => $grossWeight,
                 'volume' => $volume,
                 'package_count' => $packageCount,
-                'operational_notes' => $quotation->internal_notes ?: $quotation->notes,
+                'operational_notes' => $quotation->internal_notes ?? null,
                 'created_by' => $actor->id,
                 'updated_by' => $actor->id,
             ]);
@@ -253,7 +253,7 @@ class QuotationService
             $copy->number = $this->numbers->next('quo');
             $copy->status = QuotationStatus::Draft;
             $copy->created_by = $actor->id;
-            $fillFields = ['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity', 'discount', 'tax_rate'];
+            $fillFields = ['customer_id', 'sales_id', 'subject', 'quotation_date', 'valid_until', 'notes', 'internal_notes', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms', 'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity', 'discount', 'tax_rate'];
             $copy->fill(Arr::only($quotation->only($fillFields), $fillFields));
             $copy->customer_snapshot = $quotation->customer_snapshot;
             $copy->forceFill($quotation->only(['total_temporary', 'total_provision_cost', 'total_provision_sell', 'subtotal', 'profit', 'margin']));

@@ -5,115 +5,115 @@
     <title>Job Order {{ $job->number }}</title>
     <style>
         @page {
-            margin: 28px 36px 28px 36px;
+            margin: 22pt 26pt 20pt 26pt;
+            size: a4 portrait;
         }
         * {
             box-sizing: border-box;
         }
         body {
-            font-family: DejaVu Sans, sans-serif;
-            color: #000;
-            font-size: 10px;
-            line-height: 1.4;
+            font-family: 'Courier New', Courier, monospace;
+            color: #000000;
+            font-size: 8.5pt;
+            line-height: 1.25;
             margin: 0;
             padding: 0;
         }
-        .header {
-            margin-bottom: 20px;
+        .header-table {
             width: 100%;
-        }
-        .header-logo {
-            float: left;
-            width: 48%;
-        }
-        .header-logo img {
-            max-width: 200px;
-            max-height: 70px;
-        }
-        .header-meta {
-            float: right;
-            width: 44%;
-        }
-        .clear {
-            clear: both;
-        }
-        .meta-box {
-            border: 1px solid #000;
-            width: 100%;
+            margin-bottom: 14pt;
             border-collapse: collapse;
         }
-        .meta-box-title {
-            text-align: center;
-            font-size: 14px;
-            font-weight: 700;
-            padding: 4px;
-            letter-spacing: 1px;
-            border-bottom: 1px solid #000;
+        .header-logo {
+            width: 58%;
+            vertical-align: top;
+        }
+        .header-logo img {
+            width: 140pt;
+            height: auto;
+        }
+        .header-company {
+            font-size: 7.5pt;
+            line-height: 1.2;
+            color: #000;
+            margin-top: 4pt;
+        }
+        .header-company .company-name {
+            font-weight: bold;
+            font-size: 8.5pt;
+            margin-bottom: 2pt;
+        }
+        .header-meta {
+            width: 42%;
+            vertical-align: top;
         }
         .meta-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9.5px;
+            border: 1px solid #000;
+            font-size: 8pt;
         }
         .meta-table td {
-            padding: 3px 6px;
+            padding: 2pt 5pt;
             border: 1px solid #000;
+            vertical-align: middle;
         }
         .meta-table td.lbl {
-            width: 35%;
-            font-weight: 600;
+            width: 36%;
+            font-weight: bold;
         }
         .meta-table td.val {
-            width: 65%;
-            font-weight: 700;
+            width: 64%;
+            font-weight: normal;
         }
 
         /* DATA JOB ORDER TABLE */
         table.job-data {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 16px;
-            font-size: 10px;
+            border: 1px solid #000;
+            margin-bottom: 12pt;
+            font-size: 8.5pt;
         }
         table.job-data th {
-            background-color: #e5e5e5;
+            background-color: #dfdfdf;
             color: #000;
-            font-weight: 700;
+            font-weight: bold;
             text-align: left;
-            padding: 5px 8px;
+            padding: 3pt 6pt;
             border: 1px solid #000;
-            font-size: 10.5px;
+            font-size: 8.5pt;
             letter-spacing: 0.5px;
         }
         table.job-data td {
             border: 1px solid #000;
-            padding: 4px 8px;
+            padding: 2.5pt 6pt;
             vertical-align: middle;
         }
         table.job-data td.lbl {
             width: 25%;
-            font-weight: 600;
+            font-weight: bold;
         }
         table.job-data td.val {
             width: 75%;
-            font-weight: 700;
+            font-weight: normal;
         }
 
         /* NOTE BOX */
         .note-title {
-            font-size: 10.5px;
-            font-weight: 700;
-            text-decoration: underline;
+            font-size: 8.5pt;
+            font-weight: bold;
             color: #000;
-            margin-bottom: 6px;
+            margin-bottom: 4pt;
         }
         .note-box {
             border: 1px solid #000;
-            min-height: 180px;
-            padding: 10px;
-            font-size: 10px;
-            line-height: 1.5;
+            min-height: 48pt;
+            padding: 6pt 8pt;
+            font-size: 8.5pt;
+            line-height: 1.35;
             white-space: pre-wrap;
+            color: #000;
         }
         .footer {
             position: fixed;
@@ -121,7 +121,7 @@
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 8.5px;
+            font-size: 8pt;
             color: #777;
         }
     </style>
@@ -151,14 +151,21 @@
 @endphp
 
 {{-- HEADER --}}
-<div class="header">
-    <div class="header-logo">
-        <img src="{{ $logoBase64 ?: public_path('images/logo.png') }}" alt="RDX Logistics">
-    </div>
-    <div class="header-meta">
-        <div class="meta-box">
-            <div class="meta-box-title">JOB ORDER</div>
+<table class="header-table">
+    <tr>
+        <td class="header-logo">
+            <img src="{{ $logoBase64 ?: public_path('images/logo.png') }}" alt="RDX Logistics">
+            <div class="header-company">
+                <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
+                Jl.Teh No.3C Jakarta Barat 11110 Indonesia<br>
+                Telp : 021-38873060
+            </div>
+        </td>
+        <td class="header-meta">
             <table class="meta-table">
+                <tr>
+                    <td colspan="2" style="text-align: center; font-weight: bold; font-size: 9.5pt; padding: 3pt; background: #dfdfdf; letter-spacing: 0.5px;">JOB ORDER</td>
+                </tr>
                 <tr>
                     <td class="lbl">JO. No</td>
                     <td class="val">{{ $job->number }}</td>
@@ -176,10 +183,9 @@
                     <td class="val">{{ strtoupper($marketingName) }}</td>
                 </tr>
             </table>
-        </div>
-    </div>
-    <div class="clear"></div>
-</div>
+        </td>
+    </tr>
+</table>
 
 {{-- DATA JOB ORDER TABLE --}}
 <table class="job-data">

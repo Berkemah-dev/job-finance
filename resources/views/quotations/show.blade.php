@@ -32,7 +32,7 @@
 <div class="summary-box"><div class="summary-row"><span>Diskon</span><strong>− Rp {{ \App\Support\Money::format($quotation->discount) }}</strong></div><div class="summary-row"><span>Pajak ({{ \App\Support\Money::format($quotation->tax_rate) }}%)</span><strong>Rp {{ \App\Support\Money::format($quotation->tax_amount) }}</strong></div><div class="summary-row summary-total"><span>Grand total</span><strong>Rp {{ \App\Support\Money::format($quotation->grand_total) }}</strong></div></div>
 @endif
 @if($quotation->notes)<div class="detail-notes"><strong>Catatan Khusus (PDF)</strong><br>{{ $quotation->notes }}</div>@endif
-@if($quotation->internal_notes)<div class="detail-notes" style="background: #eff6ff; border-color: #bfdbfe; color: #1e3a8a;"><strong>Catatan Internal (TIDAK Muncul di PDF, Akan Muncul di CS / Job Order)</strong><br>{{ $quotation->internal_notes }}</div>@endif
+@if($quotation->internal_notes)<div class="detail-notes"><strong>Catatan Internal</strong><br>{{ $quotation->internal_notes }}</div>@endif
 @if($quotation->approved_at)<div class="detail-notes">Disetujui {{ $quotation->approver?->name }} · {{ $quotation->approved_at->format('d/m/Y H:i') }}</div>@endif
 @if($quotation->revised_at)<div class="detail-notes"><strong>Direvisi</strong><br>{{ $quotation->revisedBy?->name }} · {{ $quotation->revised_at->format('d/m/Y H:i') }}<br>{{ $quotation->revision_reason }}</div>@endif
 @if($quotation->rejection_reason)<div class="detail-notes"><strong>Alasan penolakan</strong><br>{{ $quotation->rejection_reason }}</div>@endif

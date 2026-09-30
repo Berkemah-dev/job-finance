@@ -71,10 +71,15 @@ class BookingConfirmationFeatureTest extends TestCase
         $showRes->assertSee('Global Imports Ltd');
         $showRes->assertSee('PT Ekspor Sejahtera');
 
-        // Test Job Order index displays direct BC shortcut for export
+        // BC shortcut removed from jobs index as requested (only managed inside Job Order)
         $jobsRes = $this->get(route('jobs.index'));
         $jobsRes->assertOk();
-        $jobsRes->assertSee(route('booking-confirmations.preview', $bc));
+        $jobsRes->assertDontSee(route('booking-confirmations.preview', $bc));
+
+        // Test Job Order detail displays the BC preview
+        $jobDetailRes = $this->get(route('jobs.show', $job));
+        $jobDetailRes->assertOk();
+        $jobDetailRes->assertSee(route('booking-confirmations.preview', $bc));
 
         // Test PDF generation
         $pdfRes = $this->get(route('booking-confirmations.pdf', ['bookingConfirmation' => $bc, 'mode' => 'inline']));

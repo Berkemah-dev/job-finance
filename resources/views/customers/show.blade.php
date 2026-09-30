@@ -5,8 +5,8 @@
     <div><p class="eyebrow">SALES & CUSTOMER</p><h1>{{ $customer->code }}</h1><p>{{ $customer->name }}</p></div>
     <div class="action-group">
         <a class="button button-secondary" href="{{ route('customers.index') }}">← Kembali</a>
-        @if(!$customer->trashed())<a class="button button-primary" href="{{ route('customers.edit',$customer) }}">Edit Customer</a>@endif
-        @if(!$customer->trashed() && ($customer->approval_status ?? 'approved') === 'pending' && auth()->user()?->hasRole(['finance-manager','finance','super-admin','admin']))
+        @if(!$customer->trashed() && auth()->user()?->can('customers.manage'))<a class="button button-primary" href="{{ route('customers.edit',$customer) }}">Edit Customer</a>@endif
+        @if(!$customer->trashed() && ($customer->approval_status ?? 'approved') === 'pending' && auth()->user()?->can('customers.approve'))
             <form method="POST" action="{{ route('customers.approve',$customer) }}" data-confirm="Setujui customer ini?">
                 @csrf
                 <input type="hidden" name="lock_version" value="{{ $customer->lock_version }}">

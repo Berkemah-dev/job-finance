@@ -23,7 +23,7 @@
         <button class="button button-primary">Cari</button>
         <a class="text-link" href="{{ route('customers.index') }}">Reset</a>
 
-        @if(($pendingCount ?? 0) > 0 && auth()->user()->hasRole(['finance-manager', 'finance', 'super-admin', 'admin']))
+        @if(($pendingCount ?? 0) > 0 && auth()->user()?->can('customers.approve'))
             <div style="margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <a class="button button-secondary button-sm" href="{{ route('customers.index', ['status' => 'pending']) }}" style="{{ $status === 'pending' ? 'background: #fff7ed; border-color: #f97316; color: #c2410c; font-weight: 700;' : '' }}" title="Lihat Customer Menunggu Approval">
                     <x-icon name="check"/> Approval <span style="background: #ea580c; color: #fff; border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 800; margin-left: 2px;">{{ $pendingCount }}</span>
@@ -80,8 +80,10 @@
                         <div class="table-actions">
                             @if(!$customer->trashed())
                                 <a class="btn-action btn-action-primary" href="{{ route('customers.show', $customer) }}" title="Detail Customer" data-tooltip="Detail" aria-label="Detail Customer"><x-icon name="eye"/></a>
-                                <a class="btn-action" href="{{ route('customers.edit', $customer) }}" title="Edit Customer" data-tooltip="Edit" aria-label="Edit Customer"><x-icon name="edit"/></a>
-                                @if(($customer->approval_status ?? 'approved') === 'pending' && auth()->user()?->hasRole(['finance-manager', 'finance', 'super-admin', 'admin']))
+                                @can('customers.manage')
+                                    <a class="btn-action" href="{{ route('customers.edit', $customer) }}" title="Edit Customer" data-tooltip="Edit" aria-label="Edit Customer"><x-icon name="edit"/></a>
+                                @endcan
+                                @if(($customer->approval_status ?? 'approved') === 'pending' && auth()->user()?->can('customers.approve'))
                                     <form method="POST" action="{{ route('customers.approve', $customer) }}" data-confirm="Setujui customer {{ $customer->name }} ({{ $customer->code }})?">
                                         @csrf
                                         <input type="hidden" name="lock_version" value="{{ $customer->lock_version }}">
