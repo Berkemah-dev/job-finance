@@ -11,10 +11,29 @@
 <div class="field"><label for="overweight">Kategori berat <span class="required">*</span></label><select id="overweight" name="overweight"><option value="0" @selected(!$truckingPrice->exists || !$truckingPrice->overweight)>Normal</option><option value="1" @selected($truckingPrice->exists && $truckingPrice->overweight)>Overweight</option></select><small class="form-help">Pilih Normal atau Overweight sesuai tarif.</small></div>
 <div class="field"><label for="vendor_id">Vendor Trucking <span class="required">*</span></label><select id="vendor_id" name="vendor_id" required><option value="">Pilih Vendor Trucking</option>@foreach($vendors as $vendor)<option value="{{ $vendor->id }}" @selected((int) old('vendor_id',$truckingPrice->vendor_id)===$vendor->id)>{{ $vendor->name }}</option>@endforeach</select></div>
 <div class="field"><label for="currency">Mata uang <span class="required">*</span></label><select id="currency" name="currency" required>@foreach(config('operations.currencies') as $code=>$label)<option value="{{ $code }}" @selected(old('currency',$truckingPrice->currency)===$code)>{{ $label }}</option>@endforeach</select></div>
-<div class="field"><label for="price">Modal / Cost (Beli) <span class="required">*</span></label><input id="price" type="text" inputmode="decimal" name="price" value="{{ old('price',$truckingPrice->exists?number_format((float) $truckingPrice->price, 2, '.', ''):'') }}" placeholder="0.00" required></div>
-<div class="field"><label for="selling_price">Harga Jual (Selling Price)</label><input id="selling_price" type="text" inputmode="decimal" name="selling_price" value="{{ old('selling_price',$truckingPrice->exists && $truckingPrice->selling_price?number_format((float) $truckingPrice->selling_price, 2, '.', ''):'') }}" placeholder="0.00"></div>
+<div class="field"><label for="price">Modal / Cost (Beli) <span class="required">*</span></label><input id="price" type="text" inputmode="decimal" name="price" value="{{ old('price',$truckingPrice->exists?number_format((float) $truckingPrice->price, 0, ',', '.'):'') }}" placeholder="cth: 1.000.000" required></div>
+<div class="field"><label for="selling_price">Harga Jual (Selling Price)</label><input id="selling_price" type="text" inputmode="decimal" name="selling_price" value="{{ old('selling_price',$truckingPrice->exists && $truckingPrice->selling_price?number_format((float) $truckingPrice->selling_price, 0, ',', '.'):'') }}" placeholder="cth: 1.500.000"></div>
 <div class="field"><label for="effective_date">Tanggal berlaku <span class="required">*</span></label><input id="effective_date" type="date" name="effective_date" value="{{ old('effective_date',$truckingPrice->effective_date?->format('Y-m-d') ?? today()->format('Y-m-d')) }}" required></div>
 <div class="field"><label for="is_active">Status</label><select id="is_active" name="is_active"><option value="1" @selected(!$truckingPrice->exists || $truckingPrice->is_active)>Aktif</option><option value="0" @selected($truckingPrice->exists && !$truckingPrice->is_active)>Nonaktif</option></select></div>
 </div>
 <div class="form-actions"><a class="button button-secondary" href="{{ route('pricing.trucking.index') }}">Batal</a><button class="button button-primary">Simpan trucking price</button></div></form></section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function formatRibuan(input) {
+        let val = input.value.replace(/[^\d]/g, '');
+        if (val) {
+            input.value = new Intl.NumberFormat('id-ID').format(val);
+        }
+    }
+    const priceInput = document.getElementById('price');
+    const sellingInput = document.getElementById('selling_price');
+    [priceInput, sellingInput].forEach(inp => {
+        if (!inp) return;
+        inp.addEventListener('input', function() {
+            formatRibuan(this);
+        });
+    });
+});
+</script>
 @endsection

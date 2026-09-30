@@ -17,8 +17,30 @@ class TruckingPriceRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['overweight' => $this->boolean('overweight')]);
-        $this->merge(['is_active' => $this->boolean('is_active')]);
+        $this->merge([
+            'overweight' => $this->boolean('overweight'),
+            'is_active' => $this->boolean('is_active'),
+            'price' => $this->sanitizePrice($this->input('price')),
+            'selling_price' => $this->sanitizePrice($this->input('selling_price')),
+        ]);
+    }
+
+    private function sanitizePrice($val): mixed
+    {
+        if ($val === null || $val === '') {
+            return null;
+        }
+        if (is_numeric($val)) {
+            return $val;
+        }
+        $str = trim((string) $val);
+        // Replace thousand separators dot with nothing if followed by 3 digits
+        if (preg_match('/\.\d{3}/', $str)) {
+            $str = preg_replace('/(?<=\d)\.(?=\d{3}(?:\.|$|,))/', '', $str);
+        }
+        // Replace comma with dot if used as decimal separator
+        $str = str_replace(',', '.', $str);
+        return is_numeric($str) ? (float) $str : $val;
     }
 
     public function rules(): array

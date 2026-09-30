@@ -406,5 +406,66 @@ class MasterDataSeeder extends Seeder
                 ['code' => $port['code'], 'is_active' => $port['is_active']]
             );
         }
+
+        // =============================================
+        // DEFAULT TARIF ESTIMASI LCL (FOB / POD)
+        // =============================================
+        $defaultLclRates = [
+            [
+                'fob_port' => 'Chittagong',
+                'country' => 'Bangladesh',
+                'subject' => 'Via Singapore',
+                'customer' => null,
+                'lead_time_days' => 15,
+                'ocean_freight_rate' => 23.00,
+                'gri_rate' => 19.00,
+                'cfs_rate' => 15.00,
+                'cfs_min_wm' => 2.00,
+                'others_per_set' => 50.00,
+                'mechanic_rate' => 250000.00,
+                'mechanic_min_wm' => 2.00,
+                'administration' => 0.00,
+                'is_active' => true,
+            ],
+            [
+                'fob_port' => 'Shanghai',
+                'country' => 'China',
+                'subject' => 'Direct',
+                'customer' => null,
+                'lead_time_days' => 12,
+                'ocean_freight_rate' => 35.00,
+                'gri_rate' => 15.00,
+                'cfs_rate' => 18.00,
+                'cfs_min_wm' => 2.00,
+                'others_per_set' => 45.00,
+                'mechanic_rate' => 250000.00,
+                'mechanic_min_wm' => 2.00,
+                'administration' => 0.00,
+                'is_active' => true,
+            ],
+            [
+                'fob_port' => 'Singapore',
+                'country' => 'Singapore',
+                'subject' => 'Direct',
+                'customer' => null,
+                'lead_time_days' => 4,
+                'ocean_freight_rate' => 18.00,
+                'gri_rate' => 10.00,
+                'cfs_rate' => 12.00,
+                'cfs_min_wm' => 2.00,
+                'others_per_set' => 30.00,
+                'mechanic_rate' => 200000.00,
+                'mechanic_min_wm' => 2.00,
+                'administration' => 0.00,
+                'is_active' => true,
+            ],
+        ];
+
+        foreach ($defaultLclRates as $rate) {
+            \App\Models\LclRate::firstOrCreate(
+                ['fob_port' => $rate['fob_port'], 'subject' => $rate['subject']],
+                $rate
+            );
+        }
     }
 }

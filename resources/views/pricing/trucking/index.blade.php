@@ -66,7 +66,12 @@
         </td>
         @unless($isSalesOnly)
             <td>
-                @if(($item->vendors_count ?? 0) > 0)
+                @if(!empty($item->cost_display))
+                    <strong style="color: #0f172a; font-size: 13.5px;">
+                        {{ $item->cost_display }}
+                    </strong>
+                    <br><small class="muted-cell">{{ $item->vendors_count }} Vendor · {{ implode(', ', array_slice($item->vendor_names ?? [], 0, 2)) }}{{ count($item->vendor_names ?? []) > 2 ? '...' : '' }}</small>
+                @elseif(($item->vendors_count ?? 0) > 0)
                     <span class="badge-pill" style="font-weight: 600; color: #1e293b;">
                         {{ $item->vendors_count }} Vendor
                     </span>

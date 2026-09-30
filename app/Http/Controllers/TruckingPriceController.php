@@ -64,12 +64,22 @@ class TruckingPriceController extends Controller
             $vendorNames = $rates->pluck('vendor.name')->filter()->unique()->values()->all();
             $containerTypes = $rates->pluck('container_type')->unique()->values()->all();
 
+            $minPrice = $rates->whereNotNull('price')->min('price');
+            $maxPrice = $rates->whereNotNull('price')->max('price');
+            $costDisplay = null;
+            if ($minPrice !== null) {
+                $costDisplay = ((float) $minPrice === (float) $maxPrice)
+                    ? ($first->currency ?? 'IDR') . ' ' . number_format((float) $minPrice, 0, ',', '.')
+                    : ($first->currency ?? 'IDR') . ' ' . number_format((float) $minPrice, 0, ',', '.') . ' ~ ' . number_format((float) $maxPrice, 0, ',', '.');
+            }
+
             return (object) [
                 'id' => $first->id,
                 'representative' => $first,
                 'port_origin' => $first->port_origin,
                 'destination' => $first->destination,
                 'selling_price' => $sellingPrice,
+                'cost_display' => $costDisplay,
                 'currency' => $first->currency ?? 'IDR',
                 'effective_date' => $rates->max('effective_date'),
                 'effective_until' => $rates->whereNotNull('effective_until')->max('effective_until'),
