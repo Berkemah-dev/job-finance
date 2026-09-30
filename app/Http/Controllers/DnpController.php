@@ -214,23 +214,27 @@ class DnpController extends Controller
         if ($value === null || $value === '') {
             return 0.0;
         }
-        if (is_numeric($value)) {
+        if (is_int($value) || is_float($value)) {
             return (float)$value;
         }
-        $val = trim((string)$value);
-        if (str_contains($val, ',') && str_contains($val, '.')) {
-            $lastComma = strrpos($val, ',');
-            $lastDot = strrpos($val, '.');
+        $str = trim((string)$value);
+        // Replace thousand separators dot if followed by 3 digits (e.g. 1.500.000 or 1.500.000,00)
+        if (preg_match('/\.\d{3}/', $str)) {
+            $str = preg_replace('/(?<=\d)\.(?=\d{3}(?:\.|$|,))/', '', $str);
+        }
+        if (str_contains($str, ',') && str_contains($str, '.')) {
+            $lastComma = strrpos($str, ',');
+            $lastDot = strrpos($str, '.');
             if ($lastDot > $lastComma) {
-                $val = str_replace(',', '', $val);
+                $str = str_replace(',', '', $str);
             } else {
-                $val = str_replace('.', '', $val);
-                $val = str_replace(',', '.', $val);
+                $str = str_replace('.', '', $str);
+                $str = str_replace(',', '.', $str);
             }
-        } elseif (str_contains($val, ',')) {
-            $val = str_replace(',', '.', $val);
+        } elseif (str_contains($str, ',')) {
+            $str = str_replace(',', '.', $str);
         }
 
-        return is_numeric($val) ? (float)$val : 0.0;
+        return is_numeric($str) ? (float)$str : 0.0;
     }
 }

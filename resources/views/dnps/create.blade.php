@@ -14,28 +14,26 @@
     flex-direction: column;
 }
 .form-grid .field label {
-    min-height: 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 11.5px;
+    margin-bottom: 6px;
+    font-size: 13px;
     font-weight: 600;
-    color: #334155;
-    line-height: 1.3;
+    color: #1e293b;
+    line-height: 1.4;
 }
 .dnp-doc-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     overflow: hidden;
 }
 .dnp-doc-table th, .dnp-doc-table td {
-    padding: 9px 14px;
-    font-size: 12.5px;
+    padding: 10px 14px;
+    font-size: 13px;
     border-bottom: 1px solid #f1f5f9;
 }
 .dnp-doc-table th {
@@ -43,7 +41,7 @@
     font-weight: 700;
     color: #475569;
     text-transform: uppercase;
-    font-size: 11px;
+    font-size: 11.5px;
     letter-spacing: 0.5px;
 }
 .dnp-doc-table tr:hover {
@@ -51,7 +49,7 @@
 }
 .dnp-doc-table td.checkbox-cell {
     text-align: center;
-    width: 90px;
+    width: 60px;
 }
 .dnp-doc-table td.no-cell {
     text-align: center;
@@ -86,10 +84,13 @@
         @csrf
 
         {{-- 1. DATA DNP --}}
-        <div class="form-section-heading" style="background: #1e40af; color: #fff; padding: 10px 16px; border-radius: 6px; margin-bottom: 16px;">
-            <h2 style="color: #fff; margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                <span>📋</span> Data DNP
-            </h2>
+        <div class="panel-heading" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px;">
+            <div>
+                <h2 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 4px; display: flex; align-items: center; gap: 8px;">
+                    <x-icon name="file" style="width: 16px; height: 16px; color: #2563eb;"/> Data Deklarasi Nilai Pabean
+                </h2>
+                <span class="subtle" style="font-size: 12.5px;">Rincian pihak transaksi, mata uang, dan nilai pabean (CIF)</span>
+            </div>
         </div>
 
         <div class="form-grid">
@@ -141,7 +142,7 @@
             <div class="field span-2">
                 <label for="commodity">
                     <span style="font-weight: 700; color: #1e293b;">Commodity (Nama Barang)</span>
-                    <span style="font-size: 11px; color: #64748b; font-weight: normal; margin-left: 6px;">— Otomatis terisi dari Job Order</span>
+                    <span style="font-size: 11.5px; color: #64748b; font-weight: normal; margin-left: 6px;">— Otomatis terisi dari Job Order</span>
                 </label>
                 <input id="commodity" name="commodity" maxlength="500"
                     value="{{ old('commodity', $selectedJob?->cargo_description) }}"
@@ -158,28 +159,28 @@
             </div>
 
             <div class="field">
-                <label for="invoice_value">Harga Dalam Invoice</label>
+                <label for="invoice_value">Harga Dalam Invoice <span class="dnp-curr-label" style="font-weight: 700; color: #2563eb;">({{ old('currency', 'USD') }})</span></label>
                 <input id="invoice_value" name="invoice_value" inputmode="decimal"
-                    value="{{ old('invoice_value', '0.00') }}" placeholder="contoh: 7,420.58">
+                    value="{{ old('invoice_value', '') }}" placeholder="0">
             </div>
 
             <div class="field">
-                <label for="freight">Biaya Transportasi</label>
+                <label for="freight">Biaya Transportasi <span class="dnp-curr-label" style="font-weight: 700; color: #2563eb;">({{ old('currency', 'USD') }})</span></label>
                 <input id="freight" name="freight" inputmode="decimal"
-                    value="{{ old('freight', '0.00') }}" placeholder="contoh: 1,225.00">
+                    value="{{ old('freight', '') }}" placeholder="0">
             </div>
 
             <div class="field">
-                <label for="insurance">Asuransi</label>
+                <label for="insurance">Asuransi <span class="dnp-curr-label" style="font-weight: 700; color: #2563eb;">({{ old('currency', 'USD') }})</span></label>
                 <input id="insurance" name="insurance" inputmode="decimal"
-                    value="{{ old('insurance', '0.00') }}" placeholder="contoh: 30.00">
+                    value="{{ old('insurance', '') }}" placeholder="0">
             </div>
 
             <div class="field">
                 <label for="is_repeated_transaction">Trans Pengulangan (F)</label>
                 <select id="is_repeated_transaction" name="is_repeated_transaction">
-                    <option value="0" @selected(!old('is_repeated_transaction'))>Tidak</option>
-                    <option value="1" @selected(old('is_repeated_transaction') == '1')>Ya</option>
+                    <option value="0" @selected(old('is_repeated_transaction', '0') === '0')>Tidak</option>
+                    <option value="1" @selected(old('is_repeated_transaction') === '1')>Ya</option>
                 </select>
             </div>
 
@@ -188,14 +189,29 @@
         </div>
 
         {{-- 2. DOKUMEN PENDUKUNG --}}
-        <div class="form-section-heading" style="background: #1e40af; color: #fff; padding: 10px 16px; border-radius: 6px; margin-top: 28px; margin-bottom: 12px;">
-            <h2 style="color: #fff; margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                <span>📑</span> Dokumen Pendukung
-            </h2>
+        <div class="panel-heading" style="border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding-top: 20px; padding-bottom: 12px; margin-top: 32px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <h2 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 4px; display: flex; align-items: center; gap: 8px;">
+                    <x-icon name="file-text" style="width: 16px; height: 16px; color: #2563eb;"/> Dokumen Pendukung Pabean
+                </h2>
+                <span class="subtle" style="font-size: 12.5px;">Centang dokumen bukti transaksi yang dilampirkan bersama DNP</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="button button-secondary button-sm" onclick="selectStandardDocs()" style="font-size: 12px;">
+                    ✓ Dokumen Standar (1–4)
+                </button>
+                <button type="button" class="button button-secondary button-sm" onclick="toggleAllDocs(true)" style="font-size: 12px;">
+                    Pilih Semua
+                </button>
+                <button type="button" class="button button-secondary button-sm" onclick="toggleAllDocs(false)" style="font-size: 12px;">
+                    Kosongkan
+                </button>
+            </div>
         </div>
 
         @php
-            $oldDocs = old('supporting_documents', [1, 2, 3]);
+            $defaultChecked = ['1', '2', '3']; // Default checked: Invoice, Packing List, Sales Contract
+            $oldDocs = old('supporting_documents', $defaultChecked);
         @endphp
 
         <div class="table-scroll">
@@ -203,8 +219,8 @@
                 <thead>
                     <tr>
                         <th class="no-cell">NO</th>
-                        <th>KETERANGAN</th>
                         <th class="checkbox-cell">PILIH</th>
+                        <th>KETERANGAN DOKUMEN PENDUKUNG</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -214,15 +230,16 @@
                         @endphp
                         <tr>
                             <td class="no-cell">{{ $num }}.</td>
+                            <td class="checkbox-cell">
+                                <input type="checkbox" id="doc_{{ $num }}" name="supporting_documents[]" value="{{ $num }}"
+                                    class="dnp-checkbox"
+                                    @checked($isChecked)
+                                    style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;">
+                            </td>
                             <td>
                                 <label for="doc_{{ $num }}" style="cursor: pointer; display: block; margin: 0; font-weight: 500; font-size: 13px; color: #1e293b;">
                                     {{ $docLabel }}
                                 </label>
-                            </td>
-                            <td class="checkbox-cell">
-                                <input type="checkbox" id="doc_{{ $num }}" name="supporting_documents[]" value="{{ $num }}"
-                                    @checked($isChecked)
-                                    style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;">
                             </td>
                         </tr>
                     @endforeach
@@ -230,7 +247,7 @@
             </table>
         </div>
 
-        <div class="form-actions" style="margin-top: 24px;">
+        <div class="form-actions" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
             <a class="button button-secondary" href="{{ $backUrl }}">Batal</a>
             <button class="button button-primary">Simpan Deklarasi Nilai Pabean</button>
         </div>
@@ -252,6 +269,50 @@ document.getElementById('job_id')?.addEventListener('change', function() {
     if (opt.dataset.shipper) setVal('shipper_name', opt.dataset.shipper);
     if (opt.dataset.importer) setVal('importer_name', opt.dataset.importer);
     if (opt.dataset.commodity) setVal('commodity', opt.dataset.commodity);
+});
+
+function selectStandardDocs() {
+    const standard = ['1', '2', '3', '4'];
+    document.querySelectorAll('.dnp-checkbox').forEach(cb => {
+        cb.checked = standard.includes(cb.value);
+    });
+}
+
+function toggleAllDocs(state) {
+    document.querySelectorAll('.dnp-checkbox').forEach(cb => {
+        cb.checked = state;
+    });
+}
+
+const currSelect = document.getElementById('currency');
+const updateCurrencyLabels = () => {
+    const val = currSelect?.value || 'USD';
+    document.querySelectorAll('.dnp-curr-label').forEach(el => {
+        el.textContent = `(${val})`;
+    });
+};
+currSelect?.addEventListener('change', updateCurrencyLabels);
+updateCurrencyLabels();
+
+function formatRibuan(input) {
+    let val = input.value.replace(/[^\d]/g, '');
+    if (val) {
+        input.value = new Intl.NumberFormat('id-ID').format(val);
+    }
+}
+const priceInputs = [
+    document.getElementById('invoice_value'),
+    document.getElementById('freight'),
+    document.getElementById('insurance')
+];
+priceInputs.forEach(inp => {
+    if (!inp) return;
+    inp.addEventListener('input', function() {
+        const curr = currSelect?.value || 'IDR';
+        if (curr === 'IDR') {
+            formatRibuan(this);
+        }
+    });
 });
 </script>
 

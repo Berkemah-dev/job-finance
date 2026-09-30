@@ -125,4 +125,73 @@ class DnpFeatureTest extends TestCase
         $jobShowResponse->assertOk();
         $jobShowResponse->assertSee($dnp->number);
     }
+
+    public function test_dnp_can_only_be_created_once_per_job(): void
+    {
+        $dnp = Dnp::create([
+            'number' => 'DNP/202609/00004',
+            'dnp_date' => '2026-09-18',
+            'job_id' => $this->job->id,
+            'customer_id' => $this->customer->id,
+            'currency' => 'USD',
+            'status' => 'draft',
+            'created_by' => $this->actor->id,
+        ]);
+
+        // Attempting to open create form for the same job redirects to show
+        $createResponse = $this->get(route('dnps.create', ['job_id' => $this->job->id]));
+        $createResponse->assertRedirect(route('dnps.show', $dnp));
+        $createResponse->assertSessionHas('warning');
+
+        // Job page shows max 1x badge and hides create button
+        $jobShowResponse = $this->get(route('jobs.show', $this->job));
+        $jobShowResponse->assertOk();
+        $jobShowResponse->assertSee('Dokumen Dibuat (Maks 1x)');
+        $jobShowResponse->assertDontSee(route('dnps.create', ['job_id' => $this->job->id]));
+    }
+
+    public function test_dnp_supports_indonesian_thousand_separator_dots_and_hides_zero_decimals(): void
+    {
+        $newJob = Job::factory()->create([
+            'customer_id' => $this->customer->id,
+            'service_type' => 'imp_sea',
+            'created_by' => $this->actor->id,
+            'updated_by' => $this->actor->id,
+        ]);
+
+        $payload = [
+            'number' => 'DNP/202609/00099',
+            'dnp_date' => '2026-09-20',
+            'job_id' => $newJob->id,
+            'customer_id' => $this->customer->id,
+            'consignee_name' => 'PT Consignee Test',
+            'currency' => 'IDR',
+            'invoice_value' => '15.000.000',
+            'freight' => '2.500.000',
+            'insurance' => '500.000',
+            'is_repeated_transaction' => '0',
+            'supporting_documents' => ['1', '2'],
+        ];
+
+        $response = $this->post(route('dnps.store'), $payload);
+        $response->assertSessionHasNoErrors();
+
+        $dnp = Dnp::where('number', 'DNP/202609/00099')->firstOrFail();
+        $this->assertEquals(15000000.0, (float)$dnp->invoice_value);
+        $this->assertEquals(2500000.0, (float)$dnp->freight);
+        $this->assertEquals(500000.0, (float)$dnp->insurance);
+        $this->assertEquals(18000000.0, (float)$dnp->total_value);
+
+        // Check show page does not render .00
+        $showResponse = $this->get(route('dnps.show', $dnp));
+        $showResponse->assertOk();
+        $showResponse->assertSee('15.000.000');
+        $showResponse->assertDontSee('15.000.000,00');
+        $showResponse->assertDontSee('15,000,000.00');
+
+        // Check edit page pre-fills clean without .00
+        $editResponse = $this->get(route('dnps.edit', $dnp));
+        $editResponse->assertOk();
+        $editResponse->assertSee('value="15.000.000"', false);
+    }
 }

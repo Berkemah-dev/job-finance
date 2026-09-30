@@ -271,9 +271,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PIB</button>
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
         @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Surat Kuasa</button>@endunless
-        @unless($isCsRole)<button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 5.@endif Deklarasi Nilai Pabean</button>@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 5.@endif Deklarasi Nilai Pabean</button>
         @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>@endunless
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)5.@elseif($isCsRole)6.@else 7.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)5.@else 7.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @elseif($isExportSea)
         <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
@@ -292,66 +292,63 @@ document.addEventListener('DOMContentLoaded', function() {
 </nav>
 
 {{-- ========================================================================= --}}
-{{-- STATUS SHIPMENT & CHECKLIST DOKUMEN WIDGET                                --}}
-{{-- ========================================================================= --}}
-@php
-    $checklist = $job->shipment_checklist_summary;
-@endphp
-@if(!empty($checklist['items']))
-    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #e0f2fe; color: #0284c7; font-size: 14px; font-weight: 700;">✓</span>
-                <strong style="font-size: 14.5px; color: #0f172a;">Status Shipment & Checklist Dokumen</strong>
-                <span style="font-size: 12.5px; color: #64748b;">({{ $checklist['title'] }})</span>
-            </div>
-            <div>
-                @if($checklist['is_all_completed'])
-                    <span class="status-badge" style="background: #dcfce7; color: #166534; font-weight: 700; border: 1px solid #86efac;">
-                        ✓ {{ $checklist['status_summary'] }}
-                    </span>
-                @else
-                    <span class="status-badge" style="background: #fee2e2; color: #b91c1c; font-weight: 600; border: 1px solid #fca5a5;">
-                        {{ $checklist['status_summary'] }}
-                    </span>
-                @endif
-            </div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-            @foreach($checklist['items'] as $item)
-                @php
-                    $isCompleted = (bool) ($item['completed'] ?? false);
-                    $boxBorder = $isCompleted ? '#bbf7d0' : '#fca5a5';
-                    $boxBg = $isCompleted ? '#f0fdf4' : '#fef2f2';
-                    $badgeBorder = $isCompleted ? '#86efac' : '#fca5a5';
-                    $badgeBg = $isCompleted ? ($item['badge_bg'] ?? '#dcfce7') : '#fee2e2';
-                    $badgeColor = $isCompleted ? ($item['badge_color'] ?? '#166534') : '#b91c1c';
-                @endphp
-                <div style="padding: 10px 14px; border-radius: 8px; border: 1.5px solid {{ $boxBorder }}; background: {{ $boxBg }}; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-                    <div>
-                        <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-                            @if($isCompleted)
-                                <span style="color: #16a34a; font-size: 12px;">●</span>
-                            @else
-                                <span style="color: #dc2626; font-size: 12px;">●</span>
-                            @endif
-                            {{ $item['label'] }}
-                        </div>
-                        <div style="font-size: 11.5px; color: {{ $isCompleted ? '#64748b' : '#991b1b' }}; margin-top: 2px;">{{ $item['sublabel'] }}</div>
-                    </div>
-                    <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $badgeBg }}; color: {{ $badgeColor }}; border: 1px solid {{ $badgeBorder }}; white-space: nowrap;">
-                        {{ $item['badge_text'] }}
-                    </span>
-                </div>
-            @endforeach
-        </div>
-    </div>
-@endif
-
-{{-- ========================================================================= --}}
 {{-- TAB 1: DATA PENGAPALAN                                                    --}}
 {{-- ========================================================================= --}}
 <div id="tab-shipping" class="job-tab-content">
+    {{-- STATUS SHIPMENT & CHECKLIST DOKUMEN WIDGET (HANYA MUNCUL DI TAB 1 JOB ORDER) --}}
+    @php
+        $checklist = $job->shipment_checklist_summary;
+    @endphp
+    @if(!empty($checklist['items']))
+        <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #e0f2fe; color: #0284c7; font-size: 14px; font-weight: 700;">✓</span>
+                    <strong style="font-size: 14.5px; color: #0f172a;">Status Shipment & Checklist Dokumen</strong>
+                    <span style="font-size: 12.5px; color: #64748b;">({{ $checklist['title'] }})</span>
+                </div>
+                <div>
+                    @if($checklist['is_all_completed'])
+                        <span class="status-badge" style="background: #dcfce7; color: #166534; font-weight: 700; border: 1px solid #86efac;">
+                            ✓ {{ $checklist['status_summary'] }}
+                        </span>
+                    @else
+                        <span class="status-badge" style="background: #fee2e2; color: #b91c1c; font-weight: 600; border: 1px solid #fca5a5;">
+                            {{ $checklist['status_summary'] }}
+                        </span>
+                    @endif
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                @foreach($checklist['items'] as $item)
+                    @php
+                        $isCompleted = (bool) ($item['completed'] ?? false);
+                        $boxBorder = $isCompleted ? '#bbf7d0' : '#fca5a5';
+                        $boxBg = $isCompleted ? '#f0fdf4' : '#fef2f2';
+                        $badgeBorder = $isCompleted ? '#86efac' : '#fca5a5';
+                        $badgeBg = $isCompleted ? ($item['badge_bg'] ?? '#dcfce7') : '#fee2e2';
+                        $badgeColor = $isCompleted ? ($item['badge_color'] ?? '#166534') : '#b91c1c';
+                    @endphp
+                    <div style="padding: 10px 14px; border-radius: 8px; border: 1.5px solid {{ $boxBorder }}; background: {{ $boxBg }}; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <div>
+                            <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                                @if($isCompleted)
+                                    <span style="color: #16a34a; font-size: 12px;">●</span>
+                                @else
+                                    <span style="color: #dc2626; font-size: 12px;">●</span>
+                                @endif
+                                {{ $item['label'] }}
+                            </div>
+                            <div style="font-size: 11.5px; color: {{ $isCompleted ? '#64748b' : '#991b1b' }}; margin-top: 2px;">{{ $item['sublabel'] }}</div>
+                        </div>
+                        <span style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: {{ $badgeBg }}; color: {{ $badgeColor }}; border: 1px solid {{ $badgeBorder }}; white-space: nowrap;">
+                            {{ $item['badge_text'] }}
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
     <section class="panel" style="overflow: hidden; margin-bottom: 24px; border: 1px solid #000; background: #fff;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 24px; border-bottom: 1px solid #000; background: #fff;">
             <div style="flex: 1;">
@@ -529,24 +526,14 @@ document.addEventListener('DOMContentLoaded', function() {
             </table>
 
             {{-- NOTE AREA --}}
-            <div style="margin-top: 18px;">
-                <div style="font-size: 13.5px; font-weight: 700; text-decoration: underline; color: #000; margin-bottom: 6px;">
+            <div style="margin-top: 14px;">
+                <div style="font-size: 13px; font-weight: 700; text-decoration: underline; color: #000; margin-bottom: 5px;">
                     NOTE :
                 </div>
-                <div style="border: 1px solid #000; min-height: 70px; padding: 12px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; background: #fff; color: #0f172a;">
+                <div style="border: 1px solid #000; min-height: 50px; padding: 10px 12px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; background: #fff; color: #0f172a;">
                     {{ $noteContent ?: '—' }}
                 </div>
             </div>
-            @if(!empty($quotation?->internal_notes))
-                <div style="margin-top: 14px;">
-                    <div style="font-size: 13.5px; font-weight: 700; text-decoration: underline; color: #1e3a8a; margin-bottom: 6px;">
-                        CATATAN INTERNAL (DARI QUOTATION) :
-                    </div>
-                    <div style="border: 1px solid #93c5fd; min-height: 50px; padding: 12px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; background: #eff6ff; color: #1e3a8a; border-radius: 6px;">
-                        {{ $quotation->internal_notes }}
-                    </div>
-                </div>
-            @endif
         </div>
     </section>
 </div>
@@ -561,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="subtle">{{ $isImport ? 'Nomor Pengajuan AJU, Nopen, SPJM/SPPB' : 'No AJU 6 digit terakhir, NOPEN PEB, tanggal PEB, dan NPE' }}</span>
         </div>
         @if(auth()->user()->can('update', $job))
-            <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="display:none; margin-bottom: 24px;">
+            <form class="data-form" method="POST" action="{{ route('jobs.update', $job) }}" style="margin-bottom: 24px;">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="lock_version" value="{{ old('lock_version', $job->lock_version) }}">
@@ -953,10 +940,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <td><strong>{{ $dnp->number }}</strong></td>
                                 <td>{{ $dnp->dnp_date?->format('d/m/Y') ?? '—' }}</td>
                                 <td><span class="badge-pill">{{ $dnp->currency }}</span></td>
-                                <td>{{ number_format((float)$dnp->invoice_value, 2) }}</td>
-                                <td>{{ number_format((float)$dnp->freight, 2) }}</td>
-                                <td>{{ number_format((float)$dnp->insurance, 2) }}</td>
-                                <td><strong>{{ number_format((float)$dnp->total_value, 2) }}</strong></td>
+                                <td>{{ (float)$dnp->invoice_value == (int)$dnp->invoice_value ? number_format((float)$dnp->invoice_value, 0, ',', '.') : number_format((float)$dnp->invoice_value, 2, ',', '.') }}</td>
+                                <td>{{ (float)$dnp->freight == (int)$dnp->freight ? number_format((float)$dnp->freight, 0, ',', '.') : number_format((float)$dnp->freight, 2, ',', '.') }}</td>
+                                <td>{{ (float)$dnp->insurance == (int)$dnp->insurance ? number_format((float)$dnp->insurance, 0, ',', '.') : number_format((float)$dnp->insurance, 2, ',', '.') }}</td>
+                                <td><strong>{{ (float)$dnp->total_value == (int)$dnp->total_value ? number_format((float)$dnp->total_value, 0, ',', '.') : number_format((float)$dnp->total_value, 2, ',', '.') }}</strong></td>
                                 <td>{{ $dnp->is_repeated_transaction ? 'YA' : 'TIDAK' }}</td>
                                 <td>
                                     <div style="display:flex; gap:6px; justify-content:center;">
@@ -1268,14 +1255,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <button type="submit" class="button button-primary" style="font-size: 12.5px; padding: 8px 16px;">
                                         <x-icon name="upload"/> Upload Surat Jalan
                                     </button>
-
-                                    @if($job->status === 'open')
-                                        @can('jobs.confirm-do')
-                                            <button type="submit" formaction="{{ route('jobs.confirm-do', $job) }}" class="button button-primary" style="background: #16a34a; border-color: #16a34a; font-size: 12.5px; padding: 8px 16px;" onclick="return confirm('Upload berkas dan langsung konfirmasi bahwa Delivery Order (DO) telah selesai?')">
-                                                <x-icon name="check"/> Upload & Konfirmasi DO Selesai
-                                            </button>
-                                        @endcan
-                                    @endif
                                 </div>
                             </form>
                         @else

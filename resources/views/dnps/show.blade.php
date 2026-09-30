@@ -5,6 +5,14 @@
 @php
     $backUrl = $dnp->job_id ? route('jobs.show', $dnp->job_id) . '#tab-dnp' : route('dnps.index');
     $selectedDocs = $dnp->supporting_documents ?? [];
+    $fmtVal = function($val, $curr = 'IDR') {
+        if ($val === null || $val === '') return '0';
+        $num = (float)$val;
+        if ($curr === 'IDR' || $num == (int)$num) {
+            return number_format($num, 0, ',', '.');
+        }
+        return rtrim(rtrim(number_format($num, 2, ',', '.'), '0'), ',');
+    };
 @endphp
 
 <div class="page-heading">
@@ -73,19 +81,19 @@
                     </tr>
                     <tr>
                         <td style="color:#64748b;">Harga Dalam Invoice</td>
-                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->currency }} {{ number_format((float)$dnp->invoice_value, 2, '.', ',') }}</td>
+                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->currency }} {{ $fmtVal($dnp->invoice_value, $dnp->currency) }}</td>
                     </tr>
                     <tr>
                         <td style="color:#64748b;">Biaya Transportasi</td>
-                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->currency }} {{ number_format((float)$dnp->freight, 2, '.', ',') }}</td>
+                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->currency }} {{ $fmtVal($dnp->freight, $dnp->currency) }}</td>
                     </tr>
                     <tr>
                         <td style="color:#64748b;">Asuransi</td>
-                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->currency }} {{ number_format((float)$dnp->insurance, 2, '.', ',') }}</td>
+                        <td style="font-weight:600; color:#0f172a;">: {{ $dnp->currency }} {{ $fmtVal($dnp->insurance, $dnp->currency) }}</td>
                     </tr>
                     <tr style="border-top:1px dashed #cbd5e1;">
                         <td style="font-weight:700; color:#0f172a; padding-top:6px;">Total Nilai Pabean</td>
-                        <td style="font-weight:800; font-size:14px; color:#16a34a; padding-top:6px;">: {{ $dnp->currency }} {{ number_format((float)$dnp->total_value, 2, '.', ',') }}</td>
+                        <td style="font-weight:800; font-size:14px; color:#16a34a; padding-top:6px;">: {{ $dnp->currency }} {{ $fmtVal($dnp->total_value, $dnp->currency) }}</td>
                     </tr>
                     <tr>
                         <td style="color:#64748b;">Trans Pengulangan (F)</td>

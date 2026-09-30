@@ -21,7 +21,14 @@
     $signName = $customer?->authorizer_name ?: 'Nama Direktur';
     $signTitle = $customer?->authorizer_title ?: 'Direktur';
     $dateText = $dnp?->dnp_date?->format('d-m-Y') ?? ($job?->job_date?->format('d-m-Y') ?? now()->format('d-m-Y'));
-    $money = fn($value) => $value !== null && $value !== '' ? $currency . ' ' . number_format((float)$value, 2, '.', ',') : '—';
+    $money = function($value) use ($currency) {
+        if ($value === null || $value === '') return '—';
+        $num = (float)$value;
+        if ($currency === 'IDR' || $num == (int)$num) {
+            return $currency . ' ' . number_format($num, 0, ',', '.');
+        }
+        return $currency . ' ' . rtrim(rtrim(number_format($num, 2, ',', '.'), '0'), ',');
+    };
 @endphp
 <!doctype html>
 <html>
