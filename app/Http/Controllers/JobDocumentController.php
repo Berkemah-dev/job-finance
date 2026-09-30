@@ -262,50 +262,101 @@ class JobDocumentController extends Controller
     {
         Gate::authorize('view', $job);
 
-        $request->validate([
-            'document_ids'   => 'required|array|min:1',
-            'document_ids.*' => 'integer|exists:job_documents,id',
-            'mode'           => 'nullable|string|in:inline,download',
-        ], [
-            'document_ids.required' => 'Pilih minimal satu dokumen untuk digabungkan menjadi PDF.',
-            'document_ids.min'      => 'Pilih minimal satu dokumen untuk digabungkan menjadi PDF.',
-        ]);
+        // Support both GET (direct link / browser refresh) and POST (checkbox selection form)
+        $docIds = $request->input('document_ids');
+        if (empty($docIds)) {
+            // Default to all documents if refreshed or accessed directly
+            $docIds = $job->documents()->pluck('id')->toArray();
+        }
 
-        $docIds = $request->input('document_ids', []);
-        $documents = $job->documents()->whereIn('id', $docIds)->get();
+        if (empty($docIds)) {
+            return redirect()->to(route('jobs.show', $job).'#tab-documents')->with('error', 'Job ini belum memiliki dokumen lampiran untuk digabungkan.');
+        }
+
+        $documents = $job->documents()->whereIn('id', (array) $docIds)->get();
 
         if ($documents->isEmpty()) {
-            return back()->with('error', 'Pilih minimal satu dokumen lampiran untuk digabungkan.');
+            return redirect()->to(route('jobs.show', $job).'#tab-documents')->with('error', 'Pilih minimal satu dokumen lampiran untuk digabungkan.');
         }
 
-        $pdf = new \setasign\Fpdi\Fpdi();
-        $addedPages = 0;
-
+        $filePaths = [];
         foreach ($documents as $doc) {
             $filePath = Storage::disk('private')->path($doc->file_path);
-            if (! file_exists($filePath)) {
-                continue;
+            if (file_exists($filePath)) {
+                $filePaths[] = $filePath;
             }
+        }
 
+        if (empty($filePaths)) {
+            return redirect()->to(route('jobs.show', $job).'#tab-documents')->with('error', 'Dokumen yang dipilih tidak memiliki berkas PDF yang valid untuk digabungkan.');
+        }
+
+        $mergedContent = null;
+        $tempMergedPath = tempnam(sys_get_temp_dir(), 'merged_pdf_') . '.pdf';
+
+        // 1. Prioritize Node.js pdf-lib (standard JavaScript package in package.json)
+        $nodeScript = base_path('scripts/merge-pdf.js');
+        if (file_exists($nodeScript)) {
             try {
-                $pageCount = $pdf->setSourceFile($filePath);
-                for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                    $templateId = $pdf->importPage($pageNo);
-                    $size = $pdf->getTemplateSize($templateId);
-                    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                    $pdf->useTemplate($templateId);
-                    $addedPages++;
+                $nodeBinary = $this->resolveNodeBinary();
+                $process = new \Symfony\Component\Process\Process(
+                    array_merge([$nodeBinary, $nodeScript, $tempMergedPath], $filePaths),
+                    base_path(),
+                    [
+                        'SystemRoot' => getenv('SystemRoot') ?: 'C:\\Windows',
+                        'windir'     => getenv('windir') ?: 'C:\\Windows',
+                        'TEMP'       => sys_get_temp_dir(),
+                        'TMP'        => sys_get_temp_dir(),
+                        'PATH'       => getenv('PATH') ?: 'C:\\Program Files\\nodejs;C:\\Windows\\system32',
+                    ]
+                );
+                $process->setTimeout(60);
+                $process->run();
+
+                if ($process->isSuccessful() && file_exists($tempMergedPath) && filesize($tempMergedPath) > 0) {
+                    $mergedContent = file_get_contents($tempMergedPath);
+                    @unlink($tempMergedPath);
+                } else {
+                    \Illuminate\Support\Facades\Log::warning('Node merge failed: exit=' . $process->getExitCode() . ' | err=' . $process->getErrorOutput());
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("Gagal merge PDF {$doc->original_name}: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Node pdf-lib merge error: ' . $e->getMessage());
             }
         }
 
-        if ($addedPages === 0) {
-            return back()->with('error', 'Dokumen yang dipilih tidak memiliki berkas PDF yang valid untuk digabungkan.');
+        // 2. Fallback to FPDI for environments without Node
+        if (! $mergedContent && class_exists(\setasign\Fpdi\Fpdi::class)) {
+            try {
+                $pdf = new \setasign\Fpdi\Fpdi();
+                $addedPages = 0;
+
+                foreach ($filePaths as $path) {
+                    try {
+                        $pageCount = $pdf->setSourceFile($path);
+                        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                            $templateId = $pdf->importPage($pageNo);
+                            $size = $pdf->getTemplateSize($templateId);
+                            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                            $pdf->useTemplate($templateId);
+                            $addedPages++;
+                        }
+                    } catch (\Throwable $subE) {
+                        \Illuminate\Support\Facades\Log::warning('FPDI sub-merge warning: ' . $subE->getMessage());
+                    }
+                }
+
+                if ($addedPages > 0) {
+                    $mergedContent = $pdf->Output('S');
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('FPDI merge fallback failed: ' . $e->getMessage());
+            }
         }
 
-        $mergedContent = $pdf->Output('S');
+        if (! $mergedContent) {
+            return redirect()->to(route('jobs.show', $job).'#tab-documents')->with('error', 'Dokumen yang dipilih tidak memiliki berkas PDF yang valid untuk digabungkan.');
+        }
+
         $filename = 'DOKUMEN_GABUNGAN_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $job->number) . '.pdf';
         $disposition = $request->input('mode') === 'download' ? 'attachment' : 'inline';
 
@@ -313,5 +364,22 @@ class JobDocumentController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
         ]);
+    }
+
+    private function resolveNodeBinary(): string
+    {
+        $candidates = [
+            'C:\\Program Files\\nodejs\\node.exe',
+            'C:\\Program Files (x86)\\nodejs\\node.exe',
+            'C:\\laragon\\bin\\nodejs\\node-v22\\node.exe',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return 'node';
     }
 }

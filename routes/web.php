@@ -164,7 +164,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/delivery-orders/{deliveryOrder}/pdf', [DeliveryOrderController::class, 'pdf'])->middleware('can:jobs.view')->name('delivery-orders.pdf');
     // Job Documents
     Route::post('/jobs/{job}/documents', [JobDocumentController::class, 'store'])->middleware('can:jobs.view')->name('jobs.documents.store');
-    Route::post('/jobs/{job}/documents/merge-pdf', [JobDocumentController::class, 'mergePdf'])->middleware('can:jobs.view')->name('jobs.documents.merge-pdf');
+    Route::match(['get', 'post'], '/jobs/{job}/documents/merge-pdf', [JobDocumentController::class, 'mergePdf'])->middleware('can:jobs.view')->name('jobs.documents.merge-pdf');
     Route::get('/jobs/{job}/documents/{document}/preview', [JobDocumentController::class, 'preview'])->middleware('can:jobs.view')->name('jobs.documents.preview');
     Route::get('/jobs/{job}/documents/{document}/download', [JobDocumentController::class, 'download'])->middleware('can:jobs.view')->name('jobs.documents.download');
     Route::delete('/jobs/{job}/documents/{document}', [JobDocumentController::class, 'destroy'])->middleware('can:jobs.manage')->name('jobs.documents.destroy');

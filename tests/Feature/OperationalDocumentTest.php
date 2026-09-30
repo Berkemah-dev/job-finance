@@ -135,4 +135,57 @@ class OperationalDocumentTest extends TestCase
         $pdfResponse->assertOk();
         $pdfResponse->assertHeader('content-type', 'application/pdf');
     }
+
+    public function test_job_documents_can_be_merged_into_single_pdf(): void
+    {
+        $quotation = $this->approvedQuotation();
+        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
+        $this->post('/quotations/'.$quotation->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors();
+        $job = Job::firstOrFail();
+
+        $docType = \App\Models\DocumentType::firstOrFail();
+        \Illuminate\Support\Facades\Storage::fake('private');
+
+        // Create 2 valid dummy PDF files
+        $fpdf = new \FPDF();
+        $fpdf->AddPage();
+        $fpdf->SetFont('Arial', 'B', 16);
+        $fpdf->Cell(40, 10, 'Doc 1');
+        $pdfContent1 = $fpdf->Output('S');
+
+        $fpdf2 = new \FPDF();
+        $fpdf2->AddPage();
+        $fpdf2->SetFont('Arial', 'B', 16);
+        $fpdf2->Cell(40, 10, 'Doc 2');
+        $pdfContent2 = $fpdf2->Output('S');
+
+        \Illuminate\Support\Facades\Storage::disk('private')->put('test_doc1.pdf', $pdfContent1);
+        \Illuminate\Support\Facades\Storage::disk('private')->put('test_doc2.pdf', $pdfContent2);
+
+        $doc1 = $job->documents()->create([
+            'document_type_id' => $docType->id,
+            'file_path' => 'test_doc1.pdf',
+            'original_name' => 'doc1.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size' => strlen($pdfContent1),
+            'uploaded_by' => $this->actor->id,
+        ]);
+
+        $doc2 = $job->documents()->create([
+            'document_type_id' => $docType->id,
+            'file_path' => 'test_doc2.pdf',
+            'original_name' => 'doc2.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size' => strlen($pdfContent2),
+            'uploaded_by' => $this->actor->id,
+        ]);
+
+        $response = $this->actingAs($this->actor)->post(route('jobs.documents.merge-pdf', $job), [
+            'document_ids' => [$doc1->id, $doc2->id],
+        ]);
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/pdf');
+        $this->assertStringContainsString('DOKUMEN_GABUNGAN', $response->headers->get('content-disposition'));
+    }
 }
