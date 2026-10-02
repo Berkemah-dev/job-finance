@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Job;
 use App\Models\JobCost;
 use App\Models\Journal;
+use App\Models\JournalEntry;
 use App\Models\User;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
@@ -28,9 +29,20 @@ class JobCostService
                 throw ValidationException::withMessages(['cost' => 'Biaya ini sudah dibayar.']);
             }
 
-            $hasDraftPayable = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)->where('type', 'job_cost_draft')->exists();
+            if ($cost->status !== 'final') {
+                throw ValidationException::withMessages(['cost' => 'Biaya harus difinalisasi Finance sebelum dapat dibayar.']);
+            }
+
+            $hasDraftPayable = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
+                ->whereIn('type', ['job_cost_draft', 'job_cost_finalization'])->exists();
             $pph = Money::decimal($data['pph23_amount'] ?? $cost->pph23_amount ?? 0);
-            $draftPph = Money::decimal($cost->pph23_amount ?? 0);
+            // PPh baru menjadi Hutang Pajak ketika PAID. Nilai ini hanya untuk
+            // transaksi lama yang telah mencatat PPh sebelum alur finalisasi.
+            $draftPph = Money::decimal((string) JournalEntry::query()
+                ->where('chart_of_account_id', $this->journals->mapped(['pph23_payable'])['pph23_payable']->id)
+                ->where('credit', '>', 0)
+                ->whereHas('journal', fn ($query) => $query->where('source_type', JobCost::class)->where('source_id', $cost->id))
+                ->sum('credit'));
             $amount = Money::decimal($cost->total_cost);
             if ($pph->isGreaterThan($amount)) {
                 throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi biaya.']);
@@ -39,26 +51,23 @@ class JobCostService
                 throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak dapat dikurangi karena jurnal Draft sudah tercatat.']);
             }
 
-            // Jika belum memiliki draft payable (misalnya biaya quotation terdahulu), buatkan pengakuan Hutang Vendor & Provision WIP/Temporary
+            // Data lama yang sudah final tetapi belum punya jurnal tetap dapat
+            // diselesaikan tanpa melewati proses Finance lagi.
             if (! $hasDraftPayable) {
-                $mapsDraft = $this->journals->mapped([$cost->type === 'temporary' ? 'temporary' : 'provision_wip', 'vendor_payable', 'tax_payable']);
+                $mapsDraft = $this->journals->mapped([$cost->type === 'temporary' ? 'temporary' : 'provision_wip', 'vendor_payable']);
                 $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
-                $draftVendorPayable = $amount->minus($pph);
                 $draftEntries = [
                     ['account_id' => $mapsDraft[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => (string) $amount, 'credit' => 0],
-                    ['account_id' => $mapsDraft['vendor_payable']->id, 'description' => 'Hutang vendor '.$cost->number, 'debit' => 0, 'credit' => (string) $draftVendorPayable],
+                    ['account_id' => $mapsDraft['vendor_payable']->id, 'description' => 'Hutang vendor '.$cost->number, 'debit' => 0, 'credit' => (string) $amount],
                 ];
-                if ($pph->isPositive()) {
-                    $draftEntries[] = ['account_id' => $mapsDraft['tax_payable']->id, 'description' => 'PPh 23 hutang '.$cost->number, 'debit' => 0, 'credit' => (string) $pph];
-                }
                 $costDate = $cost->cost_date ? $cost->cost_date->format('Y-m-d') : $data['paid_date'];
-                $this->journals->post('job_cost_draft', JobCost::class, $cost->id, $costDate, 'Draft '.$cost->number, $draftEntries, $actor);
+                $this->journals->post('job_cost_finalization', JobCost::class, $cost->id, $costDate, 'Finalisasi '.$cost->number, $draftEntries, $actor);
                 $hasDraftPayable = true;
-                $draftPph = $pph;
+                $draftPph = Money::decimal(0);
             }
 
             $account = \App\Models\ChartOfAccount::where('type', 'asset')->findOrFail($data['payment_account_id']);
-            $maps = $this->journals->mapped(['vendor_payable', 'tax_payable']);
+            $maps = $this->journals->mapped(['vendor_payable', 'pph23_payable']);
             // Hutang vendor yang telah terbentuk pada Draft harus dilunasi penuh.
             // PPh yang baru diinput ketika PAID dipindahkan ke Hutang Pajak.
             $vendorSettlement = $amount->minus($draftPph);
@@ -70,7 +79,7 @@ class JobCostService
                 ['account_id' => $account->id, 'description' => 'Pembayaran biaya job '.$cost->number, 'debit' => 0, 'credit' => (string) $bankPayment],
             ];
             if ($additionalPph->isPositive()) {
-                $entries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'PPh 23 hutang '.$cost->number, 'debit' => 0, 'credit' => (string) $additionalPph];
+                $entries[] = ['account_id' => $maps['pph23_payable']->id, 'description' => 'PPh 23 hutang '.$cost->number, 'debit' => 0, 'credit' => (string) $additionalPph];
             }
 
             $number = $this->numbers->nextBankJournal($account->code, $account->name, false, \Carbon\Carbon::parse($data['paid_date']));
@@ -154,20 +163,22 @@ class JobCostService
             $cost->lock_version = $new ? 0 : $cost->lock_version + 1;
             $cost->save();
             $draftJournal = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)->where('type', 'job_cost_draft')->first();
-            if ($new && in_array($cost->cost_category, ['payment_request', 'reimbursement'], true)) {
+            // Biaya yang berasal dari quotation hanya disimpan sebagai Draft.
+            // Pengakuan COA dilakukan saat Finance menekan Finalisasi Biaya.
+            if ($new && ! $cost->quotation_id && in_array($cost->cost_category, ['payment_request', 'reimbursement'], true)) {
                 $pph = Money::decimal($cost->pph23_amount ?? 0);
                 if ($pph->isGreaterThan(Money::decimal($cost->total_cost))) throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi total biaya.']);
-                $maps = $this->journals->mapped([$cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary', 'vendor_payable', 'tax_payable']);
+                $maps = $this->journals->mapped([$cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary', 'vendor_payable', 'pph23_payable']);
                 $debitKey = $cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary';
                 $entries = [['account_id'=>$maps[$debitKey]->id,'description'=>($cost->cost_category === 'payment_request' ? 'Provisional Payment ' : 'Temporary Payment ').$cost->number,'debit'=>$cost->total_cost,'credit'=>0],['account_id'=>$maps['vendor_payable']->id,'description'=>'Hutang vendor '.$cost->number,'debit'=>0,'credit'=>(string) Money::decimal($cost->total_cost)->minus($pph)]];
-                if ($pph->isPositive()) $entries[]=['account_id'=>$maps['tax_payable']->id,'description'=>'PPh 23 hutang '.$cost->number,'debit'=>0,'credit'=>(string)$pph];
+                if ($pph->isPositive()) $entries[]=['account_id'=>$maps['pph23_payable']->id,'description'=>'PPh 23 hutang '.$cost->number,'debit'=>0,'credit'=>(string)$pph];
                 $this->journals->post('job_cost_draft', JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Draft '.$cost->number, $entries, $actor);
-            } elseif (! $new && $draftJournal) {
+            } elseif (! $new && ! $cost->quotation_id && $draftJournal) {
                 $pph = Money::decimal($cost->pph23_amount ?? 0);
-                $maps = $this->journals->mapped([$cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary', 'vendor_payable', 'tax_payable']);
+                $maps = $this->journals->mapped([$cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary', 'vendor_payable', 'pph23_payable']);
                 $debitKey = $cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary';
                 $entries = [['account_id'=>$maps[$debitKey]->id,'description'=>($cost->cost_category === 'payment_request' ? 'Provisional Payment ' : 'Temporary Payment ').$cost->number,'debit'=>$cost->total_cost,'credit'=>0],['account_id'=>$maps['vendor_payable']->id,'description'=>'Hutang vendor '.$cost->number,'debit'=>0,'credit'=>(string) Money::decimal($cost->total_cost)->minus($pph)]];
-                if ($pph->isPositive()) $entries[]=['account_id'=>$maps['tax_payable']->id,'description'=>'PPh 23 hutang '.$cost->number,'debit'=>0,'credit'=>(string)$pph];
+                if ($pph->isPositive()) $entries[]=['account_id'=>$maps['pph23_payable']->id,'description'=>'PPh 23 hutang '.$cost->number,'debit'=>0,'credit'=>(string)$pph];
                 $draftJournal->entries()->delete();
                 foreach ($entries as $i => $entry) {
                     $draftJournal->entries()->create([
@@ -203,6 +214,16 @@ class JobCostService
             $cost->updated_by = $actor->id;
             $cost->lock_version++;
             $cost->save();
+            $hasRecognition = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
+                ->whereIn('type', ['job_cost_draft', 'job_cost_finalization'])->exists();
+            if (! $hasRecognition) {
+                $maps = $this->journals->mapped([$cost->type === 'temporary' ? 'temporary' : 'provision_wip', 'vendor_payable']);
+                $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
+                $this->journals->post('job_cost_finalization', JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Finalisasi '.$cost->number, [
+                    ['account_id' => $maps[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => $cost->total_cost, 'credit' => 0],
+                    ['account_id' => $maps['vendor_payable']->id, 'description' => 'Hutang vendor '.$cost->number, 'debit' => 0, 'credit' => $cost->total_cost],
+                ], $actor);
+            }
             $this->touchJob($job, $actor);
             $this->master->log($actor, 'job_cost.finalized', 'Finalisasi '.$cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'after' => $cost->only(['type', 'total_cost', 'total_price', 'status'])]);
         }, 3);

@@ -19,12 +19,7 @@ use Illuminate\Validation\ValidationException;
 
 class JobService
 {
-    private JournalService $journals;
-
-    public function __construct(private MasterDataService $master, private DocumentNumberService $numbers, ?JournalService $journals = null)
-    {
-        $this->journals = $journals ?? app(JournalService::class);
-    }
+    public function __construct(private MasterDataService $master, private DocumentNumberService $numbers) {}
 
     public function update(Job $job, array $data, User $actor): Job
     {
@@ -293,17 +288,6 @@ class JobService
             $cost->lock_version = 0;
             $cost->save();
             $created[] = $cost->number;
-
-            // Buat pencatatan akrual Hutang Vendor & Provision/Temporary agar biaya quotation langsung muncul di Hutang Vendor/Provisi
-            if (! Money::decimal($cost->total_cost)->isZero() && in_array($cost->cost_category, ['payment_request', 'reimbursement'], true)) {
-                $maps = $this->journals->mapped([$cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary', 'vendor_payable']);
-                $debitKey = $cost->cost_category === 'payment_request' ? 'provision_wip' : 'temporary';
-                $entries = [
-                    ['account_id' => $maps[$debitKey]->id, 'description' => ($cost->cost_category === 'payment_request' ? 'Provisional Payment ' : 'Temporary Payment ').$cost->number, 'debit' => (string) $cost->total_cost, 'credit' => 0],
-                    ['account_id' => $maps['vendor_payable']->id, 'description' => 'Hutang vendor '.$cost->number, 'debit' => 0, 'credit' => (string) $cost->total_cost],
-                ];
-                $this->journals->post('job_cost_draft', JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Draft '.$cost->number, $entries, $actor);
-            }
 
             $this->master->log($actor, 'job_cost.created', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => null, 'after' => array_merge($cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price']), ['quotation_id' => $cost->quotation_id, 'quotation_item_id' => $cost->quotation_item_id])]);
         }

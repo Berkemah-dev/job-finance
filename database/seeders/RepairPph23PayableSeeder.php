@@ -21,10 +21,11 @@ class RepairPph23PayableSeeder extends Seeder
     public function run(): void
     {
         $actor = User::whereHas('role', fn ($query) => $query->where('name', 'super-admin'))->firstOrFail();
-        $taxPayableId = AccountMapping::where('key', 'tax_payable')->value('chart_of_account_id');
+        $taxPayableId = AccountMapping::where('key', 'pph23_payable')->value('chart_of_account_id');
+        $legacyTaxPayableId = AccountMapping::where('key', 'tax_payable')->value('chart_of_account_id');
 
         if (! $taxPayableId) {
-            $this->command?->error('Mapping COA tax_payable belum tersedia.');
+            $this->command?->error('Mapping COA pph23_payable belum tersedia.');
 
             return;
         }
@@ -34,8 +35,8 @@ class RepairPph23PayableSeeder extends Seeder
             ->whereNotNull('paid_at')
             ->where('pph23_amount', '>', 0)
             ->orderBy('id')
-            ->each(function (JobCost $cost) use ($actor, $taxPayableId, &$repaired) {
-                DB::transaction(function () use ($cost, $actor, $taxPayableId, &$repaired) {
+            ->each(function (JobCost $cost) use ($actor, $taxPayableId, $legacyTaxPayableId, &$repaired) {
+                DB::transaction(function () use ($cost, $actor, $taxPayableId, $legacyTaxPayableId, &$repaired) {
                     $cost = JobCost::lockForUpdate()->findOrFail($cost->id);
                     $pph = Money::decimal($cost->pph23_amount);
                     $alreadyRecorded = Money::decimal((string) JournalEntry::query()
@@ -51,17 +52,29 @@ class RepairPph23PayableSeeder extends Seeder
                         return;
                     }
 
-                    $maps = app(JournalService::class)->mapped(['vendor_payable', 'tax_payable']);
+                    $maps = app(JournalService::class)->mapped(['vendor_payable', 'tax_payable', 'pph23_payable']);
+                    $legacyRecorded = $legacyTaxPayableId ? Money::decimal((string) JournalEntry::query()
+                        ->where('chart_of_account_id', $legacyTaxPayableId)
+                        ->where('credit', '>', 0)
+                        ->whereHas('journal', fn ($query) => $query->where('source_type', JobCost::class)->where('source_id', $cost->id))
+                        ->sum('credit')) : Money::decimal(0);
+                    $moveFromLegacy = $legacyRecorded->isLessThan($missing) ? $legacyRecorded : $missing;
+                    $fromVendor = $missing->minus($moveFromLegacy);
+                    $entries = [];
+                    if ($moveFromLegacy->isPositive()) {
+                        $entries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Reklasifikasi PPh 23 '.$cost->number, 'debit' => (string) $moveFromLegacy, 'credit' => 0];
+                    }
+                    if ($fromVendor->isPositive()) {
+                        $entries[] = ['account_id' => $maps['vendor_payable']->id, 'description' => 'Koreksi hutang vendor '.$cost->number, 'debit' => (string) $fromVendor, 'credit' => 0];
+                    }
+                    $entries[] = ['account_id' => $maps['pph23_payable']->id, 'description' => 'PPh 23 hutang '.$cost->number, 'debit' => 0, 'credit' => (string) $missing];
                     app(JournalService::class)->post(
                         'pph23_correction',
                         JobCost::class,
                         $cost->id,
                         ($cost->paid_date ?? now())->format('Y-m-d'),
                         'Koreksi PPh 23 '.$cost->number,
-                        [
-                            ['account_id' => $maps['vendor_payable']->id, 'description' => 'Koreksi hutang vendor '.$cost->number, 'debit' => (string) $missing, 'credit' => 0],
-                            ['account_id' => $maps['tax_payable']->id, 'description' => 'PPh 23 hutang '.$cost->number, 'debit' => 0, 'credit' => (string) $missing],
-                        ],
+                        $entries,
                         $actor,
                     );
                     $repaired++;
