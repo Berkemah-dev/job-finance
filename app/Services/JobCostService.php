@@ -156,7 +156,15 @@ class JobCostService
                     $data['payee'] = $vendor->name;
                 }
             }
+            if (array_key_exists('pph23_amount', $data)) {
+                $data['pph23_amount'] = ($data['pph23_amount'] !== null && $data['pph23_amount'] !== '')
+                    ? (string) Money::decimal($data['pph23_amount'])
+                    : '0.00';
+            } else {
+                $data['pph23_amount'] = $cost->pph23_amount ? (string) Money::decimal($cost->pph23_amount) : '0.00';
+            }
             $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes']));
+            $cost->pph23_amount = $data['pph23_amount'];
             $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->updated_by = $actor->id;

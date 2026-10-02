@@ -305,4 +305,26 @@ class JobCostTest extends TestCase
             ->assertSee('Debit Note')
             ->assertSee('ONE Line');
     }
+
+    public function test_cost_can_be_saved_as_draft_without_pph23_amount(): void
+    {
+        $data = $this->data([
+            'description' => 'LIFT ON/OFF',
+            'type' => 'temporary',
+            'cost_category' => 'reimbursement',
+            'quantity' => '1',
+            'unit' => 'Layanan',
+            'unit_cost' => '700000',
+            'unit_price' => '700000',
+            'pph23_amount' => '',
+        ]);
+
+        $response = $this->post('/jobs/'.$this->job->id.'/costs', $data);
+        $response->assertSessionHasNoErrors()->assertRedirect();
+
+        $cost = JobCost::where('job_id', $this->job->id)->where('description', 'LIFT ON/OFF')->firstOrFail();
+        $this->assertSame('0.00', $cost->pph23_amount);
+        $this->assertSame('700000.00', $cost->total_cost);
+        $this->assertSame('draft', $cost->status);
+    }
 }

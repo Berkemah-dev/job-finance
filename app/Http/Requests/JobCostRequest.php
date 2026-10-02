@@ -22,6 +22,11 @@ class JobCostRequest extends FormRequest
             ]);
         }
 
+        $rawPph = $this->input('pph23_amount');
+        if ($rawPph === null || trim((string) $rawPph) === '') {
+            $this->merge(['pph23_amount' => '0']);
+        }
+
         foreach (['unit_cost', 'unit_price', 'pph23_amount'] as $field) {
             if ($this->has($field) && is_string($this->input($field))) {
                 $val = trim($this->input($field));
