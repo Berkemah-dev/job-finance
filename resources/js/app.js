@@ -150,6 +150,15 @@ window.appConfirm = function(message, title = 'Konfirmasi aksi', options = {}) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('form[onsubmit*="confirm("]').forEach((form) => {
+        const onsubmitStr = form.getAttribute('onsubmit') || '';
+        const match = onsubmitStr.match(/confirm\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+        if (match) {
+            form.dataset.confirm = match[1];
+            form.removeAttribute('onsubmit');
+        }
+    });
+
     document.querySelectorAll('[data-toast]').forEach((toast) => {
         const close = () => {
             toast.style.animation = 'toastOut .22s ease forwards';
@@ -161,7 +170,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('submit', (event) => {
-    const message = event.target.dataset.confirm;
+    let message = event.target.dataset.confirm;
+    if (!message && event.target.getAttribute('onsubmit')?.includes('confirm(')) {
+        const match = event.target.getAttribute('onsubmit').match(/confirm\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+        if (match) {
+            message = match[1];
+            event.target.removeAttribute('onsubmit');
+        }
+    }
     if (!message || event.target.dataset.confirmed === 'true') return;
 
     const modal = document.querySelector('[data-confirm-modal]');

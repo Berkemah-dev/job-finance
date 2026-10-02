@@ -60,7 +60,7 @@
                             </a>
                         </td>
                         <td class="col-actions">
-                            <form method="POST" action="{{ route('ports.destroy', $port) }}" onsubmit="return confirm('Hapus port ini?')">
+                            <form method="POST" action="{{ route('ports.destroy', $port) }}" data-confirm="Hapus port ini?">
                                 @csrf @method('DELETE')
                                 <button class="coa-action-button coa-btn-del" type="submit" title="Hapus Port">
                                     <x-icon name="x"/>
