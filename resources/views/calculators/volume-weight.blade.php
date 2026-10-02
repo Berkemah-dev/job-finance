@@ -38,7 +38,7 @@
             .then(r => r.json().then(d => ({ ok: r.ok, d })))
             .then(({ ok, d }) => {
                 result.hidden = !ok;
-                if (!ok) { alert('Periksa kembali input.'); return; }
+                if (!ok) { window.appAlert('Periksa kembali input data paket kargo.', 'Input Tidak Valid', { type: 'warning' }); return; }
                 document.getElementById('r-quantity').textContent = d.rows.reduce((sum, row) => sum + Number(row.qty || 0), 0).toLocaleString('id-ID');
                 document.getElementById('r-gross-weight').textContent = Number(d.total_gross_weight).toLocaleString('id-ID') + ' kg';
                 document.getElementById('r-volume-weight').textContent = d.total_volume_weight.toLocaleString('id-ID') + ' kg';

@@ -6,15 +6,160 @@ import './customer';
 import './coa';
 import './custom-select';
 import './dashboard-charts';
+// Modern Toast Notification System
+window.showToast = function(message, type = 'info', title = null, duration = 4500) {
+    let wrap = document.querySelector('.app-toast-wrap');
+    if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.className = 'app-toast-wrap';
+        document.body.appendChild(wrap);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `app-toast ${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('data-toast', '');
+
+    const iconChar = type === 'success' ? '✓' : (type === 'error' ? '✕' : (type === 'warning' ? '!' : 'ℹ'));
+    const defaultTitle = type === 'success' ? 'Berhasil' : (type === 'error' ? 'Terjadi Kesalahan' : (type === 'warning' ? 'Perhatian' : 'Informasi'));
+
+    toast.innerHTML = `
+        <span class="app-toast-icon">${iconChar}</span>
+        <div style="flex:1;">
+            <strong>${title || defaultTitle}</strong>
+            <p>${message}</p>
+        </div>
+        <button class="app-toast-close" type="button" aria-label="Tutup">×</button>
+    `;
+
+    wrap.appendChild(toast);
+
+    const close = () => {
+        toast.style.animation = 'toastOut .22s ease forwards';
+        setTimeout(() => toast.remove(), 220);
+    };
+
+    toast.querySelector('.app-toast-close')?.addEventListener('click', close);
+    setTimeout(close, duration);
+};
+
+// Modern Alert Modal System
+window.appAlert = function(message, title = 'Perhatian', options = {}) {
+    return new Promise((resolve) => {
+        const modal = document.querySelector('[data-alert-modal]');
+        if (!modal) {
+            window.showToast(message, options.type || 'warning', title);
+            if (options.focusEl) {
+                const target = options.focusEl.closest('.custom-select-wrapper')?.querySelector('.custom-select-trigger') || options.focusEl;
+                target.focus();
+                target.classList.add('field-invalid-shake');
+                setTimeout(() => target.classList.remove('field-invalid-shake'), 1200);
+            }
+            resolve(true);
+            return;
+        }
+
+        const type = options.type || 'warning';
+        const iconEl = modal.querySelector('[data-alert-icon]');
+        const titleEl = modal.querySelector('[data-alert-title]');
+        const messageEl = modal.querySelector('[data-alert-message]');
+        const closeBtn = modal.querySelector('[data-alert-close]');
+
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
+        if (iconEl) {
+            iconEl.className = `confirm-icon ${type}`;
+            iconEl.textContent = type === 'success' ? '✓' : (type === 'error' ? '✕' : (type === 'info' ? 'ℹ' : '!'));
+        }
+        if (closeBtn) {
+            closeBtn.textContent = options.buttonText || 'Mengerti';
+        }
+
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+        closeBtn?.focus();
+
+        const dismiss = () => {
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden', 'true');
+            if (options.focusEl) {
+                try {
+                    const target = options.focusEl.closest('.custom-select-wrapper')?.querySelector('.custom-select-trigger') || options.focusEl;
+                    target.focus();
+                    target.classList.add('field-invalid-shake');
+                    setTimeout(() => target.classList.remove('field-invalid-shake'), 1200);
+                } catch (e) {}
+            }
+            resolve(true);
+        };
+
+        const onKey = (e) => {
+            if (e.key === 'Escape' || e.key === 'Enter') {
+                document.removeEventListener('keydown', onKey);
+                dismiss();
+            }
+        };
+        document.addEventListener('keydown', onKey);
+
+        closeBtn.onclick = () => {
+            document.removeEventListener('keydown', onKey);
+            dismiss();
+        };
+
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.removeEventListener('keydown', onKey);
+                dismiss();
+            }
+        };
+    });
+};
+
+// Global window.alert override
+window.alert = function(message) {
+    window.appAlert(message, 'Perhatian');
+};
+
+// Modern Confirm Modal System
+let pendingConfirmForm = null;
+let pendingConfirmResolve = null;
+
+window.appConfirm = function(message, title = 'Konfirmasi aksi', options = {}) {
+    return new Promise((resolve) => {
+        const modal = document.querySelector('[data-confirm-modal]');
+        if (!modal) {
+            resolve(window.confirm(message));
+            return;
+        }
+
+        const titleEl = modal.querySelector('[data-confirm-title]') || modal.querySelector('#confirm-title');
+        const messageEl = modal.querySelector('[data-confirm-message]');
+        const cancelBtn = modal.querySelector('[data-confirm-cancel]');
+        const okBtn = modal.querySelector('[data-confirm-ok]');
+
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
+        if (okBtn) okBtn.textContent = options.confirmText || 'Lanjut';
+        if (cancelBtn) cancelBtn.textContent = options.cancelText || 'Batal';
+
+        pendingConfirmResolve = resolve;
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+        okBtn?.focus();
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-toast]').forEach((toast) => {
-        const close = () => toast.remove();
+        const close = () => {
+            toast.style.animation = 'toastOut .22s ease forwards';
+            setTimeout(() => toast.remove(), 220);
+        };
         toast.querySelector('.app-toast-close')?.addEventListener('click', close);
         setTimeout(close, 5200);
     });
 });
 
-let pendingConfirmForm = null;
 document.addEventListener('submit', (event) => {
     const message = event.target.dataset.confirm;
     if (!message || event.target.dataset.confirmed === 'true') return;
@@ -38,18 +183,26 @@ document.addEventListener('click', (event) => {
     if (!modal) return;
 
     if (event.target.matches('[data-confirm-cancel]') || event.target === modal) {
+        const resolve = pendingConfirmResolve;
+        pendingConfirmResolve = null;
         pendingConfirmForm = null;
         modal.classList.remove('show');
         modal.setAttribute('aria-hidden', 'true');
+        if (resolve) resolve(false);
     }
 
-    if (event.target.matches('[data-confirm-ok]') && pendingConfirmForm) {
+    if (event.target.matches('[data-confirm-ok]')) {
+        const resolve = pendingConfirmResolve;
         const form = pendingConfirmForm;
+        pendingConfirmResolve = null;
         pendingConfirmForm = null;
         modal.classList.remove('show');
         modal.setAttribute('aria-hidden', 'true');
-        form.dataset.confirmed = 'true';
-        form.requestSubmit();
+        if (resolve) resolve(true);
+        if (form) {
+            form.dataset.confirmed = 'true';
+            form.requestSubmit();
+        }
     }
 });
 
@@ -57,9 +210,12 @@ document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     const modal = document.querySelector('[data-confirm-modal]');
     if (!modal?.classList.contains('show')) return;
+    const resolve = pendingConfirmResolve;
+    pendingConfirmResolve = null;
     pendingConfirmForm = null;
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
+    if (resolve) resolve(false);
 });
 import '@fontsource/poppins/400.css';
 import '@fontsource/poppins/500.css';

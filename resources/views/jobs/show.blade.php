@@ -707,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const checked = document.querySelectorAll('.doc-checkbox:checked');
             if (checked.length === 0) {
                 e.preventDefault();
-                alert('Pilih minimal satu dokumen untuk digabungkan menjadi 1 PDF.');
+                window.appAlert('Pilih minimal satu dokumen untuk digabungkan menjadi 1 PDF.', 'Pilih Dokumen', { type: 'warning' });
             }
         });
         </script>

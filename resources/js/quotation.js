@@ -378,20 +378,26 @@ if (form) {
         const trucking = isTrucking();
 
         if (!desc) {
-            alert('Pilih atau isi Uraian Biaya terlebih dahulu.');
-            inputDesc?.focus();
+            window.appAlert('Pilih atau isi Uraian Biaya terlebih dahulu.', 'Uraian Biaya Kosong', {
+                type: 'warning',
+                focusEl: inputDesc
+            });
             return;
         }
 
         if (isNaN(qty) || qty <= 0) {
-            alert('Jumlah (Qty) harus lebih dari 0.');
-            inputQty?.focus();
+            window.appAlert('Jumlah (Qty) harus lebih dari 0.', 'Jumlah Tidak Valid', {
+                type: 'warning',
+                focusEl: inputQty
+            });
             return;
         }
 
         if (curr !== 'IDR' && (!rate || rate <= 0)) {
-            alert('Wajib mengisi Kurs untuk mata uang ' + curr + '.');
-            inputExchangeRate?.focus();
+            window.appAlert('Wajib mengisi Kurs untuk mata uang ' + curr + '.', 'Kurs Belum Diisi', {
+                type: 'warning',
+                focusEl: inputExchangeRate
+            });
             return;
         }
 
@@ -414,6 +420,8 @@ if (form) {
             destination: trucking ? (truckingDestination?.value?.trim() || '') : '',
             vendor_name: (trucking && truckingPricing && canManageCost && !isSales) ? (truckingPricing?.vendor_name || '') : '',
         });
+
+        window.showToast(`Item "${desc}" berhasil ditambahkan ke daftar penawaran.`, 'success', 'Item Ditambahkan');
 
         // Reset inputs
         if (inputDesc) inputDesc.value = '';
@@ -520,8 +528,10 @@ if (form) {
     form.addEventListener('submit', (e) => {
         if (itemsArray.length === 0) {
             e.preventDefault();
-            alert('Silakan tambahkan setidaknya 1 item biaya ke daftar penawaran sebelum menyimpan.');
-            inputDesc?.focus();
+            window.appAlert('Silakan tambahkan setidaknya 1 item biaya ke daftar penawaran sebelum menyimpan.', 'Item Biaya Belum Ada', {
+                type: 'warning',
+                focusEl: inputDesc
+            });
         }
     });
 }
