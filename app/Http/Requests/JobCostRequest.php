@@ -22,7 +22,7 @@ class JobCostRequest extends FormRequest
             ]);
         }
 
-        foreach (['unit_cost', 'unit_price', 'pph23_amount'] as $field) {
+        foreach (['unit_cost', 'unit_price', 'pph23_amount', 'exchange_rate'] as $field) {
             if ($this->has($field) && is_string($this->input($field))) {
                 $val = trim($this->input($field));
                 if ($val === '') {
@@ -65,13 +65,16 @@ class JobCostRequest extends FormRequest
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'cost_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:'.$this->route('job')->job_date->format('Y-m-d')],
             'quantity' => ['required', 'regex:/^\\d{1,6}(\\.\\d{1,2})?$/', 'numeric', 'min:0.01'],
-            'unit' => ['required', 'string', 'max:30'], 'unit_cost' => $money, 'unit_price' => $money,
+            'unit' => ['required', 'string', 'max:30'],
+            'currency' => ['required', 'string', Rule::in(array_keys(config('operations.currencies'))) ],
+            'exchange_rate' => ['required', 'regex:/^\d{1,12}(\.\d{1,4})?$/', 'gt:0'],
+            'unit_cost' => $money, 'unit_price' => $money,
             'pph23_amount' => ['nullable', 'numeric', 'min:0'],
             'payee' => ['nullable', 'string', 'max:255'], 'reference' => ['nullable', 'string', 'max:100'], 'notes' => ['nullable', 'string', 'max:2000']];
     }
 
     public function attributes(): array
     {
-        return ['description' => 'uraian biaya', 'type' => 'jenis biaya', 'cost_category' => 'kategori biaya', 'vendor_id' => 'vendor', 'cost_date' => 'tanggal biaya', 'quantity' => 'jumlah', 'unit' => 'satuan', 'unit_cost' => 'modal per unit', 'unit_price' => 'nilai jual per unit', 'payee' => 'penerima/vendor', 'reference' => 'nomor bukti', 'notes' => 'catatan', 'job_version' => 'versi job', 'lock_version' => 'versi biaya'];
+        return ['description' => 'uraian biaya', 'type' => 'jenis biaya', 'cost_category' => 'kategori biaya', 'vendor_id' => 'vendor', 'cost_date' => 'tanggal biaya', 'quantity' => 'jumlah', 'unit' => 'satuan', 'currency' => 'mata uang', 'exchange_rate' => 'kurs ke IDR', 'unit_cost' => 'modal per unit', 'unit_price' => 'nilai jual per unit', 'payee' => 'penerima/vendor', 'reference' => 'nomor bukti', 'notes' => 'catatan', 'job_version' => 'versi job', 'lock_version' => 'versi biaya'];
     }
 }

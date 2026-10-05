@@ -23,6 +23,12 @@
 </div>
 
 <input type="hidden" id="type" name="type" data-cost-type value="{{ old('type', $cost->type ?? 'provision') }}">
+@php
+    $selectedCurrency = old('currency', $cost->currency ?? 'IDR');
+    $selectedRate = old('exchange_rate', $cost->exists ? ($cost->exchange_rate ?? 1) : 1);
+    $sourceUnitCost = old('unit_cost', $cost->exists ? ($cost->foreign_unit_cost ?? $cost->unit_cost) : '');
+    $sourceUnitPrice = old('unit_price', $cost->exists ? ($cost->foreign_unit_price ?? $cost->unit_price) : '');
+@endphp
 
 <div class="field" id="category_field">
     <label for="cost_category">Kategori Transaksi (Alur COA)</label>
@@ -37,9 +43,11 @@
 <div class="field"><label for="cost_date">Tanggal biaya</label><input id="cost_date" name="cost_date" type="date" value="{{ old('cost_date',$cost->cost_date?->format('Y-m-d') ?? now()->toDateString()) }}" min="{{ $job->job_date->format('Y-m-d') }}" max="{{ now()->toDateString() }}" required></div>
 <div class="field"><label for="quantity">Jumlah</label><input id="quantity" name="quantity" type="number" min="0.01" max="999999.99" step="0.01" value="{{ old('quantity',$cost->quantity ?? '1') }}" data-quantity required></div>
 <div class="field"><label for="unit">Satuan</label><input id="unit" name="unit" value="{{ old('unit',$cost->unit ?? 'Layanan') }}" maxlength="30" required></div>
-<div class="field"><label for="unit_cost">Modal per unit (Rp)</label><input id="unit_cost" name="unit_cost" type="text" inputmode="decimal" value="{{ old('unit_cost', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_cost)) : '') }}" placeholder="0" data-unit-cost data-currency-input required></div>
-<div class="field"><label for="unit_price">Nilai jual per unit (Rp)</label><input id="unit_price" name="unit_price" type="text" inputmode="decimal" value="{{ old('unit_price', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_price)) : '') }}" placeholder="0" data-unit-price data-currency-input required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
-<div class="field"><label for="pph23_amount">Potong PPh 23 (Payment Request)</label><input id="pph23_amount" name="pph23_amount" type="text" inputmode="decimal" value="{{ old('pph23_amount', $cost->exists && $cost->pph23_amount ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->pph23_amount)) : '') }}" placeholder="0" data-currency-input><p class="form-help">Dicatat ke Utang Pajak saat Draft Payment Request.</p></div>
+<div class="field"><label for="currency">Mata uang transaksi</label><select id="currency" name="currency" data-cost-currency required>@foreach(config('operations.currencies') as $code => $label)<option value="{{ $code }}" @selected($selectedCurrency === $code)>{{ $code }} — {{ $label }}</option>@endforeach</select><p class="form-help">Nominal unit diisi dalam mata uang ini.</p></div>
+<div class="field"><label for="exchange_rate">Kurs ke IDR</label><input id="exchange_rate" name="exchange_rate" type="text" inputmode="decimal" value="{{ $selectedRate }}" placeholder="Contoh: 16.250" data-exchange-rate required><p class="form-help" data-rate-help>Kurs 1,00 untuk IDR.</p></div>
+<div class="field"><label for="unit_cost">Modal per unit (<span data-currency-code>{{ $selectedCurrency }}</span>)</label><input id="unit_cost" name="unit_cost" type="text" inputmode="decimal" value="{{ $sourceUnitCost !== '' ? preg_replace('/,00$/', '', \App\Support\Money::format($sourceUnitCost)) : '' }}" placeholder="0" data-unit-cost data-currency-input required></div>
+<div class="field"><label for="unit_price">Nilai jual per unit (<span data-currency-code>{{ $selectedCurrency }}</span>)</label><input id="unit_price" name="unit_price" type="text" inputmode="decimal" value="{{ $sourceUnitPrice !== '' ? preg_replace('/,00$/', '', \App\Support\Money::format($sourceUnitPrice)) : '' }}" placeholder="0" data-unit-price data-currency-input required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
+<div class="field"><label for="pph23_amount">Potong PPh 23 (IDR)</label><input id="pph23_amount" name="pph23_amount" type="text" inputmode="decimal" value="{{ old('pph23_amount', $cost->exists && $cost->pph23_amount ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->pph23_amount)) : '') }}" placeholder="0" data-currency-input><p class="form-help">Dicatat ke PPh 23 Utang Pajak saat tombol PAID.</p></div>
 
 <div class="field">
     <label for="vendor_id">Penerima / Vendor</label>
@@ -71,7 +79,7 @@
 <div class="field"><label for="reference">Nomor bukti / referensi</label><input id="reference" name="reference" value="{{ old('reference',$cost->reference) }}" maxlength="100" placeholder="Nomor kuitansi atau referensi"></div>
 <div class="field span-2"><label for="notes">Catatan</label><textarea id="notes" name="notes" rows="3" maxlength="2000">{{ old('notes',$cost->notes) }}</textarea></div>
 </div>
-<div class="summary-box" aria-live="polite"><div class="summary-row"><span>Total modal</span><strong data-preview-cost>Rp 0,00</strong></div><div class="summary-row"><span>Total jual</span><strong data-preview-total>Rp 0,00</strong></div><div class="summary-row summary-total"><span>Estimasi profit</span><strong data-preview-profit>Rp 0,00</strong></div></div>
+<div class="summary-box" aria-live="polite"><div class="summary-row"><span>Total modal (IDR)</span><strong data-preview-cost>Rp 0,00</strong></div><div class="summary-row"><span>Total jual (IDR)</span><strong data-preview-total>Rp 0,00</strong></div><div class="summary-row summary-total"><span>Estimasi profit (IDR)</span><strong data-preview-profit>Rp 0,00</strong></div><p class="form-help" data-preview-source></p></div>
 <div class="form-actions"><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">Batal</a><button class="button button-primary">Simpan biaya Draft</button></div></form></section>
 
 <script>

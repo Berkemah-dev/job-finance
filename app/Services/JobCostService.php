@@ -8,6 +8,7 @@ use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Models\User;
 use App\Support\Money;
+use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
@@ -142,8 +143,15 @@ class JobCostService
             if ($date->isBefore($job->job_date) || $date->isAfter(today())) {
                 throw ValidationException::withMessages(['cost_date' => 'Tanggal biaya harus antara tanggal job dan hari ini.']);
             }
-            $unitCost = Money::decimal($data['unit_cost']);
-            $unitPrice = Money::decimal($data['unit_price']);
+            $currency = strtoupper((string) ($data['currency'] ?? 'IDR'));
+            $exchangeRate = $currency === 'IDR'
+                ? BigDecimal::one()
+                : BigDecimal::of((string) $data['exchange_rate'])->toScale(4, RoundingMode::HalfUp);
+            $foreignUnitCost = Money::decimal($data['unit_cost']);
+            $foreignUnitPrice = Money::decimal($data['unit_price']);
+            // Nilai akun dan jurnal selalu IDR; nilai asal tetap tersimpan pada kolom foreign.
+            $unitCost = $foreignUnitCost->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
+            $unitPrice = $foreignUnitPrice->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
             $quantity = Money::decimal($data['quantity']);
             $data['cost_category'] = $costCategory;
             $data['type'] = $costCategory === 'reimbursement' ? 'temporary' : 'provision';
@@ -156,7 +164,13 @@ class JobCostService
                     $data['payee'] = $vendor->name;
                 }
             }
-            $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes']));
+            $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes']));
+            $cost->currency = $currency;
+            $cost->exchange_rate = (string) $exchangeRate;
+            $cost->foreign_unit_cost = Money::checked($foreignUnitCost);
+            $cost->foreign_unit_price = Money::checked($foreignUnitPrice);
+            $cost->unit_cost = Money::checked($unitCost);
+            $cost->unit_price = Money::checked($unitPrice);
             $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->updated_by = $actor->id;
