@@ -69,7 +69,7 @@
                                     @csrf @method('PATCH')
                                     <button class="btn-action {{ $service->is_active ? 'btn-action-warning' : 'btn-action-success' }}" title="{{ $service->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" data-tooltip="{{ $service->is_active ? 'Nonaktifkan' : 'Aktifkan' }}" aria-label="{{ $service->is_active ? 'Nonaktifkan' : 'Aktifkan' }}"><x-icon name="{{ $service->is_active ? 'power' : 'check' }}"/></button>
                                 </form>
-                                <form method="POST" action="{{ route('service-types.destroy', $service) }}" onsubmit="return confirm('Hapus service ini?')">
+                                <form method="POST" action="{{ route('service-types.destroy', $service) }}" data-confirm="Hapus service ini?">
                                     @csrf @method('DELETE')
                                     <button class="btn-action btn-action-danger" title="Hapus Service" data-tooltip="Hapus" aria-label="Hapus Service"><x-icon name="trash"/></button>
                                 </form>

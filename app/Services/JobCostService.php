@@ -134,7 +134,7 @@ class JobCostService
                 $cost->setRelation('job', $job);
                 Gate::forUser($actor)->authorize('update', $cost);
                 $this->master->checkVersion($cost, $data);
-                $before = $cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
+                $before = $cost->only(['description', 'type', 'currency', 'exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
                 if ($cost->paid_at) {
                     throw ValidationException::withMessages(['cost' => 'Biaya yang sudah dibayar tidak dapat diedit.']);
                 }
@@ -143,15 +143,8 @@ class JobCostService
             if ($date->isBefore($job->job_date) || $date->isAfter(today())) {
                 throw ValidationException::withMessages(['cost_date' => 'Tanggal biaya harus antara tanggal job dan hari ini.']);
             }
-            $currency = strtoupper((string) ($data['currency'] ?? 'IDR'));
-            $exchangeRate = $currency === 'IDR'
-                ? BigDecimal::one()
-                : BigDecimal::of((string) $data['exchange_rate'])->toScale(4, RoundingMode::HalfUp);
-            $foreignUnitCost = Money::decimal($data['unit_cost']);
-            $foreignUnitPrice = Money::decimal($data['unit_price']);
-            // Nilai akun dan jurnal selalu IDR; nilai asal tetap tersimpan pada kolom foreign.
-            $unitCost = $foreignUnitCost->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
-            $unitPrice = $foreignUnitPrice->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
+            $unitCost = Money::decimal($data['unit_cost']);
+            $unitPrice = Money::decimal($data['unit_price']);
             $quantity = Money::decimal($data['quantity']);
             $data['cost_category'] = $costCategory;
             $data['type'] = $costCategory === 'reimbursement' ? 'temporary' : 'provision';
@@ -164,13 +157,7 @@ class JobCostService
                     $data['payee'] = $vendor->name;
                 }
             }
-            $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes']));
-            $cost->currency = $currency;
-            $cost->exchange_rate = (string) $exchangeRate;
-            $cost->foreign_unit_cost = Money::checked($foreignUnitCost);
-            $cost->foreign_unit_price = Money::checked($foreignUnitPrice);
-            $cost->unit_cost = Money::checked($unitCost);
-            $cost->unit_price = Money::checked($unitPrice);
+            $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes']));
             $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->updated_by = $actor->id;
@@ -206,7 +193,7 @@ class JobCostService
             }
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
             $this->touchJob($job, $actor);
-            $after = $cost->only(['description', 'type', 'cost_category', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
+            $after = $cost->only(['description', 'type', 'cost_category', 'currency', 'exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
             $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => $new ? null : $before, 'after' => $after]);
 
             return $cost;

@@ -43,8 +43,15 @@ class JobCostController extends Controller
         Gate::authorize('create', [JobCost::class, $job]);
         $chargeTypes = \App\Models\ChargeType::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $vendors = \App\Models\Vendor::where('is_active', true)->with('categories')->orderBy('name')->get();
+        $activeWeeklyRates = \App\Models\WeeklyPricing::where('is_active', true)
+            ->where('effective_date', '<=', today()->toDateString())
+            ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', today()->toDateString()))
+            ->orderByDesc('effective_date')
+            ->get()
+            ->keyBy('currency')
+            ->map(fn ($p) => (float) $p->exchange_rate);
 
-        return view('costs.form', ['job' => $job, 'cost' => new JobCost, 'chargeTypes' => $chargeTypes, 'vendors' => $vendors]);
+        return view('costs.form', ['job' => $job, 'cost' => new JobCost, 'chargeTypes' => $chargeTypes, 'vendors' => $vendors, 'activeWeeklyRates' => $activeWeeklyRates]);
     }
 
     public function store(JobCostRequest $request, Job $job, JobCostService $service)
@@ -81,8 +88,15 @@ class JobCostController extends Controller
         Gate::authorize('update', $cost);
         $chargeTypes = \App\Models\ChargeType::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $vendors = \App\Models\Vendor::where('is_active', true)->with('categories')->orderBy('name')->get();
+        $activeWeeklyRates = \App\Models\WeeklyPricing::where('is_active', true)
+            ->where('effective_date', '<=', today()->toDateString())
+            ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', today()->toDateString()))
+            ->orderByDesc('effective_date')
+            ->get()
+            ->keyBy('currency')
+            ->map(fn ($p) => (float) $p->exchange_rate);
 
-        return view('costs.form', compact('job', 'cost', 'chargeTypes', 'vendors'));
+        return view('costs.form', compact('job', 'cost', 'chargeTypes', 'vendors', 'activeWeeklyRates'));
     }
 
     public function update(JobCostRequest $request, Job $job, JobCost $cost, JobCostService $service)

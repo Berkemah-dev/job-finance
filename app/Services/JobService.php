@@ -263,8 +263,8 @@ class JobService
             if ($rate->isZero()) {
                 throw ValidationException::withMessages(['job_date' => 'Quotation memiliki kurs nol sehingga biaya tidak dapat disalin saat membuka job.']);
             }
-            $unitCost = Money::decimal((string) $item['unit_cost'])->multipliedBy($rate);
-            $unitPrice = Money::decimal((string) $item['unit_price'])->multipliedBy($rate);
+            $unitCost = Money::decimal((string) $item['unit_cost']);
+            $unitPrice = Money::decimal((string) $item['unit_price']);
             $quantity = Money::decimal((string) $item['quantity']);
             $cost = new JobCost;
             $cost->job_id = $job->id;
@@ -277,11 +277,13 @@ class JobService
             $cost->status = 'draft';
             $cost->cost_date = $job->job_date->toDateString();
             $cost->unit = (string) $item['unit'];
+            $cost->currency = $currency;
+            $cost->exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
             $cost->quantity = $quantity->toScale(2, RoundingMode::HalfUp);
             $cost->unit_cost = Money::checked($unitCost->toScale(2, RoundingMode::HalfUp));
             $cost->unit_price = Money::checked($unitPrice->toScale(2, RoundingMode::HalfUp));
-            $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
-            $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
+            $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
+            $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
             $cost->notes = 'Otomatis dari quotation '.$snapshot['number'];
             $cost->created_by = $actor->id;
             $cost->updated_by = $actor->id;

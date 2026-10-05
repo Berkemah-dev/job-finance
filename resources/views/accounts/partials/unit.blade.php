@@ -54,7 +54,7 @@
                             </a>
                         </td>
                         <td class="col-actions">
-                            <form method="POST" action="{{ route('container-units.destroy', $unit) }}" onsubmit="return confirm('Hapus satuan ini?')">
+                            <form method="POST" action="{{ route('container-units.destroy', $unit) }}" data-confirm="Hapus satuan ini?">
                                 @csrf @method('DELETE')
                                 <button class="coa-action-button coa-btn-del" type="submit" title="Hapus">
                                     <x-icon name="x"/>

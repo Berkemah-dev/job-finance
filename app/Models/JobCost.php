@@ -13,9 +13,22 @@ class JobCost extends Model
 
     protected $guarded = ['id'];
 
+    protected $attributes = [
+        'currency' => 'IDR',
+        'exchange_rate' => '1.0000',
+        'pph23_amount' => '0.00',
+    ];
+
+    public function setPph23AmountAttribute($value): void
+    {
+        $this->attributes['pph23_amount'] = ($value !== null && $value !== '')
+            ? (string) \App\Support\Money::decimal($value)
+            : '0.00';
+    }
+
     protected function casts(): array
     {
-        return ['cost_date' => 'date', 'paid_date' => 'date', 'paid_at' => 'datetime', 'quantity' => 'decimal:2', 'exchange_rate' => 'decimal:4', 'unit_cost' => 'decimal:2', 'unit_price' => 'decimal:2', 'foreign_unit_cost' => 'decimal:2', 'foreign_unit_price' => 'decimal:2', 'total_cost' => 'decimal:2', 'total_price' => 'decimal:2', 'pph23_amount' => 'decimal:2', 'finalized_at' => 'datetime'];
+        return ['cost_date' => 'date', 'paid_date' => 'date', 'paid_at' => 'datetime', 'quantity' => 'decimal:2', 'unit_cost' => 'decimal:2', 'unit_price' => 'decimal:2', 'total_cost' => 'decimal:2', 'total_price' => 'decimal:2', 'pph23_amount' => 'decimal:2', 'finalized_at' => 'datetime'];
     }
 
     public function job(): BelongsTo
