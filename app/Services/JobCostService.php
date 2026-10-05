@@ -133,7 +133,7 @@ class JobCostService
                 $cost->setRelation('job', $job);
                 Gate::forUser($actor)->authorize('update', $cost);
                 $this->master->checkVersion($cost, $data);
-                $before = $cost->only(['description', 'type', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
+                $before = $cost->only(['description', 'type', 'currency', 'exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
                 if ($cost->paid_at) {
                     throw ValidationException::withMessages(['cost' => 'Biaya yang sudah dibayar tidak dapat diedit.']);
                 }
@@ -141,6 +141,11 @@ class JobCostService
             $date = Carbon::parse($data['cost_date']);
             if ($date->isBefore($job->job_date) || $date->isAfter(today())) {
                 throw ValidationException::withMessages(['cost_date' => 'Tanggal biaya harus antara tanggal job dan hari ini.']);
+            }
+            $currency = strtoupper((string) ($data['currency'] ?? $cost->currency ?? 'IDR'));
+            $exchangeRate = $currency === 'IDR' ? Money::decimal('1') : Money::decimal($data['exchange_rate'] ?? $cost->exchange_rate ?? '1');
+            if ($exchangeRate->isZero()) {
+                throw ValidationException::withMessages(['exchange_rate' => 'Kurs tidak boleh 0.']);
             }
             $unitCost = Money::decimal($data['unit_cost']);
             $unitPrice = Money::decimal($data['unit_price']);
@@ -164,9 +169,11 @@ class JobCostService
                 $data['pph23_amount'] = $cost->pph23_amount ? (string) Money::decimal($cost->pph23_amount) : '0.00';
             }
             $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes']));
+            $cost->currency = $currency;
+            $cost->exchange_rate = $exchangeRate->toScale(4, RoundingMode::HalfUp);
             $cost->pph23_amount = $data['pph23_amount'];
-            $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
-            $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
+            $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp));
+            $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp));
             $cost->updated_by = $actor->id;
             $cost->lock_version = $new ? 0 : $cost->lock_version + 1;
             $cost->save();
@@ -200,7 +207,7 @@ class JobCostService
             }
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
             $this->touchJob($job, $actor);
-            $after = $cost->only(['description', 'type', 'cost_category', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
+            $after = $cost->only(['description', 'type', 'cost_category', 'currency', 'exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
             $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => $new ? null : $before, 'after' => $after]);
 
             return $cost;

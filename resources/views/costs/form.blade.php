@@ -37,9 +37,23 @@
 <div class="field"><label for="cost_date">Tanggal biaya</label><input id="cost_date" name="cost_date" type="date" value="{{ old('cost_date',$cost->cost_date?->format('Y-m-d') ?? now()->toDateString()) }}" min="{{ $job->job_date->format('Y-m-d') }}" max="{{ now()->toDateString() }}" required></div>
 <div class="field"><label for="quantity">Jumlah</label><input id="quantity" name="quantity" type="number" min="0.01" max="999999.99" step="0.01" value="{{ old('quantity',$cost->quantity ?? '1') }}" data-quantity required></div>
 <div class="field"><label for="unit">Satuan</label><input id="unit" name="unit" value="{{ old('unit',$cost->unit ?? 'Layanan') }}" maxlength="30" required></div>
-<div class="field"><label for="unit_cost">Modal per unit (Rp)</label><input id="unit_cost" name="unit_cost" type="text" inputmode="decimal" value="{{ old('unit_cost', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_cost)) : '') }}" placeholder="0" data-unit-cost data-currency-input required></div>
-<div class="field"><label for="unit_price">Nilai jual per unit (Rp)</label><input id="unit_price" name="unit_price" type="text" inputmode="decimal" value="{{ old('unit_price', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_price)) : '') }}" placeholder="0" data-unit-price data-currency-input required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
-<div class="field"><label for="pph23_amount">Potong PPh 23 (Payment Request)</label><input id="pph23_amount" name="pph23_amount" type="text" inputmode="decimal" value="{{ old('pph23_amount', $cost->exists && $cost->pph23_amount ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->pph23_amount)) : '') }}" placeholder="0" data-currency-input><p class="form-help">Dicatat ke Utang Pajak saat Draft Payment Request.</p></div>
+<div class="field">
+    <label for="currency">Mata Uang <span class="required">*</span></label>
+    <select id="currency" name="currency" data-cost-currency required>
+        @foreach(config('operations.currencies') as $cKey => $cLabel)
+            <option value="{{ $cKey }}" @selected(old('currency', $cost->currency ?? 'IDR') === $cKey)>{{ $cKey }} — {{ $cLabel }}</option>
+        @endforeach
+    </select>
+    <p class="form-help">Pilih mata uang transaksi (IDR, USD, EUR, dll).</p>
+</div>
+<div class="field">
+    <label for="exchange_rate">Kurs ke IDR <span class="required">*</span></label>
+    <input id="exchange_rate" name="exchange_rate" type="text" inputmode="decimal" value="{{ old('exchange_rate', $cost->exists ? ($cost->currency === 'IDR' ? '1' : preg_replace('/(\.0000|0+)$/', '', number_format((float)$cost->exchange_rate, 4, ',', '.'))) : '1') }}" placeholder="1" data-cost-exchange-rate required>
+    <p class="form-help" id="rate_help">Kurs 1.00 untuk IDR</p>
+</div>
+<div class="field"><label for="unit_cost">Modal per unit <span data-label-currency>(Rp)</span></label><input id="unit_cost" name="unit_cost" type="text" inputmode="decimal" value="{{ old('unit_cost', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_cost)) : '') }}" placeholder="0" data-unit-cost data-currency-input required></div>
+<div class="field"><label for="unit_price">Nilai jual per unit <span data-label-currency>(Rp)</span></label><input id="unit_price" name="unit_price" type="text" inputmode="decimal" value="{{ old('unit_price', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->unit_price)) : '') }}" placeholder="0" data-unit-price data-currency-input required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
+<div class="field"><label for="pph23_amount">Potong PPh 23 (Payment Request)</label><input id="pph23_amount" name="pph23_amount" type="text" inputmode="decimal" value="{{ old('pph23_amount', $cost->exists && $cost->pph23_amount ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->pph23_amount)) : '') }}" placeholder="0" data-currency-input><p class="form-help">Dicatat ke Utang Pajak saat Draft Payment Request (dalam Rupiah).</p></div>
 
 <div class="field">
     <label for="vendor_id">Penerima / Vendor</label>
@@ -75,6 +89,7 @@
 <div class="form-actions"><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">Batal</a><button class="button button-primary">Simpan biaya Draft</button></div></form></section>
 
 <script>
+window.__weeklyRates = @json($activeWeeklyRates ?? []);
 document.addEventListener('DOMContentLoaded', function() {
     const typeSelect = document.querySelector('[data-cost-type]');
     const catSelect = document.getElementById('cost_category');

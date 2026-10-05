@@ -103,36 +103,114 @@ if (document.readyState === 'loading') {
 // Logika khusus form kalkulasi biaya job (jika ada form data-cost-form)
 const form = document.querySelector('[data-cost-form]');
 if (form) {
-    const cents = value => {
+    const currencySelect = form.querySelector('[data-cost-currency]');
+    const rateInput = form.querySelector('[data-cost-exchange-rate]');
+    const rateHelp = form.querySelector('#rate_help');
+    const labelCurrencies = form.querySelectorAll('[data-label-currency]');
+
+    const parseNum = value => {
         const cleaned = cleanNumber(value);
-        if (!/^\d+(\.\d{0,2})?$/.test(cleaned)) return 0n;
-        const [whole, fraction = ''] = cleaned.split('.');
-        return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
+        return parseFloat(cleaned) || 0;
     };
 
-    const rupiah = value => {
-        const sign = value < 0n ? '-' : '';
-        const absolute = value < 0n ? -value : value;
-        return 'Rp ' + sign + (absolute / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + (absolute % 100n).toString().padStart(2, '0');
+    const formatIdr = value => {
+        const sign = value < 0 ? '-' : '';
+        const abs = Math.abs(value);
+        return 'Rp ' + sign + abs.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
+
+    const formatForeign = (currency, value) => {
+        const sign = value < 0 ? '-' : '';
+        const abs = Math.abs(value);
+        return currency + ' ' + sign + abs.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const syncCurrency = (isInitial = false) => {
+        const curr = (currencySelect?.value || 'IDR').toUpperCase();
+        labelCurrencies.forEach(el => {
+            el.textContent = curr === 'IDR' ? '(Rp)' : '(' + curr + ')';
+        });
+
+        if (curr === 'IDR') {
+            if (rateInput) {
+                rateInput.value = '1';
+                rateInput.readOnly = true;
+            }
+            if (rateHelp) rateHelp.textContent = 'Kurs 1.00 untuk IDR';
+        } else {
+            if (rateInput) {
+                rateInput.readOnly = false;
+                if (!isInitial && (rateInput.value === '1' || rateInput.value === '1,00' || !rateInput.value)) {
+                    const weeklyRates = window.__weeklyRates || {};
+                    if (weeklyRates[curr]) {
+                        rateInput.value = Number(weeklyRates[curr]).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+                    } else if (curr === 'USD') {
+                        rateInput.value = '16.000';
+                    }
+                }
+            }
+            if (rateHelp) rateHelp.textContent = 'Wajib isi kurs ke IDR (misal: 16.000)';
+        }
+    };
+
+    if (currencySelect) {
+        currencySelect.addEventListener('change', () => {
+            syncCurrency(false);
+            update();
+        });
+    }
 
     const update = () => {
-        const temporary = form.querySelector('[data-cost-type]').value === 'temporary';
-        const cost = form.querySelector('[data-unit-cost]');
-        const price = form.querySelector('[data-unit-price]');
-        price.readOnly = temporary;
-        if (temporary) {
-            price.value = cost.value;
+        const temporary = form.querySelector('[data-cost-type]')?.value === 'temporary';
+        const costInput = form.querySelector('[data-unit-cost]');
+        const priceInput = form.querySelector('[data-unit-price]');
+        const qtyInput = form.querySelector('[data-quantity]');
+        const curr = (currencySelect?.value || 'IDR').toUpperCase();
+
+        if (priceInput) {
+            priceInput.readOnly = temporary;
+            if (temporary && costInput) {
+                priceInput.value = costInput.value;
+            }
         }
-        const quantity = cents(form.querySelector('[data-quantity]').value);
-        const totalCost = (quantity * cents(cost.value) + 50n) / 100n;
-        const totalPrice = (quantity * cents(price.value) + 50n) / 100n;
-        form.querySelector('[data-preview-cost]').textContent = rupiah(totalCost);
-        form.querySelector('[data-preview-total]').textContent = rupiah(totalPrice);
-        form.querySelector('[data-preview-profit]').textContent = rupiah(temporary ? 0n : totalPrice - totalCost);
+
+        const quantity = parseNum(qtyInput?.value || '1');
+        const unitCost = parseNum(costInput?.value || '0');
+        const unitPrice = parseNum(priceInput?.value || '0');
+        const rate = curr === 'IDR' ? 1 : parseNum(rateInput?.value || '1');
+
+        const originalTotalCost = quantity * unitCost;
+        const originalTotalPrice = quantity * unitPrice;
+        const originalProfit = temporary ? 0 : (originalTotalPrice - originalTotalCost);
+
+        const idrTotalCost = originalTotalCost * rate;
+        const idrTotalPrice = originalTotalPrice * rate;
+        const idrProfit = temporary ? 0 : (idrTotalPrice - idrTotalCost);
+
+        const previewCost = form.querySelector('[data-preview-cost]');
+        const previewTotal = form.querySelector('[data-preview-total]');
+        const previewProfit = form.querySelector('[data-preview-profit]');
+
+        if (curr === 'IDR') {
+            if (previewCost) previewCost.textContent = formatIdr(idrTotalCost);
+            if (previewTotal) previewTotal.textContent = formatIdr(idrTotalPrice);
+            if (previewProfit) previewProfit.textContent = formatIdr(idrProfit);
+        } else {
+            if (previewCost) {
+                previewCost.textContent = `${formatForeign(curr, originalTotalCost)} (${formatIdr(idrTotalCost)})`;
+            }
+            if (previewTotal) {
+                previewTotal.textContent = `${formatForeign(curr, originalTotalPrice)} (${formatIdr(idrTotalPrice)})`;
+            }
+            if (previewProfit) {
+                previewProfit.textContent = `${formatForeign(curr, originalProfit)} (${formatIdr(idrProfit)})`;
+            }
+        }
     };
 
     form.addEventListener('input', update);
     form.addEventListener('change', update);
+
+    syncCurrency(true);
     update();
 }

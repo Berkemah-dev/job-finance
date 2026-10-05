@@ -327,4 +327,40 @@ class JobCostTest extends TestCase
         $this->assertSame('700000.00', $cost->total_cost);
         $this->assertSame('draft', $cost->status);
     }
+
+    public function test_cost_can_be_saved_with_foreign_currency_and_exchange_rate(): void
+    {
+        $data = $this->data([
+            'description' => 'OCEAN FREIGHT USD',
+            'type' => 'provision',
+            'cost_category' => 'payment_request',
+            'currency' => 'USD',
+            'exchange_rate' => '16000',
+            'quantity' => '2',
+            'unit' => 'Cont 40ft',
+            'unit_cost' => '100',
+            'unit_price' => '150',
+            'pph23_amount' => '0',
+        ]);
+
+        $response = $this->post('/jobs/'.$this->job->id.'/costs', $data);
+        $response->assertSessionHasNoErrors()->assertRedirect();
+
+        $cost = JobCost::where('job_id', $this->job->id)->where('description', 'OCEAN FREIGHT USD')->firstOrFail();
+        $this->assertSame('USD', $cost->currency);
+        $this->assertSame('16000.0000', (string) $cost->exchange_rate);
+        $this->assertSame('100.00', (string) $cost->unit_cost);
+        $this->assertSame('150.00', (string) $cost->unit_price);
+        $this->assertSame('3200000.00', (string) $cost->total_cost);
+        $this->assertSame('4800000.00', (string) $cost->total_price);
+
+        $this->get('/jobs/'.$this->job->id.'/costs/'.$cost->id)
+            ->assertOk()
+            ->assertSee('USD')
+            ->assertSee('16.000');
+
+        $this->get('/jobs/'.$this->job->id.'/costs')
+            ->assertOk()
+            ->assertSee('USD');
+    }
 }
