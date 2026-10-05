@@ -27,7 +27,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('job_costs', function (Blueprint $table) {
-            $columns = collect(['foreign_unit_price', 'foreign_unit_cost', 'exchange_rate', 'currency'])
+            // Kolom currency/kurs bisa berasal dari deployment lama, jadi rollback
+            // migration ini hanya menghapus kolom sumber yang memang ditambah di sini.
+            $columns = collect(['foreign_unit_price', 'foreign_unit_cost'])
                 ->filter(fn (string $column) => Schema::hasColumn('job_costs', $column))
                 ->all();
             if ($columns !== []) {
