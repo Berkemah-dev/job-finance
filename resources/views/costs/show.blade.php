@@ -57,7 +57,7 @@
     @endcan
 </div>
 
-@if(!$cost->paid_at)
+@if(!$cost->paid_at && (float) $cost->total_cost > 0)
 <section class="panel form-panel" style="margin-top:24px;">
     <div class="panel-heading">
         <div>

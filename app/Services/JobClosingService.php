@@ -101,7 +101,7 @@ class JobClosingService
                     'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
                     'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'paid_amount' => '0.00', 'balance' => Money::checked($total), 'created_by' => $actor->id, 'issued_at' => now()]);
                 foreach ($rows as $i => $cost) {
-                    $invoice->items()->create(['position' => $i + 1, 'description' => $cost->description, 'type' => $cost->type, 'quantity' => $cost->quantity, 'unit' => $cost->unit, 'unit_price' => $cost->type === 'temporary' ? $cost->unit_cost : $cost->unit_price, 'amount' => $cost->type === 'temporary' ? $cost->total_cost : $cost->total_price]);
+                    $invoice->items()->create($this->invoiceItemData($cost, $i + 1));
                 }
             }
 
@@ -316,15 +316,7 @@ class JobClosingService
             ]);
 
             foreach ($rows as $i => $cost) {
-                $invoice->items()->create([
-                    'position' => $i + 1,
-                    'description' => $cost->description,
-                    'type' => $cost->type,
-                    'quantity' => $cost->quantity,
-                    'unit' => $cost->unit,
-                    'unit_price' => $cost->type === 'temporary' ? $cost->unit_cost : $cost->unit_price,
-                    'amount' => $cost->type === 'temporary' ? $cost->total_cost : $cost->total_price,
-                ]);
+                $invoice->items()->create($this->invoiceItemData($cost, $i + 1));
             }
 
             $temporary = Money::decimal($summary['temporary']);
@@ -363,5 +355,32 @@ class JobClosingService
 
             return $invoice;
         }, 3);
+    }
+
+    /** Simpan currency dan harga sumber per baris, sementara nilai buku tetap IDR. */
+    private function invoiceItemData(\App\Models\JobCost $cost, int $position): array
+    {
+        $currency = strtoupper((string) ($cost->currency ?: 'IDR'));
+        $isTemporary = $cost->type === 'temporary';
+        $foreignUnitPrice = $isTemporary ? $cost->foreign_unit_cost : $cost->foreign_unit_price;
+
+        // Biaya yang dibuat sebelum kolom foreign tersedia menyimpan harga
+        // sumber pada unit_cost/unit_price. Pertahankan sebagai fallback.
+        if ($foreignUnitPrice === null) {
+            $foreignUnitPrice = $isTemporary ? $cost->unit_cost : $cost->unit_price;
+        }
+
+        return [
+            'position' => $position,
+            'description' => $cost->description,
+            'type' => $cost->type,
+            'quantity' => $cost->quantity,
+            'unit' => $cost->unit,
+            'currency' => $currency,
+            'exchange_rate' => $cost->exchange_rate ?: 1,
+            'foreign_unit_price' => $foreignUnitPrice,
+            'unit_price' => $isTemporary ? $cost->unit_cost : $cost->unit_price,
+            'amount' => $isTemporary ? $cost->total_cost : $cost->total_price,
+        ];
     }
 }

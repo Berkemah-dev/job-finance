@@ -424,13 +424,15 @@
                     // Proportional VAT if applicable
                     $itemVat = $chargesAmount > 0 ? ($itemAmount / $chargesAmount) * $chargesTax : 0;
                     $itemTotal = $itemAmount + $itemVat;
+                    $itemCurrency = strtoupper($item->currency ?? 'IDR');
+                    $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
                 @endphp
                 <tr>
                     <td class="center">{{ $no++ }}.</td>
                     <td>{{ strtoupper($item->description) }}</td>
                     <td class="center">{{ (float)$item->quantity == (int)$item->quantity ? (int)$item->quantity : number_format((float)$item->quantity, 2, '.', ',') }}</td>
-                    <td class="center">{{ $invoice->currency }}</td>
-                    <td class="right">{{ number_format((float)$item->unit_price, 2, '.', ',') }}</td>
+                    <td class="center">{{ $itemCurrency }}</td>
+                    <td class="right">{{ number_format((float)$itemPrice, 2, '.', ',') }}</td>
                     <td class="right">{{ number_format($itemAmount, 2, '.', ',') }}</td>
                     <td class="right">{{ number_format($itemVat, 2, '.', ',') }}</td>
                     <td class="right">{{ number_format($itemTotal, 2, '.', ',') }}</td>
@@ -456,13 +458,15 @@
                     $itemAmount = (float) $item->amount;
                     $itemVat = 0.00;
                     $itemTotal = $itemAmount;
+                    $itemCurrency = strtoupper($item->currency ?? 'IDR');
+                    $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
                 @endphp
                 <tr>
                     <td class="center">{{ $no++ }}.</td>
                     <td>{{ strtoupper($item->description) }}</td>
                     <td class="center">{{ (float)$item->quantity == (int)$item->quantity ? (int)$item->quantity : number_format((float)$item->quantity, 2, '.', ',') }}</td>
-                    <td class="center">{{ $invoice->currency }}</td>
-                    <td class="right">{{ number_format((float)$item->unit_price, 2, '.', ',') }}</td>
+                    <td class="center">{{ $itemCurrency }}</td>
+                    <td class="right">{{ number_format((float)$itemPrice, 2, '.', ',') }}</td>
                     <td class="right">{{ number_format($itemAmount, 2, '.', ',') }}</td>
                     <td class="right">0.00</td>
                     <td class="right">{{ number_format($itemTotal, 2, '.', ',') }}</td>

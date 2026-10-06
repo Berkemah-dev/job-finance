@@ -258,13 +258,15 @@
                             $itemAmount = (float) $item->amount;
                             $itemVat = $chargesAmount > 0 ? ($itemAmount / $chargesAmount) * $chargesTax : 0;
                             $itemTotal = $itemAmount + $itemVat;
+                            $itemCurrency = strtoupper($item->currency ?? 'IDR');
+                            $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
                         @endphp
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="text-align: center; padding: 8px 4px; color: #64748b;">{{ $no++ }}.</td>
                             <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">{{ strtoupper($item->description) }}</td>
                             <td style="text-align: center; padding: 8px 4px;">{{ \App\Support\Money::format($item->quantity) }}</td>
-                            <td style="text-align: center; padding: 8px 4px; font-weight: 600; color: #475569;">{{ $invoice->currency }}</td>
-                            <td style="text-align: right; padding: 8px 12px; font-family: monospace;">{{ \App\Support\Money::format($item->unit_price) }}</td>
+                            <td style="text-align: center; padding: 8px 4px; font-weight: 600; color: #475569;">{{ $itemCurrency }}</td>
+                            <td style="text-align: right; padding: 8px 12px; font-family: monospace;">{{ \App\Support\Money::format($itemPrice) }}</td>
                             <td style="text-align: right; padding: 8px 12px; font-family: monospace;">{{ \App\Support\Money::format($itemAmount) }}</td>
                             <td style="text-align: right; padding: 8px 12px; font-family: monospace; color: #0369a1;">{{ \App\Support\Money::format($itemVat) }}</td>
                             <td style="text-align: right; padding: 8px 12px; font-family: monospace; font-weight: 700; color: #0f172a;">{{ \App\Support\Money::format($itemTotal) }}</td>
@@ -292,13 +294,15 @@
                             $itemAmount = (float) $item->amount;
                             $itemVat = 0.00;
                             $itemTotal = $itemAmount;
+                            $itemCurrency = strtoupper($item->currency ?? 'IDR');
+                            $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
                         @endphp
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="text-align: center; padding: 8px 4px; color: #64748b;">{{ $no++ }}.</td>
                             <td style="padding: 8px 12px; font-weight: 600; color: #1e293b;">{{ strtoupper($item->description) }}</td>
                             <td style="text-align: center; padding: 8px 4px;">{{ \App\Support\Money::format($item->quantity) }}</td>
-                            <td style="text-align: center; padding: 8px 4px; font-weight: 600; color: #475569;">{{ $invoice->currency }}</td>
-                            <td style="text-align: right; padding: 8px 12px; font-family: monospace;">{{ \App\Support\Money::format($item->unit_price) }}</td>
+                            <td style="text-align: center; padding: 8px 4px; font-weight: 600; color: #475569;">{{ $itemCurrency }}</td>
+                            <td style="text-align: right; padding: 8px 12px; font-family: monospace;">{{ \App\Support\Money::format($itemPrice) }}</td>
                             <td style="text-align: right; padding: 8px 12px; font-family: monospace;">{{ \App\Support\Money::format($itemAmount) }}</td>
                             <td style="text-align: right; padding: 8px 12px; font-family: monospace; color: #64748b;">0,00</td>
                             <td style="text-align: right; padding: 8px 12px; font-family: monospace; font-weight: 700; color: #0f172a;">{{ \App\Support\Money::format($itemTotal) }}</td>
