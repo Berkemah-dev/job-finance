@@ -86,7 +86,7 @@ class JobClosingService
             }
             $snapshot = JobClosingSnapshot::create(['job_id' => $job->id, 'closing_date' => $data['closing_date'], 'customer_snapshot' => $job->quotation_snapshot['customer'],
                 'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
-                'costs_snapshot' => $rows->map(fn ($c) => $c->only(['number', 'description', 'type', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price']))->all(),
+                'costs_snapshot' => $rows->map(fn ($c) => $c->only(['number', 'description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'pph23_amount']))->all(),
                 'total_temporary' => $summary['temporary'], 'total_provision_cost' => $summary['provision_cost'], 'total_provision_sell' => $summary['provision_sell'],
                 'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'profit' => $summary['profit'], 'margin' => $summary['margin'],
                 'funding_account_id' => $maps[$data['funding_account']]->id, 'closed_by' => $actor->id, 'closed_at' => now()]);

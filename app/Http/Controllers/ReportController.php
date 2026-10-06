@@ -84,4 +84,11 @@ class ReportController extends Controller
 
         return view('reports.profit-monthly', $service->monthlyProfit($year) + compact('year'));
     }
+
+    public function hppByCostType(ReportFilterRequest $request, FinancialReportService $service)
+    {
+        [$from, $to] = $this->period($request);
+
+        return view('reports.hpp-by-cost-type', $service->hppByCostType($from, $to) + compact('from', 'to'));
+    }
 }

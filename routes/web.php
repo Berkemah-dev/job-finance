@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
         Route::get('/profit-per-job', [ReportController::class, 'profitPerJob'])->name('profit-per-job');
         Route::get('/profit-bulanan', [ReportController::class, 'profitMonthly'])->name('profit-monthly');
+        Route::get('/hpp-per-jenis-biaya', [ReportController::class, 'hppByCostType'])->name('hpp-by-cost-type');
         Route::get('/statement-of-account', [StatementOfAccountController::class, 'index'])->name('soa');
         Route::get('/statement-of-account/{soaCustomer}', [StatementOfAccountController::class, 'show'])->name('soa.customer');
         Route::get('/statement-of-account/{soaCustomer}/pdf', [OperationalDocumentController::class, 'soaPdf'])->name('soa.pdf');

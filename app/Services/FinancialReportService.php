@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ChartOfAccount;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
+use App\Models\JobCost;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Support\Money;
@@ -391,6 +392,71 @@ class FinancialReportService
         $totals['margin'] = Money::decimal($totals['revenue'])->isZero() ? '0.00' : (string) Money::decimal($totals['profit'])->multipliedBy('100')->dividedBy(Money::decimal($totals['revenue']), 2, RoundingMode::HalfUp);
 
         return ['rows' => $rows, 'totals' => $totals];
+    }
+
+    /**
+     * Rekap HPP yang benar-benar telah diakui saat Closing Job.
+     * Data dibaca dari snapshot closing sehingga tidak berubah ketika biaya Job diedit setelahnya.
+     */
+    public function hppByCostType(string $from, string $to): array
+    {
+        $snapshots = JobClosingSnapshot::query()
+            ->whereDate('closing_date', '>=', $from)
+            ->whereDate('closing_date', '<=', $to)
+            ->get(['id', 'job_id', 'costs_snapshot']);
+
+        // PPh dilaporkan dari biaya yang benar-benar telah dibayar. Ini tetap
+        // akurat ketika pembayaran vendor dilakukan setelah Closing Job.
+        $pphByDescription = JobCost::query()
+            ->whereIn('job_id', $snapshots->pluck('job_id')->filter())
+            ->where('type', 'provision')
+            ->whereNotNull('paid_at')
+            ->where('pph23_amount', '>', 0)
+            ->get(['description', 'pph23_amount'])
+            ->groupBy(fn (JobCost $cost) => mb_strtoupper(trim($cost->description) ?: 'Tanpa uraian'))
+            ->map(fn (Collection $costs) => $costs->reduce(fn ($sum, $cost) => $sum->plus(Money::decimal((string) $cost->pph23_amount)), Money::decimal(0)));
+
+        $grouped = [];
+        $jobIds = [];
+        foreach ($snapshots as $snapshot) {
+            foreach ($snapshot->costs_snapshot ?? [] as $cost) {
+                // Reimbursement adalah talangan/piutang temporary, bukan HPP perusahaan.
+                if (($cost['type'] ?? 'provision') === 'temporary') {
+                    continue;
+                }
+                $description = trim((string) ($cost['description'] ?? '')) ?: 'Tanpa uraian';
+                $key = mb_strtoupper($description);
+                $grouped[$key] ??= ['description' => $description, 'transaction_count' => 0, 'job_ids' => [], 'total_cost' => Money::decimal(0), 'total_price' => Money::decimal(0), 'total_pph23' => Money::decimal(0)];
+                $grouped[$key]['transaction_count']++;
+                $grouped[$key]['job_ids'][$snapshot->job_id] = true;
+                $grouped[$key]['total_cost'] = $grouped[$key]['total_cost']->plus(Money::decimal((string) ($cost['total_cost'] ?? 0)));
+                $grouped[$key]['total_price'] = $grouped[$key]['total_price']->plus(Money::decimal((string) ($cost['total_price'] ?? 0)));
+                $grouped[$key]['total_pph23'] = $grouped[$key]['total_pph23']->plus(Money::decimal((string) ($cost['pph23_amount'] ?? 0)));
+                $jobIds[$snapshot->job_id] = true;
+            }
+        }
+
+        $rows = collect($grouped)->map(fn (array $row) => (object) [
+            'description' => $row['description'],
+            'transaction_count' => $row['transaction_count'],
+            'job_count' => count($row['job_ids']),
+            'total_cost' => (string) $row['total_cost'],
+            'total_price' => (string) $row['total_price'],
+            'total_pph23' => (string) ($pphByDescription->get($key) ?? $row['total_pph23']),
+        ])->sortByDesc(fn ($row) => (float) $row->total_cost)->values();
+
+        $totalCost = $rows->reduce(fn ($sum, $row) => $sum->plus(Money::decimal($row->total_cost)), Money::decimal(0));
+        $totalSales = $rows->reduce(fn ($sum, $row) => $sum->plus(Money::decimal($row->total_price)), Money::decimal(0));
+        $totalPph23 = $rows->reduce(fn ($sum, $row) => $sum->plus(Money::decimal($row->total_pph23)), Money::decimal(0));
+
+        return [
+            'rows' => $rows,
+            'totalCost' => (string) $totalCost,
+            'totalSales' => (string) $totalSales,
+            'totalPph23' => (string) $totalPph23,
+            'totalTransactions' => (int) $rows->sum('transaction_count'),
+            'totalJobs' => count($jobIds),
+        ];
     }
 
     private function accountBalances(string $to): Collection
