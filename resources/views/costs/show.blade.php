@@ -6,14 +6,15 @@
 <section class="panel"><div class="panel-heading"><h2>Rincian biaya aktual</h2><span class="status-badge status-{{ $cost->status }}">{{ config('operations.cost_statuses.'.$cost->status) }}</span></div>
 <dl class="detail-grid">
 <div><dt>Jenis transaksi</dt><dd><strong>{{ match($cost->cost_category) { 'reimbursement' => 'Reimbursement (Temporary Payment)', 'debit_note' => 'Debit Note (Piutang Agent)', 'credit_note' => 'Credit Note (Hutang Agent)', default => 'Payment Request (Provisional Payment)' } }}</strong></dd></div><div><dt>Tanggal biaya</dt><dd>{{ $cost->cost_date->format('d/m/Y') }}</dd></div><div><dt>Jumlah / Satuan</dt><dd>{{ \App\Support\Money::format($cost->quantity) }} {{ $cost->unit }}</dd></div>
-<div><dt>Modal per unit</dt><dd>Rp {{ \App\Support\Money::format($cost->unit_cost) }}</dd></div><div><dt>Nilai jual per unit</dt><dd>Rp {{ \App\Support\Money::format($cost->unit_price) }}</dd></div><div><dt>Penerima / vendor</dt><dd>{{ $cost->payee ?? '—' }}</dd></div>
+<div><dt>Modal per unit</dt><dd>{{ $cost->currency ?? 'IDR' }} {{ \App\Support\Money::format($cost->foreign_unit_cost ?? $cost->unit_cost) }}@if(($cost->currency ?? 'IDR') !== 'IDR') <small>(Rp {{ \App\Support\Money::format($cost->unit_cost) }})</small>@endif</dd></div><div><dt>Nilai jual per unit</dt><dd>{{ $cost->currency ?? 'IDR' }} {{ \App\Support\Money::format($cost->foreign_unit_price ?? $cost->unit_price) }}@if(($cost->currency ?? 'IDR') !== 'IDR') <small>(Rp {{ \App\Support\Money::format($cost->unit_price) }})</small>@endif</dd></div><div><dt>Penerima / vendor</dt><dd>{{ $cost->payee ?? '—' }}</dd></div>
 <div><dt>Nomor bukti / referensi</dt><dd>{{ $cost->reference ?? '—' }}</dd></div>@if($cost->quotation_id)<div><dt>Referensi quotation</dt><dd><a class="text-link" href="{{ route('quotations.show', $cost->quotation_id) }}">{{ $cost->quotation->number }}</a>@if($cost->quotation_item_id)<br>Item ke-{{ $cost->quotationItem->position }} · {{ $cost->quotationItem->description }}@endif</dd></div>@endif<div><dt>Dibuat oleh</dt><dd>{{ $cost->creator?->name }}<br>{{ $cost->created_at->format('d/m/Y H:i') }}</dd></div><div><dt>Finalisasi</dt><dd>{{ $cost->finalizer?->name ?? 'Belum difinalisasi' }}<br>{{ $cost->finalized_at?->format('d/m/Y H:i') }}</dd></div>
 </dl>
 @if($cost->notes)<div class="detail-notes"><strong>Catatan</strong><br>{{ $cost->notes }}</div>@endif
 @php
     $isForeign = ($cost->currency ?? 'IDR') !== 'IDR';
-    $foreignTotalCost = (float)$cost->quantity * (float)$cost->unit_cost;
-    $foreignTotalPrice = (float)$cost->quantity * (float)$cost->unit_price;
+    $exchangeRate = (float)($cost->exchange_rate ?: 1);
+    $foreignTotalCost = $isForeign ? (float)$cost->total_cost / $exchangeRate : (float)$cost->total_cost;
+    $foreignTotalPrice = $isForeign ? (float)$cost->total_price / $exchangeRate : (float)$cost->total_price;
     $foreignProfit = $foreignTotalPrice - $foreignTotalCost;
 @endphp
 <div class="summary-box">

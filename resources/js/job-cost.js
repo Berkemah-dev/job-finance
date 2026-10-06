@@ -136,7 +136,7 @@ if (form) {
         if (isIdr) rate.value = '1';
         form.querySelectorAll('[data-currency-code]').forEach(el => { el.textContent = currencyCode; });
         const rateHelp = form.querySelector('[data-exchange-help]');
-        if (rateHelp) rateHelp.textContent = isIdr ? 'Untuk IDR, kurs otomatis 1.' : `Nilai 1 ${currencyCode} dalam Rupiah. Contoh: 16.250`;
+        if (rateHelp) rateHelp.textContent = isIdr ? 'Untuk IDR, kurs otomatis 1.' : `Nilai 1 ${currencyCode} dalam Rupiah. Rate mingguan aktif menjadi nilai awal dan masih dapat diubah.`;
         price.readOnly = temporary;
         if (temporary) {
             price.value = cost.value;
@@ -159,6 +159,30 @@ if (form) {
                 : `Sumber: modal ${sourceMoney(sourceCost, currencyCode)} × kurs ${rate.value || '0'} = ${rupiah(idrUnitCost)} per unit.`;
         }
     };
+
+    const weeklyRates = window.__weeklyRates || {};
+    const existingCost = form.dataset.costExisting === 'true';
+    const currency = form.querySelector('[data-cost-currency]');
+    const rate = form.querySelector('[data-exchange-rate]');
+    const applyWeeklyRate = () => {
+        const currencyCode = currency.value || 'IDR';
+        if (currencyCode === 'IDR') {
+            rate.value = '1';
+            return;
+        }
+        const weeklyRate = weeklyRates[currencyCode];
+        if (weeklyRate !== undefined && weeklyRate !== null) {
+            rate.value = String(weeklyRate);
+        }
+    };
+
+    if (!existingCost && currency.value !== 'IDR' && (!rate.value || rate.value === '1')) {
+        applyWeeklyRate();
+    }
+    currency.addEventListener('change', () => {
+        applyWeeklyRate();
+        update();
+    });
 
     form.addEventListener('input', update);
     form.addEventListener('change', update);
