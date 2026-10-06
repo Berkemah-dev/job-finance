@@ -155,6 +155,8 @@ class FinancialReportService
             'revenueAccounts' => $revenueAccounts,
             'cogsAccounts' => $cogsAccounts,
             'expenseAccounts' => $expenseAccounts,
+            // Dipakai sebagai submenu saat HPP Job dibuka pada Laba Rugi.
+            'hppBreakdown' => $this->hppByCostType($from, $to)['rows'],
         ];
     }
 

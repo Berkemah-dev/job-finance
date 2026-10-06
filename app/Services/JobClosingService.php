@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Invoice;
-use App\Models\ChartOfAccount;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
 use App\Models\Journal;
@@ -144,8 +143,7 @@ class JobClosingService
                     if ($sellingValue->isZero()) {
                         continue;
                     }
-                    $account = $this->chargeAccount($maps['revenue'], 'Pendapatan Import', $cost->description);
-                    $closingEntries[] = ['account_id' => $account->id, 'description' => strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
+                    $closingEntries[] = ['account_id' => $maps['revenue']->id, 'description' => 'Pendapatan Import · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
                 }
                 if ($tax->isPositive()) {
                     $closingEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran', 'debit' => 0, 'credit' => (string) $tax];
@@ -157,8 +155,7 @@ class JobClosingService
                     if ($costValue->isZero()) {
                         continue;
                     }
-                    $account = $this->chargeAccount($maps['cogs'], 'HPP', $cost->description);
-                    $closingEntries[] = ['account_id' => $account->id, 'description' => strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
+                    $closingEntries[] = ['account_id' => $maps['cogs']->id, 'description' => 'HPP · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
                 }
                 $closingEntries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi WIP', 'debit' => 0, 'credit' => $summary['provision_cost']];
             }
@@ -352,8 +349,7 @@ class JobClosingService
                 if ($sellingValue->isZero()) {
                     continue;
                 }
-                $account = $this->chargeAccount($maps['revenue'], 'Pendapatan Import', $cost->description);
-                $invoiceEntries[] = ['account_id' => $account->id, 'description' => strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
+                $invoiceEntries[] = ['account_id' => $maps['revenue']->id, 'description' => 'Pendapatan Import · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
             }
             if ($tax->isPositive()) {
                 $invoiceEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran '.$invoice->number, 'debit' => 0, 'credit' => (string) $tax];
@@ -403,31 +399,4 @@ class JobClosingService
         ];
     }
 
-    /**
-     * Buat COA turunan per jenis charge agar Laba Rugi bisa menampilkan HPP
-     * dan pendapatan menurut Trucking, Ocean Freight, Air Freight, dan lainnya.
-     */
-    private function chargeAccount(ChartOfAccount $parent, string $label, string $description): ChartOfAccount
-    {
-        $name = trim($description) ?: 'Lainnya';
-        $slug = strtoupper(preg_replace('/[^A-Za-z0-9]+/', '_', $name) ?: 'LAINNYA');
-        $suffix = strlen($slug) <= 13
-            ? $slug
-            : substr($slug, 0, 8).'-'.substr(strtoupper(md5($slug)), 0, 4);
-        $code = substr($parent->code.'-'.$suffix, 0, 20);
-
-        $account = ChartOfAccount::withTrashed()->firstOrNew(['code' => $code]);
-        $account->fill([
-            'name' => $label.' - '.$name,
-            'type' => $parent->type,
-            'parent_id' => $parent->id,
-            'level' => ((int) ($parent->level ?? 1)) + 1,
-        ]);
-        if ($account->exists && $account->trashed()) {
-            $account->restore();
-        }
-        $account->save();
-
-        return $account;
-    }
 }

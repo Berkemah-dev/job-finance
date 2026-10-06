@@ -109,18 +109,43 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($cogsAccounts ?? [] as $acc)
-                    @if($acc->has_activity)
-                        <tr>
-                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0284c7; font-weight: 700; text-decoration: none;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->code }}</a></td>
-                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0f172a; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->name }} <x-icon name="arrow" style="width: 12px; height: 12px; color: #94a3b8;"/></a></td>
-                            <td class="money" style="font-weight: 700; color: #0f172a;">Rp {{ \App\Support\Money::format($acc->balance) }}</td>
-                            <td class="money">Rp {{ \App\Support\Money::format($acc->credit) }}</td>
-                        </tr>
-                    @endif
-                @empty
-                    <tr><td colspan="4" class="text-center" style="color: #64748b;">Belum ada mutasi akun HPP</td></tr>
-                @endforelse
+                @php $hppRoot = collect($cogsAccounts ?? [])->firstWhere('code', '5101'); @endphp
+                @if($hppRoot && $hppRoot->has_activity)
+                    <tr style="cursor: pointer;" onclick="toggleIncomeDetail('hpp-job-detail')">
+                        <td><button type="button" style="border:0;background:none;color:#0284c7;font-weight:700;padding:0;cursor:pointer;">{{ $hppRoot->code }}</button></td>
+                        <td><button type="button" style="border:0;background:none;color:#0f172a;font-weight:600;padding:0;cursor:pointer;">{{ $hppRoot->name }} <span id="hpp-job-detail-icon" style="color:#94a3b8;">▶</span></button></td>
+                        <td class="money" style="font-weight:700;color:#0f172a;">Rp {{ \App\Support\Money::format($hppRoot->balance) }}</td>
+                        <td class="money">Rp {{ \App\Support\Money::format($hppRoot->credit) }}</td>
+                    </tr>
+                    <tr id="hpp-job-detail" style="display:none;background:#f8fafc;">
+                        <td colspan="4" style="padding:14px 18px;">
+                            <strong style="font-size:12px;color:#334155;">Rincian HPP per uraian charge</strong>
+                            <p style="margin:4px 0 10px;font-size:11px;color:#64748b;">Klik uraian untuk melihat rincian nomor Job dan nilai modal tiap charge.</p>
+                            <div style="border:1px solid #dbe3ee;border-radius:8px;background:#fff;overflow:hidden;">
+                                @forelse($hppBreakdown ?? [] as $index => $charge)
+                                    @php $detailId = 'hpp-charge-'.$index; @endphp
+                                    <div style="border-bottom:1px solid #eef2f7;">
+                                        <button type="button" onclick="toggleIncomeDetail('{{ $detailId }}')" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;background:#fff;padding:10px 12px;cursor:pointer;text-align:left;">
+                                            <span style="font-weight:700;color:#0f172a;">{{ strtoupper($charge->description) }} <small style="font-weight:500;color:#64748b;">({{ $charge->transaction_count }} charge)</small></span>
+                                            <span style="font-family:monospace;font-weight:700;color:#0f172a;">Rp {{ \App\Support\Money::format($charge->total_cost) }} <span id="{{ $detailId }}-icon" style="color:#94a3b8;">▶</span></span>
+                                        </button>
+                                        <div id="{{ $detailId }}" style="display:none;padding:0 12px 12px;background:#f8fafc;">
+                                            <table style="width:100%;font-size:11px;border-collapse:collapse;">
+                                                <thead><tr style="color:#64748b;text-align:left;"><th style="padding:6px;">Job Order</th><th style="padding:6px;">Uraian</th><th style="padding:6px;">Tanggal</th><th style="padding:6px;text-align:right;">Modal / HPP</th></tr></thead>
+                                                <tbody>@foreach($charge->items as $item)<tr style="border-top:1px solid #e2e8f0;"><td style="padding:6px;"><a href="{{ route('jobs.show', $item['job_id']) }}" style="color:#0284c7;font-weight:700;text-decoration:none;">{{ $item['job_number'] }}</a></td><td style="padding:6px;">{{ $item['cost_number'] }} · {{ $charge->description }}</td><td style="padding:6px;">{{ $item['cost_date'] }}</td><td style="padding:6px;text-align:right;font-family:monospace;font-weight:700;">Rp {{ \App\Support\Money::format($item['total_cost']) }}</td></tr>@endforeach</tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div style="padding:12px;color:#64748b;font-size:12px;">Belum ada rincian HPP dari Job Closing pada periode ini.</div>
+                                @endforelse
+                            </div>
+                            <a href="{{ route('reports.ledger', ['account_id' => $hppRoot->id, 'from' => $from, 'to' => $to]) }}" style="display:inline-block;margin-top:10px;color:#0284c7;font-size:12px;font-weight:700;text-decoration:none;">Lihat seluruh Buku Besar HPP →</a>
+                        </td>
+                    </tr>
+                @else
+                    <tr><td colspan="4" class="text-center" style="color:#64748b;">Belum ada mutasi akun HPP</td></tr>
+                @endif
             </tbody>
         </table>
     </div>
@@ -172,4 +197,18 @@
         <span style="font-size: 18px; font-weight: 900; color: {{ (float)$net >= 0 ? '#4ade80' : '#f87171' }};">Rp {{ \App\Support\Money::format($net) }}</span>
     </div>
 </section>
+<script>
+function toggleIncomeDetail(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    const expanded = target.style.display !== 'none';
+    target.style.display = expanded ? 'none' : (target.tagName === 'TR' ? 'table-row' : 'block');
+    const icon = document.getElementById(id + '-icon');
+    if (icon) icon.textContent = expanded ? '▶' : '▼';
+    if (id === 'hpp-job-detail') {
+        const rootIcon = document.getElementById('hpp-job-detail-icon');
+        if (rootIcon) rootIcon.textContent = expanded ? '▶' : '▼';
+    }
+}
+</script>
 @endsection
