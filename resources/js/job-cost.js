@@ -103,11 +103,13 @@ if (document.readyState === 'loading') {
 // Logika khusus form kalkulasi biaya job (jika ada form data-cost-form)
 const form = document.querySelector('[data-cost-form]');
 if (form) {
-    const cents = value => {
+    const scaled = (value, decimals = 2) => {
         const cleaned = cleanNumber(value);
-        if (!/^\d+(\.\d{0,2})?$/.test(cleaned)) return 0n;
+        const expression = new RegExp(`^\\d+(\\.\\d{0,${decimals}})?$`);
+        if (!expression.test(cleaned)) return 0n;
         const [whole, fraction = ''] = cleaned.split('.');
-        return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
+        const multiplier = 10n ** BigInt(decimals);
+        return BigInt(whole) * multiplier + BigInt(fraction.padEnd(decimals, '0'));
     };
 
     const rupiah = value => {
@@ -116,25 +118,50 @@ if (form) {
         return 'Rp ' + sign + (absolute / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + (absolute % 100n).toString().padStart(2, '0');
     };
 
+    const sourceMoney = (value, currency) => {
+        const sign = value < 0n ? '-' : '';
+        const absolute = value < 0n ? -value : value;
+        return `${currency} ${sign}${(absolute / 100n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${(absolute % 100n).toString().padStart(2, '0')}`;
+    };
+
     const update = () => {
         const temporary = form.querySelector('[data-cost-type]').value === 'temporary';
         const cost = form.querySelector('[data-unit-cost]');
         const price = form.querySelector('[data-unit-price]');
+        const currency = form.querySelector('[data-cost-currency]');
+        const rate = form.querySelector('[data-exchange-rate]');
+        const currencyCode = currency.value || 'IDR';
+        const isIdr = currencyCode === 'IDR';
+        rate.readOnly = isIdr;
+        if (isIdr) rate.value = '1';
+        form.querySelectorAll('[data-currency-code]').forEach(el => { el.textContent = currencyCode; });
+        const rateHelp = form.querySelector('[data-exchange-help]');
+        if (rateHelp) rateHelp.textContent = isIdr ? 'Untuk IDR, kurs otomatis 1.' : `Nilai 1 ${currencyCode} dalam Rupiah. Contoh: 16.250`;
         price.readOnly = temporary;
         if (temporary) {
             price.value = cost.value;
         }
-        const quantity = cents(form.querySelector('[data-quantity]').value);
-        const totalCost = (quantity * cents(cost.value) + 50n) / 100n;
-        const totalPrice = (quantity * cents(price.value) + 50n) / 100n;
+        const quantity = scaled(form.querySelector('[data-quantity]').value);
+        const rateScaled = isIdr ? 10000n : scaled(rate.value, 4);
+        const sourceCost = scaled(cost.value);
+        const sourcePrice = scaled(price.value);
+        const idrUnitCost = (sourceCost * rateScaled + 5000n) / 10000n;
+        const idrUnitPrice = (sourcePrice * rateScaled + 5000n) / 10000n;
+        const totalCost = (quantity * idrUnitCost + 50n) / 100n;
+        const totalPrice = (quantity * idrUnitPrice + 50n) / 100n;
         form.querySelector('[data-preview-cost]').textContent = rupiah(totalCost);
         form.querySelector('[data-preview-total]').textContent = rupiah(totalPrice);
         form.querySelector('[data-preview-profit]').textContent = rupiah(temporary ? 0n : totalPrice - totalCost);
+        const sourcePreview = form.querySelector('[data-preview-source]');
+        if (sourcePreview) {
+            sourcePreview.textContent = isIdr
+                ? 'Nilai disimpan dan dijurnal dalam IDR.'
+                : `Sumber: modal ${sourceMoney(sourceCost, currencyCode)} × kurs ${rate.value || '0'} = ${rupiah(idrUnitCost)} per unit.`;
+        }
     };
 
     form.addEventListener('input', update);
     form.addEventListener('change', update);
 
-    syncCurrency(true);
     update();
 }

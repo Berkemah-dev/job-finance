@@ -9,8 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('job_costs', function (Blueprint $table) {
-            $table->string('currency', 3)->default('IDR')->after('unit');
-            $table->decimal('exchange_rate', 18, 4)->default(1.0000)->after('currency');
+            if (! Schema::hasColumn('job_costs', 'currency')) {
+                $table->string('currency', 3)->default('IDR')->after('unit');
+            }
+            if (! Schema::hasColumn('job_costs', 'exchange_rate')) {
+                $table->decimal('exchange_rate', 18, 4)->default(1.0000)->after('currency');
+            }
         });
     }
 
