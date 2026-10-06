@@ -172,6 +172,8 @@ class JobCostService
             $cost->unit_price = Money::checked($unitPrice);
             $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
+            $cost->foreign_total_cost = Money::checked($quantity->multipliedBy($foreignUnitCost)->toScale(2, RoundingMode::HalfUp));
+            $cost->foreign_total_price = Money::checked($quantity->multipliedBy($foreignUnitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->updated_by = $actor->id;
             $cost->lock_version = $new ? 0 : $cost->lock_version + 1;
             $cost->save();

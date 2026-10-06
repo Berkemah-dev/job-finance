@@ -13,8 +13,8 @@
 @php
     $isForeign = ($cost->currency ?? 'IDR') !== 'IDR';
     $exchangeRate = (float)($cost->exchange_rate ?: 1);
-    $foreignTotalCost = $isForeign ? (float)$cost->total_cost / $exchangeRate : (float)$cost->total_cost;
-    $foreignTotalPrice = $isForeign ? (float)$cost->total_price / $exchangeRate : (float)$cost->total_price;
+    $foreignTotalCost = $isForeign ? (float)($cost->foreign_total_cost ?? ($cost->total_cost / $exchangeRate)) : (float)($cost->total_cost ?? 0);
+    $foreignTotalPrice = $isForeign ? (float)($cost->foreign_total_price ?? ($cost->total_price / $exchangeRate)) : (float)($cost->total_price ?? 0);
     $foreignProfit = $foreignTotalPrice - $foreignTotalCost;
 @endphp
 <div class="summary-box">
