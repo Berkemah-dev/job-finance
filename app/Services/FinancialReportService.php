@@ -401,6 +401,7 @@ class FinancialReportService
     public function hppByCostType(string $from, string $to): array
     {
         $snapshots = JobClosingSnapshot::query()
+            ->with('job:id,number')
             ->whereDate('closing_date', '>=', $from)
             ->whereDate('closing_date', '<=', $to)
             ->get(['id', 'job_id', 'costs_snapshot']);
@@ -426,23 +427,36 @@ class FinancialReportService
                 }
                 $description = trim((string) ($cost['description'] ?? '')) ?: 'Tanpa uraian';
                 $key = mb_strtoupper($description);
-                $grouped[$key] ??= ['description' => $description, 'transaction_count' => 0, 'job_ids' => [], 'total_cost' => Money::decimal(0), 'total_price' => Money::decimal(0), 'total_pph23' => Money::decimal(0)];
+                $grouped[$key] ??= ['description' => $description, 'transaction_count' => 0, 'job_ids' => [], 'total_cost' => Money::decimal(0), 'total_price' => Money::decimal(0), 'total_pph23' => Money::decimal(0), 'items' => []];
                 $grouped[$key]['transaction_count']++;
                 $grouped[$key]['job_ids'][$snapshot->job_id] = true;
                 $grouped[$key]['total_cost'] = $grouped[$key]['total_cost']->plus(Money::decimal((string) ($cost['total_cost'] ?? 0)));
                 $grouped[$key]['total_price'] = $grouped[$key]['total_price']->plus(Money::decimal((string) ($cost['total_price'] ?? 0)));
                 $grouped[$key]['total_pph23'] = $grouped[$key]['total_pph23']->plus(Money::decimal((string) ($cost['pph23_amount'] ?? 0)));
+                $grouped[$key]['items'][] = [
+                    'job_id' => $snapshot->job_id,
+                    'job_number' => $snapshot->job->number ?? ('#'.$snapshot->job_id),
+                    'cost_number' => $cost['number'] ?? '—',
+                    'cost_date' => $cost['cost_date'] ?? '—',
+                    'payee' => $cost['payee'] ?? '—',
+                    'quantity' => $cost['quantity'] ?? '1',
+                    'unit' => $cost['unit'] ?? '',
+                    'total_cost' => (string) ($cost['total_cost'] ?? 0),
+                    'total_price' => (string) ($cost['total_price'] ?? 0),
+                    'pph23_amount' => (string) ($cost['pph23_amount'] ?? 0),
+                ];
                 $jobIds[$snapshot->job_id] = true;
             }
         }
 
-        $rows = collect($grouped)->map(fn (array $row) => (object) [
+        $rows = collect($grouped)->map(fn (array $row, string $key) => (object) [
             'description' => $row['description'],
             'transaction_count' => $row['transaction_count'],
             'job_count' => count($row['job_ids']),
             'total_cost' => (string) $row['total_cost'],
             'total_price' => (string) $row['total_price'],
             'total_pph23' => (string) ($pphByDescription->get($key) ?? $row['total_pph23']),
+            'items' => $row['items'],
         ])->sortByDesc(fn ($row) => (float) $row->total_cost)->values();
 
         $totalCost = $rows->reduce(fn ($sum, $row) => $sum->plus(Money::decimal($row->total_cost)), Money::decimal(0));

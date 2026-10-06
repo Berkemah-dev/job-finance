@@ -83,7 +83,7 @@
         @csrf
         <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
         <div class="info-note">
-            Closing membuat snapshot historis, invoice Issued, jurnal kapitalisasi biaya, dan jurnal pengakuan pendapatan/HPP.
+            Closing membuat snapshot historis, invoice Issued, jurnal pengakuan Hutang Biaya, dan jurnal pengakuan pendapatan/HPP. Closing tidak mencatat pengeluaran Kas atau Bank; pembayaran dilakukan kemudian dari menu Biaya Job.
             @if(($job->quotation_snapshot['currency'] ?? 'IDR') !== 'IDR')
                 Mata uang invoice: <strong>{{ $job->quotation_snapshot['currency'] }} (kurs {{ $job->quotation_snapshot['exchange_rate'] ?? '1' }})</strong>. Nilai buku tetap dalam Rupiah.
             @endif
@@ -97,13 +97,7 @@
                 <label>Jatuh tempo invoice</label>
                 <input type="date" name="due_date" value="{{ old('due_date', today()->addDays(30)->toDateString()) }}" required>
             </div>
-            <div class="field">
-                <label>Sumber dana biaya</label>
-                <select name="funding_account" required>
-                    <option value="bank">Bank</option>
-                    <option value="cash" @selected(old('funding_account') === 'cash')>Kas</option>
-                </select>
-            </div>
+
             <div class="field span-2" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 16px;">
                 <label style="font-size: 13.5px; font-weight: 700; color: #166534; display: flex; justify-content: space-between; align-items: center;">
                     <span>Input PPN (Rp) <span class="required">*</span></span>
@@ -122,7 +116,7 @@
                     </button>
                 </div>
                 <small style="color: #4b5563; font-size: 11.5px; margin-top: 6px; display: block;">
-                    💡 <em>PPN Keluaran akan otomatis diposting ke COA 2102 (PPN Keluaran) dan menambah tagihan Piutang Customer (COA 1103).</em>
+                    💡 <em>PPN Keluaran akan otomatis diposting ke COA 28000 (PPN Keluaran) dan menambah tagihan Piutang Customer (COA 1103).</em>
                 </small>
             </div>
             @if(($job->quotation_snapshot['currency'] ?? 'IDR') !== 'IDR')

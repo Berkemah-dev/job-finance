@@ -65,6 +65,11 @@ class JobCostRequest extends FormRequest
             $this->merge(['pph23_amount' => '0']);
         }
 
+        $rawCost = $this->input('unit_cost');
+        if ($rawCost === null || trim((string) $rawCost) === '') {
+            $this->merge(['unit_cost' => '0']);
+        }
+
         foreach (['unit_cost', 'unit_price', 'pph23_amount', 'exchange_rate'] as $field) {
             if ($this->has($field) && is_string($this->input($field))) {
                 $val = trim($this->input($field));
@@ -113,7 +118,9 @@ class JobCostRequest extends FormRequest
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'cost_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:'.$this->route('job')->job_date->format('Y-m-d')],
             'quantity' => ['required', 'regex:/^\\d{1,6}(\\.\\d{1,2})?$/', 'numeric', 'min:0.01'],
-            'unit' => ['required', 'string', 'max:30'], 'unit_cost' => $money, 'unit_price' => $money,
+            'unit' => ['required', 'string', 'max:30'],
+            'unit_cost' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+            'unit_price' => $money,
             'pph23_amount' => ['nullable', 'numeric', 'min:0'],
             'payee' => ['nullable', 'string', 'max:255'],
             'reference' => ['nullable', 'string', 'max:100'],

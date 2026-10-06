@@ -115,7 +115,7 @@
                             Rp {{ \App\Support\Money::format($sellIdr) }}
                         </td>
                         <td style="padding: 12px; text-align: right;">
-                            <input type="text" inputmode="numeric" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" required class="approve-cost-input" style="width: 100%; text-align: right; padding: 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="0" autocomplete="off">
+                            <input type="text" inputmode="numeric" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" class="approve-cost-input" style="width: 100%; text-align: right; padding: 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="0" autocomplete="off">
                         </td>
                         <td style="padding: 12px; text-align: right; font-weight: 700; color: #475569;" data-row-cost-total>
                             Rp {{ \App\Support\Money::format($currentCost * $qty * $rate) }}

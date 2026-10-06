@@ -69,7 +69,7 @@ class JobClosingService
             if ($total->isZero()) {
                 throw ValidationException::withMessages(['total' => 'Total invoice harus lebih besar dari nol.']);
             }
-            $maps = $this->journals->mapped(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'revenue', 'cogs', 'tax_payable', $data['funding_account']]);
+            $maps = $this->journals->mapped(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'revenue', 'cogs', 'tax_payable']);
             $currency = (string) ($job->quotation_snapshot['currency'] ?? 'IDR');
             if (! in_array($currency, array_keys(config('operations.currencies')), true)) {
                 throw ValidationException::withMessages(['job' => 'Mata uang quotation tidak valid untuk invoice.']);
@@ -89,7 +89,7 @@ class JobClosingService
                 'costs_snapshot' => $rows->map(fn ($c) => $c->only(['number', 'description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'pph23_amount']))->all(),
                 'total_temporary' => $summary['temporary'], 'total_provision_cost' => $summary['provision_cost'], 'total_provision_sell' => $summary['provision_sell'],
                 'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'profit' => $summary['profit'], 'margin' => $summary['margin'],
-                'funding_account_id' => $maps[$data['funding_account']]->id, 'closed_by' => $actor->id, 'closed_at' => now()]);
+                'funding_account_id' => null, 'closed_by' => $actor->id, 'closed_at' => now()]);
 
             $invoice = $job->invoice()->first();
             if ($invoice) {
@@ -117,7 +117,7 @@ class JobClosingService
                 $this->journals->post('job_cost_capitalization', Job::class, $job->id, $data['closing_date'], 'Kapitalisasi biaya '.$job->number, [
                     ['account_id' => $maps['temporary']->id, 'description' => 'Temporary '.$job->number, 'debit' => $capitalizedTemporary, 'credit' => 0],
                     ['account_id' => $maps['provision_wip']->id, 'description' => 'Provision WIP '.$job->number, 'debit' => $capitalizedProvision, 'credit' => 0],
-                    ['account_id' => $maps[$data['funding_account']]->id, 'description' => 'Sumber dana '.$job->number, 'debit' => 0, 'credit' => (string) $fund]], $actor);
+                    ['account_id' => $maps['vendor_payable']->id, 'description' => 'Hutang biaya job '.$job->number, 'debit' => 0, 'credit' => (string) $fund]], $actor);
             }
 
             $temporary = Money::decimal($summary['temporary']);
@@ -276,8 +276,7 @@ class JobClosingService
             if ($total->isZero()) {
                 throw ValidationException::withMessages(['total' => 'Total invoice harus lebih besar dari nol.']);
             }
-            $fundingAcc = $data['funding_account'] ?? 'bank';
-            $maps = $this->journals->mapped(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'revenue', 'cogs', 'tax_payable', $fundingAcc]);
+            $maps = $this->journals->mapped(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'revenue', 'cogs', 'tax_payable']);
             $currency = (string) ($job->quotation_snapshot['currency'] ?? 'IDR');
             if (! in_array($currency, array_keys(config('operations.currencies')), true)) {
                 throw ValidationException::withMessages(['job' => 'Mata uang quotation tidak valid untuk invoice.']);

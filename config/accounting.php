@@ -15,7 +15,7 @@ return [
         'revenue' => ['label' => 'Pendapatan Jasa', 'type' => 'revenue', 'code' => '4101', 'name' => 'Pendapatan Jasa'],
         'cogs' => ['label' => 'HPP Job', 'type' => 'cogs', 'code' => '5101', 'name' => 'HPP Job'],
         'expense' => ['label' => 'Beban Operasional', 'type' => 'expense', 'code' => '6101', 'name' => 'Beban Operasional'],
-        'tax_payable' => ['label' => 'Utang Pajak', 'type' => 'liability', 'code' => '2102', 'name' => 'Utang Pajak'],
+        'tax_payable' => ['label' => 'PPN Keluaran', 'type' => 'liability', 'code' => '28000', 'name' => 'PPN Keluaran'],
         'pph23_payable' => ['label' => 'PPh 23 Utang Pajak', 'type' => 'liability', 'code' => '27000', 'name' => 'PPH 23 Hutang Pajak'],
         'pph23_prepaid' => ['label' => 'PPh 23 Dibayar Dimuka', 'type' => 'asset', 'code' => '11192', 'name' => 'PPH 23 Dimuka'],
     ],

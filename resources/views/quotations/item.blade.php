@@ -6,7 +6,7 @@
 <input type="hidden" name="items[{{ $index }}][type]" value="provision">
 <div class="field"><label for="item-{{ $index }}-unit">Satuan</label><select id="item-{{ $index }}-unit" name="items[{{ $index }}][unit]" required><option value="">Pilih satuan</option>@foreach($units ?? [] as $unit)<option value="{{ $unit->name }}" @selected(($item['unit'] ?? 'Shipment')===$unit->name)>{{ $unit->name }}</option>@endforeach</select></div>
 <div class="field"><label for="item-{{ $index }}-quantity">Jumlah</label><input id="item-{{ $index }}-quantity" type="number" name="items[{{ $index }}][quantity]" value="{{ $item['quantity'] ?? '1' }}" min="0.01" max="999999.99" step="0.01" required data-quantity></div>
-<div class="field"><label for="item-{{ $index }}-unit_cost">Modal / unit (IDR)</label><input id="item-{{ $index }}-unit_cost" type="number" name="items[{{ $index }}][unit_cost]" value="{{ $item['unit_cost'] ?? '0' }}" min="0" max="999999999.99" step="0.01" required data-unit-cost></div>
+<div class="field"><label for="item-{{ $index }}-unit_cost">Modal / unit (IDR)</label><input id="item-{{ $index }}-unit_cost" type="number" name="items[{{ $index }}][unit_cost]" value="{{ $item['unit_cost'] ?? '0' }}" min="0" max="999999999.99" step="0.01" data-unit-cost></div>
 <div class="field"><label for="item-{{ $index }}-unit_price">Nilai jual / unit (IDR)</label><input id="item-{{ $index }}-unit_price" type="number" name="items[{{ $index }}][unit_price]" value="{{ $item['unit_price'] ?? '0' }}" min="0" max="999999999.99" step="0.01" required data-unit-price></div>
 </div>
 <div class="item-pricing" data-pricing-block>

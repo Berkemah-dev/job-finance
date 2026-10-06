@@ -120,7 +120,7 @@
                         </button>
                     </div>
                     <span style="color: #64748b; font-size: 11.5px; margin-top: 6px; display: block;">
-                        PPN Keluaran akan otomatis diposting ke COA 2102 dan menambah total piutang invoice ke COA 1103.
+                        PPN Keluaran akan otomatis diposting ke COA 28000 dan menambah total piutang invoice ke COA 1103.
                     </span>
                 </div>
 

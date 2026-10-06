@@ -48,11 +48,18 @@
     </div>
 </section>
 
+@php
+    $ledgerUrl = fn ($account) => route('reports.ledger', ['account_id' => $account->id ?? $account->account_id, 'from' => $from, 'to' => $to]);
+@endphp
+
 <section class="panel report-table-panel" style="margin-top: 24px;">
     <div class="panel-heading" style="margin-bottom: 16px;">
-        <h2>Breakdown Laba Rugi per Akun</h2>
-        <span class="subtle">Rincian mutasi setiap akun Chart of Account (COA) pendapatan, HPP, dan beban</span>
+        <div>
+            <h2>Breakdown Laba Rugi per Akun</h2>
+            <span class="subtle">Rincian mutasi setiap akun Chart of Account (COA) pendapatan, HPP, dan beban</span>
+        </div>
     </div>
+    <p class="balance-detail-hint" style="margin-bottom: 16px;"><x-icon name="chart"/> Klik kode atau nama COA untuk melihat mutasi jurnal dan saldo berjalan akun tersebut di Buku Besar.</p>
 
     {{-- 1. PENDAPATAN JASA --}}
     <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 16px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
@@ -73,8 +80,8 @@
                 @forelse($revenueAccounts ?? [] as $acc)
                     @if($acc->has_activity)
                         <tr>
-                            <td><strong>{{ $acc->code }}</strong></td>
-                            <td>{{ $acc->name }}</td>
+                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0284c7; font-weight: 700; text-decoration: none;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->code }}</a></td>
+                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0f172a; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->name }} <x-icon name="arrow" style="width: 12px; height: 12px; color: #94a3b8;"/></a></td>
                             <td class="money">Rp {{ \App\Support\Money::format($acc->debit) }}</td>
                             <td class="money" style="font-weight: 700; color: #0f172a;">Rp {{ \App\Support\Money::format($acc->balance) }}</td>
                         </tr>
@@ -105,8 +112,8 @@
                 @forelse($cogsAccounts ?? [] as $acc)
                     @if($acc->has_activity)
                         <tr>
-                            <td><strong>{{ $acc->code }}</strong></td>
-                            <td>{{ $acc->name }}</td>
+                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0284c7; font-weight: 700; text-decoration: none;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->code }}</a></td>
+                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0f172a; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->name }} <x-icon name="arrow" style="width: 12px; height: 12px; color: #94a3b8;"/></a></td>
                             <td class="money" style="font-weight: 700; color: #0f172a;">Rp {{ \App\Support\Money::format($acc->balance) }}</td>
                             <td class="money">Rp {{ \App\Support\Money::format($acc->credit) }}</td>
                         </tr>
@@ -143,8 +150,8 @@
                 @forelse($expenseAccounts ?? [] as $acc)
                     @if($acc->has_activity)
                         <tr>
-                            <td><strong>{{ $acc->code }}</strong></td>
-                            <td>{{ $acc->name }}</td>
+                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0284c7; font-weight: 700; text-decoration: none;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->code }}</a></td>
+                            <td><a href="{{ $ledgerUrl($acc) }}" style="color: #0f172a; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Lihat mutasi jurnal {{ $acc->code }} — {{ $acc->name }}">{{ $acc->name }} <x-icon name="arrow" style="width: 12px; height: 12px; color: #94a3b8;"/></a></td>
                             <td class="money" style="font-weight: 700; color: #0f172a;">Rp {{ \App\Support\Money::format($acc->balance) }}</td>
                             <td class="money">Rp {{ \App\Support\Money::format($acc->credit) }}</td>
                         </tr>
