@@ -45,16 +45,16 @@ class ReportController extends Controller
 
     public function trialBalance(ReportFilterRequest $request, FinancialReportService $service)
     {
-        $to = $request->input('to', today()->toDateString());
+        [$from, $to] = $this->period($request);
 
-        return view('reports.trial-balance', $service->trialBalance($to) + compact('to'));
+        return view('reports.trial-balance', $service->trialBalance($to, $from) + compact('from', 'to'));
     }
 
     public function balanceSheet(ReportFilterRequest $request, FinancialReportService $service)
     {
         [$from, $to] = $this->period($request);
 
-        return view('reports.balance-sheet', $service->balanceSheet($to) + compact('from', 'to'));
+        return view('reports.balance-sheet', $service->balanceSheet($to, $from) + compact('from', 'to'));
     }
 
     public function incomeStatement(ReportFilterRequest $request, FinancialReportService $service)

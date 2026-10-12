@@ -73,7 +73,7 @@ class ClosingPaymentTest extends TestCase
         }
 
         $this->assertEquals(8000000, Journal::where('type', 'job_cost_capitalization')->firstOrFail()->entries()->sum('debit'));
-        $this->assertEquals(13450000, Journal::where('type', 'job_closing')->firstOrFail()->entries()->sum('debit'));
+        $this->assertEquals(20950000, Journal::where('type', 'job_closing')->firstOrFail()->entries()->sum('debit'));
         $this->assertDatabaseHas('activity_logs', ['action' => 'job.closed', 'user_id' => $this->finance->id]);
         $this->get('/invoices/'.$invoice->id)->assertOk()->assertSee('10.450.000,00');
         $this->get('/payments')->assertOk()->assertSee($invoice->number);

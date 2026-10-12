@@ -66,6 +66,7 @@ class ChartOfAccountSeeder extends Seeder
                 ['code' => '2', 'name' => 'HUTANG', 'type' => 'liability', 'parent_code' => null, 'level' => 1],
                 ['code' => '21000', 'name' => 'Hutang Vendor', 'type' => 'liability', 'parent_code' => '2', 'level' => 2],
                 ['code' => '22000', 'name' => 'Hutang Agent', 'type' => 'liability', 'parent_code' => '2', 'level' => 2],
+                ['code' => '22500', 'name' => 'Hutang Komisi', 'type' => 'liability', 'parent_code' => '2', 'level' => 2],
                 ['code' => '23000', 'name' => 'Deposit Customer', 'type' => 'liability', 'parent_code' => '2', 'level' => 2],
                 ['code' => '23100', 'name' => 'Deposit Customer', 'type' => 'liability', 'parent_code' => '23000', 'level' => 3],
                 ['code' => '23200', 'name' => 'Deposit Vendor / Agent', 'type' => 'liability', 'parent_code' => '23000', 'level' => 3],
@@ -80,29 +81,32 @@ class ChartOfAccountSeeder extends Seeder
 
                 // LEVEL 1: 3 - MODAL
                 ['code' => '3', 'name' => 'MODAL', 'type' => 'equity', 'parent_code' => null, 'level' => 1],
-                ['code' => '31000', 'name' => 'Modal', 'type' => 'equity', 'parent_code' => '3', 'level' => 2],
-                ['code' => '32000', 'name' => 'Laba Ditahan', 'type' => 'equity', 'parent_code' => '3', 'level' => 2],
+                ['code' => '31000', 'name' => 'Modal Disetor', 'type' => 'equity', 'parent_code' => '3', 'level' => 2],
+                ['code' => '32000', 'name' => 'Laba (rugi) Ditahan', 'type' => 'equity', 'parent_code' => '3', 'level' => 2],
                 ['code' => '33000', 'name' => 'Prive', 'type' => 'equity', 'parent_code' => '3', 'level' => 2],
+                ['code' => '34000', 'name' => 'Laba (rugi) Tahun Berjalan', 'type' => 'equity', 'parent_code' => '3', 'level' => 2],
 
                 // LEVEL 1: 4 - PENDAPATAN
                 ['code' => '4', 'name' => 'PENDAPATAN', 'type' => 'revenue', 'parent_code' => null, 'level' => 1],
-                ['code' => '41000', 'name' => 'Pendapatan Import', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
+                ['code' => '41000', 'name' => 'Pendapatan Impor', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
                 ['code' => '42000', 'name' => 'Pendapatan Ekspor', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
-                ['code' => '43000', 'name' => 'Pendapatan Domestic', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
+                ['code' => '43000', 'name' => 'Pendapatan Domestik', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
                 ['code' => '44000', 'name' => 'Pendapatan Lain-Lain', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
                 ['code' => '41100', 'name' => 'Pendapatan Impor Unclosed', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
                 ['code' => '42100', 'name' => 'Pendapatan Ekspor Unclosed', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
-                ['code' => '43100', 'name' => 'Pendapatan Domestic Unclosed', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
+                ['code' => '43100', 'name' => 'Pendapatan Domestik Unclosed', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
+                ['code' => '71000', 'name' => 'Pendapatan Bunga Bank', 'type' => 'revenue', 'parent_code' => '44000', 'level' => 3],
+                ['code' => '72000', 'name' => 'Pendapatan Jasa Giro', 'type' => 'revenue', 'parent_code' => '44000', 'level' => 3],
 
                 // LEVEL 1: 5 - HARGA POKOK PENJUALAN
                 ['code' => '5', 'name' => 'HARGA POKOK PENJUALAN', 'type' => 'cogs', 'parent_code' => null, 'level' => 1],
-                ['code' => '51000', 'name' => 'HPP Import', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
+                ['code' => '51000', 'name' => 'HPP Impor', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
                 ['code' => '52000', 'name' => 'HPP Ekspor', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
-                ['code' => '53000', 'name' => 'HPP Domestic', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
-                ['code' => '5400', 'name' => 'HPP SEWA', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
+                ['code' => '53000', 'name' => 'HPP Domestik', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
+                ['code' => '5400', 'name' => 'HPP Sewa', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
                 ['code' => '51100', 'name' => 'HPP Impor Unclosed', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
                 ['code' => '52100', 'name' => 'HPP Ekspor Unclosed', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
-                ['code' => '53100', 'name' => 'HPP Domestic Unclosed', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
+                ['code' => '53100', 'name' => 'HPP Domestik Unclosed', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
 
                 // LEVEL 1: 6 - BIAYA/PENGELUARAN
                 ['code' => '6', 'name' => 'BIAYA/PENGELUARAN', 'type' => 'expense', 'parent_code' => null, 'level' => 1],
@@ -129,7 +133,7 @@ class ChartOfAccountSeeder extends Seeder
                 ['code' => '62600', 'name' => 'Biaya Penyusutan Peralatan', 'type' => 'expense', 'parent_code' => '62000', 'level' => 3],
                 ['code' => '62700', 'name' => 'Biaya Konsultan / Seminar / Pelatihan', 'type' => 'expense', 'parent_code' => '62000', 'level' => 3],
                 ['code' => '62800', 'name' => 'Biaya Pemeliharaan Software', 'type' => 'expense', 'parent_code' => '62000', 'level' => 3],
-                ['code' => '62810', 'name' => 'Biaya Pemeliharaan', 'type' => 'expense', 'parent_code' => '62000', 'level' => 3],
+                ['code' => '62810', 'name' => 'Biaya Pemeliharaan Kantor', 'type' => 'expense', 'parent_code' => '62000', 'level' => 3],
                 ['code' => '62900', 'name' => 'Biaya Pemasaran', 'type' => 'expense', 'parent_code' => '62000', 'level' => 3],
                 // 63000 - Biaya Lain-Lain
                 ['code' => '63000', 'name' => 'Biaya Lain-Lain', 'type' => 'expense', 'parent_code' => '6', 'level' => 2],
@@ -138,9 +142,9 @@ class ChartOfAccountSeeder extends Seeder
                 ['code' => '63300', 'name' => 'Selisih Pembulatan', 'type' => 'expense', 'parent_code' => '63000', 'level' => 3],
                 // 64000 - Biaya/Pendapatan Diluar Usaha
                 ['code' => '64000', 'name' => 'Biaya/Pendapatan Diluar Usaha', 'type' => 'expense', 'parent_code' => '6', 'level' => 2],
-                ['code' => '64100', 'name' => 'Biaya Provisi dan Adminstrasi Bank', 'type' => 'expense', 'parent_code' => '64000', 'level' => 3],
-                ['code' => '64200', 'name' => 'Biaya Pajak Bunga', 'type' => 'expense', 'parent_code' => '64000', 'level' => 3],
-                ['code' => '64300', 'name' => 'Biaya Transfer Antar Banke', 'type' => 'expense', 'parent_code' => '64000', 'level' => 3],
+                ['code' => '64100', 'name' => 'Biaya Provisi dan Administrasi Bank', 'type' => 'expense', 'parent_code' => '64000', 'level' => 3],
+                ['code' => '64200', 'name' => 'Pajak Bunga', 'type' => 'expense', 'parent_code' => '64000', 'level' => 3],
+                ['code' => '64300', 'name' => 'Biaya Transfer Antar Bank', 'type' => 'expense', 'parent_code' => '64000', 'level' => 3],
                 ['code' => '64400', 'name' => 'Pendapatan Jasa Giro & Bunga', 'type' => 'expense', 'parent_code' => '64000', 'level' => 3],
                 // 65000 - Biaya Pajak
                 ['code' => '65000', 'name' => 'Biaya Pajak', 'type' => 'expense', 'parent_code' => '6', 'level' => 2],
@@ -170,8 +174,11 @@ class ChartOfAccountSeeder extends Seeder
                 '1103' => ['11000', 3],
                 '1104' => ['11000', 3],
                 '1105' => ['11000', 3],
+                '1106' => ['11000', 3],
+                '1107' => ['11000', 3],
                 '2101' => ['21000', 3],
                 '2102' => ['21000', 3],
+                '2103' => ['22000', 3],
                 '3101' => ['3', 2],
                 '4101' => ['4', 2],
                 '5101' => ['5', 2],

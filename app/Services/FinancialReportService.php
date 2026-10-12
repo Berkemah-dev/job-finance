@@ -6,21 +6,131 @@ use App\Models\ChartOfAccount;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
 use App\Models\JobCost;
-use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class FinancialReportService
 {
-    public function trialBalance(string $to): array
+    /**
+     * Definisi standar akun & pengelompokan laporan PT Radix International Logistics.
+     */
+    public function radixDefinitions(): array
     {
-        $all = $this->accountBalances($to)->map(function ($account) {
+        return [
+            'aktiva_lancar' => [
+                ['acc_no' => '10', 'name' => 'Kas', 'type' => 'asset', 'codes' => ['1101', '11100', '11101']],
+                ['acc_no' => '11', 'name' => 'Bank BCA IDR', 'type' => 'asset', 'codes' => ['11121', '1102', '11120']],
+                ['acc_no' => '11', 'name' => 'Bank Mandiri IDR', 'type' => 'asset', 'codes' => ['11122']],
+                ['acc_no' => '11', 'name' => 'Bank BCA USD', 'type' => 'asset', 'codes' => ['11123']],
+                ['acc_no' => '12', 'name' => 'Piutang Customer', 'type' => 'asset', 'codes' => ['1103', '11130']],
+                ['acc_no' => '12', 'name' => 'Piutang Temporary', 'type' => 'asset', 'codes' => ['1106']],
+                ['acc_no' => '12', 'name' => 'Piutang Agent', 'type' => 'asset', 'codes' => ['1107', '11140']],
+                ['acc_no' => '12', 'name' => 'Piutang Karyawan', 'type' => 'asset', 'codes' => ['11160']],
+                ['acc_no' => '12', 'name' => 'Piutang Komisaris', 'type' => 'asset', 'codes' => ['11170']],
+                ['acc_no' => '12', 'name' => 'Piutang Lain - Lain', 'type' => 'asset', 'codes' => ['11150']],
+                ['acc_no' => '13', 'tb_acc_no' => '12', 'name' => 'Provisional Payment', 'type' => 'asset', 'codes' => ['1105', '11181']],
+                ['acc_no' => '13', 'tb_acc_no' => '12', 'name' => 'Temporary Payment', 'type' => 'asset', 'codes' => ['1104', '11180']],
+                ['acc_no' => '13', 'name' => 'Jaminan', 'type' => 'asset', 'codes' => ['11190']],
+                ['acc_no' => '14', 'name' => 'PPN Masukan', 'type' => 'asset', 'codes' => ['11191']],
+                ['acc_no' => '14', 'name' => 'PPH 23 Dimuka', 'type' => 'asset', 'codes' => ['11192']],
+                ['acc_no' => '14', 'name' => 'PPH 21 Dimuka', 'type' => 'asset', 'codes' => ['11193']],
+            ],
+            'aktiva_tetap' => [
+                ['acc_no' => '15', 'name' => 'Peralatan', 'type' => 'asset', 'codes' => ['12100']],
+                ['acc_no' => '15', 'name' => 'Akumulasi Peralatan', 'type' => 'asset', 'codes' => ['12200']],
+                ['acc_no' => '15', 'name' => 'Kendaraan', 'type' => 'asset', 'codes' => ['12300']],
+                ['acc_no' => '15', 'name' => 'Akumulasi Penyusutan Kendaraan', 'type' => 'asset', 'codes' => ['12400']],
+            ],
+            'kewajiban_lancar' => [
+                ['acc_no' => '20', 'name' => 'Hutang Vendor', 'type' => 'liability', 'codes' => ['2101', '21000', '2102']],
+                ['acc_no' => '20', 'name' => 'Hutang Agent', 'type' => 'liability', 'codes' => ['2103', '22000']],
+                ['acc_no' => '20', 'name' => 'Hutang Komisi', 'type' => 'liability', 'codes' => ['22500']],
+                ['acc_no' => '20', 'name' => 'Hutang Lain - Lain', 'type' => 'liability', 'codes' => ['25000', '25100', '24000']],
+                ['acc_no' => '21', 'name' => 'Deposit Customer', 'type' => 'liability', 'codes' => ['23100', '23000']],
+                ['acc_no' => '21', 'name' => 'Deposit Vendor / Agent', 'type' => 'liability', 'codes' => ['23200']],
+                ['acc_no' => '22', 'name' => 'PPH 21 Hutang Pajak', 'type' => 'liability', 'codes' => ['26000']],
+                ['acc_no' => '22', 'name' => 'PPH 23 Hutang Pajak', 'type' => 'liability', 'codes' => ['27000']],
+                ['acc_no' => '22', 'name' => 'PPN Keluaran', 'type' => 'liability', 'codes' => ['28000']],
+                ['acc_no' => '22', 'name' => 'Hutang PPN', 'type' => 'liability', 'codes' => ['29000']],
+                ['acc_no' => '22', 'name' => 'PPH 4(2) Hutang Pajak', 'type' => 'liability', 'codes' => ['29100']],
+            ],
+            'modal' => [
+                ['acc_no' => '30', 'name' => 'Modal Disetor', 'type' => 'equity', 'codes' => ['31000', '3101']],
+                ['acc_no' => '31', 'name' => 'Laba (rugi) Ditahan', 'type' => 'equity', 'codes' => ['32000', '33000']],
+                ['acc_no' => '32', 'name' => 'Laba (rugi) Tahun Berjalan', 'type' => 'equity', 'codes' => ['34000'], 'exclude_from_tb' => true],
+            ],
+            'pendapatan_closed' => [
+                ['acc_no' => '40', 'name' => 'Pendapatan Impor', 'type' => 'revenue', 'codes' => ['41000', '4101']],
+                ['acc_no' => '40', 'name' => 'Pendapatan Ekspor', 'type' => 'revenue', 'codes' => ['42000']],
+                ['acc_no' => '40', 'name' => 'Pendapatan Domestik', 'type' => 'revenue', 'codes' => ['43000']],
+            ],
+            'pendapatan_unclosed' => [
+                ['acc_no' => '41', 'name' => 'Pendapatan Impor Unclosed', 'type' => 'revenue', 'codes' => ['41100']],
+                ['acc_no' => '41', 'name' => 'Pendapatan Ekspor Unclosed', 'type' => 'revenue', 'codes' => ['42100']],
+                ['acc_no' => '41', 'name' => 'Pendapatan Domestik Unclosed', 'type' => 'revenue', 'codes' => ['43100']],
+            ],
+            'hpp_closed' => [
+                ['acc_no' => '50', 'name' => 'HPP Impor', 'type' => 'cogs', 'codes' => ['51000', '5101']],
+                ['acc_no' => '50', 'name' => 'HPP Ekspor', 'type' => 'cogs', 'codes' => ['52000']],
+                ['acc_no' => '50', 'name' => 'HPP Domestik', 'type' => 'cogs', 'codes' => ['53000']],
+                ['acc_no' => '50', 'name' => 'HPP Sewa', 'type' => 'cogs', 'codes' => ['5400']],
+            ],
+            'hpp_unclosed' => [
+                ['acc_no' => '51', 'name' => 'HPP Impor Unlosed', 'type' => 'cogs', 'codes' => ['51100']],
+                ['acc_no' => '51', 'name' => 'HPP Ekspor Unlosed', 'type' => 'cogs', 'codes' => ['52100']],
+                ['acc_no' => '51', 'name' => 'HPP Domestik Unlosed', 'type' => 'cogs', 'codes' => ['53100']],
+            ],
+            'biaya_operasional' => [
+                ['acc_no' => '60', 'name' => 'Biaya Gaji Karyawan / Training', 'type' => 'expense', 'codes' => ['62100']],
+                ['acc_no' => '60', 'name' => 'Biaya Tunjangan Hari Raya (THR)', 'type' => 'expense', 'codes' => ['62110']],
+                ['acc_no' => '60', 'name' => 'Biaya Asuransi BPJS', 'type' => 'expense', 'codes' => ['62400']],
+                ['acc_no' => '60', 'name' => 'Biaya Perjalanan Dinas', 'type' => 'expense', 'codes' => ['62240']],
+                ['acc_no' => '60', 'name' => 'Biaya Kesejahteraan Karyawan', 'type' => 'expense', 'codes' => ['62310']],
+                ['acc_no' => '61', 'name' => 'Biaya Entertainment', 'type' => 'expense', 'codes' => ['62300', '62900']],
+                ['acc_no' => '61', 'name' => 'Biaya Parkir & Bensin', 'type' => 'expense', 'codes' => ['62200']],
+                ['acc_no' => '61', 'name' => 'Biaya Alat Tulis Kantor (ATK)', 'type' => 'expense', 'codes' => ['61100']],
+                ['acc_no' => '61', 'name' => 'Biaya Perlengkapan Kantor', 'type' => 'expense', 'codes' => ['61200', '61000']],
+                ['acc_no' => '61', 'name' => 'Biaya Percetakan', 'type' => 'expense', 'codes' => ['62260']],
+                ['acc_no' => '61', 'name' => 'Biaya Pengiriman/Pengurusan Dokumen', 'type' => 'expense', 'codes' => ['62220']],
+                ['acc_no' => '61', 'name' => 'Biaya Keamanan', 'type' => 'expense', 'codes' => ['62210']],
+                ['acc_no' => '61', 'name' => 'Biaya Utilities', 'type' => 'expense', 'codes' => ['62250']],
+                ['acc_no' => '61', 'name' => 'Biaya Pemeliharaan Software', 'type' => 'expense', 'codes' => ['62800']],
+                ['acc_no' => '61', 'name' => 'Biaya Pemeliharaan Kantor', 'type' => 'expense', 'codes' => ['62810', '6101', '62000']],
+                ['acc_no' => '61', 'name' => 'Biaya Keperluan Dapur', 'type' => 'expense', 'codes' => ['62230']],
+                ['acc_no' => '61', 'name' => 'Biaya Penyusutan Peralatan', 'type' => 'expense', 'codes' => ['62600']],
+                ['acc_no' => '61', 'name' => 'Biaya Izin Usaha', 'type' => 'expense', 'codes' => ['62500']],
+                ['acc_no' => '61', 'name' => 'Biaya Pengurusan Dokumen', 'type' => 'expense', 'codes' => ['62270']],
+                ['acc_no' => '61', 'name' => 'Biaya Konsultan / Seminar / Pelatihan', 'type' => 'expense', 'codes' => ['62700']],
+            ],
+            'pendapatan_lain' => [
+                ['acc_no' => '70', 'name' => 'Pendapatan Bunga Bank', 'type' => 'revenue', 'codes' => ['71000']],
+                ['acc_no' => '70', 'name' => 'Pendapatan Jasa Giro', 'type' => 'revenue', 'codes' => ['72000', '44000', '64400']],
+            ],
+            'biaya_lain' => [
+                ['acc_no' => '80', 'name' => 'Biaya Provisi dan Adminstrasi Bank', 'type' => 'expense', 'codes' => ['64100', '64000']],
+                ['acc_no' => '80', 'name' => 'Pajak Bunga', 'type' => 'expense', 'codes' => ['64200']],
+                ['acc_no' => '80', 'name' => 'Biaya Transfer Antar Bank', 'type' => 'expense', 'codes' => ['64300']],
+                ['acc_no' => '81', 'name' => 'Rugi Selisih Kurs', 'type' => 'expense', 'codes' => ['63200']],
+                ['acc_no' => '81', 'name' => 'Selisih Pembulatan', 'type' => 'expense', 'codes' => ['63300', '63100', '63000']],
+            ],
+            'pajak_penghasilan' => [
+                ['acc_no' => '82', 'name' => 'Pajak Penghasilan', 'type' => 'expense', 'codes' => ['65000', '65100', '65200', '65300', '65400', '65500'], 'exclude_from_tb' => true],
+            ],
+        ];
+    }
+
+    public function trialBalance(string $to, ?string $from = null): array
+    {
+        $from = $from ?: Carbon::parse($to)->startOfYear()->toDateString();
+
+        $all = $this->accountBalancesWithOpening($from, $to)->map(function ($account) {
             $normalDebit = in_array($account->type, ['asset', 'cogs', 'expense'], true);
             $net = $normalDebit ? Money::decimal($account->debit)->minus($account->credit) : Money::decimal($account->credit)->minus($account->debit);
             $account->closing_debit = $normalDebit ? ($net->isNegative() ? '0.00' : (string) $net) : ($net->isNegative() ? (string) $net->abs() : '0.00');
@@ -32,8 +142,53 @@ class FinancialReportService
         $totalDebit = $all->sum(fn ($r) => (float) $r->closing_debit);
         $totalCredit = $all->sum(fn ($r) => (float) $r->closing_credit);
 
+        $byCode = $all->keyBy('code');
+        $usedCodes = ['1', '2', '3', '4', '5', '6', '11000', '12000'];
+        $radixRows = collect();
+        $no = 1;
+
+        foreach ($this->radixDefinitions() as $sectionKey => $items) {
+            foreach ($items as $def) {
+                if (! empty($def['exclude_from_tb'])) {
+                    continue;
+                }
+                foreach ($def['codes'] as $c) {
+                    $usedCodes[] = $c;
+                }
+                $row = $this->buildRadixLine($def, $byCode, true);
+                $row->no = $no++;
+                $radixRows->push($row);
+            }
+        }
+
+        // Tambahkan akun kustom yang memiliki mutasi namun di luar daftar standar agar Trial Balance selalu seimbang
+        foreach ($all as $acc) {
+            if (in_array((string) $acc->code, $usedCodes, true)) {
+                continue;
+            }
+            $hasActivity = ! Money::decimal($acc->debit)->isZero() || ! Money::decimal($acc->credit)->isZero();
+            if (! $hasActivity) {
+                continue;
+            }
+            $def = [
+                'acc_no' => $this->inferAccNo($acc),
+                'name' => $acc->name,
+                'type' => $acc->type,
+                'codes' => [(string) $acc->code],
+            ];
+            $row = $this->buildRadixLine($def, $byCode, true);
+            $row->no = $no++;
+            $radixRows->push($row);
+        }
+
+        $totalOpening = (string) $radixRows->reduce(fn ($s, $r) => $s->plus(Money::decimal($r->opening_balance)), Money::decimal(0));
+        $totalPeriodDebit = (string) $radixRows->reduce(fn ($s, $r) => $s->plus(Money::decimal($r->period_debit)), Money::decimal(0));
+        $totalPeriodCredit = (string) $radixRows->reduce(fn ($s, $r) => $s->plus(Money::decimal($r->period_credit)), Money::decimal(0));
+        $totalMutation = (string) Money::decimal($totalPeriodDebit)->minus($totalPeriodCredit);
+        $totalEnding = (string) $radixRows->reduce(fn ($s, $r) => $s->plus(Money::decimal($r->ending_balance)), Money::decimal(0));
+
         $page = LengthAwarePaginator::resolveCurrentPage();
-        $perPage = min(100, max(5, (int) request('per_page', 10)));
+        $perPage = min(200, max(5, (int) request('per_page', 100)));
         $offset = ($page - 1) * $perPage;
         $rows = new LengthAwarePaginator(
             $all->slice($offset, $perPage)->values(),
@@ -43,7 +198,17 @@ class FinancialReportService
             ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => request()->query()]
         );
 
-        return compact('rows', 'totalDebit', 'totalCredit');
+        return compact(
+            'rows',
+            'radixRows',
+            'totalDebit',
+            'totalCredit',
+            'totalOpening',
+            'totalPeriodDebit',
+            'totalPeriodCredit',
+            'totalMutation',
+            'totalEnding'
+        );
     }
 
     public function ledger(int $accountId, string $from, string $to, array $filters = []): array
@@ -95,7 +260,6 @@ class FinancialReportService
         return compact('account', 'entries', 'opening') + ['closing' => (string) $balance];
     }
 
-
     /** Tambahkan referensi Job, Invoice, Customer, Vendor, faktur pajak dan Bupot pada mutasi Buku Besar. */
     private function attachLedgerReferences(Collection $entries): void
     {
@@ -146,10 +310,10 @@ class FinancialReportService
         $expense = Money::decimal($rows->get('expense')->debit ?? 0)->minus($rows->get('expense')->credit ?? 0);
         $gross = $revenue->minus($cogs);
 
-        $accounts = ChartOfAccount::query()
+        $accounts = ChartOfAccount::withTrashed()
             ->whereIn('type', ['revenue', 'cogs', 'expense'])
             ->with(['entries' => function ($q) use ($from, $to) {
-                $q->whereHas('journal', fn ($j) => $j->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to)->whereNull('reversal_of_id'));
+                $q->whereHas('journal', fn ($j) => $j->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to));
             }])
             ->orderBy('code')
             ->get();
@@ -169,10 +333,61 @@ class FinancialReportService
                 'type' => $acc->type,
                 'debit' => (string) $debit,
                 'credit' => (string) $credit,
+                'period_debit' => (string) $debit,
+                'period_credit' => (string) $credit,
+                'opening_debit' => '0.00',
+                'opening_credit' => '0.00',
                 'balance' => (string) $balance,
+                'report_balance' => (string) $balance,
                 'has_activity' => ! $debit->isZero() || ! $credit->isZero(),
             ];
         });
+
+        $byCode = $accountDetails->keyBy('code');
+        $defs = $this->radixDefinitions();
+
+        $buildSection = function (string $key) use ($defs, $byCode): Collection {
+            return collect($defs[$key] ?? [])->map(fn (array $def) => $this->buildRadixPeriodLine($def, $byCode));
+        };
+
+        $sumSection = fn (Collection $items) => $items->reduce(fn ($s, $r) => $s->plus(Money::decimal($r->balance)), Money::decimal(0));
+
+        $pendapatanClosed = $buildSection('pendapatan_closed');
+        $pendapatanUnclosed = $buildSection('pendapatan_unclosed');
+        $hppClosed = $buildSection('hpp_closed');
+        $hppUnclosed = $buildSection('hpp_unclosed');
+        $biayaOperasional = $buildSection('biaya_operasional');
+        $pendapatanLain = $buildSection('pendapatan_lain');
+        $biayaLain = $buildSection('biaya_lain');
+        $pajakLines = $buildSection('pajak_penghasilan');
+
+        $totalPendapatanClosed = $sumSection($pendapatanClosed);
+        $totalPendapatanUnclosed = $sumSection($pendapatanUnclosed);
+        $totalPendapatan = $totalPendapatanClosed->plus($totalPendapatanUnclosed);
+
+        $totalHppClosed = $sumSection($hppClosed);
+        $totalHppUnclosed = $sumSection($hppUnclosed);
+        $totalHpp = $totalHppClosed->plus($totalHppUnclosed);
+
+        $labaKotor = $totalPendapatan->minus($totalHpp);
+        $grossMarginPct = $totalPendapatan->isZero()
+            ? '0.00'
+            : (string) $labaKotor->multipliedBy('100')->dividedBy($totalPendapatan, 2, RoundingMode::HalfUp);
+
+        $totalBiayaOperasional = $sumSection($biayaOperasional);
+        $labaOperasional = $labaKotor->minus($totalBiayaOperasional);
+
+        $totalPendapatanLain = $sumSection($pendapatanLain);
+        $totalBiayaLain = $sumSection($biayaLain);
+        $jumlahPendapatanBiayaLain = $totalPendapatanLain->minus($totalBiayaLain);
+
+        $labaBersihSebelumPajak = $labaOperasional->plus($jumlahPendapatanBiayaLain);
+        $netBeforeTaxPct = $totalPendapatan->isZero()
+            ? '0.00'
+            : (string) $labaBersihSebelumPajak->multipliedBy('100')->dividedBy($totalPendapatan, 2, RoundingMode::HalfUp);
+
+        $pajakPenghasilan = $sumSection($pajakLines);
+        $labaBersihSesudahPajak = $labaBersihSebelumPajak->minus($pajakPenghasilan);
 
         $revenueAccounts = $accountDetails->where('type', 'revenue')->values();
         $cogsAccounts = $accountDetails->where('type', 'cogs')->values();
@@ -187,14 +402,41 @@ class FinancialReportService
             'revenueAccounts' => $revenueAccounts,
             'cogsAccounts' => $cogsAccounts,
             'expenseAccounts' => $expenseAccounts,
-            // Dipakai sebagai submenu saat HPP Job dibuka pada Laba Rugi.
             'hppBreakdown' => $this->hppByCostType($from, $to)['rows'],
+            // Struktur Laporan Laba Rugi PT Radix International Logistics
+            'pendapatanClosed' => $pendapatanClosed,
+            'totalPendapatanClosed' => (string) $totalPendapatanClosed,
+            'pendapatanUnclosed' => $pendapatanUnclosed,
+            'totalPendapatanUnclosed' => (string) $totalPendapatanUnclosed,
+            'totalPendapatan' => (string) $totalPendapatan,
+            'hppClosed' => $hppClosed,
+            'totalHppClosed' => (string) $totalHppClosed,
+            'hppUnclosed' => $hppUnclosed,
+            'totalHppUnclosed' => (string) $totalHppUnclosed,
+            'totalHpp' => (string) $totalHpp,
+            'labaKotor' => (string) $labaKotor,
+            'grossMarginPct' => $grossMarginPct,
+            'biayaOperasional' => $biayaOperasional,
+            'totalBiayaOperasional' => (string) $totalBiayaOperasional,
+            'labaOperasional' => (string) $labaOperasional,
+            'pendapatanLain' => $pendapatanLain,
+            'totalPendapatanLain' => (string) $totalPendapatanLain,
+            'biayaLain' => $biayaLain,
+            'totalBiayaLain' => (string) $totalBiayaLain,
+            'jumlahPendapatanBiayaLain' => (string) $jumlahPendapatanBiayaLain,
+            'labaBersihSebelumPajak' => (string) $labaBersihSebelumPajak,
+            'netBeforeTaxPct' => $netBeforeTaxPct,
+            'pajakPenghasilan' => (string) $pajakPenghasilan,
+            'pajakAccount' => $pajakLines->first(),
+            'labaBersihSesudahPajak' => (string) $labaBersihSesudahPajak,
         ];
     }
 
-    public function balanceSheet(string $to): array
+    public function balanceSheet(string $to, ?string $from = null): array
     {
-        $allAccounts = $this->accountBalances($to)->map(function ($account) {
+        $from = $from ?: Carbon::parse($to)->startOfYear()->toDateString();
+
+        $allAccounts = $this->accountBalancesWithOpening($from, $to)->map(function ($account) {
             $account->report_balance = $this->net($account->type, $account->debit, $account->credit);
             return $account;
         });
@@ -202,7 +444,113 @@ class FinancialReportService
         $assets = $this->sumNet($rows->get('asset', collect()), true);
         $liabilities = $this->sumNet($rows->get('liability', collect()), false);
         $equity = $this->sumNet($rows->get('equity', collect()), false);
-        $earnings = Money::decimal($this->sumNet($rows->get('revenue', collect()), false))->minus($this->sumNet($rows->get('cogs', collect()), true))->minus($this->sumNet($rows->get('expense', collect()), true));
+        $earnings = Money::decimal($this->sumNet($rows->get('revenue', collect()), false))
+            ->minus($this->sumNet($rows->get('cogs', collect()), true))
+            ->minus($this->sumNet($rows->get('expense', collect()), true));
+
+        // Pisahkan Laba Ditahan periode sebelumnya vs Laba Tahun Berjalan (periode $from s/d $to)
+        $currentPeriodPnl = $this->periodBalances($from, $to)->keyBy('type');
+        $currentRev = Money::decimal($currentPeriodPnl->get('revenue')->credit ?? 0)->minus($currentPeriodPnl->get('revenue')->debit ?? 0);
+        $currentCogs = Money::decimal($currentPeriodPnl->get('cogs')->debit ?? 0)->minus($currentPeriodPnl->get('cogs')->credit ?? 0);
+        $currentExp = Money::decimal($currentPeriodPnl->get('expense')->debit ?? 0)->minus($currentPeriodPnl->get('expense')->credit ?? 0);
+        $currentYearEarnings = $currentRev->minus($currentCogs)->minus($currentExp);
+        $priorRetainedEarnings = $earnings->minus($currentYearEarnings);
+
+        $byCode = $allAccounts->keyBy('code');
+        $defs = $this->radixDefinitions();
+        $usedAssetCodes = ['1', '11000', '12000'];
+        $usedLiabilityCodes = ['2'];
+        $usedEquityCodes = ['3'];
+
+        $radixCurrentAssets = collect($defs['aktiva_lancar'])->map(function (array $def) use ($byCode, &$usedAssetCodes) {
+            foreach ($def['codes'] as $c) {
+                $usedAssetCodes[] = $c;
+            }
+            return $this->buildRadixLine($def, $byCode, false);
+        });
+
+        $radixFixedAssets = collect($defs['aktiva_tetap'])->map(function (array $def) use ($byCode, &$usedAssetCodes) {
+            foreach ($def['codes'] as $c) {
+                $usedAssetCodes[] = $c;
+            }
+            return $this->buildRadixLine($def, $byCode, false);
+        });
+
+        // Sertakan akun aset kustom yang memiliki saldo
+        foreach ($rows->get('asset', collect()) as $acc) {
+            if (in_array((string) $acc->code, $usedAssetCodes, true)) {
+                continue;
+            }
+            if (Money::decimal($acc->report_balance)->isZero()) {
+                continue;
+            }
+            $customLine = $this->buildRadixLine([
+                'acc_no' => str_starts_with((string) $acc->code, '12') ? '15' : '12',
+                'name' => $acc->name,
+                'type' => 'asset',
+                'codes' => [(string) $acc->code],
+            ], $byCode, false);
+            if (str_starts_with((string) $acc->code, '12')) {
+                $radixFixedAssets->push($customLine);
+            } else {
+                $radixCurrentAssets->push($customLine);
+            }
+        }
+
+        $radixCurrentLiabilities = collect($defs['kewajiban_lancar'])->map(function (array $def) use ($byCode, &$usedLiabilityCodes) {
+            foreach ($def['codes'] as $c) {
+                $usedLiabilityCodes[] = $c;
+            }
+            return $this->buildRadixLine($def, $byCode, false);
+        });
+
+        foreach ($rows->get('liability', collect()) as $acc) {
+            if (in_array((string) $acc->code, $usedLiabilityCodes, true) || Money::decimal($acc->report_balance)->isZero()) {
+                continue;
+            }
+            $radixCurrentLiabilities->push($this->buildRadixLine([
+                'acc_no' => '20',
+                'name' => $acc->name,
+                'type' => 'liability',
+                'codes' => [(string) $acc->code],
+            ], $byCode, false));
+        }
+
+        $radixEquity = collect($defs['modal'])->map(function (array $def) use ($byCode, &$usedEquityCodes, $priorRetainedEarnings, $currentYearEarnings) {
+            foreach ($def['codes'] as $c) {
+                $usedEquityCodes[] = $c;
+            }
+            $line = $this->buildRadixLine($def, $byCode, false);
+            if ($def['acc_no'] === '31') {
+                $bal = Money::decimal($line->report_balance)->plus($priorRetainedEarnings);
+                $line->report_balance = (string) $bal;
+                $line->ending_balance = (string) $bal;
+            } elseif ($def['acc_no'] === '32') {
+                $bal = Money::decimal($line->report_balance)->plus($currentYearEarnings);
+                $line->report_balance = (string) $bal;
+                $line->ending_balance = (string) $bal;
+            }
+            return $line;
+        });
+
+        foreach ($rows->get('equity', collect()) as $acc) {
+            if (in_array((string) $acc->code, $usedEquityCodes, true) || Money::decimal($acc->report_balance)->isZero()) {
+                continue;
+            }
+            $radixEquity->push($this->buildRadixLine([
+                'acc_no' => '30',
+                'name' => $acc->name,
+                'type' => 'equity',
+                'codes' => [(string) $acc->code],
+            ], $byCode, false));
+        }
+
+        $sumReportBalance = fn (Collection $items) => (string) $items->reduce(fn ($s, $r) => $s->plus(Money::decimal($r->report_balance)), Money::decimal(0));
+
+        $totalCurrentAssets = $sumReportBalance($radixCurrentAssets);
+        $totalFixedAssets = $sumReportBalance($radixFixedAssets);
+        $totalCurrentLiabilities = $sumReportBalance($radixCurrentLiabilities);
+        $totalModal = $sumReportBalance($radixEquity);
 
         $assetRows = $rows->get('asset', collect())->reject(fn ($account) => $account->code === '1');
         $currentAssets = $assetRows->filter(fn ($account) => str_starts_with((string) $account->code, '11'))->values();
@@ -210,11 +558,25 @@ class FinancialReportService
         $otherAssets = $assetRows->reject(fn ($account) => str_starts_with((string) $account->code, '11') || str_starts_with((string) $account->code, '12'))->values();
 
         return [
-            'assets' => $assets, 'liabilities' => $liabilities, 'equity' => $equity, 'earnings' => (string) $earnings,
+            'assets' => $assets,
+            'liabilities' => $liabilities,
+            'equity' => $equity,
+            'earnings' => (string) $earnings,
             'liabilities_equity' => (string) Money::decimal($liabilities)->plus($equity)->plus($earnings),
-            'currentAssets' => $currentAssets, 'nonCurrentAssets' => $nonCurrentAssets, 'otherAssets' => $otherAssets,
+            'currentAssets' => $currentAssets,
+            'nonCurrentAssets' => $nonCurrentAssets,
+            'otherAssets' => $otherAssets,
             'liabilityRows' => $rows->get('liability', collect())->reject(fn ($account) => $account->code === '2')->values(),
             'equityRows' => $rows->get('equity', collect())->reject(fn ($account) => $account->code === '3')->values(),
+            // Struktur Neraca PT Radix International Logistics
+            'radixCurrentAssets' => $radixCurrentAssets,
+            'totalCurrentAssets' => $totalCurrentAssets,
+            'radixFixedAssets' => $radixFixedAssets,
+            'totalFixedAssets' => $totalFixedAssets,
+            'radixCurrentLiabilities' => $radixCurrentLiabilities,
+            'totalCurrentLiabilities' => $totalCurrentLiabilities,
+            'radixEquity' => $radixEquity,
+            'totalModal' => $totalModal,
         ];
     }
 
@@ -440,8 +802,6 @@ class FinancialReportService
             ->whereDate('closing_date', '<=', $to)
             ->get(['id', 'job_id', 'costs_snapshot']);
 
-        // PPh dilaporkan dari biaya yang benar-benar telah dibayar. Ini tetap
-        // akurat ketika pembayaran vendor dilakukan setelah Closing Job.
         $pphByDescription = JobCost::query()
             ->whereIn('job_id', $snapshots->pluck('job_id')->filter())
             ->where('type', 'provision')
@@ -455,7 +815,6 @@ class FinancialReportService
         $jobIds = [];
         foreach ($snapshots as $snapshot) {
             foreach ($snapshot->costs_snapshot ?? [] as $cost) {
-                // Reimbursement adalah talangan/piutang temporary, bukan HPP perusahaan.
                 if (($cost['type'] ?? 'provision') === 'temporary') {
                     continue;
                 }
@@ -507,13 +866,111 @@ class FinancialReportService
         ];
     }
 
-    private function accountBalances(string $to): Collection
+    private function buildRadixLine(array $def, Collection $byCode, bool $useTbAccNo = false): object
     {
-        $totals = JournalEntry::whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '<=', $to))->select('chart_of_account_id')->selectRaw('SUM(debit) debit, SUM(credit) credit')->groupBy('chart_of_account_id')->get()->keyBy('chart_of_account_id');
+        $matched = collect($def['codes'])
+            ->map(fn ($c) => $byCode->get((string) $c))
+            ->filter();
 
-        return ChartOfAccount::withTrashed()->orderBy('code')->get()->each(function ($account) use ($totals) {
-            $account->debit = (string) ($totals->get($account->id)->debit ?? '0.00');
-            $account->credit = (string) ($totals->get($account->id)->credit ?? '0.00');
+        $activeAccount = $matched->first(fn ($acc) => ! Money::decimal($acc->debit ?? 0)->isZero() || ! Money::decimal($acc->credit ?? 0)->isZero())
+            ?? $matched->first();
+
+        $opDebit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->opening_debit ?? 0)), Money::decimal(0));
+        $opCredit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->opening_credit ?? 0)), Money::decimal(0));
+        $pDebit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->period_debit ?? 0)), Money::decimal(0));
+        $pCredit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->period_credit ?? 0)), Money::decimal(0));
+        $totDebit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->debit ?? 0)), Money::decimal(0));
+        $totCredit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->credit ?? 0)), Money::decimal(0));
+
+        $type = $def['type'];
+        $openingBalance = $this->net($type, (string) $opDebit, (string) $opCredit);
+        $mutation = $this->net($type, (string) $pDebit, (string) $pCredit);
+        $endingBalance = $this->net($type, (string) $totDebit, (string) $totCredit);
+
+        return (object) [
+            'id' => $activeAccount?->id,
+            'acc_no' => $useTbAccNo ? ($def['tb_acc_no'] ?? $def['acc_no']) : $def['acc_no'],
+            'code' => $activeAccount?->code ?? ($def['codes'][0] ?? $def['acc_no']),
+            'name' => $def['name'],
+            'type' => $type,
+            'opening_balance' => $openingBalance,
+            'period_debit' => (string) $pDebit,
+            'period_credit' => (string) $pCredit,
+            'mutation' => $mutation,
+            'ending_balance' => $endingBalance,
+            'report_balance' => $endingBalance,
+        ];
+    }
+
+    private function buildRadixPeriodLine(array $def, Collection $byCode): object
+    {
+        $matched = collect($def['codes'])
+            ->map(fn ($c) => $byCode->get((string) $c))
+            ->filter();
+
+        $activeAccount = $matched->first(fn ($acc) => ! Money::decimal($acc->debit ?? 0)->isZero() || ! Money::decimal($acc->credit ?? 0)->isZero())
+            ?? $matched->first();
+
+        $debit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->debit ?? 0)), Money::decimal(0));
+        $credit = $matched->reduce(fn ($s, $a) => $s->plus(Money::decimal($a->credit ?? 0)), Money::decimal(0));
+        $type = $def['type'];
+        $balance = $this->net($type, (string) $debit, (string) $credit);
+
+        return (object) [
+            'id' => $activeAccount?->id,
+            'acc_no' => $def['acc_no'],
+            'code' => $activeAccount?->code ?? ($def['codes'][0] ?? $def['acc_no']),
+            'name' => $def['name'],
+            'type' => $type,
+            'debit' => (string) $debit,
+            'credit' => (string) $credit,
+            'balance' => $balance,
+            'has_activity' => ! $debit->isZero() || ! $credit->isZero(),
+        ];
+    }
+
+    private function inferAccNo(object $acc): string
+    {
+        return match ($acc->type) {
+            'asset' => str_starts_with((string) $acc->code, '12') ? '15' : '11',
+            'liability' => '20',
+            'equity' => '30',
+            'revenue' => '40',
+            'cogs' => '50',
+            default => '61',
+        };
+    }
+
+    private function accountBalancesWithOpening(string $from, string $to): Collection
+    {
+        $openingTotals = JournalEntry::whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '<', $from))
+            ->select('chart_of_account_id')
+            ->selectRaw('SUM(debit) debit, SUM(credit) credit')
+            ->groupBy('chart_of_account_id')
+            ->get()
+            ->keyBy('chart_of_account_id');
+
+        $periodTotals = JournalEntry::whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
+            ->select('chart_of_account_id')
+            ->selectRaw('SUM(debit) debit, SUM(credit) credit')
+            ->groupBy('chart_of_account_id')
+            ->get()
+            ->keyBy('chart_of_account_id');
+
+        $closingTotals = JournalEntry::whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '<=', $to))
+            ->select('chart_of_account_id')
+            ->selectRaw('SUM(debit) debit, SUM(credit) credit')
+            ->groupBy('chart_of_account_id')
+            ->get()
+            ->keyBy('chart_of_account_id');
+
+        return ChartOfAccount::withTrashed()->orderBy('code')->get()->each(function ($account) use ($openingTotals, $periodTotals, $closingTotals) {
+            $account->opening_debit = (string) ($openingTotals->get($account->id)->debit ?? '0.00');
+            $account->opening_credit = (string) ($openingTotals->get($account->id)->credit ?? '0.00');
+            $account->period_debit = (string) ($periodTotals->get($account->id)->debit ?? '0.00');
+            $account->period_credit = (string) ($periodTotals->get($account->id)->credit ?? '0.00');
+            $account->debit = (string) ($closingTotals->get($account->id)->debit ?? '0.00');
+            $account->credit = (string) ($closingTotals->get($account->id)->credit ?? '0.00');
         });
     }
 

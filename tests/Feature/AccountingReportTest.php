@@ -56,13 +56,18 @@ class AccountingReportTest extends TestCase
         $bank = ChartOfAccount::where('code', '1102')->firstOrFail();
         $report = app(FinancialReportService::class);
         $ledger = $report->ledger($bank->id, today()->startOfYear()->toDateString(), today()->toDateString());
-        $this->assertSame('-4000000.00', $ledger['closing']);
-        $this->assertCount(2, $ledger['entries']);
+        $this->assertSame('4000000.00', $ledger['closing']);
+        $this->assertCount(1, $ledger['entries']);
         $trial = $report->trialBalance(today()->toDateString());
         $this->assertEquals($trial['totalDebit'], $trial['totalCredit']);
+        $this->assertEquals($trial['totalPeriodDebit'], $trial['totalPeriodCredit']);
+        $this->assertNotEmpty($trial['radixRows']);
         $this->get('/journals')->assertOk()->assertSee('Kapitalisasi biaya');
         $this->get('/reports/ledger?account_id='.$bank->id)->assertOk()->assertSee('4.000.000,00');
-        $this->get('/reports/trial-balance')->assertOk()->assertSee('Neraca Saldo');
+        $this->get('/reports/trial-balance')->assertOk()
+            ->assertSee('Neraca Saldo')
+            ->assertSee('ACCOUNT - NAME')
+            ->assertSee('END.BALANCE');
     }
 
     public function test_financial_statements_cash_flow_and_profit_per_job_are_correct(): void
@@ -73,20 +78,36 @@ class AccountingReportTest extends TestCase
         $to = today()->toDateString();
         $income = $service->incomeStatement($from, $to);
         $this->assertSame('4500000.00', $income['revenue']);
+        $this->assertSame('4500000.00', $income['totalPendapatanClosed']);
+        $this->assertSame('0.00', $income['totalPendapatanUnclosed']);
         $this->assertSame('3000000.00', $income['cogs']);
+        $this->assertSame('3000000.00', $income['totalHppClosed']);
+        $this->assertSame('1500000.00', $income['labaKotor']);
         $this->assertSame('1500000.00', $income['net']);
         $balance = $service->balanceSheet($to);
-        $this->assertSame('2450000.00', $balance['assets']);
-        $this->assertSame('950000.00', $balance['liabilities']);
-        $this->assertSame('2450000.00', $balance['liabilities_equity']);
+        $this->assertSame('10450000.00', $balance['assets']);
+        $this->assertSame('10450000.00', $balance['totalCurrentAssets']);
+        $this->assertSame('8950000.00', $balance['liabilities']);
+        $this->assertSame('8950000.00', $balance['totalCurrentLiabilities']);
+        $this->assertSame('1500000.00', $balance['totalModal']);
+        $this->assertSame('10450000.00', $balance['liabilities_equity']);
         $cash = $service->cashFlow($from, $to);
         $this->assertSame('4000000.00', $cash['customer_payment']);
-        $this->assertSame('-8000000.00', $cash['job_cost_capitalization']);
-        $this->assertSame('-4000000.00', $cash['net']);
+        $this->assertSame('0.00', $cash['job_cost_capitalization']);
+        $this->assertSame('4000000.00', $cash['net']);
         $this->assertCount(1, $service->profitPerJob($from, $to)['rows']);
         foreach (['balance-sheet', 'income-statement', 'cash-flow', 'profit-per-job'] as $route) {
             $this->get('/reports/'.$route)->assertOk();
         }
+        $this->get('/reports/balance-sheet')
+            ->assertSee('Aktiva Lancar')
+            ->assertSee('Kewajiban Lancar')
+            ->assertSee('Laba (rugi) Tahun Berjalan');
+        $this->get('/reports/income-statement')
+            ->assertSee('Pendapatan Closed')
+            ->assertSee('Pendapatan Job Unclosed')
+            ->assertSee('HPP Job Unclosed')
+            ->assertSee('Laba / Rugi Bersih sesudah Pajak');
         $this->get('/reports/profit-per-job')->assertSee($invoice->job->number)->assertSee('1.500.000,00');
         $this->get('/dashboard')->assertOk()->assertSee('Enam bulan terakhir');
     }
