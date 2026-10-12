@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\ChartOfAccount;
 use App\Models\Job;
 use App\Models\JobCost;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Support\Money;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -39,23 +41,27 @@ class JobCostService
             }
 
             $hasDraftPayable = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
-                ->whereIn('type', ['job_cost_draft', 'job_cost_finalization'])->exists();
+                ->whereIn('type', ['job_cost_draft', 'job_cost_direct', 'job_cost_finalization'])->exists();
             $pph = Money::decimal($data['pph23_amount'] ?? $cost->pph23_amount ?? 0);
+            $isCommission = $cost->cost_category === 'credit_note' || str_contains(mb_strtolower($cost->description), 'komisi');
+            $taxKey = $isCommission ? 'pph21_payable' : 'pph23_payable';
+            $taxLabel = $isCommission ? 'PPh 21 hutang ' : 'PPh 23 hutang ';
+            $taxName = $isCommission ? 'PPh 21' : 'PPh 23';
             // PPh baru menjadi Hutang Pajak ketika PAID. Nilai ini hanya untuk
             // transaksi lama yang telah mencatat PPh sebelum alur finalisasi.
             $draftPph = Money::decimal((string) JournalEntry::query()
-                ->where('chart_of_account_id', $this->journals->mapped(['pph23_payable'])['pph23_payable']->id)
+                ->where('chart_of_account_id', $this->journals->mapped([$taxKey])[$taxKey]->id)
                 ->where('credit', '>', 0)
                 ->whereHas('journal', fn ($query) => $query->where('source_type', JobCost::class)->where('source_id', $cost->id))
                 ->sum('credit'));
             $amount = Money::decimal($cost->total_cost);
-            $vendor = $cost->vendor_id ? \App\Models\Vendor::find($cost->vendor_id) : null;
+            $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
             $payableKey = in_array($vendor?->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable';
             if ($pph->isGreaterThan($amount)) {
-                throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi biaya.']);
+                throw ValidationException::withMessages(['pph23_amount' => $taxName.' tidak boleh melebihi biaya.']);
             }
             if ($hasDraftPayable && $pph->isLessThan($draftPph)) {
-                throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak dapat dikurangi karena jurnal Draft sudah tercatat.']);
+                throw ValidationException::withMessages(['pph23_amount' => $taxName.' tidak dapat dikurangi karena jurnal Draft sudah tercatat.']);
             }
 
             // Data lama yang sudah final tetapi belum punya jurnal tetap dapat
@@ -73,8 +79,8 @@ class JobCostService
                 $draftPph = Money::decimal(0);
             }
 
-            $account = \App\Models\ChartOfAccount::where('type', 'asset')->findOrFail($data['payment_account_id']);
-            $maps = $this->journals->mapped([$payableKey, 'pph23_payable']);
+            $account = ChartOfAccount::where('type', 'asset')->findOrFail($data['payment_account_id']);
+            $maps = $this->journals->mapped([$payableKey, $taxKey]);
             // Hutang vendor yang telah terbentuk pada Draft harus dilunasi penuh.
             // PPh yang baru diinput ketika PAID dipindahkan ke Hutang Pajak.
             $vendorSettlement = $amount->minus($draftPph);
@@ -86,10 +92,10 @@ class JobCostService
                 ['account_id' => $account->id, 'description' => 'Pembayaran biaya job '.$cost->number, 'debit' => 0, 'credit' => (string) $bankPayment],
             ];
             if ($additionalPph->isPositive()) {
-                $entries[] = ['account_id' => $maps['pph23_payable']->id, 'description' => 'PPh 23 hutang '.$cost->number, 'debit' => 0, 'credit' => (string) $additionalPph];
+                $entries[] = ['account_id' => $maps[$taxKey]->id, 'description' => $taxLabel.$cost->number, 'debit' => 0, 'credit' => (string) $additionalPph];
             }
 
-            $number = $this->numbers->nextBankJournal($account->code, $account->name, false, \Carbon\Carbon::parse($data['paid_date']));
+            $number = $this->numbers->nextBankJournal($account->code, $account->name, false, Carbon::parse($data['paid_date']));
             $this->journals->post('job_cost_payment', JobCost::class, $cost->id, $data['paid_date'], 'Pembayaran '.$cost->number, $entries, $actor, $number);
             $cost->update([
                 'paid_date' => $data['paid_date'],
@@ -165,7 +171,7 @@ class JobCostService
                 throw ValidationException::withMessages(['unit_price' => 'Nilai jual Temporary harus sama dengan modal karena ditagihkan kembali tanpa profit.']);
             }
             if (! empty($data['vendor_id']) && empty($data['payee'])) {
-                $vendor = \App\Models\Vendor::find($data['vendor_id']);
+                $vendor = Vendor::find($data['vendor_id']);
                 if ($vendor) {
                     $data['payee'] = $vendor->name;
                 }
@@ -205,11 +211,10 @@ class JobCostService
         }, 3);
     }
 
-
     /** Pengakuan modal dan hutang vendor/agent; dipanggil saat Finance menyimpan biaya langsung atau memfinalisasi biaya quotation. */
     private function recognizePayable(JobCost $cost, User $actor, string $journalType): void
     {
-        $vendor = $cost->vendor_id ? \App\Models\Vendor::find($cost->vendor_id) : null;
+        $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
         $payableKey = in_array($vendor?->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable';
         $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
         $maps = $this->journals->mapped([$debitKey, $payableKey]);
@@ -236,7 +241,7 @@ class JobCostService
             $cost->lock_version++;
             $cost->save();
             $hasRecognition = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
-                ->whereIn('type', ['job_cost_draft', 'job_cost_finalization'])->exists();
+                ->whereIn('type', ['job_cost_draft', 'job_cost_direct', 'job_cost_finalization'])->exists();
             if (! $hasRecognition && Money::decimal($cost->total_cost)->isPositive()) {
                 $this->recognizePayable($cost, $actor, 'job_cost_finalization');
             }
@@ -248,9 +253,11 @@ class JobCostService
     public function approve(Job $job, JobCost $cost, array $data, User $actor): void
     {
         DB::transaction(function () use ($job, $cost, $data, $actor) {
-            $job = $this->lockJob($job, $data); $cost = $job->costs()->lockForUpdate()->findOrFail($cost->id);
-            Gate::forUser($actor)->authorize('approve', $cost); $this->master->checkVersion($cost, $data);
-            $cost->update(['status'=>'approved','approved_by'=>$actor->id,'approved_at'=>now(),'updated_by'=>$actor->id,'lock_version'=>$cost->lock_version + 1]);
+            $job = $this->lockJob($job, $data);
+            $cost = $job->costs()->lockForUpdate()->findOrFail($cost->id);
+            Gate::forUser($actor)->authorize('approve', $cost);
+            $this->master->checkVersion($cost, $data);
+            $cost->update(['status' => 'approved', 'approved_by' => $actor->id, 'approved_at' => now(), 'updated_by' => $actor->id, 'lock_version' => $cost->lock_version + 1]);
             $this->touchJob($job, $actor);
         }, 3);
     }

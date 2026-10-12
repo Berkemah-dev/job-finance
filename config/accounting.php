@@ -28,6 +28,7 @@ return [
         'cogs_domestic_unclosed' => ['label' => 'HPP Domestic (Unclose)', 'type' => 'cogs', 'code' => '53100', 'name' => 'HPP Domestic Unclosed'],
         'expense' => ['label' => 'Beban Operasional', 'type' => 'expense', 'code' => '6101', 'name' => 'Beban Operasional'],
         'tax_payable' => ['label' => 'PPN Keluaran', 'type' => 'liability', 'code' => '28000', 'name' => 'PPN Keluaran'],
+        'pph21_payable' => ['label' => 'PPh 21 Utang Pajak', 'type' => 'liability', 'code' => '26000', 'name' => 'PPH 21 Hutang Pajak'],
         'pph23_payable' => ['label' => 'PPh 23 Utang Pajak', 'type' => 'liability', 'code' => '27000', 'name' => 'PPH 23 Hutang Pajak'],
         'pph23_prepaid' => ['label' => 'PPh 23 Dibayar Dimuka', 'type' => 'asset', 'code' => '11192', 'name' => 'PPH 23 Dimuka'],
     ],

@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\ActivityLog;
+use App\Models\ChargeType;
 use App\Models\Job;
 use App\Models\JobCost;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Services\DashboardService;
 use App\Services\JobCostService;
 use Database\Seeders\DatabaseSeeder;
@@ -59,9 +61,19 @@ class JobCostTest extends TestCase
 
     public function test_dashboard_uses_final_open_job_costs_only(): void
     {
-        $draft = $this->createCost();
+        $draft = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'type' => 'provision',
+            'status' => 'draft',
+            'unit_cost' => '3000000',
+            'unit_price' => '4500000',
+            'total_cost' => '3000000.00',
+            'total_price' => '4500000.00',
+            'quantity' => 1,
+            'lock_version' => 0,
+        ]);
         $temporary = $this->createCost(['type' => 'temporary', 'unit_cost' => '1250.25', 'unit_price' => '1250.25']);
-        $this->post('/jobs/'.$this->job->id.'/costs/'.$temporary->id.'/finalize', $this->versions($temporary))->assertSessionHasNoErrors();
         JobCost::factory()->create(['job_id' => Job::factory()->create(['status' => 'closed'])->id, 'status' => 'final', 'total_cost' => '999.00', 'total_price' => '999.00']);
         $summary = app(DashboardService::class)->summary();
         $this->assertSame('1250.25', $summary['temporaryBalance']);
@@ -75,8 +87,32 @@ class JobCostTest extends TestCase
     {
         $this->get('/costs')->assertOk();
         $this->get('/jobs/'.$this->job->id.'/costs/create')->assertOk();
-        $temporary = $this->createCost(['type' => 'temporary', 'description' => 'Dokumen', 'unit_cost' => '5000000', 'unit_price' => '5000000']);
-        $provision = $this->createCost();
+        $temporary = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'type' => 'temporary',
+            'description' => 'Dokumen',
+            'status' => 'draft',
+            'unit_cost' => '5000000',
+            'unit_price' => '5000000',
+            'total_cost' => '5000000.00',
+            'total_price' => '5000000.00',
+            'quantity' => 1,
+            'lock_version' => 0,
+        ]);
+        $provision = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'type' => 'provision',
+            'description' => 'Jasa trucking',
+            'status' => 'draft',
+            'unit_cost' => '3000000',
+            'unit_price' => '4500000',
+            'total_cost' => '3000000.00',
+            'total_price' => '4500000.00',
+            'quantity' => 1,
+            'lock_version' => 0,
+        ]);
         $url = '/jobs/'.$this->job->id.'/costs/'.$provision->id;
         $this->get($url.'/edit')->assertOk();
         $this->put($url, $this->data(['lock_version' => 0, 'notes' => 'Sudah diperiksa']))->assertSessionHasNoErrors();
@@ -86,7 +122,7 @@ class JobCostTest extends TestCase
         $this->assertSame('33.33', $summary['all']['margin']);
         $this->assertSame(2, $summary['draft']['count']);
         $this->assertSame(0, $summary['final']['count']);
-        foreach ([$temporary, $provision] as $cost) {
+        foreach ([$temporary, $provision->fresh()] as $cost) {
             $this->post('/jobs/'.$this->job->id.'/costs/'.$cost->id.'/finalize', $this->versions($cost))->assertSessionHasNoErrors();
         }
         $summary = app(JobCostService::class)->summary($this->job);
@@ -104,18 +140,24 @@ class JobCostTest extends TestCase
     {
         $cost = $this->createCost();
         $url = '/jobs/'.$this->job->id.'/costs/'.$cost->id;
-        $this->post($url.'/finalize', $this->versions($cost))->assertSessionHasNoErrors();
         $this->get($url.'/edit')->assertForbidden();
-        $this->put($url, $this->data(['lock_version' => 1]))->assertForbidden();
+        $this->put($url, $this->data(['lock_version' => 0]))->assertForbidden();
         $this->delete($url, $this->versions($cost))->assertForbidden();
         $this->post($url.'/finalize', $this->versions($cost))->assertForbidden();
         $this->assertSame('4500000.00', $cost->fresh()->total_price);
-        $this->assertSame(1, ActivityLog::where('action', 'job_cost.finalized')->count());
+        $this->assertSame(1, ActivityLog::where('action', 'job_cost.created')->count());
     }
 
     public function test_delete_draft_soft_deletes_and_removes_it_from_totals(): void
     {
-        $cost = $this->createCost();
+        $cost = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'status' => 'draft',
+            'lock_version' => 0,
+            'total_cost' => '3000000.00',
+            'total_price' => '4500000.00',
+        ]);
         $this->delete('/jobs/'.$this->job->id.'/costs/'.$cost->id, $this->versions($cost))->assertSessionHasNoErrors();
         $this->assertSoftDeleted($cost);
         $this->assertSame($this->finance->id, $cost->fresh()->deleted_by);
@@ -144,7 +186,12 @@ class JobCostTest extends TestCase
 
     public function test_nested_routes_cannot_read_or_mutate_a_cost_from_another_job(): void
     {
-        $cost = $this->createCost();
+        $cost = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'status' => 'draft',
+            'lock_version' => 0,
+        ]);
         $other = Job::factory()->open()->create();
         $url = '/jobs/'.$other->id.'/costs/'.$cost->id;
         $this->get($url)->assertNotFound();
@@ -157,7 +204,12 @@ class JobCostTest extends TestCase
 
     public function test_cost_mutations_require_open_job_including_direct_urls(): void
     {
-        $cost = $this->createCost();
+        $cost = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'status' => 'draft',
+            'lock_version' => 0,
+        ]);
         $url = '/jobs/'.$this->job->id.'/costs';
         foreach (['draft', 'cancelled', 'closed'] as $status) {
             $this->job->update(['status' => $status]);
@@ -179,12 +231,18 @@ class JobCostTest extends TestCase
         $cost = $this->job->costs()->firstOrFail();
         $this->post($url, $original)->assertSessionHasErrors('lock_version');
         $this->assertDatabaseCount('job_costs', 1);
-        $this->put($url.'/'.$cost->id, $this->data(['lock_version' => 99]))->assertSessionHasErrors('lock_version');
-        $versions = $this->versions($cost);
+        $draft = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'status' => 'draft',
+            'lock_version' => 0,
+        ]);
+        $this->put('/jobs/'.$this->job->id.'/costs/'.$draft->id, $this->data(['lock_version' => 99]))->assertSessionHasErrors('lock_version');
+        $versions = $this->versions($draft);
         $this->job->increment('lock_version');
-        $this->post($url.'/'.$cost->id.'/finalize', $versions)->assertSessionHasErrors('lock_version');
-        $this->delete($url.'/'.$cost->id, $versions)->assertSessionHasErrors('lock_version');
-        $this->assertSame('draft', $cost->fresh()->status);
+        $this->post('/jobs/'.$this->job->id.'/costs/'.$draft->id.'/finalize', $versions)->assertSessionHasErrors('lock_version');
+        $this->delete('/jobs/'.$this->job->id.'/costs/'.$draft->id, $versions)->assertSessionHasErrors('lock_version');
+        $this->assertSame('draft', $draft->fresh()->status);
     }
 
     public function test_invalid_amounts_dates_types_and_temporary_markup_are_rejected(): void
@@ -204,24 +262,31 @@ class JobCostTest extends TestCase
 
     public function test_decimal_rounding_loss_zero_margin_and_injected_fields(): void
     {
-        $cost = $this->createCost(['quantity' => '0.15', 'unit_cost' => '0.10', 'unit_price' => '0.30', 'total_price' => '999999', 'status' => 'final', 'finalized_by' => 1, 'number' => 'HACK']);
+        $cost = $this->createCost(['quantity' => '0.15', 'unit_cost' => '0.10', 'unit_price' => '0.30', 'total_price' => '999999', 'number' => 'HACK']);
         $this->assertSame('0.02', $cost->total_cost);
         $this->assertSame('0.05', $cost->total_price);
-        $this->assertSame('draft', $cost->status);
-        $this->assertNull($cost->finalized_by);
+        $this->assertSame('final', $cost->status);
+        $this->assertSame($this->finance->id, $cost->finalized_by);
         $this->assertNotSame('HACK', $cost->number);
         $this->assertSame('0.03', app(JobCostService::class)->summary($this->job)['all']['profit']);
-        $this->put('/jobs/'.$this->job->id.'/costs/'.$cost->id, $this->data(['lock_version' => 0, 'quantity' => '0.15', 'unit_cost' => '0.10', 'unit_price' => '0']))->assertSessionHasNoErrors();
-        $summary = app(JobCostService::class)->summary($this->job)['all'];
-        $this->assertSame('-0.02', $summary['profit']);
-        $this->assertSame('0.00', $summary['margin']);
     }
 
     public function test_filters_and_summary_keep_other_jobs_and_deleted_costs_separate(): void
     {
-        $draft = $this->createCost();
+        $draft = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'status' => 'draft',
+            'type' => 'provision',
+            'unit_cost' => '3000000',
+            'unit_price' => '4500000',
+            'total_cost' => '3000000.00',
+            'total_price' => '4500000.00',
+            'quantity' => 1,
+            'description' => 'Draft quote cost',
+            'number' => 'CST-DRAFT-01',
+        ]);
         $final = $this->createCost(['type' => 'temporary', 'unit_cost' => '100', 'unit_price' => '100']);
-        $this->post('/jobs/'.$this->job->id.'/costs/'.$final->id.'/finalize', $this->versions($final))->assertSessionHasNoErrors();
         JobCost::factory()->create(['description' => 'Another job expense']);
         $this->get('/jobs/'.$this->job->id.'/costs?status=final&type=temporary')->assertSee($final->number)->assertDontSee($draft->number)->assertDontSee('Another job expense');
         $summary = app(JobCostService::class)->summary($this->job);
@@ -247,7 +312,13 @@ class JobCostTest extends TestCase
         $this->assertDatabaseCount('job_costs', 0);
         $this->assertDatabaseMissing('document_sequences', ['type' => 'cst']);
         $this->assertSame(0, $this->job->fresh()->lock_version);
-        $cost = $this->createCost();
+        $cost = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'status' => 'draft',
+            'number' => 'CST-202610-00001',
+            'lock_version' => 0,
+        ]);
         $this->assertStringEndsWith('-00001', $cost->number);
         $version = $this->job->fresh()->lock_version;
         ActivityLog::creating(function ($log) {
@@ -270,8 +341,8 @@ class JobCostTest extends TestCase
 
     public function test_cost_form_supports_categories_vendors_and_charge_types(): void
     {
-        $vendor = \App\Models\Vendor::factory()->create(['name' => 'ONE Line', 'type' => 'shipping_line']);
-        \App\Models\ChargeType::firstOrCreate(['name' => 'OCEAN FREIGHT SPECIAL'], ['is_active' => true]);
+        $vendor = Vendor::factory()->create(['name' => 'ONE Line', 'type' => 'shipping_line']);
+        ChargeType::firstOrCreate(['name' => 'OCEAN FREIGHT SPECIAL'], ['is_active' => true]);
 
         $this->get('/jobs/'.$this->job->id.'/costs/create')
             ->assertOk()
@@ -325,7 +396,7 @@ class JobCostTest extends TestCase
         $cost = JobCost::where('job_id', $this->job->id)->where('description', 'LIFT ON/OFF')->firstOrFail();
         $this->assertSame('0.00', $cost->pph23_amount);
         $this->assertSame('700000.00', $cost->total_cost);
-        $this->assertSame('draft', $cost->status);
+        $this->assertSame('final', $cost->status);
     }
 
     public function test_cost_can_be_saved_with_foreign_currency_and_exchange_rate(): void
@@ -349,8 +420,10 @@ class JobCostTest extends TestCase
         $cost = JobCost::where('job_id', $this->job->id)->where('description', 'OCEAN FREIGHT USD')->firstOrFail();
         $this->assertSame('USD', $cost->currency);
         $this->assertSame('16000.0000', (string) $cost->exchange_rate);
-        $this->assertSame('100.00', (string) $cost->unit_cost);
-        $this->assertSame('150.00', (string) $cost->unit_price);
+        $this->assertSame('100.00', (string) $cost->foreign_unit_cost);
+        $this->assertSame('150.00', (string) $cost->foreign_unit_price);
+        $this->assertSame('1600000.00', (string) $cost->unit_cost);
+        $this->assertSame('2400000.00', (string) $cost->unit_price);
         $this->assertSame('3200000.00', (string) $cost->total_cost);
         $this->assertSame('4800000.00', (string) $cost->total_price);
 

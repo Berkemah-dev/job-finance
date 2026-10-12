@@ -6,9 +6,9 @@ use App\Models\ChartOfAccount;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
 use App\Models\JobCost;
-use App\Models\Payment;
 use App\Models\Journal;
 use App\Models\JournalEntry;
+use App\Models\Payment;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
 use Carbon\Carbon;
@@ -224,7 +224,7 @@ class FinancialReportService
             ->where('chart_of_account_id', $accountId)
             ->whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
             ->orderBy(
-                \App\Models\Journal::select('journal_date')
+                Journal::select('journal_date')
                     ->whereColumn('journals.id', 'journal_entries.journal_id')
                     ->limit(1)
             )
@@ -237,12 +237,28 @@ class FinancialReportService
             $entry->running_balance = (string) $balance;
         }
         $allEntries = $allEntries->filter(function ($entry) use ($filters) {
-            if (! empty($filters['payment_status']) && ($entry->payment_status ?? '') !== $filters['payment_status']) return false;
-            if (! empty($filters['customer']) && ! str_contains(mb_strtolower((string) ($entry->customer_name ?? '')), mb_strtolower($filters['customer']))) return false;
-            if (! empty($filters['job_number']) && ! str_contains(mb_strtolower((string) ($entry->job_number ?? '')), mb_strtolower($filters['job_number']))) return false;
-            if (! empty($filters['invoice_number']) && ! str_contains(mb_strtolower((string) ($entry->invoice_number ?? '')), mb_strtolower($filters['invoice_number']))) return false;
-            if (! empty($filters['cost_name']) && ! str_contains(mb_strtolower((string) ($entry->cost_name ?? '')), mb_strtolower($filters['cost_name']))) return false;
-            if (! empty($filters['vendor']) && ! str_contains(mb_strtolower((string) ($entry->vendor_name ?? '')), mb_strtolower($filters['vendor']))) return false;
+            if (! empty($filters['payment_status']) && ($entry->payment_status ?? '') !== $filters['payment_status']) {
+                return false;
+            }
+            if (! empty($filters['customer']) && ! str_contains(mb_strtolower((string) ($entry->customer_name ?? '')), mb_strtolower($filters['customer']))) {
+                return false;
+            }
+            if (! empty($filters['job_number']) && ! str_contains(mb_strtolower((string) ($entry->job_number ?? '')), mb_strtolower($filters['job_number']))) {
+                return false;
+            }
+            if (! empty($filters['invoice_number']) && ! str_contains(mb_strtolower((string) ($entry->invoice_number ?? '')), mb_strtolower($filters['invoice_number']))) {
+                return false;
+            }
+            if (! empty($filters['cost_name']) && ! str_contains(mb_strtolower((string) ($entry->cost_name ?? '')), mb_strtolower($filters['cost_name']))) {
+                return false;
+            }
+            if (! empty($filters['pr_number']) && ! str_contains(mb_strtolower((string) ($entry->cost_number ?? '')), mb_strtolower($filters['pr_number']))) {
+                return false;
+            }
+            if (! empty($filters['vendor']) && ! str_contains(mb_strtolower((string) ($entry->vendor_name ?? '')), mb_strtolower($filters['vendor']))) {
+                return false;
+            }
+
             return true;
         })->values();
 
@@ -267,13 +283,36 @@ class FinancialReportService
         $jobs = Job::with(['customer:id,name', 'invoice:id,job_id,number,status,tax_invoice_number'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Job::class)->pluck('journal.source_id'))->get()->keyBy('id');
         $payments = Payment::with('invoice.job.customer')->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Payment::class)->pluck('journal.source_id'))->get()->keyBy('id');
         foreach ($entries as $entry) {
-            $entry->job_number = null; $entry->invoice_number = null; $entry->customer_name = null; $entry->vendor_name = null; $entry->cost_name = null; $entry->tax_invoice_number = null; $entry->withholding_document_number = null; $entry->payment_status = null;
+            $entry->job_number = null;
+            $entry->invoice_number = null;
+            $entry->cost_number = null;
+            $entry->customer_name = null;
+            $entry->vendor_name = null;
+            $entry->cost_name = null;
+            $entry->tax_invoice_number = null;
+            $entry->withholding_document_number = null;
+            $entry->payment_status = null;
             if ($entry->journal->source_type === JobCost::class && ($cost = $costs->get($entry->journal->source_id))) {
-                $entry->job_number = $cost->job?->number; $entry->customer_name = $cost->job?->customer?->name; $entry->vendor_name = $cost->vendor?->name ?? $cost->payee; $entry->cost_name = $cost->description; $entry->withholding_document_number = $cost->withholding_document_number; $entry->payment_status = $cost->paid_at ? 'paid' : 'unpaid';
+                $entry->job_number = $cost->job?->number;
+                $entry->cost_number = $cost->number;
+                $entry->customer_name = $cost->job?->customer?->name;
+                $entry->vendor_name = $cost->vendor?->name ?? $cost->payee;
+                $entry->cost_name = $cost->description;
+                $entry->withholding_document_number = $cost->withholding_document_number;
+                $entry->payment_status = $cost->paid_at ? 'paid' : 'unpaid';
             } elseif ($entry->journal->source_type === Job::class && ($job = $jobs->get($entry->journal->source_id))) {
-                $entry->job_number = $job->number; $entry->customer_name = $job->customer?->name; $entry->invoice_number = $job->invoice?->number; $entry->tax_invoice_number = $job->invoice?->tax_invoice_number; $entry->payment_status = $job->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+                $entry->job_number = $job->number;
+                $entry->customer_name = $job->customer?->name;
+                $entry->invoice_number = $job->invoice?->number;
+                $entry->tax_invoice_number = $job->invoice?->tax_invoice_number;
+                $entry->payment_status = $job->invoice?->status === 'paid' ? 'paid' : 'unpaid';
             } elseif ($entry->journal->source_type === Payment::class && ($payment = $payments->get($entry->journal->source_id))) {
-                $entry->job_number = $payment->invoice?->job?->number; $entry->invoice_number = $payment->invoice?->number; $entry->customer_name = $payment->invoice?->job?->customer?->name ?? ($payment->invoice?->customer_snapshot['name'] ?? null); $entry->tax_invoice_number = $payment->invoice?->tax_invoice_number; $entry->withholding_document_number = $payment->withholding_document_number; $entry->payment_status = $payment->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+                $entry->job_number = $payment->invoice?->job?->number;
+                $entry->invoice_number = $payment->invoice?->number;
+                $entry->customer_name = $payment->invoice?->job?->customer?->name ?? ($payment->invoice?->customer_snapshot['name'] ?? null);
+                $entry->tax_invoice_number = $payment->invoice?->tax_invoice_number;
+                $entry->withholding_document_number = $payment->withholding_document_number;
+                $entry->payment_status = $payment->invoice?->status === 'paid' ? 'paid' : 'unpaid';
             }
         }
     }
@@ -290,7 +329,7 @@ class FinancialReportService
         $entries = JournalEntry::with('journal')
             ->where('chart_of_account_id', $accountId)
             ->whereHas('journal', fn (Builder $q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
-            ->orderBy(\App\Models\Journal::select('journal_date')->whereColumn('journals.id', 'journal_entries.journal_id')->limit(1))
+            ->orderBy(Journal::select('journal_date')->whereColumn('journals.id', 'journal_entries.journal_id')->limit(1))
             ->orderBy('id')
             ->get();
         $this->attachLedgerReferences($entries);
@@ -438,6 +477,7 @@ class FinancialReportService
 
         $allAccounts = $this->accountBalancesWithOpening($from, $to)->map(function ($account) {
             $account->report_balance = $this->net($account->type, $account->debit, $account->credit);
+
             return $account;
         });
         $rows = $allAccounts->groupBy('type');
@@ -466,6 +506,7 @@ class FinancialReportService
             foreach ($def['codes'] as $c) {
                 $usedAssetCodes[] = $c;
             }
+
             return $this->buildRadixLine($def, $byCode, false);
         });
 
@@ -473,6 +514,7 @@ class FinancialReportService
             foreach ($def['codes'] as $c) {
                 $usedAssetCodes[] = $c;
             }
+
             return $this->buildRadixLine($def, $byCode, false);
         });
 
@@ -501,6 +543,7 @@ class FinancialReportService
             foreach ($def['codes'] as $c) {
                 $usedLiabilityCodes[] = $c;
             }
+
             return $this->buildRadixLine($def, $byCode, false);
         });
 
@@ -530,6 +573,7 @@ class FinancialReportService
                 $line->report_balance = (string) $bal;
                 $line->ending_balance = (string) $bal;
             }
+
             return $line;
         });
 
@@ -603,7 +647,7 @@ class FinancialReportService
         $entries = JournalEntry::with(['journal', 'account'])
             ->whereIn('chart_of_account_id', $cashIds)
             ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to)->whereNull('reversal_of_id'))
-            ->orderBy(\App\Models\Journal::select('journal_date')->whereColumn('journals.id', 'journal_entries.journal_id')->limit(1))
+            ->orderBy(Journal::select('journal_date')->whereColumn('journals.id', 'journal_entries.journal_id')->limit(1))
             ->get();
 
         $groups = [
@@ -721,6 +765,7 @@ class FinancialReportService
         $costService = app(JobCostService::class);
         $openRows = $openJobs->map(function ($job) use ($costService) {
             $summary = $costService->summary($job)['all'];
+
             return (object) [
                 'id' => 'open_'.$job->id,
                 'date' => $job->job_date,
@@ -746,7 +791,7 @@ class FinancialReportService
 
         $perPage = min(100, max(5, (int) request('per_page', 10)));
         $page = (int) request('page', 1);
-        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+        $paginated = new LengthAwarePaginator(
             $all->forPage($page, $perPage),
             $all->count(),
             $perPage,

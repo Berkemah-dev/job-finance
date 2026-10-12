@@ -2,15 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\QuotationStatus;
 use App\Models\Customer;
+use App\Models\DocumentType;
 use App\Models\Job;
 use App\Models\JobCost;
+use App\Models\JobDocument;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Models\VendorTruck;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
-use App\Models\DocumentType;
-use App\Models\JobDocument;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -31,8 +33,8 @@ class JobService
                 throw ValidationException::withMessages(['job_date' => 'Tanggal job tidak dapat diubah setelah job dibuka.']);
             }
             $job->fill(Arr::only($data, ['subject', 'job_date', 'expected_completion_date', 'service_type', 'origin', 'destination', 'shipment_reference', 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address', 'pol', 'pod', 'etd', 'eta', 'vessel_voyage', 'flight_number', 'bl_number', 'hbl_number', 'awb_number', 'hawb_number', 'sk_pabean_number', 'commercial_invoice_number', 'commercial_invoice_date', 'packing_list_number', 'packing_list_date', 'invoice_issuer', 'invoice_amount', 'incoterm', 'package_count', 'gross_weight', 'volume', 'container_type', 'container_number', 'vendor_trucking_id', 'vendor_truck_id', 'customer_address_id', 'truck_plate_number', 'driver_name', 'driver_phone', 'vehicle_type', 'delivery_address', 'sales_id', 'cs_id', 'cargo_description', 'operational_notes', 'booking_reference', 'nopen', 'nopen_date', 'npe_number', 'peb_number', 'peb_date']));
-            if (!empty($job->vendor_truck_id)) {
-                $vt = \App\Models\VendorTruck::find($job->vendor_truck_id);
+            if (! empty($job->vendor_truck_id)) {
+                $vt = VendorTruck::find($job->vendor_truck_id);
                 if ($vt) {
                     $job->driver_name = $vt->driver_name;
                     $job->driver_phone = $vt->driver_phone;
@@ -85,12 +87,12 @@ class JobService
                 if ($job->quotation) {
                     $quo = $job->quotation;
                     $quoFrom = $quo->status;
-                    $quo->status = \App\Enums\QuotationStatus::Approved;
+                    $quo->status = QuotationStatus::Approved;
                     $quo->save();
                     $quo->statusHistory()->create([
                         'from_status' => $quoFrom?->value,
-                        'to_status' => \App\Enums\QuotationStatus::Approved->value,
-                        'note' => 'Job Order ' . $job->number . ' dibatalkan: ' . $data['reason'],
+                        'to_status' => QuotationStatus::Approved->value,
+                        'note' => 'Job Order '.$job->number.' dibatalkan: '.$data['reason'],
                         'user_id' => $actor->id,
                         'created_at' => now(),
                     ]);
@@ -170,12 +172,12 @@ class JobService
                 $path = $suratJalanFile->store('job-documents/'.$job->id, 'private');
                 $job->documents()->create([
                     'document_type_id' => $docType->id,
-                    'original_name'    => $suratJalanFile->getClientOriginalName(),
-                    'file_path'        => $path,
-                    'mime_type'        => $suratJalanFile->getMimeType(),
-                    'file_size'        => $suratJalanFile->getSize(),
-                    'notes'            => 'Berkas Surat Jalan diunggah saat konfirmasi DO selesai',
-                    'uploaded_by'      => $actor->id,
+                    'original_name' => $suratJalanFile->getClientOriginalName(),
+                    'file_path' => $path,
+                    'mime_type' => $suratJalanFile->getMimeType(),
+                    'file_size' => $suratJalanFile->getSize(),
+                    'notes' => 'Berkas Surat Jalan diunggah saat konfirmasi DO selesai',
+                    'uploaded_by' => $actor->id,
                 ]);
 
                 $job->load('documents.documentType');
@@ -227,12 +229,12 @@ class JobService
             $path = $file->store('job-documents/'.$job->id, 'private');
             $doc = $job->documents()->create([
                 'document_type_id' => $docType->id,
-                'original_name'    => $file->getClientOriginalName(),
-                'file_path'        => $path,
-                'mime_type'        => $file->getMimeType(),
-                'file_size'        => $file->getSize(),
-                'notes'            => $notes ?: 'Berkas Surat Jalan pengantaran / delivery',
-                'uploaded_by'      => $actor->id,
+                'original_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'notes' => $notes ?: 'Berkas Surat Jalan pengantaran / delivery',
+                'uploaded_by' => $actor->id,
             ]);
 
             $this->master->log($actor, 'job.surat_jalan_uploaded', 'Upload berkas Surat Jalan untuk '.$job->number, [
@@ -280,8 +282,10 @@ class JobService
             $cost->currency = $currency;
             $cost->exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
             $cost->quantity = $quantity->toScale(2, RoundingMode::HalfUp);
-            $cost->unit_cost = Money::checked($unitCost->toScale(2, RoundingMode::HalfUp));
-            $cost->unit_price = Money::checked($unitPrice->toScale(2, RoundingMode::HalfUp));
+            $cost->foreign_unit_cost = $currency === 'IDR' ? null : Money::checked($unitCost->toScale(2, RoundingMode::HalfUp));
+            $cost->foreign_unit_price = $currency === 'IDR' ? null : Money::checked($unitPrice->toScale(2, RoundingMode::HalfUp));
+            $cost->unit_cost = Money::checked($unitCost->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
+            $cost->unit_price = Money::checked($unitPrice->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
             $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
             $cost->notes = 'Otomatis dari quotation '.$snapshot['number'];

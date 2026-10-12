@@ -27,6 +27,7 @@
         </div>
         <input name="job_number" value="{{ request('job_number') }}" placeholder="Nomor Job" aria-label="Nomor Job">
         <input name="invoice_number" value="{{ request('invoice_number') }}" placeholder="Nomor Invoice" aria-label="Nomor Invoice">
+        <input name="pr_number" value="{{ request('pr_number') }}" placeholder="Nomor PR" aria-label="Nomor PR">
         <input name="customer" value="{{ request('customer') }}" placeholder="Nama Customer" aria-label="Nama Customer">
         <select name="payment_status" aria-label="Status pembayaran"><option value="">Semua pembayaran</option><option value="paid" @selected(request('payment_status') === 'paid')>Paid</option><option value="unpaid" @selected(request('payment_status') === 'unpaid')>Unpaid</option></select>
         <input name="cost_name" value="{{ request('cost_name') }}" placeholder="Cost Name" aria-label="Cost Name">
@@ -50,7 +51,8 @@
                     <th>Tanggal</th>
                     <th>Jurnal</th>
                     <th>Uraian</th>
-                    <th>Job / Invoice</th>
+                    <th>No. Job</th>
+                    <th>No. Invoice</th>
                     <th>Customer / Vendor</th>
                     <th>Faktur Pajak / Bupot</th>
                     <th class="money">Debit</th>
@@ -69,17 +71,46 @@
                                 {{ $entry->journal->number }}
                             @endcan
                         </td>
-                        <td>{{ $entry->description }}</td>
-                        <td><strong>{{ $entry->job_number ?? '—' }}</strong><br><small>{{ $entry->invoice_number ?? '—' }}</small></td>
-                        <td>{{ $entry->customer_name ?? '—' }}<br><small>{{ $entry->vendor_name ?? '' }}</small></td>
-                        <td>{{ $entry->tax_invoice_number ?? '—' }}<br><small>{{ $entry->withholding_document_number ?? '' }}</small></td>
+                        <td>
+                            <div>{{ $entry->description }}</div>
+                            @if(!empty($entry->cost_name) && $entry->cost_name !== $entry->description)
+                                <small class="subtle" style="color:#64748b;display:block;">Cost: {{ $entry->cost_name }}</small>
+                            @endif
+                            @if(!empty($entry->cost_number))
+                                <small class="subtle" style="color:#2563eb;display:block;">No PR: {{ $entry->cost_number }}</small>
+                            @endif
+                        </td>
+                        <td><strong>{{ $entry->job_number ?? '—' }}</strong></td>
+                        <td><strong>{{ $entry->invoice_number ?? '—' }}</strong></td>
+                        <td>
+                            @if(!empty($entry->customer_name))
+                                <span class="partner-customer"><strong>{{ $entry->customer_name }}</strong></span>
+                            @endif
+                            @if(!empty($entry->vendor_name))
+                                <span class="partner-vendor" style="color:#64748b;display:block;font-size:12px;">{{ $entry->vendor_name }}</span>
+                            @endif
+                            @if(empty($entry->customer_name) && empty($entry->vendor_name))
+                                —
+                            @endif
+                        </td>
+                        <td>
+                            @if(!empty($entry->tax_invoice_number))
+                                <span title="Faktur Pajak" style="font-weight:600;display:block;">NSFP: {{ $entry->tax_invoice_number }}</span>
+                            @endif
+                            @if(!empty($entry->withholding_document_number))
+                                <span title="Bukti Potong" style="color:#059669;display:block;font-size:12px;">Bupot: {{ $entry->withholding_document_number }}</span>
+                            @endif
+                            @if(empty($entry->tax_invoice_number) && empty($entry->withholding_document_number))
+                                —
+                            @endif
+                        </td>
                         <td class="money">{{ \App\Support\Money::format($entry->debit) }}</td>
                         <td class="money">{{ \App\Support\Money::format($entry->credit) }}</td>
                         <td class="money">{{ \App\Support\Money::format($entry->running_balance) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9">
+                        <td colspan="10">
                             <div class="empty-state">
                                 <x-icon name="chart"/>
                                 <h3>Tidak ada mutasi</h3>

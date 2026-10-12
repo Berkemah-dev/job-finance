@@ -6,7 +6,6 @@ use App\Http\Requests\ReportFilterRequest;
 use App\Models\ChartOfAccount;
 use App\Services\FinancialReportService;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
@@ -23,7 +22,7 @@ class ReportController extends Controller
         $accounts = ChartOfAccount::withTrashed()->orderBy('code')->get();
         $accountId = (int) ($request->input('account_id') ?: $accounts->first()?->id);
 
-        return view('reports.ledger', $service->ledger($accountId, $from, $to, $request->only(['payment_status', 'customer', 'job_number', 'invoice_number', 'cost_name', 'vendor'])) + compact('accounts', 'from', 'to'));
+        return view('reports.ledger', $service->ledger($accountId, $from, $to, $request->only(['payment_status', 'customer', 'job_number', 'invoice_number', 'cost_name', 'pr_number', 'vendor'])) + compact('accounts', 'from', 'to'));
     }
 
     public function ledgerPdf(ReportFilterRequest $request, FinancialReportService $service)
