@@ -279,9 +279,9 @@ class FinancialReportService
     /** Tambahkan referensi Job, Invoice, Customer, Vendor, faktur pajak dan Bupot pada mutasi Buku Besar. */
     private function attachLedgerReferences(Collection $entries): void
     {
-        $costs = JobCost::with(['job:id,number,customer_id', 'job.customer:id,name', 'vendor:id,name'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === JobCost::class)->pluck('journal.source_id'))->get()->keyBy('id');
-        $jobs = Job::with(['customer:id,name', 'invoice:id,job_id,number,status,tax_invoice_number'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Job::class)->pluck('journal.source_id'))->get()->keyBy('id');
-        $payments = Payment::with('invoice.job.customer')->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Payment::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        $costs = JobCost::with(['job:id,number,customer_id,service_type', 'job.customer:id,name', 'vendor:id,name'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === JobCost::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        $jobs = Job::with(['customer:id,name', 'invoice:id,job_id,number,subtotal,tax,total,status,tax_invoice_number'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Job::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        $payments = Payment::with(['invoice:id,job_id,number,subtotal,tax,total,status,tax_invoice_number', 'invoice.job:id,number,service_type,customer_id', 'invoice.job.customer:id,name'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Payment::class)->pluck('journal.source_id'))->get()->keyBy('id');
         foreach ($entries as $entry) {
             $entry->job_number = null;
             $entry->invoice_number = null;
@@ -292,6 +292,9 @@ class FinancialReportService
             $entry->tax_invoice_number = null;
             $entry->withholding_document_number = null;
             $entry->payment_status = null;
+            $entry->service_type = null;
+            $entry->base_amount = null;
+            $entry->tax_rate = null;
             if ($entry->journal->source_type === JobCost::class && ($cost = $costs->get($entry->journal->source_id))) {
                 $entry->job_number = $cost->job?->number;
                 $entry->cost_number = $cost->number;
@@ -300,12 +303,24 @@ class FinancialReportService
                 $entry->cost_name = $cost->description;
                 $entry->withholding_document_number = $cost->withholding_document_number;
                 $entry->payment_status = $cost->paid_at ? 'paid' : 'unpaid';
+                $entry->service_type = $cost->job?->service_type;
+                $entry->base_amount = $cost->total_cost;
+                if (! empty($cost->pph23_amount) && (float) $cost->total_cost > 0) {
+                    $entry->tax_rate = round(((float) $cost->pph23_amount / (float) $cost->total_cost) * 100, 1).'%';
+                }
             } elseif ($entry->journal->source_type === Job::class && ($job = $jobs->get($entry->journal->source_id))) {
                 $entry->job_number = $job->number;
                 $entry->customer_name = $job->customer?->name;
                 $entry->invoice_number = $job->invoice?->number;
                 $entry->tax_invoice_number = $job->invoice?->tax_invoice_number;
                 $entry->payment_status = $job->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+                $entry->service_type = $job->service_type;
+                if ($job->invoice) {
+                    $entry->base_amount = $job->invoice->subtotal;
+                    if ((float) $job->invoice->tax > 0 && (float) $job->invoice->subtotal > 0) {
+                        $entry->tax_rate = round(((float) $job->invoice->tax / (float) $job->invoice->subtotal) * 100, 1).'%';
+                    }
+                }
             } elseif ($entry->journal->source_type === Payment::class && ($payment = $payments->get($entry->journal->source_id))) {
                 $entry->job_number = $payment->invoice?->job?->number;
                 $entry->invoice_number = $payment->invoice?->number;
@@ -313,6 +328,13 @@ class FinancialReportService
                 $entry->tax_invoice_number = $payment->invoice?->tax_invoice_number;
                 $entry->withholding_document_number = $payment->withholding_document_number;
                 $entry->payment_status = $payment->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+                $entry->service_type = $payment->invoice?->job?->service_type;
+                if ($payment->invoice) {
+                    $entry->base_amount = $payment->invoice->subtotal;
+                    if ((float) $payment->invoice->tax > 0 && (float) $payment->invoice->subtotal > 0) {
+                        $entry->tax_rate = round(((float) $payment->invoice->tax / (float) $payment->invoice->subtotal) * 100, 1).'%';
+                    }
+                }
             }
         }
     }
