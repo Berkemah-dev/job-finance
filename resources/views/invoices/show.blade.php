@@ -583,6 +583,7 @@
                     <input type="text" inputmode="decimal" id="pay_pph23" name="pph23_amount" value="{{ old('pph23_amount', '') }}" placeholder="0" data-currency-input style="width: 140px; text-align: right; border: 1px solid #d97706; background: #fef3c7; padding: 5px 10px; font-size: 13px; font-weight: 700; border-radius: 3px; font-family: monospace; color: #78350f;">
                     <span style="border: 1px solid #94a3b8; background: #f8fafc; padding: 4px 10px; font-size: 12px; font-weight: bold; border-radius: 3px; color: #334155;">IDR</span>
                     <small style="color: #64748b; font-size: 11px; margin-left: 6px;">(Auto jurnal ke COA PPH 23 Dibayar Dimuka)</small>
+                    <input type="text" name="withholding_document_number" value="" placeholder="No. Bukti Potong" maxlength="100" style="width: 170px; border: 1px solid #94a3b8; padding: 5px 8px; font-size: 12px; border-radius: 3px;">
                 </div>
             </div>
 

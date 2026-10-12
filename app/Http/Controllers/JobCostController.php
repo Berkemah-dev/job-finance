@@ -58,7 +58,7 @@ class JobCostController extends Controller
     {
         $cost = $service->save($job, null, $request->validated(), $request->user());
 
-        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Draft biaya berhasil disimpan. Periksa sebelum finalisasi.');
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', $cost->status === 'final' ? 'Biaya Finance tersimpan dan jurnal hutang otomatis dibuat.' : 'Biaya dari quotation tersimpan sebagai Draft. Finalisasi satu per satu setelah diperiksa Finance.');
     }
 
     public function show(Job $job, JobCost $cost)
@@ -103,7 +103,7 @@ class JobCostController extends Controller
     {
         $cost = $service->save($job, $cost, $request->validated(), $request->user());
 
-        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Draft biaya berhasil diperbarui.');
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya berhasil diperbarui.');
     }
 
     public function destroy(CostVersionRequest $request, Job $job, JobCost $cost, JobCostService $service)
@@ -160,6 +160,7 @@ class JobCostController extends Controller
             'paid_date' => ['required', 'date', 'before_or_equal:today'],
             'payment_account_id' => ['required', 'integer', 'exists:chart_of_accounts,id'],
             'pph23_amount' => ['nullable', 'numeric', 'min:0', 'max:'.$cost->total_cost],
+            'withholding_document_number' => ['nullable', 'string', 'max:100'],
         ]);
         $service->markPaid($job, $cost, $data, $request->user());
 

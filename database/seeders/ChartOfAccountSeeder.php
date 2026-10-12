@@ -90,6 +90,9 @@ class ChartOfAccountSeeder extends Seeder
                 ['code' => '42000', 'name' => 'Pendapatan Ekspor', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
                 ['code' => '43000', 'name' => 'Pendapatan Domestic', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
                 ['code' => '44000', 'name' => 'Pendapatan Lain-Lain', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
+                ['code' => '41100', 'name' => 'Pendapatan Impor Unclosed', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
+                ['code' => '42100', 'name' => 'Pendapatan Ekspor Unclosed', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
+                ['code' => '43100', 'name' => 'Pendapatan Domestic Unclosed', 'type' => 'revenue', 'parent_code' => '4', 'level' => 2],
 
                 // LEVEL 1: 5 - HARGA POKOK PENJUALAN
                 ['code' => '5', 'name' => 'HARGA POKOK PENJUALAN', 'type' => 'cogs', 'parent_code' => null, 'level' => 1],
@@ -97,6 +100,9 @@ class ChartOfAccountSeeder extends Seeder
                 ['code' => '52000', 'name' => 'HPP Ekspor', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
                 ['code' => '53000', 'name' => 'HPP Domestic', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
                 ['code' => '5400', 'name' => 'HPP SEWA', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
+                ['code' => '51100', 'name' => 'HPP Impor Unclosed', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
+                ['code' => '52100', 'name' => 'HPP Ekspor Unclosed', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
+                ['code' => '53100', 'name' => 'HPP Domestic Unclosed', 'type' => 'cogs', 'parent_code' => '5', 'level' => 2],
 
                 // LEVEL 1: 6 - BIAYA/PENGELUARAN
                 ['code' => '6', 'name' => 'BIAYA/PENGELUARAN', 'type' => 'expense', 'parent_code' => null, 'level' => 1],

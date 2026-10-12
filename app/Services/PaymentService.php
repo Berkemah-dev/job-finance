@@ -57,6 +57,7 @@ class PaymentService
                 'payment_date' => $data['payment_date'],
                 'amount' => (string) $amount,
                 'pph23_amount' => (string) $pph23Amount,
+                'withholding_document_number' => $data['withholding_document_number'] ?? null,
                 'currency' => $data['currency'] ?? $invoice->currency ?? 'IDR',
                 'exchange_rate' => $data['exchange_rate'] ?? $invoice->exchange_rate ?? 1,
                 'deposit_account_id' => $depositAccount->id,

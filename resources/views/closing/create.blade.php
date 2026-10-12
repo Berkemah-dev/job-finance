@@ -18,7 +18,7 @@
 @elseif($draftCount > 0)
     <div class="info-note" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; margin-bottom: 16px; border-radius: 8px; padding: 12px 16px;">
         <x-icon name="check" style="width: 16px; height: 16px; display: inline-block; vertical-align: text-bottom; margin-right: 4px;"/>
-        Terdapat <strong>{{ $draftCount }}</strong> biaya job berstatus <em>Draft</em>. Seluruh biaya Draft akan <strong>otomatis difinalisasi</strong> saat closing dilakukan.
+        Terdapat <strong>{{ $draftCount }}</strong> biaya job berstatus <em>Draft</em>. Finalisasi masing-masing biaya terlebih dahulu dari menu Biaya Job sebelum Closing dilakukan.
     </div>
 @endif
 
@@ -69,7 +69,7 @@
                             <td>
                                 <span class="status-badge status-{{ $cost->status }}">{{ config('operations.cost_statuses.'.$cost->status) ?? ucfirst($cost->status) }}</span>
                                 @if($cost->status === 'draft')
-                                    <br><small style="color: #0284c7; font-size: 10px;">Auto-finalisasi</small>
+                                    <br><small style="color: #0284c7; font-size: 10px;">Perlu finalisasi</small>
                                 @endif
                             </td>
                         </tr>

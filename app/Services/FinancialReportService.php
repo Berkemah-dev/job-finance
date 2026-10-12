@@ -6,6 +6,8 @@ use App\Models\ChartOfAccount;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
 use App\Models\JobCost;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Support\Money;
@@ -44,7 +46,7 @@ class FinancialReportService
         return compact('rows', 'totalDebit', 'totalCredit');
     }
 
-    public function ledger(int $accountId, string $from, string $to): array
+    public function ledger(int $accountId, string $from, string $to, array $filters = []): array
     {
         $account = ChartOfAccount::withTrashed()->findOrFail($accountId);
         $openingRow = JournalEntry::where('chart_of_account_id', $accountId)
@@ -63,11 +65,21 @@ class FinancialReportService
             )
             ->orderBy('id')
             ->get();
+        $this->attachLedgerReferences($allEntries);
         foreach ($allEntries as $entry) {
             $movement = $this->net($account->type, $entry->debit, $entry->credit);
             $balance = $balance->plus($movement);
             $entry->running_balance = (string) $balance;
         }
+        $allEntries = $allEntries->filter(function ($entry) use ($filters) {
+            if (! empty($filters['payment_status']) && ($entry->payment_status ?? '') !== $filters['payment_status']) return false;
+            if (! empty($filters['customer']) && ! str_contains(mb_strtolower((string) ($entry->customer_name ?? '')), mb_strtolower($filters['customer']))) return false;
+            if (! empty($filters['job_number']) && ! str_contains(mb_strtolower((string) ($entry->job_number ?? '')), mb_strtolower($filters['job_number']))) return false;
+            if (! empty($filters['invoice_number']) && ! str_contains(mb_strtolower((string) ($entry->invoice_number ?? '')), mb_strtolower($filters['invoice_number']))) return false;
+            if (! empty($filters['cost_name']) && ! str_contains(mb_strtolower((string) ($entry->cost_name ?? '')), mb_strtolower($filters['cost_name']))) return false;
+            if (! empty($filters['vendor']) && ! str_contains(mb_strtolower((string) ($entry->vendor_name ?? '')), mb_strtolower($filters['vendor']))) return false;
+            return true;
+        })->values();
 
         $page = LengthAwarePaginator::resolveCurrentPage();
         $perPage = min(100, max(5, (int) request('per_page', 10)));
@@ -81,6 +93,25 @@ class FinancialReportService
         );
 
         return compact('account', 'entries', 'opening') + ['closing' => (string) $balance];
+    }
+
+
+    /** Tambahkan referensi Job, Invoice, Customer, Vendor, faktur pajak dan Bupot pada mutasi Buku Besar. */
+    private function attachLedgerReferences(Collection $entries): void
+    {
+        $costs = JobCost::with(['job:id,number,customer_id', 'job.customer:id,name', 'vendor:id,name'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === JobCost::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        $jobs = Job::with(['customer:id,name', 'invoice:id,job_id,number,status,tax_invoice_number'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Job::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        $payments = Payment::with('invoice.job.customer')->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Payment::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        foreach ($entries as $entry) {
+            $entry->job_number = null; $entry->invoice_number = null; $entry->customer_name = null; $entry->vendor_name = null; $entry->cost_name = null; $entry->tax_invoice_number = null; $entry->withholding_document_number = null; $entry->payment_status = null;
+            if ($entry->journal->source_type === JobCost::class && ($cost = $costs->get($entry->journal->source_id))) {
+                $entry->job_number = $cost->job?->number; $entry->customer_name = $cost->job?->customer?->name; $entry->vendor_name = $cost->vendor?->name ?? $cost->payee; $entry->cost_name = $cost->description; $entry->withholding_document_number = $cost->withholding_document_number; $entry->payment_status = $cost->paid_at ? 'paid' : 'unpaid';
+            } elseif ($entry->journal->source_type === Job::class && ($job = $jobs->get($entry->journal->source_id))) {
+                $entry->job_number = $job->number; $entry->customer_name = $job->customer?->name; $entry->invoice_number = $job->invoice?->number; $entry->tax_invoice_number = $job->invoice?->tax_invoice_number; $entry->payment_status = $job->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+            } elseif ($entry->journal->source_type === Payment::class && ($payment = $payments->get($entry->journal->source_id))) {
+                $entry->job_number = $payment->invoice?->job?->number; $entry->invoice_number = $payment->invoice?->number; $entry->customer_name = $payment->invoice?->job?->customer?->name ?? ($payment->invoice?->customer_snapshot['name'] ?? null); $entry->tax_invoice_number = $payment->invoice?->tax_invoice_number; $entry->withholding_document_number = $payment->withholding_document_number; $entry->payment_status = $payment->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+            }
+        }
     }
 
     public function ledgerExport(int $accountId, string $from, string $to): array
@@ -98,6 +129,7 @@ class FinancialReportService
             ->orderBy(\App\Models\Journal::select('journal_date')->whereColumn('journals.id', 'journal_entries.journal_id')->limit(1))
             ->orderBy('id')
             ->get();
+        $this->attachLedgerReferences($entries);
         foreach ($entries as $entry) {
             $balance = $balance->plus($this->net($account->type, $entry->debit, $entry->credit));
             $entry->running_balance = (string) $balance;

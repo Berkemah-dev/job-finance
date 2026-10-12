@@ -4,8 +4,8 @@
 <div class="page-heading">
     <div>
         <p class="eyebrow">INVOICE PENAGIHAN</p>
-        <h1>Buat Invoice Pra-Closing</h1>
-        <p>Pembuatan invoice penagihan ke customer saat Job masih berstatus <strong>Open</strong></p>
+        <h1>Finalisasi Invoice</h1>
+        <p>Finalisasi invoice dan jurnal Unclose saat Job masih berstatus <strong>Open</strong></p>
     </div>
     <div class="action-group">
         <a class="button button-secondary" href="{{ $job ? route('jobs.show', $job) : route('invoices.index') }}">← Kembali</a>
@@ -84,7 +84,7 @@
             </div>
         @endif
 
-        <form class="data-form" method="POST" action="{{ route('invoices.store') }}" data-confirm="Terbitkan invoice sekarang? Job akan tetap berstatus OPEN.">
+        <form class="data-form" method="POST" action="{{ route('invoices.store') }}" data-confirm="Finalisasi invoice sekarang? Jurnal Piutang, Pendapatan Unclose, HPP Unclose, dan PPN akan dibuat. Job tetap OPEN.">
             @csrf
             <input type="hidden" name="job_id" value="{{ $job->id }}">
             <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
@@ -135,7 +135,7 @@
             <div class="form-actions" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 12.5px; color: #64748b;">Job order <strong>{{ $job->number }}</strong> akan tetap berstatus Open.</span>
                 <button type="submit" class="button button-primary">
-                    <x-icon name="check"/> Terbitkan Invoice Pra-Closing
+                    <x-icon name="check"/> Finalisasi Invoice
                 </button>
             </div>
         </form>

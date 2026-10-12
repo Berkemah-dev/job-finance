@@ -25,8 +25,14 @@
             <span class="date-sep">→</span>
             <input type="date" name="to" value="{{ $to }}" aria-label="Sampai tanggal" title="Sampai tanggal">
         </div>
+        <input name="job_number" value="{{ request('job_number') }}" placeholder="Nomor Job" aria-label="Nomor Job">
+        <input name="invoice_number" value="{{ request('invoice_number') }}" placeholder="Nomor Invoice" aria-label="Nomor Invoice">
+        <input name="customer" value="{{ request('customer') }}" placeholder="Nama Customer" aria-label="Nama Customer">
+        <select name="payment_status" aria-label="Status pembayaran"><option value="">Semua pembayaran</option><option value="paid" @selected(request('payment_status') === 'paid')>Paid</option><option value="unpaid" @selected(request('payment_status') === 'unpaid')>Unpaid</option></select>
+        <input name="cost_name" value="{{ request('cost_name') }}" placeholder="Cost Name" aria-label="Cost Name">
+        <input name="vendor" value="{{ request('vendor') }}" placeholder="Vendor" aria-label="Vendor">
         <button class="button button-primary">Terapkan</button>
-        <a class="button button-secondary" target="_blank" href="{{ route('reports.ledger.pdf', ['account_id' => $account->id, 'from' => $from, 'to' => $to]) }}"><x-icon name="printer"/> Export PDF</a>
+        <a class="button button-secondary" target="_blank" href="{{ route('reports.ledger.pdf', request()->query() + ['account_id' => $account->id, 'from' => $from, 'to' => $to]) }}"><x-icon name="printer"/> Export PDF</a>
     </form>
 
     <div class="panel-heading">
@@ -44,6 +50,9 @@
                     <th>Tanggal</th>
                     <th>Jurnal</th>
                     <th>Uraian</th>
+                    <th>Job / Invoice</th>
+                    <th>Customer / Vendor</th>
+                    <th>Faktur Pajak / Bupot</th>
                     <th class="money">Debit</th>
                     <th class="money">Kredit</th>
                     <th class="money">Saldo</th>
@@ -61,13 +70,16 @@
                             @endcan
                         </td>
                         <td>{{ $entry->description }}</td>
+                        <td><strong>{{ $entry->job_number ?? '—' }}</strong><br><small>{{ $entry->invoice_number ?? '—' }}</small></td>
+                        <td>{{ $entry->customer_name ?? '—' }}<br><small>{{ $entry->vendor_name ?? '' }}</small></td>
+                        <td>{{ $entry->tax_invoice_number ?? '—' }}<br><small>{{ $entry->withholding_document_number ?? '' }}</small></td>
                         <td class="money">{{ \App\Support\Money::format($entry->debit) }}</td>
                         <td class="money">{{ \App\Support\Money::format($entry->credit) }}</td>
                         <td class="money">{{ \App\Support\Money::format($entry->running_balance) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="9">
                             <div class="empty-state">
                                 <x-icon name="chart"/>
                                 <h3>Tidak ada mutasi</h3>

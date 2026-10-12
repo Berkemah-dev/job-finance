@@ -54,6 +54,7 @@ class PaymentRequest extends FormRequest
             'payment_date' => ['required', 'date', 'after_or_equal:'.$this->route('invoice')->invoice_date->format('Y-m-d'), 'before_or_equal:today'],
             'amount' => ['required', 'numeric', 'min:0.01', 'regex:/^\d{1,16}(\.\d{1,2})?$/'],
             'pph23_amount' => ['nullable', 'numeric', 'min:0', 'regex:/^\d{1,16}(\.\d{1,2})?$/'],
+            'withholding_document_number' => ['nullable', 'string', 'max:100'],
             'currency' => ['nullable', 'string', 'max:3'],
             'exchange_rate' => ['nullable', 'numeric', 'min:0.0001'],
             'deposit_account' => ['required', 'string'],

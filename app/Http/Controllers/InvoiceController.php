@@ -79,7 +79,7 @@ class InvoiceController extends Controller
         $job = \App\Models\Job::findOrFail($data['job_id']);
         $invoice = $service->createInvoiceForJob($job, $data, $request->user());
 
-        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice pra-closing berhasil dibuat. Job tetap berstatus Open.');
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice berhasil difinalisasi dan dijurnal ke akun Unclose. Job tetap berstatus Open.');
     }
 
     public function coretaxIndex(Request $request)

@@ -88,6 +88,8 @@
                 <small class="field-hint" style="color:var(--text-muted, #64748b);font-size:12px;margin-top:4px;display:block;">
                     Jika ada pemotongan pajak PPh 23 jasa (biasanya 2%), masukkan nominal di sini. Jika tidak ada, biarkan 0.
                 </small>
+                <label for="withholding_document_number" style="margin-top:12px;display:block;">Nomor Bukti Potong (Bupot)</label>
+                <input id="withholding_document_number" name="withholding_document_number" value="{{ old('withholding_document_number', $cost->withholding_document_number) }}" maxlength="100" placeholder="Isi bila Bupot sudah tersedia">
             </div>
         </div>
         <div class="form-actions" style="margin-top:20px;">
