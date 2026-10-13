@@ -5,7 +5,7 @@
     <div>
         <p class="eyebrow">INVOICE PENAGIHAN</p>
         <h1>Finalisasi Invoice</h1>
-        <p>Finalisasi invoice dan jurnal Unclose saat Job masih berstatus <strong>Open</strong></p>
+        <p>Finalisasi invoice dan jurnal Unclose saat Job masih berstatus <strong>Open</strong>. Biaya quotation tidak harus sudah Finance Confirmed.</p>
     </div>
     <div class="action-group">
         <a class="button button-secondary" href="{{ $job ? route('jobs.show', $job) : route('invoices.index') }}">← Kembali</a>
@@ -67,6 +67,7 @@
                             <th>Nomor / Tanggal</th>
                             <th>Uraian / Tipe</th>
                             <th>Jumlah</th>
+                            <th>Kurs Tagih</th>
                             <th class="money">Total Jual</th>
                         </tr>
                     </thead>
@@ -76,6 +77,7 @@
                                 <td><strong>{{ $cost->number }}</strong><br><small class="muted-cell">{{ $cost->cost_date->format('d/m/Y') }}</small></td>
                                 <td><strong>{{ $cost->description }}</strong><br><small class="badge-pill">{{ ucfirst($cost->type) }}</small></td>
                                 <td>{{ \App\Support\Money::format($cost->quantity) }} {{ $cost->unit }}</td>
+                                <td>@if(($cost->currency ?? 'IDR') !== 'IDR')<strong>{{ $cost->currency }}</strong><br><small class="muted-cell">{{ \App\Support\Money::format($cost->price_exchange_rate ?? $cost->exchange_rate) }}</small>@else<small class="muted-cell">IDR · 1</small>@endif</td>
                                 <td class="money">Rp {{ \App\Support\Money::format($cost->type === 'temporary' ? $cost->total_cost : $cost->total_price) }}</td>
                             </tr>
                         @endforeach
@@ -124,12 +126,9 @@
                     </span>
                 </div>
 
-                @if(($job->quotation_snapshot['currency'] ?? 'IDR') !== 'IDR')
-                    <div class="field span-2">
-                        <label>Kurs Override Valas (opsional)</label>
-                        <input type="number" name="exchange_rate_override" min="0.0001" step="0.0001" value="{{ old('exchange_rate_override') }}" placeholder="Default {{ $job->quotation_snapshot['exchange_rate'] ?? 1 }}">
-                    </div>
-                @endif
+                <div class="field span-2">
+                    <div class="info-note" style="margin:0;"><strong>Kurs Tagih otomatis.</strong> Kurs setiap baris tagihan diambil dari Biaya Job dan diteruskan ke invoice. Invoice dapat dibuat saat biaya quotation masih Draft; perubahan biaya akan memperbarui invoice selama belum ada pembayaran.</div>
+                </div>
             </div>
 
             <div class="form-actions" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">

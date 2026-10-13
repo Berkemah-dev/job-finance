@@ -25,17 +25,28 @@ class JobCostPolicy
 
     public function update(User $user, JobCost $cost): bool
     {
-        return $this->create($user, $cost->job) && $cost->status === 'draft' && ! $cost->trashed();
+        // Invoice pra-closing masih dapat disesuaikan dari Biaya Job selama
+        // invoice tersebut belum mempunyai pembayaran.
+        return $this->create($user, $cost->job)
+            && in_array($cost->status, ['draft', 'final'], true)
+            && ! $cost->paid_at
+            && ! $cost->job->invoice()->where(fn ($invoice) => $invoice->where('paid_amount', '>', 0)->orWhereHas('payments'))->exists()
+            && ! $cost->trashed();
     }
 
     public function delete(User $user, JobCost $cost): bool
     {
-        return $this->update($user, $cost);
+        return $this->update($user, $cost) && $cost->status === 'draft' && ! $cost->job->invoice()->exists();
     }
 
     public function finalize(User $user, JobCost $cost): bool
     {
-        return $this->update($user, $cost);
+        // Konfirmasi Finance tetap dapat dilakukan setelah vendor dibayar.
+        // Yang dilarang setelah PAID hanya perubahan nominal biaya.
+        return $this->viewAny($user)
+            && $cost->job->status === 'open'
+            && $cost->status === 'draft'
+            && ! $cost->trashed();
     }
 
     public function approve(User $user, JobCost $cost): bool

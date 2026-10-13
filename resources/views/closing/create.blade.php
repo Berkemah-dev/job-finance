@@ -98,6 +98,7 @@
                 <input type="date" name="due_date" value="{{ old('due_date', today()->addDays(30)->toDateString()) }}" required>
             </div>
 
+            @if(! $job->invoice)
             <div class="field span-2" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 16px;">
                 <label style="font-size: 13.5px; font-weight: 700; color: #166534; display: flex; justify-content: space-between; align-items: center;">
                     <span>Input PPN (Rp) <span class="required">*</span></span>
@@ -119,21 +120,24 @@
                     💡 <em>PPN Keluaran akan otomatis diposting ke COA 28000 (PPN Keluaran) dan menambah tagihan Piutang Customer (COA 1103).</em>
                 </small>
             </div>
-            @if(($job->quotation_snapshot['currency'] ?? 'IDR') !== 'IDR')
-                <div class="field">
-                    <label>Kurs override (opsional)</label>
-                    <input type="number" name="exchange_rate_override" min="0.000001" max="999999999.99" step=".01" value="{{ old('exchange_rate_override') }}" placeholder="Default {{ $job->quotation_snapshot['exchange_rate'] ?? 1 }}" title="Ganti kurs quotation untuk invoice ini; nilai buku tetap dalam Rupiah.">
-                </div>
+            @else
+            <div class="field span-2">
+                <div class="info-note" style="margin:0;"><strong>PPN mengikuti Invoice {{ $job->invoice->number }}.</strong> Nilai PPN Rp {{ \App\Support\Money::format($job->invoice->tax) }} sudah tercatat pada invoice dan tidak perlu diinput kembali saat Closing Job.</div>
+            </div>
             @endif
+            <div class="field span-2">
+                <div class="info-note" style="margin:0;"><strong>Kurs Tagih otomatis.</strong> Invoice menggunakan kurs tagih pada setiap Biaya Job. Tidak perlu memasukkan kurs kembali saat Closing Job.</div>
+            </div>
         </div>
         <div class="form-actions">
             <button class="button button-primary" @disabled($job->costs()->count() === 0 && empty($job->quotation_snapshot['items']))>
-                <x-icon name="check"/> Close Job dan Buat Invoice
+                <x-icon name="check"/> {{ $job->invoice ? 'Close Job' : 'Close Job dan Buat Invoice' }}
             </button>
         </div>
     </form>
 </section>
 
+@if(! $job->invoice)
 <script>
 function calculatePpnClosing(rate) {
     const provisionSell = parseFloat("{{ $summary['provision_sell'] }}") || 0;
@@ -141,4 +145,5 @@ function calculatePpnClosing(rate) {
     document.getElementById('tax_input_closing').value = ppn.toFixed(2);
 }
 </script>
+@endif
 @endsection

@@ -58,7 +58,7 @@ class JobCostController extends Controller
     {
         $cost = $service->save($job, null, $request->validated(), $request->user());
 
-        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', $cost->status === 'final' ? 'Biaya Finance tersimpan dan jurnal hutang otomatis dibuat.' : 'Biaya dari quotation tersimpan sebagai Draft. Finalisasi satu per satu setelah diperiksa Finance.');
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', $cost->status === 'final' ? 'Biaya Finance tersimpan dan jurnal hutang otomatis dibuat. Biaya tetap dapat disesuaikan selama invoice belum memiliki pembayaran.' : 'Biaya dari quotation tersimpan sebagai Draft. Konfirmasi Finance satu per satu setelah diperiksa.');
     }
 
     public function show(Job $job, JobCost $cost)
@@ -117,7 +117,7 @@ class JobCostController extends Controller
     {
         $service->finalize($job, $cost, $request->validated(), $request->user());
 
-        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya berhasil difinalisasi dan dikunci.');
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya sudah dikonfirmasi Finance. Biaya masih dapat disesuaikan selama invoice belum memiliki pembayaran.');
     }
 
     public function approve(CostVersionRequest $request, Job $job, JobCost $cost, JobCostService $service)
@@ -164,6 +164,6 @@ class JobCostController extends Controller
         ]);
         $service->markPaid($job, $cost, $data, $request->user());
 
-        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya ditandai PAID dan jurnal pembayaran dibuat.');
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya ditandai PAID dan jurnal pembayaran dibuat. Konfirmasi Finance dapat dilakukan kemudian sebelum Finalisasi Invoice.');
     }
 }

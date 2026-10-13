@@ -73,7 +73,6 @@ class InvoiceController extends Controller
             'due_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:invoice_date'],
             'tax' => ['required', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
             'funding_account' => ['nullable', 'in:cash,bank'],
-            'exchange_rate_override' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,4})?$/', 'gt:0'],
         ]);
 
         $job = \App\Models\Job::findOrFail($data['job_id']);

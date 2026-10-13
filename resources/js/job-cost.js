@@ -129,24 +129,33 @@ if (form) {
         const cost = form.querySelector('[data-unit-cost]');
         const price = form.querySelector('[data-unit-price]');
         const currency = form.querySelector('[data-cost-currency]');
-        const rate = form.querySelector('[data-exchange-rate]');
+        const costRate = form.querySelector('[data-cost-exchange-rate]');
+        const priceRate = form.querySelector('[data-price-exchange-rate]');
         const currencyCode = currency.value || 'IDR';
         const isIdr = currencyCode === 'IDR';
-        rate.readOnly = isIdr;
-        if (isIdr) rate.value = '1';
+        costRate.readOnly = isIdr;
+        priceRate.readOnly = isIdr || temporary;
+        if (isIdr) {
+            costRate.value = '1';
+            priceRate.value = '1';
+        }
         form.querySelectorAll('[data-currency-code]').forEach(el => { el.textContent = currencyCode; });
-        const rateHelp = form.querySelector('[data-exchange-help]');
-        if (rateHelp) rateHelp.textContent = isIdr ? 'Untuk IDR, kurs otomatis 1.' : `Nilai 1 ${currencyCode} dalam Rupiah. Rate mingguan aktif menjadi nilai awal dan masih dapat diubah.`;
+        const costRateHelp = form.querySelector('[data-cost-exchange-help]');
+        const priceRateHelp = form.querySelector('[data-price-exchange-help]');
+        if (costRateHelp) costRateHelp.textContent = isIdr ? 'Untuk IDR, kurs otomatis 1.' : `Nilai 1 ${currencyCode} untuk modal dalam Rupiah.`;
+        if (priceRateHelp) priceRateHelp.textContent = isIdr ? 'Untuk IDR, kurs otomatis 1.' : `Nilai 1 ${currencyCode} untuk tagihan dalam Rupiah.`;
         price.readOnly = temporary;
         if (temporary) {
             price.value = cost.value;
+            priceRate.value = costRate.value;
         }
         const quantity = scaled(form.querySelector('[data-quantity]').value);
-        const rateScaled = isIdr ? 10000n : scaled(rate.value, 4);
+        const costRateScaled = isIdr ? 10000n : scaled(costRate.value, 4);
+        const priceRateScaled = isIdr ? 10000n : scaled(priceRate.value, 4);
         const sourceCost = scaled(cost.value);
         const sourcePrice = scaled(price.value);
-        const idrUnitCost = (sourceCost * rateScaled + 5000n) / 10000n;
-        const idrUnitPrice = (sourcePrice * rateScaled + 5000n) / 10000n;
+        const idrUnitCost = (sourceCost * costRateScaled + 5000n) / 10000n;
+        const idrUnitPrice = (sourcePrice * priceRateScaled + 5000n) / 10000n;
         const totalCost = (quantity * idrUnitCost + 50n) / 100n;
         const totalPrice = (quantity * idrUnitPrice + 50n) / 100n;
         form.querySelector('[data-preview-cost]').textContent = rupiah(totalCost);
@@ -156,27 +165,30 @@ if (form) {
         if (sourcePreview) {
             sourcePreview.textContent = isIdr
                 ? 'Nilai disimpan dan dijurnal dalam IDR.'
-                : `Sumber: modal ${sourceMoney(sourceCost, currencyCode)} × kurs ${rate.value || '0'} = ${rupiah(idrUnitCost)} per unit.`;
+                : `Modal: ${sourceMoney(sourceCost, currencyCode)} × kurs ${costRate.value || '0'} = ${rupiah(idrUnitCost)}. Tagih: ${sourceMoney(sourcePrice, currencyCode)} × kurs ${priceRate.value || '0'} = ${rupiah(idrUnitPrice)} per unit.`;
         }
     };
 
     const weeklyRates = window.__weeklyRates || {};
     const existingCost = form.dataset.costExisting === 'true';
     const currency = form.querySelector('[data-cost-currency]');
-    const rate = form.querySelector('[data-exchange-rate]');
+    const costRate = form.querySelector('[data-cost-exchange-rate]');
+    const priceRate = form.querySelector('[data-price-exchange-rate]');
     const applyWeeklyRate = () => {
         const currencyCode = currency.value || 'IDR';
         if (currencyCode === 'IDR') {
-            rate.value = '1';
+            costRate.value = '1';
+            priceRate.value = '1';
             return;
         }
         const weeklyRate = weeklyRates[currencyCode];
         if (weeklyRate !== undefined && weeklyRate !== null) {
-            rate.value = String(weeklyRate);
+            costRate.value = String(weeklyRate);
+            priceRate.value = String(weeklyRate);
         }
     };
 
-    if (!existingCost && currency.value !== 'IDR' && (!rate.value || rate.value === '1')) {
+    if (!existingCost && currency.value !== 'IDR' && (!costRate.value || costRate.value === '1') && (!priceRate.value || priceRate.value === '1')) {
         applyWeeklyRate();
     }
     currency.addEventListener('change', () => {

@@ -11,7 +11,12 @@
     $reimbursementAmount = (float) $reimbursements->sum('amount');
     $chargesTax = (float) $invoice->tax;
     $chargesTotal = $chargesAmount + $chargesTax;
-    $hasForeignCurrency = $invoice->currency !== 'IDR' && (float)$invoice->exchange_rate > 0;
+    $hasForeignCurrency = $invoice->items->contains(fn ($item) => strtoupper((string) ($item->currency ?? 'IDR')) !== 'IDR');
+    $itemExchangeRates = $invoice->items
+        ->filter(fn ($item) => strtoupper((string) ($item->currency ?? 'IDR')) !== 'IDR')
+        ->map(fn ($item) => strtoupper((string) $item->currency).' '.\App\Support\Money::format($item->exchange_rate ?: 1))
+        ->unique()
+        ->values();
 @endphp
 
 <div class="page-heading">
@@ -354,7 +359,7 @@
             <tr>
                 <td style="padding: 4px 8px; font-weight: 700; text-transform: uppercase; color: #475569;">Kurs terhadap Rupiah (EXC. RATE)</td>
                 <td style="padding: 4px 8px; text-align: right; font-family: monospace;">
-                    {{ $invoice->currency }} {{ $invoice->currency === 'IDR' ? '1.000,00' : \App\Support\Money::format($invoice->exchange_rate) }}
+                    {{ $itemExchangeRates->isEmpty() ? 'IDR 1,00' : $itemExchangeRates->implode(' · ') }}
                 </td>
             </tr>
             @if((float)$invoice->paid_amount > 0)
@@ -383,7 +388,7 @@
     @if($hasForeignCurrency)
     <div style="padding: 12px 24px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 24px; font-size: 11px; color: #475569;">
         <div>Mata uang: <strong>{{ $invoice->currency }}</strong></div>
-        <div>Kurs terhadap Rupiah: <strong>{{ \App\Support\Money::format($invoice->exchange_rate) }}</strong></div>
+        <div>Kurs Tagih terhadap Rupiah: <strong>{{ $itemExchangeRates->isEmpty() ? 'IDR 1,00' : $itemExchangeRates->implode(' · ') }}</strong></div>
         <div>Subtotal setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('subtotal')) }}</strong></div>
         <div>Pajak setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('tax')) }}</strong></div>
         <div>Total setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('total')) }}</strong></div>

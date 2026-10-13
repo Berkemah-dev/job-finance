@@ -281,6 +281,8 @@ class JobService
             $cost->unit = (string) $item['unit'];
             $cost->currency = $currency;
             $cost->exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
+            $cost->cost_exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
+            $cost->price_exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
             $cost->quantity = $quantity->toScale(2, RoundingMode::HalfUp);
             $cost->foreign_unit_cost = $currency === 'IDR' ? null : Money::checked($unitCost->toScale(2, RoundingMode::HalfUp));
             $cost->foreign_unit_price = $currency === 'IDR' ? null : Money::checked($unitPrice->toScale(2, RoundingMode::HalfUp));

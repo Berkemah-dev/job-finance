@@ -25,13 +25,17 @@
             <span class="date-sep">→</span>
             <input type="date" name="to" value="{{ $to }}" aria-label="Sampai tanggal" title="Sampai tanggal">
         </div>
-        <input name="job_number" value="{{ request('job_number') }}" placeholder="Nomor Job" aria-label="Nomor Job">
-        <input name="invoice_number" value="{{ request('invoice_number') }}" placeholder="Nomor Invoice" aria-label="Nomor Invoice">
-        <input name="pr_number" value="{{ request('pr_number') }}" placeholder="Nomor PR" aria-label="Nomor PR">
-        <input name="customer" value="{{ request('customer') }}" placeholder="Nama Customer" aria-label="Nama Customer">
-        <select name="payment_status" aria-label="Status pembayaran"><option value="">Semua pembayaran</option><option value="paid" @selected(request('payment_status') === 'paid')>Paid</option><option value="unpaid" @selected(request('payment_status') === 'unpaid')>Unpaid</option></select>
-        <input name="cost_name" value="{{ request('cost_name') }}" placeholder="Cost Name" aria-label="Cost Name">
-        <input name="vendor" value="{{ request('vendor') }}" placeholder="Vendor" aria-label="Vendor">
+        <button class="button button-secondary" type="button" id="ledger-filter-toggle" aria-expanded="false">🔽 Filter transaksi</button>
+        <div id="ledger-advanced-filter" hidden style="display:flex;flex:1 0 100%;gap:10px;flex-wrap:wrap;padding:12px 0 2px;border-top:1px solid #e2e8f0;">
+            <input name="job_number" value="{{ request('job_number') }}" placeholder="Nomor Job" aria-label="Nomor Job">
+            <input name="invoice_number" value="{{ request('invoice_number') }}" placeholder="Nomor Invoice" aria-label="Nomor Invoice">
+            <input name="pr_number" value="{{ request('pr_number') }}" placeholder="Nomor PR" aria-label="Nomor PR">
+            <input name="customer" value="{{ request('customer') }}" placeholder="Nama Customer" aria-label="Nama Customer">
+            <input name="vendor" value="{{ request('vendor') }}" placeholder="Nama Vendor" aria-label="Nama Vendor">
+            <input name="agent" value="{{ request('agent') }}" placeholder="Nama Agent" aria-label="Nama Agent">
+            <input name="cost_name" value="{{ request('cost_name') }}" placeholder="Nama Biaya" aria-label="Nama Biaya">
+            <select name="payment_status" aria-label="Status pembayaran"><option value="">Semua pembayaran</option><option value="paid" @selected(request('payment_status') === 'paid')>Paid</option><option value="unpaid" @selected(request('payment_status') === 'unpaid')>Belum dibayar</option></select>
+        </div>
         <button class="button button-primary">Terapkan</button>
         <a class="button button-secondary" target="_blank" href="{{ route('reports.ledger.pdf', request()->query() + ['account_id' => $account->id, 'from' => $from, 'to' => $to]) }}"><x-icon name="printer"/> Export PDF</a>
     </form>
@@ -39,6 +43,9 @@
     <div class="panel-heading">
         <div>
             <h2>{{ $account->code }} — {{ $account->name }}</h2>
+            @if($partyNames->isNotEmpty())
+                <p style="margin:5px 0 0;font-size:11px;color:#64748b;">Rincian pihak: {{ $partyNames->take(8)->implode(' · ') }}@if($partyNames->count() > 8) · +{{ $partyNames->count() - 8 }} lainnya@endif</p>
+            @endif
             <p>Saldo awal Rp {{ \App\Support\Money::format($opening) }}</p>
         </div>
         <strong>Saldo akhir Rp {{ \App\Support\Money::format($closing) }}</strong>
@@ -114,7 +121,18 @@
                             <td class="money">{{ $entry->invoice_tax === null || empty($entry->invoice_value) ? '—' : \App\Support\Money::format(((float) $entry->invoice_tax / (float) $entry->invoice_value) * 100).'%' }}</td>
                             <td class="money">{{ $entry->invoice_value === null ? '—' : \App\Support\Money::format($entry->invoice_value) }}</td>
                             <td class="money">{{ $entry->invoice_tax === null ? '—' : \App\Support\Money::format($entry->invoice_tax) }}</td>
-                            <td>{{ $entry->tax_invoice_number ?? 'Belum diisi' }}</td>
+                            <td>
+                                @if($entry->invoice_id && auth()->user()?->can('invoices.manage'))
+                                    <form method="POST" action="{{ route('reports.ledger.tax-invoice-number', $entry->invoice_id) }}" style="display:flex;gap:4px;min-width:180px;">
+                                        @csrf
+                                        @method('PUT')
+                                        <input name="tax_invoice_number" value="{{ $entry->tax_invoice_number }}" placeholder="Nomor seri faktur" aria-label="Nomor Seri Faktur Pajak" style="min-width:0;width:100%;padding:6px 8px;font-size:11px;">
+                                        <button type="submit" class="button button-secondary" style="padding:5px 8px;font-size:11px;" title="Simpan Nomor Seri Faktur Pajak">Simpan</button>
+                                    </form>
+                                @else
+                                    {{ $entry->tax_invoice_number ?? 'Belum diisi' }}
+                                @endif
+                            </td>
                         @elseif($isPph23Payable)
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $entry->journal->journal_date->format('d/m/Y') }}</td>
@@ -128,7 +146,18 @@
                             <td class="money">{{ $entry->withholding_tax_amount === null || empty($entry->vendor_bill_value) ? '—' : \App\Support\Money::format(((float) $entry->withholding_tax_amount / (float) $entry->vendor_bill_value) * 100).'%' }}</td>
                             <td class="money">{{ $entry->vendor_bill_value === null ? '—' : \App\Support\Money::format($entry->vendor_bill_value) }}</td>
                             <td class="money">{{ $entry->withholding_tax_amount === null ? '—' : \App\Support\Money::format($entry->withholding_tax_amount) }}</td>
-                            <td>{{ $entry->withholding_document_number ?? 'Belum diisi' }}</td>
+                            <td>
+                                @if($entry->cost_id && auth()->user()?->can('costs.manage'))
+                                    <form method="POST" action="{{ route('reports.ledger.withholding-document', $entry->cost_id) }}" style="display:flex;gap:4px;min-width:170px;">
+                                        @csrf
+                                        @method('PUT')
+                                        <input name="withholding_document_number" value="{{ $entry->withholding_document_number }}" placeholder="Nomor Bupot" aria-label="Nomor Bukti Potong" style="min-width:0;width:100%;padding:6px 8px;font-size:11px;">
+                                        <button type="submit" class="button button-secondary" style="padding:5px 8px;font-size:11px;" title="Simpan Nomor Bukti Potong">Simpan</button>
+                                    </form>
+                                @else
+                                    {{ $entry->withholding_document_number ?? 'Belum diisi' }}
+                                @endif
+                            </td>
                         @else
                         <td>{{ $entry->journal->journal_date->format('d/m/Y') }}</td>
                         <td>
@@ -176,7 +205,10 @@
                             @if(!empty($entry->vendor_name))
                                 <span class="partner-vendor" style="color:#64748b;display:block;font-size:12px;">{{ $entry->vendor_name }}</span>
                             @endif
-                            @if(empty($entry->customer_name) && empty($entry->vendor_name))
+                            @if(!empty($entry->agent_name))
+                                <span style="color:#7c3aed;display:block;font-size:12px;">Agent: {{ $entry->agent_name }}</span>
+                            @endif
+                            @if(empty($entry->customer_name) && empty($entry->vendor_name) && empty($entry->agent_name))
                                 —
                             @endif
                         </td>
@@ -212,4 +244,18 @@
     </div>
     <div class="pagination">{{ $entries->links() }}</div>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const button = document.getElementById('ledger-filter-toggle');
+    const panel = document.getElementById('ledger-advanced-filter');
+    const hasFilter = @json(request()->filled(['job_number', 'invoice_number', 'pr_number', 'customer', 'vendor', 'agent', 'cost_name', 'payment_status']));
+    const setOpen = (open) => {
+        panel.hidden = !open;
+        button.setAttribute('aria-expanded', String(open));
+        button.textContent = open ? '🔼 Sembunyikan filter' : '🔽 Filter transaksi';
+    };
+    setOpen(hasFilter);
+    button.addEventListener('click', () => setOpen(panel.hidden));
+});
+</script>
 @endsection

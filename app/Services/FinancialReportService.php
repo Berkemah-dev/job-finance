@@ -260,6 +260,9 @@ class FinancialReportService
             if (! empty($filters['vendor']) && ! str_contains(mb_strtolower((string) ($entry->vendor_name ?? '')), mb_strtolower($filters['vendor']))) {
                 return false;
             }
+            if (! empty($filters['agent']) && ! str_contains(mb_strtolower((string) ($entry->agent_name ?? '')), mb_strtolower($filters['agent']))) {
+                return false;
+            }
 
             return true;
         })->values();
@@ -275,21 +278,26 @@ class FinancialReportService
             ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => request()->query()]
         );
 
-        return compact('account', 'entries', 'opening') + ['closing' => (string) $balance];
+        $partyNames = $allEntries->flatMap(fn ($entry) => collect([$entry->customer_name ?? null, $entry->vendor_name ?? null, $entry->agent_name ?? null]))->filter()->unique()->values();
+
+        return compact('account', 'entries', 'opening', 'partyNames') + ['closing' => (string) $balance];
     }
 
     /** Tambahkan referensi Job, Invoice, Customer, Vendor, faktur pajak dan Bupot pada mutasi Buku Besar. */
     private function attachLedgerReferences(Collection $entries): void
     {
-        $costs = JobCost::with(['job:id,number,customer_id', 'job.customer:id,name', 'vendor:id,name'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === JobCost::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        $costs = JobCost::with(['job:id,number,customer_id', 'job.customer:id,name', 'vendor:id,name,type'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === JobCost::class)->pluck('journal.source_id'))->get()->keyBy('id');
         $jobs = Job::with(['customer:id,name', 'invoice:id,job_id,number,status,currency,exchange_rate,subtotal,tax,total,tax_invoice_number'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Job::class)->pluck('journal.source_id'))->get()->keyBy('id');
         $payments = Payment::with('invoice.job.customer')->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Payment::class)->pluck('journal.source_id'))->get()->keyBy('id');
         foreach ($entries as $entry) {
             $entry->job_number = null;
             $entry->invoice_number = null;
             $entry->cost_number = null;
+            $entry->cost_id = null;
+            $entry->invoice_id = null;
             $entry->customer_name = null;
             $entry->vendor_name = null;
+            $entry->agent_name = null;
             $entry->cost_name = null;
             $entry->tax_invoice_number = null;
             $entry->withholding_document_number = null;
@@ -302,10 +310,17 @@ class FinancialReportService
             $entry->vendor_bill_value = null;
             $entry->withholding_tax_amount = null;
             if ($entry->journal->source_type === JobCost::class && ($cost = $costs->get($entry->journal->source_id))) {
+                $entry->cost_id = $cost->id;
                 $entry->job_number = $cost->job?->number;
                 $entry->cost_number = $cost->number;
                 $entry->customer_name = $cost->job?->customer?->name;
-                $entry->vendor_name = $cost->vendor?->name ?? $cost->payee;
+                $partyName = $cost->vendor?->name ?? $cost->payee;
+                $isAgent = str_contains((string) ($cost->vendor?->type ?? ''), 'agent') || in_array($cost->cost_category, ['debit_note', 'credit_note'], true);
+                if ($isAgent) {
+                    $entry->agent_name = $partyName;
+                } else {
+                    $entry->vendor_name = $partyName;
+                }
                 $entry->cost_name = $cost->description;
                 $entry->withholding_document_number = $cost->withholding_document_number;
                 $entry->payment_status = $cost->paid_at ? 'paid' : 'unpaid';
@@ -313,6 +328,7 @@ class FinancialReportService
                 $entry->withholding_tax_amount = $cost->pph23_amount;
             } elseif ($entry->journal->source_type === Job::class && ($job = $jobs->get($entry->journal->source_id))) {
                 $entry->job_number = $job->number;
+                $entry->invoice_id = $job->invoice?->id;
                 $entry->customer_name = $job->customer?->name;
                 $entry->invoice_number = $job->invoice?->number;
                 $entry->tax_invoice_number = $job->invoice?->tax_invoice_number;
@@ -327,6 +343,7 @@ class FinancialReportService
                 $entry->invoice_value = $job->invoice?->subtotal;
                 $entry->invoice_tax = $job->invoice?->tax;
             } elseif ($entry->journal->source_type === Payment::class && ($payment = $payments->get($entry->journal->source_id))) {
+                $entry->invoice_id = $payment->invoice?->id;
                 $entry->job_number = $payment->invoice?->job?->number;
                 $entry->invoice_number = $payment->invoice?->number;
                 $entry->customer_name = $payment->invoice?->job?->customer?->name ?? ($payment->invoice?->customer_snapshot['name'] ?? null);

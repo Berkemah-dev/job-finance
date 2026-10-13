@@ -503,9 +503,16 @@
 </table>
 
 {{-- RATE & TERBILANG --}}
+@php
+    $itemExchangeRates = $invoice->items
+        ->filter(fn ($item) => strtoupper((string) ($item->currency ?? 'IDR')) !== 'IDR')
+        ->map(fn ($item) => strtoupper((string) $item->currency).' '.number_format((float) ($item->exchange_rate ?: 1), 2, '.', ','))
+        ->unique()
+        ->values();
+@endphp
 <div class="rate-said-box">
     <div class="rate-line">
-        EXC. RATE : {{ number_format((float)$invoice->exchange_rate, 2, '.', ',') }}
+        EXC. RATE : {{ $itemExchangeRates->isEmpty() ? 'IDR 1.00' : $itemExchangeRates->implode(' · ') }}
     </div>
     <div class="said-line">
         <u>Said :</u> <strong>{{ \App\Support\Money::terbilang($invoice->total, $invoice->currency) }}</strong>

@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
 
 class JobCostService
 {
+    private const RECOGNITION_JOURNAL_TYPES = ['job_cost_draft', 'job_cost_direct', 'job_cost_finalization', 'job_cost_amendment'];
+
     public function __construct(private MasterDataService $master, private DocumentNumberService $numbers, private JournalService $journals, private PartyAccountService $partyAccounts) {}
 
     public function markPaid(Job $job, JobCost $cost, array $data, User $actor): void
@@ -32,16 +34,13 @@ class JobCostService
                 throw ValidationException::withMessages(['cost' => 'Biaya ini sudah dibayar.']);
             }
 
-            if ($cost->status !== 'final') {
-                throw ValidationException::withMessages(['cost' => 'Biaya harus difinalisasi Finance sebelum dapat dibayar.']);
-            }
-
             if (Money::decimal($cost->total_cost)->isZero()) {
                 throw ValidationException::withMessages(['cost' => 'Biaya tagih tanpa modal tidak memiliki hutang vendor dan tidak perlu ditandai PAID.']);
             }
 
             $hasDraftPayable = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
-                ->whereIn('type', ['job_cost_draft', 'job_cost_direct', 'job_cost_finalization'])->exists();
+                ->whereIn('type', self::RECOGNITION_JOURNAL_TYPES)
+                ->whereNull('reversed_at')->whereNull('reversal_of_id')->exists();
             $pph = Money::decimal($data['pph23_amount'] ?? $cost->pph23_amount ?? 0);
             $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
             $isCommission = $vendor?->type === 'commission' || $cost->cost_category === 'credit_note' || str_contains(mb_strtolower($cost->description), 'komisi');
@@ -150,9 +149,15 @@ class JobCostService
                 $cost->setRelation('job', $job);
                 Gate::forUser($actor)->authorize('update', $cost);
                 $this->master->checkVersion($cost, $data);
-                $before = $cost->only(['description', 'type', 'currency', 'exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
+                $before = $cost->only(['description', 'type', 'currency', 'cost_exchange_rate', 'price_exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
                 if ($cost->paid_at) {
                     throw ValidationException::withMessages(['cost' => 'Biaya yang sudah dibayar tidak dapat diedit.']);
+                }
+                // Biaya yang sudah Finance Confirm boleh disesuaikan sebelum
+                // Finalisasi Invoice. Jurnal pengakuan sebelumnya dibalik
+                // agar nilai hutang dan modal mengikuti nilai terbaru.
+                if ($cost->status === 'final') {
+                    $this->reverseRecognition($cost, $actor);
                 }
             }
             $date = Carbon::parse($data['cost_date']);
@@ -160,17 +165,20 @@ class JobCostService
                 throw ValidationException::withMessages(['cost_date' => 'Tanggal biaya harus antara tanggal job dan hari ini.']);
             }
             $currency = strtoupper((string) ($data['currency'] ?? 'IDR'));
-            $exchangeRate = $currency === 'IDR'
+            $costExchangeRate = $currency === 'IDR'
                 ? BigDecimal::one()
-                : BigDecimal::of($data['exchange_rate'])->toScale(4, RoundingMode::HalfUp);
+                : BigDecimal::of($data['cost_exchange_rate'])->toScale(4, RoundingMode::HalfUp);
+            $priceExchangeRate = $currency === 'IDR'
+                ? BigDecimal::one()
+                : BigDecimal::of($data['price_exchange_rate'])->toScale(4, RoundingMode::HalfUp);
             $foreignUnitCost = Money::decimal($data['unit_cost']);
             $foreignUnitPrice = Money::decimal($data['unit_price']);
-            $unitCost = $foreignUnitCost->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
-            $unitPrice = $foreignUnitPrice->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
+            $unitCost = $foreignUnitCost->multipliedBy($costExchangeRate)->toScale(2, RoundingMode::HalfUp);
+            $unitPrice = $foreignUnitPrice->multipliedBy($priceExchangeRate)->toScale(2, RoundingMode::HalfUp);
             $quantity = Money::decimal($data['quantity']);
             $data['cost_category'] = $costCategory;
             $data['type'] = $costCategory === 'reimbursement' ? 'temporary' : 'provision';
-            if ($data['type'] === 'temporary' && ! $unitCost->isEqualTo($unitPrice)) {
+            if ($data['type'] === 'temporary' && (! $unitCost->isEqualTo($unitPrice) || ! $costExchangeRate->isEqualTo($priceExchangeRate))) {
                 throw ValidationException::withMessages(['unit_price' => 'Nilai jual Temporary harus sama dengan modal karena ditagihkan kembali tanpa profit.']);
             }
             if (! empty($data['vendor_id']) && empty($data['payee'])) {
@@ -181,7 +189,11 @@ class JobCostService
             }
             $cost->fill(Arr::only($data, ['description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'pph23_amount', 'payee', 'vendor_id', 'reference', 'notes']));
             $cost->currency = $currency;
-            $cost->exchange_rate = (string) $exchangeRate;
+            // exchange_rate dipertahankan sebagai kurs tagih untuk kompatibilitas
+            // data lama dan baris invoice yang menggunakan kolom tersebut.
+            $cost->exchange_rate = (string) $priceExchangeRate;
+            $cost->cost_exchange_rate = (string) $costExchangeRate;
+            $cost->price_exchange_rate = (string) $priceExchangeRate;
             $cost->foreign_unit_cost = Money::checked($foreignUnitCost);
             $cost->foreign_unit_price = Money::checked($foreignUnitPrice);
             $cost->unit_cost = Money::checked($unitCost);
@@ -205,9 +217,13 @@ class JobCostService
                 $cost->save();
                 $this->recognizePayable($cost, $actor, 'job_cost_direct');
             }
+            if (! $new && $cost->status === 'final' && Money::decimal($cost->total_cost)->isPositive()) {
+                $this->recognizePayable($cost, $actor, 'job_cost_amendment');
+            }
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
+            $this->refreshIssuedInvoice($job, $actor);
             $this->touchJob($job, $actor);
-            $after = $cost->only(['description', 'type', 'cost_category', 'currency', 'exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
+            $after = $cost->only(['description', 'type', 'cost_category', 'currency', 'cost_exchange_rate', 'price_exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
             $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => $new ? null : $before, 'after' => $after]);
 
             return $cost;
@@ -231,6 +247,161 @@ class JobCostService
         ], $actor);
     }
 
+    /** Membalik jurnal pengakuan saat biaya yang sudah Finance Confirm diperbarui. */
+    private function reverseRecognition(JobCost $cost, User $actor): void
+    {
+        $journals = Journal::with('entries')
+            ->where('source_type', JobCost::class)
+            ->where('source_id', $cost->id)
+            ->whereIn('type', self::RECOGNITION_JOURNAL_TYPES)
+            ->whereNull('reversed_at')
+            ->whereNull('reversal_of_id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($journals as $journal) {
+            $entries = $journal->entries->map(fn (JournalEntry $entry) => [
+                'account_id' => $entry->chart_of_account_id,
+                'description' => 'Penyesuaian '.$cost->number.': '.$entry->description,
+                'debit' => $entry->credit,
+                'credit' => $entry->debit,
+            ])->all();
+            if ($entries === []) {
+                continue;
+            }
+
+            $reversal = $this->journals->post(
+                'job_cost_amendment_reversal',
+                JobCost::class,
+                $cost->id,
+                $cost->cost_date->format('Y-m-d'),
+                'Penyesuaian biaya '.$cost->number,
+                $entries,
+                $actor
+            );
+            $reversal->reversal_of_id = $journal->id;
+            $reversal->save();
+            $journal->reversed_by = $actor->id;
+            $journal->reversed_at = now();
+            $journal->lock_version++;
+            $journal->save();
+        }
+    }
+
+    /**
+     * Invoice pra-closing mengikuti perubahan Biaya Job sampai ada pembayaran.
+     * Baris invoice serta jurnal invoice lama dibalik terlebih dahulu agar audit
+     * trail tetap ada dan nilai piutang, pendapatan, HPP mengikuti nilai terbaru.
+     */
+    private function refreshIssuedInvoice(Job $job, User $actor): void
+    {
+        $invoice = $job->invoice()->lockForUpdate()->first();
+        if (! $invoice) {
+            return;
+        }
+        if ($invoice->payments()->exists() || Money::decimal($invoice->paid_amount)->isPositive()) {
+            throw ValidationException::withMessages(['cost' => 'Biaya tidak dapat diubah karena invoice sudah memiliki pembayaran.']);
+        }
+
+        $rows = $job->costs()->orderBy('id')->get();
+        $summary = $this->summary($job)['all'];
+        $tax = Money::decimal($invoice->tax);
+        $total = Money::decimal($summary['subtotal'])->plus($tax);
+        if ($total->isZero()) {
+            throw ValidationException::withMessages(['cost' => 'Perubahan membuat total invoice menjadi nol.']);
+        }
+
+        $activeJournals = Journal::with('entries')
+            ->where('source_type', Job::class)
+            ->where('source_id', $job->id)
+            ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])
+            ->whereNull('reversed_at')
+            ->whereNull('reversal_of_id')
+            ->lockForUpdate()
+            ->get();
+        foreach ($activeJournals as $journal) {
+            $entries = $journal->entries->map(fn (JournalEntry $entry) => [
+                'account_id' => $entry->chart_of_account_id,
+                'description' => 'Penyesuaian '.$invoice->number.': '.$entry->description,
+                'debit' => $entry->credit,
+                'credit' => $entry->debit,
+            ])->all();
+            $reversal = $this->journals->post('job_invoice_amendment_reversal', Job::class, $job->id, $invoice->invoice_date->format('Y-m-d'), 'Penyesuaian invoice '.$invoice->number, $entries, $actor);
+            $reversal->reversal_of_id = $journal->id;
+            $reversal->save();
+            $journal->reversed_by = $actor->id;
+            $journal->reversed_at = now();
+            $journal->lock_version++;
+            $journal->save();
+        }
+
+        [$currency, $rate] = $this->invoiceCurrencyAndRate($rows);
+        $invoice->update([
+            'currency' => $currency,
+            'exchange_rate' => (string) $rate->toScale(2, RoundingMode::HalfUp),
+            'subtotal' => $summary['subtotal'],
+            'total' => Money::checked($total),
+            'balance' => Money::checked($total),
+        ]);
+        $invoice->items()->delete();
+        foreach ($rows as $position => $cost) {
+            $invoice->items()->create($this->invoiceItemData($cost, $position + 1));
+        }
+
+        $customer = $job->customer()->withTrashed()->firstOrFail();
+        $customerAccounts = $this->partyAccounts->customerAccounts($customer);
+        $flow = $this->invoiceFlowAccountKeys($job);
+        $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'temporary_receivable', 'receivable', 'tax_payable'], array_values($flow)));
+        $temporary = Money::decimal($summary['temporary']);
+        $provisionSell = Money::decimal($summary['provision_sell']);
+        $provisionCost = Money::decimal($summary['provision_cost']);
+        $entries = [];
+        if ($provisionSell->isPositive() || $tax->isPositive()) {
+            $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $provisionSell->plus($tax), 'credit' => 0];
+        }
+        if ($temporary->isPositive()) {
+            $entries[] = ['account_id' => $customerAccounts['temporary']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
+            $entries[] = ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary '.$invoice->number, 'debit' => 0, 'credit' => (string) $temporary];
+        }
+        foreach ($rows->where('type', 'provision') as $cost) {
+            $sellingValue = Money::decimal($cost->total_price);
+            if ($sellingValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
+            $costValue = Money::decimal($cost->total_cost);
+            if ($costValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
+        }
+        if ($provisionCost->isPositive()) $entries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisional Payment '.$invoice->number, 'debit' => 0, 'credit' => (string) $provisionCost];
+        if ($tax->isPositive()) $entries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran '.$invoice->number, 'debit' => 0, 'credit' => (string) $tax];
+        $this->journals->post('job_invoice_amendment', Job::class, $job->id, $invoice->invoice_date->format('Y-m-d'), 'Penyesuaian invoice '.$invoice->number.' untuk '.$job->number, $entries, $actor);
+    }
+
+    private function invoiceFlowAccountKeys(Job $job): array
+    {
+        $group = match (true) {
+            in_array((string) $job->service_type, ['imp_sea', 'imp_air'], true) => 'import',
+            in_array((string) $job->service_type, ['exp_sea', 'exp_air', 'sea', 'air'], true) => 'export',
+            default => 'domestic',
+        };
+        return ['revenue_unclosed' => 'revenue_'.$group.'_unclosed', 'cogs_unclosed' => 'cogs_'.$group.'_unclosed'];
+    }
+
+    private function invoiceCurrencyAndRate(\Illuminate\Support\Collection $rows): array
+    {
+        $foreignRows = $rows->filter(fn ($cost) => strtoupper((string) ($cost->currency ?: 'IDR')) !== 'IDR');
+        if ($foreignRows->isEmpty() || $foreignRows->count() !== $rows->count()) return ['IDR', Money::decimal('1')];
+        $currencies = $foreignRows->map(fn ($cost) => strtoupper((string) $cost->currency))->unique();
+        $rates = $foreignRows->map(fn ($cost) => (string) ($cost->price_exchange_rate ?: $cost->exchange_rate ?: 1))->unique();
+        if ($currencies->count() !== 1 || $rates->count() !== 1) return ['IDR', Money::decimal('1')];
+        return [$currencies->first(), Money::decimal($rates->first())];
+    }
+
+    private function invoiceItemData(JobCost $cost, int $position): array
+    {
+        $isTemporary = $cost->type === 'temporary';
+        $foreignUnitPrice = $isTemporary ? $cost->foreign_unit_cost : $cost->foreign_unit_price;
+        if ($foreignUnitPrice === null) $foreignUnitPrice = $isTemporary ? $cost->unit_cost : $cost->unit_price;
+        return ['position' => $position, 'description' => $cost->description, 'type' => $cost->type, 'quantity' => $cost->quantity, 'unit' => $cost->unit, 'currency' => strtoupper((string) ($cost->currency ?: 'IDR')), 'exchange_rate' => $cost->price_exchange_rate ?: $cost->exchange_rate ?: 1, 'foreign_unit_price' => $foreignUnitPrice, 'unit_price' => $isTemporary ? $cost->unit_cost : $cost->unit_price, 'amount' => $isTemporary ? $cost->total_cost : $cost->total_price];
+    }
+
     public function finalize(Job $job, JobCost $cost, array $data, User $actor): void
     {
         DB::transaction(function () use ($job, $cost, $data, $actor) {
@@ -247,7 +418,8 @@ class JobCostService
             $cost->lock_version++;
             $cost->save();
             $hasRecognition = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
-                ->whereIn('type', ['job_cost_draft', 'job_cost_direct', 'job_cost_finalization'])->exists();
+                ->whereIn('type', self::RECOGNITION_JOURNAL_TYPES)
+                ->whereNull('reversed_at')->whereNull('reversal_of_id')->exists();
             if (! $hasRecognition && Money::decimal($cost->total_cost)->isPositive()) {
                 $this->recognizePayable($cost, $actor, 'job_cost_finalization');
             }

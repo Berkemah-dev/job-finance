@@ -80,6 +80,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:reports.view')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/ledger/pdf', [ReportController::class, 'ledgerPdf'])->name('ledger.pdf');
         Route::get('/ledger', [ReportController::class, 'ledger'])->name('ledger');
+        Route::put('/ledger/costs/{cost}/withholding-document', [ReportController::class, 'updateWithholdingDocument'])->middleware('can:costs.manage')->name('ledger.withholding-document');
+        Route::put('/ledger/invoices/{invoice}/tax-invoice-number', [ReportController::class, 'updateTaxInvoiceNumber'])->middleware('can:invoices.manage')->name('ledger.tax-invoice-number');
         Route::get('/trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
         Route::get('/balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
         Route::get('/income-statement', [ReportController::class, 'incomeStatement'])->name('income-statement');

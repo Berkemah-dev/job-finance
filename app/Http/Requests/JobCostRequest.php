@@ -29,10 +29,11 @@ class JobCostRequest extends FormRequest
         $this->merge(['currency' => $currency]);
 
         if ($currency === 'IDR') {
-            $this->merge(['exchange_rate' => '1.0000']);
+            $this->merge(['cost_exchange_rate' => '1.0000', 'price_exchange_rate' => '1.0000', 'exchange_rate' => '1.0000']);
         } else {
-            $rawRate = $this->input('exchange_rate');
-            if ($rawRate !== null && is_string($rawRate)) {
+            foreach (['cost_exchange_rate', 'price_exchange_rate'] as $rateField) {
+                $rawRate = $this->input($rateField, $this->input('exchange_rate'));
+                if ($rawRate !== null && is_string($rawRate)) {
                 $rateVal = trim($rawRate);
                 $rateVal = preg_replace('/^Rp\s*/i', '', $rateVal);
                 if (str_contains($rateVal, '.') && str_contains($rateVal, ',')) {
@@ -56,7 +57,8 @@ class JobCostRequest extends FormRequest
                 if (preg_match('/^0+[1-9]/', $rateVal)) {
                     $rateVal = ltrim($rateVal, '0');
                 }
-                $this->merge(['exchange_rate' => $rateVal]);
+                    $this->merge([$rateField => $rateVal]);
+                }
             }
         }
 
@@ -70,7 +72,7 @@ class JobCostRequest extends FormRequest
             $this->merge(['unit_cost' => '0']);
         }
 
-        foreach (['unit_cost', 'unit_price', 'pph23_amount', 'exchange_rate'] as $field) {
+        foreach (['unit_cost', 'unit_price', 'pph23_amount', 'cost_exchange_rate', 'price_exchange_rate'] as $field) {
             if ($this->has($field) && is_string($this->input($field))) {
                 $val = trim($this->input($field));
                 if ($val === '') {
@@ -114,7 +116,8 @@ class JobCostRequest extends FormRequest
             'type' => ['nullable', Rule::enum(CostType::class)],
             'cost_category' => ['required', 'string', 'in:reimbursement,debit_note,payment_request,credit_note'],
             'currency' => ['required', 'string', Rule::in(array_keys(config('operations.currencies')))],
-            'exchange_rate' => ['required', 'numeric', 'min:0.0001', 'max:999999999.9999'],
+            'cost_exchange_rate' => ['required', 'numeric', 'min:0.0001', 'max:999999999.9999'],
+            'price_exchange_rate' => ['required', 'numeric', 'min:0.0001', 'max:999999999.9999'],
             'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
             'cost_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:'.$this->route('job')->job_date->format('Y-m-d')],
             'quantity' => ['required', 'regex:/^\\d{1,6}(\\.\\d{1,2})?$/', 'numeric', 'min:0.01'],
@@ -130,6 +133,6 @@ class JobCostRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['description' => 'uraian biaya', 'type' => 'jenis biaya', 'cost_category' => 'kategori biaya', 'vendor_id' => 'vendor', 'cost_date' => 'tanggal biaya', 'quantity' => 'jumlah', 'unit' => 'satuan', 'unit_cost' => 'modal per unit', 'unit_price' => 'nilai jual per unit', 'payee' => 'penerima/vendor', 'reference' => 'nomor bukti', 'notes' => 'catatan', 'job_version' => 'versi job', 'lock_version' => 'versi biaya'];
+        return ['description' => 'uraian biaya', 'type' => 'jenis biaya', 'cost_category' => 'kategori biaya', 'vendor_id' => 'vendor', 'cost_date' => 'tanggal biaya', 'quantity' => 'jumlah', 'unit' => 'satuan', 'unit_cost' => 'modal per unit', 'unit_price' => 'nilai jual per unit', 'cost_exchange_rate' => 'kurs modal', 'price_exchange_rate' => 'kurs tagih', 'payee' => 'penerima/vendor', 'reference' => 'nomor bukti', 'notes' => 'catatan', 'job_version' => 'versi job', 'lock_version' => 'versi biaya'];
     }
 }

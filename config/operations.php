@@ -19,7 +19,7 @@ return [
         'behandle'      => 'Behandle (Pemeriksaan Fisik)',
         'sppb'          => 'SPPB Terbit',
     ],
-    'cost_statuses' => ['draft' => 'Draft', 'approved' => 'Approved', 'final' => 'Closed'],
+    'cost_statuses' => ['draft' => 'Draft', 'approved' => 'Approved', 'final' => 'Finance Confirmed'],
     'service_types' => [
         'exp_sea' => 'EXPORT SEA',
         'exp_air' => 'EXPORT AIR',

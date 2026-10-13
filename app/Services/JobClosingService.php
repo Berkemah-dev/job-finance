@@ -53,7 +53,10 @@ class JobClosingService
             }
             $rows = $job->costs()->orderBy('id')->lockForUpdate()->get();
             $summary = $this->costs->summary($job)['final'];
-            $tax = Money::decimal($data['tax']);
+            // Invoice yang sudah diterbitkan menjadi sumber PPN saat Closing Job.
+            // Dengan demikian Finance tidak memasukkan ulang PPN pada tahap closing.
+            $invoice = $job->invoice()->lockForUpdate()->first();
+            $tax = Money::decimal($invoice?->tax ?? ($data['tax'] ?? 0));
             $total = Money::decimal($summary['subtotal'])->plus($tax);
             Money::checked($total);
             if ($total->isZero()) {
@@ -61,20 +64,7 @@ class JobClosingService
             }
             $flow = $this->flowAccountKeys($job);
             $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable'], array_values($flow)));
-            $currency = (string) ($job->quotation_snapshot['currency'] ?? 'IDR');
-            if (! in_array($currency, array_keys(config('operations.currencies')), true)) {
-                throw ValidationException::withMessages(['job' => 'Mata uang quotation tidak valid untuk invoice.']);
-            }
-            $rate = Money::decimal((string) ($job->quotation_snapshot['exchange_rate'] ?? '1'));
-            if (! empty($data['exchange_rate_override'])) {
-                if ($currency === 'IDR' && ! Money::decimal($data['exchange_rate_override'])->isEqualTo(1)) {
-                    throw ValidationException::withMessages(['exchange_rate_override' => 'Override kurs hanya berlaku untuk invoice valas; invoice Rupiah memakai kurs 1.']);
-                }
-                $rate = Money::decimal($data['exchange_rate_override']);
-            }
-            if ($rate->isZero()) {
-                throw ValidationException::withMessages(['job' => 'Kurs quotation nol sehingga invoice tidak dapat dibuat.']);
-            }
+            [$currency, $rate] = $this->invoiceCurrencyAndRate($rows);
             $snapshot = JobClosingSnapshot::create(['job_id' => $job->id, 'closing_date' => $data['closing_date'], 'customer_snapshot' => $job->quotation_snapshot['customer'],
                 'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
                 'costs_snapshot' => $rows->map(fn ($c) => $c->only(['number', 'description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'pph23_amount']))->all(),
@@ -82,7 +72,6 @@ class JobClosingService
                 'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'profit' => $summary['profit'], 'margin' => $summary['margin'],
                 'funding_account_id' => null, 'closed_by' => $actor->id, 'closed_at' => now()]);
 
-            $invoice = $job->invoice()->first();
             if ($invoice) {
                 $invoice->job_closing_snapshot_id = $snapshot->id;
                 $invoice->save();
@@ -118,7 +107,7 @@ class JobClosingService
 
             $closingEntries = [];
             // If invoice was already created earlier, receivable, revenue, tax and temporary WIP were already posted in job_invoice
-            $hasInvoiceJournal = Journal::where('source_type', Job::class)->where('source_id', $job->id)->where('type', 'job_invoice')->whereNull('reversal_of_id')->exists();
+            $hasInvoiceJournal = Journal::where('source_type', Job::class)->where('source_id', $job->id)->whereIn('type', ['job_invoice', 'job_invoice_amendment'])->whereNull('reversal_of_id')->whereNull('reversed_at')->exists();
             if (! $hasInvoiceJournal) {
                 if ($customerReceivable->isPositive()) {
                     $closingEntries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
@@ -180,20 +169,10 @@ class JobClosingService
                 $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Reklasifikasi debit note '.$job->number, 'debit' => 0, 'credit' => (string) $debitNote];
                 $this->journals->post('agent_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Agent '.$job->number, $entries, $actor);
             }
-            $creditNotes = $categoryTotals->get('credit_note', collect());
-            $creditNote = Money::decimal((string) $creditNotes->sum('total_cost'));
-            if (! $creditNote->isZero()) {
-                $entries = [];
-                foreach ($creditNotes as $cost) {
-                    $amount = Money::decimal($cost->total_cost);
-                    if ($amount->isZero()) continue;
-                    $payee = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
-                    $account = $payee ? $this->partyAccounts->vendorPayable($payee) : $maps['agent_payable'];
-                    $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Credit note '.$cost->number.' · '.$job->number, 'debit' => (string) $amount, 'credit' => 0];
-                    $entries[] = ['account_id' => $account->id, 'description' => ($payee ? $this->partyAccounts->payableLabel($payee) : 'Hutang agent ').$cost->number.' · '.$job->number, 'debit' => 0, 'credit' => (string) $amount];
-                }
-                $this->journals->post('agent_payable_recognition', Job::class, $job->id, $data['closing_date'], 'Hutang Agent '.$job->number, $entries, $actor);
-            }
+            // Hutang Vendor/Agent untuk seluruh biaya, termasuk Credit Note,
+            // sudah dibentuk ketika biaya di-Finance Confirm. Closing hanya
+            // memindahkan HPP dan pendapatan, sehingga tidak boleh membuat
+            // Agent Payable Recognition kedua.
             $job->status = 'closed';
             $job->closed_by = $actor->id;
             $job->closed_at = now();
@@ -227,7 +206,7 @@ class JobClosingService
 
             $journals = Journal::where('source_type', Job::class)
                 ->where('source_id', $job->id)
-                ->whereIn('type', ['job_closing', 'job_cost_capitalization', 'job_invoice'])
+                ->whereIn('type', ['job_closing', 'job_cost_capitalization', 'job_invoice', 'job_invoice_amendment', 'agent_receivable_reclass', 'agent_payable_recognition'])
                 ->whereNull('reversal_of_id')
                 ->get();
 
@@ -305,9 +284,6 @@ class JobClosingService
             if ($job->costs()->count() === 0) {
                 throw ValidationException::withMessages(['costs' => 'Job belum memiliki detail biaya untuk invoice.']);
             }
-            if ($job->costs()->whereIn('status', ['draft', 'approved'])->exists()) {
-                throw ValidationException::withMessages(['costs' => 'Finalisasi Invoice hanya dapat dilakukan setelah Finance memeriksa dan memfinalisasi seluruh biaya quotation.']);
-            }
             $rows = $job->costs()->orderBy('id')->get();
             $summary = $this->costs->summary($job)['all'];
             $tax = Money::decimal($data['tax'] ?? 0);
@@ -318,20 +294,7 @@ class JobClosingService
             }
             $flow = $this->flowAccountKeys($job);
             $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable'], array_values($flow)));
-            $currency = (string) ($job->quotation_snapshot['currency'] ?? 'IDR');
-            if (! in_array($currency, array_keys(config('operations.currencies')), true)) {
-                throw ValidationException::withMessages(['job' => 'Mata uang quotation tidak valid untuk invoice.']);
-            }
-            $rate = Money::decimal((string) ($job->quotation_snapshot['exchange_rate'] ?? '1'));
-            if (! empty($data['exchange_rate_override'])) {
-                if ($currency === 'IDR' && ! Money::decimal($data['exchange_rate_override'])->isEqualTo(1)) {
-                    throw ValidationException::withMessages(['exchange_rate_override' => 'Override kurs hanya berlaku untuk invoice valas; invoice Rupiah memakai kurs 1.']);
-                }
-                $rate = Money::decimal($data['exchange_rate_override']);
-            }
-            if ($rate->isZero()) {
-                throw ValidationException::withMessages(['job' => 'Kurs quotation nol sehingga invoice tidak dapat dibuat.']);
-            }
+            [$currency, $rate] = $this->invoiceCurrencyAndRate($rows);
 
             $invoiceDate = $data['invoice_date'] ?? today()->toDateString();
             $dueDate = $data['due_date'] ?? today()->addDays(30)->toDateString();
@@ -445,11 +408,32 @@ class JobClosingService
             'quantity' => $cost->quantity,
             'unit' => $cost->unit,
             'currency' => $currency,
-            'exchange_rate' => $cost->exchange_rate ?: 1,
+            'exchange_rate' => $cost->price_exchange_rate ?: $cost->exchange_rate ?: 1,
             'foreign_unit_price' => $foreignUnitPrice,
             'unit_price' => $isTemporary ? $cost->unit_cost : $cost->unit_price,
             'amount' => $isTemporary ? $cost->total_cost : $cost->total_price,
         ];
+    }
+
+    /**
+     * Invoice tidak menerima input kurs ulang. Kurs header mengikuti Kurs Tagih
+     * bila seluruh baris memakai currency dan kurs yang sama. Invoice campuran
+     * dicatat dalam IDR, sementara kurs tagih tetap tersimpan pada tiap baris.
+     */
+    private function invoiceCurrencyAndRate(\Illuminate\Support\Collection $rows): array
+    {
+        $foreignRows = $rows->filter(fn ($cost) => strtoupper((string) ($cost->currency ?: 'IDR')) !== 'IDR');
+        if ($foreignRows->isEmpty() || $foreignRows->count() !== $rows->count()) {
+            return ['IDR', Money::decimal('1')];
+        }
+
+        $currencies = $foreignRows->map(fn ($cost) => strtoupper((string) $cost->currency))->unique();
+        $rates = $foreignRows->map(fn ($cost) => (string) ($cost->price_exchange_rate ?: $cost->exchange_rate ?: 1))->unique();
+        if ($currencies->count() !== 1 || $rates->count() !== 1) {
+            return ['IDR', Money::decimal('1')];
+        }
+
+        return [$currencies->first(), Money::decimal($rates->first())];
     }
 
 }

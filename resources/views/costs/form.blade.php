@@ -4,7 +4,7 @@
 <div class="page-heading"><div><p class="eyebrow">{{ $job->number }}</p><h1>{{ $cost->exists?'Edit biaya':'Tambah biaya Finance' }}</h1><p>{{ $job->subject }}</p></div><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" data-cost-form data-cost-existing="{{ $cost->exists ? 'true' : 'false' }}" method="POST" action="{{ $cost->exists?route('jobs.costs.update',[$job,$cost]):route('jobs.costs.store',$job) }}">@csrf @if($cost->exists) @method('PUT') @endif
 <input type="hidden" name="job_version" value="{{ old('job_version',$job->lock_version) }}"><input type="hidden" name="lock_version" value="{{ old('lock_version',$cost->lock_version ?? 0) }}">
-<div class="info-note">Biaya yang dibuat langsung oleh Finance akan dijurnal otomatis. Biaya yang berasal dari quotation tetap Draft sampai Finance menekan Finalisasi Biaya.</div>
+<div class="info-note">Biaya yang dibuat langsung oleh Finance akan dijurnal otomatis. Biaya quotation tetap Draft sampai Finance Confirm. Kurs modal dan kurs tagih dapat dicatat terpisah untuk transaksi valas.</div>
 <div class="form-grid">
 <div class="field span-2">
     <label for="description">Uraian biaya <span class="required">*</span></label>
@@ -25,7 +25,8 @@
 <input type="hidden" id="type" name="type" data-cost-type value="{{ old('type', $cost->type ?? 'provision') }}">
 @php
     $selectedCurrency = old('currency', $cost->currency ?? 'IDR');
-    $selectedRate = old('exchange_rate', $cost->exists ? ($cost->exchange_rate ?? 1) : 1);
+    $selectedCostRate = old('cost_exchange_rate', $cost->exists ? ($cost->cost_exchange_rate ?? $cost->exchange_rate ?? 1) : 1);
+    $selectedPriceRate = old('price_exchange_rate', $cost->exists ? ($cost->price_exchange_rate ?? $cost->exchange_rate ?? 1) : 1);
     // Money::format menghasilkan pemisah desimal Indonesia (koma), sehingga
     // formatter browser tidak salah membaca 500.00 menjadi 50.000.
     $sourceUnitCost = old('unit_cost', $cost->exists ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->foreign_unit_cost ?? $cost->unit_cost)) : '');
@@ -46,7 +47,8 @@
 <div class="field"><label for="quantity">Jumlah / Qty <small>(bukan nominal)</small></label><input id="quantity" name="quantity" type="number" min="0.01" max="999999.99" step="0.01" value="{{ old('quantity',$cost->quantity ?? '1') }}" data-quantity required><p class="form-help">Isi jumlah unit, misalnya 1, 2, atau 10. Nominal USD diisi pada Modal per unit dan Nilai jual per unit.</p></div>
 <div class="field"><label for="unit">Satuan</label><input id="unit" name="unit" value="{{ old('unit',$cost->unit ?? 'Layanan') }}" maxlength="30" required></div>
 <div class="field"><label for="currency">Mata uang transaksi <span class="required">*</span></label><select id="currency" name="currency" data-cost-currency>@foreach(config('operations.currencies', ['IDR' => 'Rupiah Indonesia']) as $code => $name)<option value="{{ $code }}" @selected($selectedCurrency === $code)>{{ $code }} — {{ $name }}</option>@endforeach</select><p class="form-help">Nominal biaya dan jual diisi dalam mata uang ini.</p></div>
-<div class="field"><label for="exchange_rate">Kurs ke IDR <span class="required">*</span></label><input id="exchange_rate" name="exchange_rate" type="text" inputmode="decimal" value="{{ $selectedRate }}" placeholder="Contoh: 16.250" data-exchange-rate required><p class="form-help" data-exchange-help>Untuk IDR, kurs otomatis 1.</p></div>
+<div class="field"><label for="cost_exchange_rate">Kurs Modal ke IDR <span class="required">*</span></label><input id="cost_exchange_rate" name="cost_exchange_rate" type="text" inputmode="decimal" value="{{ $selectedCostRate }}" placeholder="Contoh: 16.250" data-cost-exchange-rate required><p class="form-help" data-cost-exchange-help>Nilai 1 mata uang modal dalam Rupiah.</p></div>
+<div class="field"><label for="price_exchange_rate">Kurs Tagih ke IDR <span class="required">*</span></label><input id="price_exchange_rate" name="price_exchange_rate" type="text" inputmode="decimal" value="{{ $selectedPriceRate }}" placeholder="Contoh: 16.500" data-price-exchange-rate required><p class="form-help" data-price-exchange-help>Nilai 1 mata uang tagih dalam Rupiah.</p></div>
 <div class="field"><label for="unit_cost">Modal per unit (<span data-currency-code>{{ $selectedCurrency }}</span>)</label><input id="unit_cost" name="unit_cost" type="text" inputmode="decimal" value="{{ $sourceUnitCost }}" placeholder="0" data-unit-cost data-currency-input><p class="form-help">Boleh dikosongkan atau diisi 0 untuk biaya tagih tanpa modal.</p></div>
 <div class="field"><label for="unit_price">Nilai jual per unit (<span data-currency-code>{{ $selectedCurrency }}</span>)</label><input id="unit_price" name="unit_price" type="text" inputmode="decimal" value="{{ $sourceUnitPrice }}" placeholder="0" data-unit-price data-currency-input required><p class="form-help" data-temporary-help>Untuk Reimburse, nilai jual otomatis mengikuti modal.</p></div>
 <div class="field"><label for="pph23_amount">Potong PPh 23 (IDR)</label><input id="pph23_amount" name="pph23_amount" type="text" inputmode="decimal" value="{{ old('pph23_amount', $cost->exists && $cost->pph23_amount ? preg_replace('/,00$/', '', \App\Support\Money::format($cost->pph23_amount)) : '') }}" placeholder="0" data-currency-input><p class="form-help">Isi nominal pajak dalam IDR setelah konversi. Dicatat ke Utang Pajak saat pembayaran.</p></div>
