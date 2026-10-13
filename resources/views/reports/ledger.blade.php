@@ -44,8 +44,10 @@
         <strong>Saldo akhir Rp {{ \App\Support\Money::format($closing) }}</strong>
     </div>
 
-    @php($isPpnKeluaran = $account->code === '28000')
-    @php($isPph23Payable = $account->code === '27000')
+    @php
+        $isPpnKeluaran = $account->code === '28000';
+        $isPph23Payable = $account->code === '27000';
+    @endphp
     <div class="table-scroll">
         <table>
             <thead>
