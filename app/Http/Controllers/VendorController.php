@@ -7,6 +7,7 @@ use App\Http\Requests\VersionRequest;
 use App\Models\Vendor;
 use App\Services\DocumentNumberService;
 use App\Services\MasterDataService;
+use App\Services\PartyAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -32,15 +33,16 @@ class VendorController extends Controller
         return view('vendors.form', ['vendor' => new Vendor]);
     }
 
-    public function store(VendorRequest $request, MasterDataService $service, DocumentNumberService $numbers)
+    public function store(VendorRequest $request, MasterDataService $service, DocumentNumberService $numbers, PartyAccountService $partyAccounts)
     {
-        $vendor = DB::transaction(function () use ($request, $service, $numbers) {
+        $vendor = DB::transaction(function () use ($request, $service, $numbers, $partyAccounts) {
             $validated = $request->validated();
             if (empty($validated['code'])) {
                 $codeFormat = config('operations.vendor_code');
                 $validated['code'] = $numbers->nextYear('vendor', $codeFormat['prefix'] ?? null, $codeFormat['delimiter'] ?? '-', (int) ($codeFormat['pad'] ?? 5));
             }
             $vendor = $service->save(new Vendor, $validated, $request->user());
+            $partyAccounts->vendorPayable($vendor);
             if ($request->has('categories')) {
                 $vendor->categories()->delete();
                 foreach ($request->input('categories', []) as $cat) {
@@ -67,7 +69,7 @@ class VendorController extends Controller
 
     public function show(Vendor $vendor)
     {
-        $vendor->load(['truckingPrices', 'categories', 'trucks']);
+        $vendor->load(['truckingPrices', 'categories', 'trucks', 'payableAccount']);
 
         return view('vendors.show', compact('vendor'));
     }
@@ -78,11 +80,12 @@ class VendorController extends Controller
         return view('vendors.form', compact('vendor'));
     }
 
-    public function update(VendorRequest $request, Vendor $vendor, MasterDataService $service)
+    public function update(VendorRequest $request, Vendor $vendor, MasterDataService $service, PartyAccountService $partyAccounts)
     {
-        DB::transaction(function () use ($request, $vendor, $service) {
+        DB::transaction(function () use ($request, $vendor, $service, $partyAccounts) {
             $validated = $request->validated();
             $service->save($vendor, $validated, $request->user());
+            $partyAccounts->vendorPayable($vendor);
             if ($request->has('categories')) {
                 $vendor->categories()->delete();
                 foreach ($request->input('categories', []) as $cat) {

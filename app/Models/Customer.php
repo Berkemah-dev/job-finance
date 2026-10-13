@@ -45,6 +45,16 @@ class Customer extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function receivableAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'receivable_account_id');
+    }
+
+    public function temporaryReceivableAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'temporary_receivable_account_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

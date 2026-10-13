@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ChartOfAccount;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -13,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentService
 {
-    public function __construct(private DocumentNumberService $numbers, private JournalService $journals, private MasterDataService $master) {}
+    public function __construct(private DocumentNumberService $numbers, private JournalService $journals, private MasterDataService $master, private PartyAccountService $partyAccounts) {}
 
     public function create(Invoice $invoice, array $data, User $actor): Payment
     {
@@ -44,8 +45,10 @@ class PaymentService
                         ?: $this->journals->mapped(['bank'])['bank']);
             }
 
-            $receivableAccount = $this->journals->mapped(['receivable'])['receivable'];
-            $temporaryReceivableAccount = $this->journals->mapped(['temporary_receivable'])['temporary_receivable'];
+            $customer = Customer::withTrashed()->findOrFail($invoice->customer_id);
+            $customerAccounts = $this->partyAccounts->customerAccounts($customer);
+            $receivableAccount = $customerAccounts['receivable'];
+            $temporaryReceivableAccount = $customerAccounts['temporary'];
             $pph23Account = null;
             if ($pph23Amount->isPositive()) {
                 $pph23Account = $this->journals->mapped(['pph23_prepaid'])['pph23_prepaid'];

@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\User;
 use App\Services\DocumentNumberService;
 use App\Services\MasterDataService;
+use App\Services\PartyAccountService;
 use Illuminate\Contracts\Filesystem\Factory as Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -43,9 +44,9 @@ class CustomerController extends Controller
         return view('customers.form', ['customer' => new Customer]);
     }
 
-    public function store(CustomerRequest $request, MasterDataService $service, DocumentNumberService $numbers, Filesystem $filesystem)
+    public function store(CustomerRequest $request, MasterDataService $service, DocumentNumberService $numbers, Filesystem $filesystem, PartyAccountService $partyAccounts)
     {
-        $customer = DB::transaction(function () use ($request, $service, $numbers) {
+        $customer = DB::transaction(function () use ($request, $service, $numbers, $partyAccounts) {
             $validated = $request->validated();
             $codeFormat = config('operations.customer_code');
             $validated['code'] = $numbers->nextYear('customer', $codeFormat['prefix'] ?? null, $codeFormat['delimiter'] ?? '-', (int) ($codeFormat['pad'] ?? 5));
@@ -55,6 +56,7 @@ class CustomerController extends Controller
                 $validated['approved_at'] = now();
             }
             $customer = $service->save(new Customer, Arr::except($validated, ['contacts']), $request->user());
+            $partyAccounts->customerAccounts($customer);
             $this->syncContacts($customer, $validated['contacts'] ?? [], $request->user(), $service);
 
             return $customer;
@@ -71,7 +73,7 @@ class CustomerController extends Controller
     public function show(Customer $customer)
     {
         $this->authorizeSalesCustomer($customer);
-        $customer->load(['contacts', 'documents.uploader', 'approver', 'addresses']);
+        $customer->load(['contacts', 'documents.uploader', 'approver', 'addresses', 'receivableAccount', 'temporaryReceivableAccount']);
 
         return view('customers.show', compact('customer'));
     }
@@ -84,11 +86,12 @@ class CustomerController extends Controller
         return view('customers.form', compact('customer'));
     }
 
-    public function update(CustomerRequest $request, Customer $customer, MasterDataService $service, Filesystem $filesystem)
+    public function update(CustomerRequest $request, Customer $customer, MasterDataService $service, Filesystem $filesystem, PartyAccountService $partyAccounts)
     {
         $this->authorizeSalesCustomer($customer);
         $validated = $request->validated();
         $service->save($customer, Arr::except($validated, ['contacts']), $request->user());
+        $partyAccounts->customerAccounts($customer);
         $this->syncContacts($customer, $validated['contacts'] ?? [], $request->user(), $service);
         $this->handleUploads($customer, $request, $filesystem, $request->user());
 

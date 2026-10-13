@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vendor extends Model
@@ -38,6 +39,11 @@ class Vendor extends Model
     public function categories(): HasMany
     {
         return $this->hasMany(VendorCategory::class);
+    }
+
+    public function payableAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'payable_account_id');
     }
 
     public function categoryLabels(): array

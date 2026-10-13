@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class JobClosingService
 {
-    public function __construct(private JobCostService $costs, private DocumentNumberService $numbers, private JournalService $journals, private MasterDataService $master) {}
+    public function __construct(private JobCostService $costs, private DocumentNumberService $numbers, private JournalService $journals, private MasterDataService $master, private PartyAccountService $partyAccounts) {}
 
     public function close(Job $job, array $data, User $actor): Invoice
     {
@@ -32,6 +32,7 @@ class JobClosingService
             if (! $job->customer()->withTrashed()->exists()) {
                 throw ValidationException::withMessages(['customer' => 'Customer job tidak tersedia.']);
             }
+            $customerAccounts = $this->partyAccounts->customerAccounts($job->customer()->withTrashed()->firstOrFail());
             $isImport = in_array((string) ($job->service_type ?? ''), ['imp_sea', 'imp_air'], true);
             if ($isImport && ! $job->hasSuratJalanDocument()) {
                 throw ValidationException::withMessages(['surat_jalan' => 'Job Import wajib memiliki berkas Surat Jalan yang sudah terupload sebelum job dapat diselesaikan/ditutup.']);
@@ -119,10 +120,10 @@ class JobClosingService
             $hasInvoiceJournal = Journal::where('source_type', Job::class)->where('source_id', $job->id)->where('type', 'job_invoice')->whereNull('reversal_of_id')->exists();
             if (! $hasInvoiceJournal) {
                 if ($customerReceivable->isPositive()) {
-                    $closingEntries[] = ['account_id' => $maps['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
+                    $closingEntries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
                 }
                 if ($temporary->isPositive()) {
-                    $closingEntries[] = ['account_id' => $maps['temporary_receivable']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
+                    $closingEntries[] = ['account_id' => $customerAccounts['temporary']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
                 }
                 if ($temporary->isPositive()) {
                     $closingEntries[] = ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary', 'debit' => 0, 'credit' => (string) $temporary];
@@ -164,7 +165,7 @@ class JobClosingService
             $categoryTotals = $rows->groupBy(fn ($cost) => $cost->cost_category ?: ($cost->type === 'temporary' ? 'reimbursement' : 'payment_request'));
             $debitNote = Money::decimal((string) ($categoryTotals->get('debit_note', collect())->sum('total_price')));
             $creditNote = Money::decimal((string) ($categoryTotals->get('credit_note', collect())->sum('total_cost')));
-            if (! $debitNote->isZero()) $this->journals->post('agent_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Agent '.$job->number, [['account_id'=>$maps['agent_receivable']->id,'description'=>'Piutang agent '.$job->number,'debit'=>(string)$debitNote,'credit'=>0],['account_id'=>$maps['receivable']->id,'description'=>'Reklasifikasi debit note '.$job->number,'debit'=>0,'credit'=>(string)$debitNote]], $actor);
+            if (! $debitNote->isZero()) $this->journals->post('agent_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Agent '.$job->number, [['account_id'=>$maps['agent_receivable']->id,'description'=>'Piutang agent '.$job->number,'debit'=>(string)$debitNote,'credit'=>0],['account_id'=>$customerAccounts['receivable']->id,'description'=>'Reklasifikasi debit note '.$job->number,'debit'=>0,'credit'=>(string)$debitNote]], $actor);
             if (! $creditNote->isZero()) $this->journals->post('agent_payable_recognition', Job::class, $job->id, $data['closing_date'], 'Hutang Agent '.$job->number, [['account_id'=>$maps[$flow['revenue_unclosed']]->id,'description'=>'Credit note agent '.$job->number,'debit'=>(string)$creditNote,'credit'=>0],['account_id'=>$maps['agent_payable']->id,'description'=>'Hutang agent '.$job->number,'debit'=>0,'credit'=>(string)$creditNote]], $actor);
             $job->status = 'closed';
             $job->closed_by = $actor->id;
@@ -270,6 +271,7 @@ class JobClosingService
             if (! $job->customer()->withTrashed()->exists()) {
                 throw ValidationException::withMessages(['customer' => 'Customer job tidak tersedia.']);
             }
+            $customerAccounts = $this->partyAccounts->customerAccounts($job->customer()->withTrashed()->firstOrFail());
             if ($job->costs()->count() === 0 && ! empty($job->quotation_snapshot['items'])) {
                 app(JobService::class)->seedQuotationCharges($job, $actor);
             }
@@ -337,10 +339,10 @@ class JobClosingService
 
             $invoiceEntries = [];
             if ($customerReceivable->isPositive()) {
-                $invoiceEntries[] = ['account_id' => $maps['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
+                $invoiceEntries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
             }
             if ($temporary->isPositive()) {
-                $invoiceEntries[] = ['account_id' => $maps['temporary_receivable']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
+                $invoiceEntries[] = ['account_id' => $customerAccounts['temporary']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
             }
             if ($temporary->isPositive()) {
                 $invoiceEntries[] = ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary '.$invoice->number, 'debit' => 0, 'credit' => (string) $temporary];

@@ -11,6 +11,7 @@
     <div><dt>Email</dt><dd>{{ $vendor->email ?? '—' }}</dd></div>
     <div><dt>Telepon</dt><dd>{{ $vendor->phone ?? '—' }}</dd></div>
     <div><dt>NPWP / TAX ID</dt><dd>{{ $vendor->tax_number ?? '—' }}</dd></div>
+    <div><dt>COA Hutang {{ in_array($vendor->type, ['international_agent', 'national_agent'], true) ? 'Agent' : 'Vendor' }}</dt><dd>@if($vendor->payableAccount)<a class="text-link" href="{{ route('reports.ledger', ['account_id' => $vendor->payableAccount->id]) }}">{{ $vendor->payableAccount->code }} — {{ $vendor->payableAccount->name }}</a>@else<small class="subtle">Akan dibuat otomatis setelah migrasi.</small>@endif</dd></div>
     <div><dt>Nama Bank</dt><dd>{{ $vendor->bank_name ?? '—' }}</dd></div>
     <div><dt>No. Rekening</dt><dd><strong>{{ $vendor->bank_account_number ?? '—' }}</strong></dd></div>
     <div><dt>Nama Rekening</dt><dd>{{ $vendor->bank_account_name ?? '—' }}</dd></div>
