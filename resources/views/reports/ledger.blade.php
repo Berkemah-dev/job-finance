@@ -44,10 +44,43 @@
         <strong>Saldo akhir Rp {{ \App\Support\Money::format($closing) }}</strong>
     </div>
 
+    @php($isPpnKeluaran = $account->code === '28000')
+    @php($isPph23Payable = $account->code === '27000')
     <div class="table-scroll">
         <table>
             <thead>
                 <tr>
+                    @if($isPpnKeluaran)
+                        <th>No.</th>
+                        <th>Tanggal</th>
+                        <th>Impor / Ekspor / Domestik</th>
+                        <th>Nama Customer</th>
+                        <th class="money">Nilai Transaksi</th>
+                        <th class="money">Kurs</th>
+                        <th class="money">Debit</th>
+                        <th class="money">Kredit</th>
+                        <th class="money">Saldo</th>
+                        <th>Nomor Job</th>
+                        <th>Nomor Invoice</th>
+                        <th class="money">Tarif PPN Keluaran</th>
+                        <th class="money">Nilai Invoice</th>
+                        <th class="money">Total PPN Keluaran</th>
+                        <th>Nomor Seri Faktur</th>
+                    @elseif($isPph23Payable)
+                        <th>No.</th>
+                        <th>Tanggal</th>
+                        <th>No. PR / Jurnal</th>
+                        <th>Nama Vendor</th>
+                        <th class="money">Nilai Transaksi</th>
+                        <th class="money">Debit</th>
+                        <th class="money">Kredit</th>
+                        <th class="money">Saldo</th>
+                        <th>Nomor Job</th>
+                        <th class="money">Tarif Hutang PPh 23</th>
+                        <th class="money">Nilai Tagihan Vendor</th>
+                        <th class="money">Total Hutang PPh 23</th>
+                        <th>Nomor Bukti Potong</th>
+                    @else
                     <th>Tanggal</th>
                     <th>Jurnal</th>
                     <th>Uraian</th>
@@ -58,11 +91,43 @@
                     <th class="money">Debit</th>
                     <th class="money">Kredit</th>
                     <th class="money">Saldo</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
                 @forelse($entries as $entry)
                     <tr>
+                        @if($isPpnKeluaran)
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $entry->journal->journal_date->format('d/m/Y') }}</td>
+                            <td>{{ $entry->shipment_category ?? '—' }}</td>
+                            <td>{{ $entry->customer_name ?? '—' }}</td>
+                            <td class="money">{{ $entry->invoice_value === null ? '—' : (($entry->invoice_currency && $entry->invoice_currency !== 'IDR' ? $entry->invoice_currency.' ' : 'Rp ').\App\Support\Money::format($entry->invoice_value)) }}</td>
+                            <td class="money">{{ $entry->invoice_exchange_rate === null ? '—' : \App\Support\Money::format($entry->invoice_exchange_rate) }}</td>
+                            <td class="money">{{ \App\Support\Money::format($entry->debit) }}</td>
+                            <td class="money">{{ \App\Support\Money::format($entry->credit) }}</td>
+                            <td class="money">{{ \App\Support\Money::format($entry->running_balance) }}</td>
+                            <td>{{ $entry->job_number ?? '—' }}</td>
+                            <td>{{ $entry->invoice_number ?? '—' }}</td>
+                            <td class="money">{{ $entry->invoice_tax === null || empty($entry->invoice_value) ? '—' : \App\Support\Money::format(((float) $entry->invoice_tax / (float) $entry->invoice_value) * 100).'%' }}</td>
+                            <td class="money">{{ $entry->invoice_value === null ? '—' : \App\Support\Money::format($entry->invoice_value) }}</td>
+                            <td class="money">{{ $entry->invoice_tax === null ? '—' : \App\Support\Money::format($entry->invoice_tax) }}</td>
+                            <td>{{ $entry->tax_invoice_number ?? 'Belum diisi' }}</td>
+                        @elseif($isPph23Payable)
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $entry->journal->journal_date->format('d/m/Y') }}</td>
+                            <td>{{ $entry->cost_number ?? $entry->journal->number }}</td>
+                            <td>{{ $entry->vendor_name ?? '—' }}</td>
+                            <td class="money">{{ $entry->vendor_bill_value === null ? '—' : \App\Support\Money::format($entry->vendor_bill_value) }}</td>
+                            <td class="money">{{ \App\Support\Money::format($entry->debit) }}</td>
+                            <td class="money">{{ \App\Support\Money::format($entry->credit) }}</td>
+                            <td class="money">{{ \App\Support\Money::format($entry->running_balance) }}</td>
+                            <td>{{ $entry->job_number ?? '—' }}</td>
+                            <td class="money">{{ $entry->withholding_tax_amount === null || empty($entry->vendor_bill_value) ? '—' : \App\Support\Money::format(((float) $entry->withholding_tax_amount / (float) $entry->vendor_bill_value) * 100).'%' }}</td>
+                            <td class="money">{{ $entry->vendor_bill_value === null ? '—' : \App\Support\Money::format($entry->vendor_bill_value) }}</td>
+                            <td class="money">{{ $entry->withholding_tax_amount === null ? '—' : \App\Support\Money::format($entry->withholding_tax_amount) }}</td>
+                            <td>{{ $entry->withholding_document_number ?? 'Belum diisi' }}</td>
+                        @else
                         <td>{{ $entry->journal->journal_date->format('d/m/Y') }}</td>
                         <td>
                             @can('journals.manage')
@@ -107,10 +172,11 @@
                         <td class="money">{{ \App\Support\Money::format($entry->debit) }}</td>
                         <td class="money">{{ \App\Support\Money::format($entry->credit) }}</td>
                         <td class="money">{{ \App\Support\Money::format($entry->running_balance) }}</td>
+                        @endif
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10">
+                        <td colspan="{{ $isPpnKeluaran ? 15 : ($isPph23Payable ? 13 : 10) }}">
                             <div class="empty-state">
                                 <x-icon name="chart"/>
                                 <h3>Tidak ada mutasi</h3>

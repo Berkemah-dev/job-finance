@@ -280,7 +280,7 @@ class FinancialReportService
     private function attachLedgerReferences(Collection $entries): void
     {
         $costs = JobCost::with(['job:id,number,customer_id', 'job.customer:id,name', 'vendor:id,name'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === JobCost::class)->pluck('journal.source_id'))->get()->keyBy('id');
-        $jobs = Job::with(['customer:id,name', 'invoice:id,job_id,number,status,tax_invoice_number'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Job::class)->pluck('journal.source_id'))->get()->keyBy('id');
+        $jobs = Job::with(['customer:id,name', 'invoice:id,job_id,number,status,currency,exchange_rate,subtotal,tax,total,tax_invoice_number'])->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Job::class)->pluck('journal.source_id'))->get()->keyBy('id');
         $payments = Payment::with('invoice.job.customer')->whereIn('id', $entries->filter(fn ($e) => $e->journal->source_type === Payment::class)->pluck('journal.source_id'))->get()->keyBy('id');
         foreach ($entries as $entry) {
             $entry->job_number = null;
@@ -292,6 +292,13 @@ class FinancialReportService
             $entry->tax_invoice_number = null;
             $entry->withholding_document_number = null;
             $entry->payment_status = null;
+            $entry->shipment_category = null;
+            $entry->invoice_currency = null;
+            $entry->invoice_exchange_rate = null;
+            $entry->invoice_value = null;
+            $entry->invoice_tax = null;
+            $entry->vendor_bill_value = null;
+            $entry->withholding_tax_amount = null;
             if ($entry->journal->source_type === JobCost::class && ($cost = $costs->get($entry->journal->source_id))) {
                 $entry->job_number = $cost->job?->number;
                 $entry->cost_number = $cost->number;
@@ -300,12 +307,23 @@ class FinancialReportService
                 $entry->cost_name = $cost->description;
                 $entry->withholding_document_number = $cost->withholding_document_number;
                 $entry->payment_status = $cost->paid_at ? 'paid' : 'unpaid';
+                $entry->vendor_bill_value = $cost->total_cost;
+                $entry->withholding_tax_amount = $cost->pph23_amount;
             } elseif ($entry->journal->source_type === Job::class && ($job = $jobs->get($entry->journal->source_id))) {
                 $entry->job_number = $job->number;
                 $entry->customer_name = $job->customer?->name;
                 $entry->invoice_number = $job->invoice?->number;
                 $entry->tax_invoice_number = $job->invoice?->tax_invoice_number;
                 $entry->payment_status = $job->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+                $entry->shipment_category = match (true) {
+                    in_array((string) $job->service_type, ['imp_sea', 'imp_air'], true) => 'IMPORT',
+                    in_array((string) $job->service_type, ['exp_sea', 'exp_air', 'sea', 'air'], true) => 'EKSPOR',
+                    default => 'DOMESTIC',
+                };
+                $entry->invoice_currency = $job->invoice?->currency;
+                $entry->invoice_exchange_rate = $job->invoice?->exchange_rate;
+                $entry->invoice_value = $job->invoice?->subtotal;
+                $entry->invoice_tax = $job->invoice?->tax;
             } elseif ($entry->journal->source_type === Payment::class && ($payment = $payments->get($entry->journal->source_id))) {
                 $entry->job_number = $payment->invoice?->job?->number;
                 $entry->invoice_number = $payment->invoice?->number;
