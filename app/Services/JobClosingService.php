@@ -88,6 +88,7 @@ class JobClosingService
             $alreadyJournalizedCostIds = Journal::where('source_type', \App\Models\JobCost::class)
                 ->whereIn('source_id', $rows->pluck('id'))
                 ->whereNull('reversal_of_id')
+                ->whereNull('reversed_at')
                 ->pluck('source_id');
             $uncapitalizedRows = $rows->whereNotIn('id', $alreadyJournalizedCostIds);
             $capitalizedTemporary = Money::decimal((string) $uncapitalizedRows->where('type', 'temporary')->sum('total_cost'));

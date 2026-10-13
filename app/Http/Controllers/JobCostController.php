@@ -166,4 +166,16 @@ class JobCostController extends Controller
 
         return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya ditandai PAID dan jurnal pembayaran dibuat. Konfirmasi Finance dapat dilakukan kemudian sebelum Finalisasi Invoice.');
     }
+
+    /** Nomor bukti potong dapat diisi atau diperbaiki kapan saja, termasuk setelah biaya dibayar. */
+    public function withholdingDocument(Request $request, Job $job, JobCost $cost, JobCostService $service)
+    {
+        $data = $request->validate([
+            'withholding_document_number' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $service->saveWithholdingDocument($job, $cost, $data['withholding_document_number'] ?: null, $request->user());
+
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Nomor bukti potong disimpan.');
+    }
 }

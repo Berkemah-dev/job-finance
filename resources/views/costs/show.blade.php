@@ -95,8 +95,6 @@
                 <small class="field-hint" style="color:var(--text-muted, #64748b);font-size:12px;margin-top:4px;display:block;">
                     Jika ada pemotongan pajak PPh 23 jasa (biasanya 2%), masukkan nominal di sini. Jika tidak ada, biarkan 0.
                 </small>
-                <label for="withholding_document_number" style="margin-top:12px;display:block;">Nomor Bukti Potong (Bupot)</label>
-                <input id="withholding_document_number" name="withholding_document_number" value="{{ old('withholding_document_number', $cost->withholding_document_number) }}" maxlength="100" placeholder="Isi bila Bupot sudah tersedia">
             </div>
         </div>
         <div class="form-actions" style="margin-top:20px;">
@@ -105,6 +103,33 @@
     </form>
 </section>
 @endif
+
+@can('costs.manage')
+<section class="panel form-panel" style="margin-top:24px;">
+    <div class="panel-heading">
+        <div>
+            <h2>Nomor Bukti Potong (Bupot)</h2>
+            <p>Bupot sering baru tersedia setelah vendor dibayar, jadi kolom ini tetap bisa diisi kapan saja tanpa mengubah jurnal pembayaran.</p>
+        </div>
+    </div>
+    <form method="POST" action="{{ route('jobs.costs.withholding-document',[$job,$cost]) }}" class="data-form">
+        @csrf
+        @method('PUT')
+        <div class="form-grid">
+            <div class="field">
+                <label for="withholding_document_number">Nomor Bupot</label>
+                <input id="withholding_document_number" name="withholding_document_number" value="{{ old('withholding_document_number', $cost->withholding_document_number) }}" maxlength="100" placeholder="Isi bila Bupot sudah tersedia">
+                <small class="field-hint" style="color:var(--text-muted, #64748b);font-size:12px;margin-top:4px;display:block;">
+                    Kosongkan bila vendor tidak memotong pajak.
+                </small>
+            </div>
+        </div>
+        <div class="form-actions" style="margin-top:20px;">
+            <button class="button button-primary">Simpan Nomor Bupot</button>
+        </div>
+    </form>
+</section>
+@endcan
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-pph-calculator]').forEach((calculator) => {

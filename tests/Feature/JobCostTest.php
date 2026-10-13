@@ -131,24 +131,90 @@ class JobCostTest extends TestCase
         $this->assertSame('9500000.00', $summary['final']['subtotal']);
         $this->assertSame($this->finance->id, $provision->fresh()->finalized_by);
         $this->assertNotNull($provision->fresh()->finalized_at);
-        $this->get($url)->assertOk()->assertSee('terkunci')->assertDontSee('Edit biaya Draft')->assertDontSee('Finalisasi biaya</button>', false);
+        $this->get($url)->assertOk()
+            ->assertSee('Biaya sudah dikonfirmasi Finance')
+            ->assertSee('biaya tetap dapat disesuaikan')
+            ->assertDontSee('terkunci')
+            ->assertSee('Edit biaya')
+            ->assertDontSee('Finalisasi biaya</button>', false);
         $this->get('/jobs/'.$this->job->id.'/costs')->assertOk()->assertSee('9.500.000,00');
         $this->assertDatabaseHas('activity_logs', ['action' => 'job_cost.finalized', 'user_id' => $this->finance->id]);
     }
 
-    public function test_final_costs_cannot_be_modified_deleted_or_finalized_twice(): void
+    public function test_finance_confirmed_cost_can_still_be_adjusted_but_not_deleted_or_finalized_twice(): void
     {
         $cost = $this->createCost();
         $url = '/jobs/'.$this->job->id.'/costs/'.$cost->id;
-        $this->get($url.'/edit')->assertForbidden();
-        $this->put($url, $this->data(['lock_version' => 0]))->assertForbidden();
+        $this->assertSame('final', $cost->fresh()->status, 'Biaya input Finance otomatis menjadi Finance Confirmed.');
+
+        // Finance Confirm tidak mengunci biaya: selama invoice belum dibayar, biaya tetap dapat disesuaikan.
+        $this->get($url.'/edit')->assertOk();
+        $this->put($url, array_replace($this->data(), $this->versions($cost), ['unit_price' => '5000000']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('5000000.00', $cost->fresh()->total_price);
+
+        // Setelah Finance Confirm, biaya tidak dapat dihapus maupun difinalisasi ulang.
         $this->delete($url, $this->versions($cost))->assertForbidden();
         $this->post($url.'/finalize', $this->versions($cost))->assertForbidden();
-        $this->assertSame('4500000.00', $cost->fresh()->total_price);
+        $this->assertSame('5000000.00', $cost->fresh()->total_price);
         $this->assertSame(1, ActivityLog::where('action', 'job_cost.created')->count());
     }
 
-    public function test_delete_draft_soft_deletes_and_removes_it_from_totals(): void
+    public function test_approved_cost_is_still_editable_before_payment(): void
+    {
+        // Status approved adalah tahap pemeriksaan, bukan tahap penguncian.
+        $cost = JobCost::factory()->create([
+            'job_id' => $this->job->id,
+            'quotation_id' => 1,
+            'status' => 'approved',
+            'total_cost' => '3000000.00',
+            'total_price' => '4500000.00',
+            'lock_version' => 0,
+        ]);
+
+        $this->get('/jobs/'.$this->job->id.'/costs/'.$cost->id.'/edit')->assertOk();
+        $this->put('/jobs/'.$this->job->id.'/costs/'.$cost->id, array_replace($this->data(), $this->versions($cost), ['unit_price' => '5500000']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('5500000.00', $cost->fresh()->total_price);
+        $this->assertSame('approved', $cost->fresh()->status, 'Penyuntingan tidak boleh mengubah tahap pemeriksaan.');
+    }
+
+public function test_withholding_document_can_be_saved_before_and_after_payment(): void
+    {
+        $cost = $this->createCost();
+        $url = '/jobs/'.$this->job->id.'/costs/'.$cost->id;
+
+        $this->get($url)->assertOk()->assertSee('Nomor Bukti Potong (Bupot)');
+
+        $this->put($url.'/withholding-document', ['withholding_document_number' => 'BUPOT-001/2026'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('BUPOT-001/2026', $cost->fresh()->withholding_document_number);
+
+        // Bayar vendor tanpa nomor bupot (kode bukti potong belum keluar).
+        $bank = \App\Models\ChartOfAccount::where('code', '1102')->value('id');
+        $this->post($url.'/pay', [
+            'job_version' => $this->job->fresh()->lock_version,
+            'paid_date' => today()->toDateString(),
+            'payment_account_id' => $bank,
+            'pph23_amount' => '90000.00',
+            'withholding_document_number' => null,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNull($cost->fresh()->withholding_document_number);
+        $this->assertNotNull($cost->fresh()->paid_at);
+
+        // Kolom bupot harus tetap bisa diisi setelah pembayaran, tanpa mengubah jurnal.
+        $journalsBefore = \App\Models\Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)->count();
+        $this->get($url)->assertOk()->assertSee('Nomor Bukti Potong (Bupot)');
+        $this->put($url.'/withholding-document', ['withholding_document_number' => 'BUPOT-002/2026'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('BUPOT-002/2026', $cost->fresh()->withholding_document_number);
+        $this->assertSame($journalsBefore, \App\Models\Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)->count());
+    }
+
+public function test_delete_draft_soft_deletes_and_removes_it_from_totals(): void
     {
         $cost = JobCost::factory()->create([
             'job_id' => $this->job->id,

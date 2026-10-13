@@ -9,6 +9,7 @@ use App\Models\JobCost;
 use App\Models\Journal;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\PartyAccountService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -90,8 +91,10 @@ class InvoiceCreationTest extends TestCase
 
         // Verify journal debits: Piutang Customer 17jt, Piutang Temporary 11jt
         $journal = Journal::where('type', 'job_invoice')->where('source_id', $this->job->id)->firstOrFail();
-        $receivableAcc = ChartOfAccount::where('code', '1103')->firstOrFail();
-        $tempReceivableAcc = ChartOfAccount::where('name', 'Piutang Temporary')->firstOrFail();
+        // Akun piutang memakai COA pembantu per customer, jadi jangan memakai kode COA statis.
+        $accounts = app(PartyAccountService::class)->customerAccounts($this->job->customer);
+        $receivableAcc = $accounts['receivable'];
+        $tempReceivableAcc = $accounts['temporary'];
 
         $custDebit = (float) $journal->entries()->where('chart_of_account_id', $receivableAcc->id)->value('debit');
         $tempDebit = (float) $journal->entries()->where('chart_of_account_id', $tempReceivableAcc->id)->value('debit');
@@ -132,8 +135,9 @@ class InvoiceCreationTest extends TestCase
 
         // Check payment journal credits
         $payJournal = Journal::where('type', 'customer_payment')->where('source_id', $payment->id)->firstOrFail();
-        $receivableAcc = ChartOfAccount::where('code', '1103')->firstOrFail();
-        $tempReceivableAcc = ChartOfAccount::where('name', 'Piutang Temporary')->firstOrFail();
+        $accounts = app(PartyAccountService::class)->customerAccounts($this->job->customer);
+        $receivableAcc = $accounts['receivable'];
+        $tempReceivableAcc = $accounts['temporary'];
 
         $custCredit = (float) $payJournal->entries()->where('chart_of_account_id', $receivableAcc->id)->value('credit');
         $tempCredit = (float) $payJournal->entries()->where('chart_of_account_id', $tempReceivableAcc->id)->value('credit');

@@ -96,7 +96,26 @@ class JournalService
         if (! $debit->isEqualTo($credit) || $debit->isZero()) {
             throw ValidationException::withMessages(['journal' => 'Jurnal harus seimbang dan tidak boleh bernilai nol.']);
         }
-        $journal = Journal::create(['number' => $number ?? $this->numbers->next('jrn'), 'journal_date' => $date, 'type' => $type, 'source_type' => $sourceType, 'source_id' => $sourceId, 'description' => $description, 'status' => 'posted', 'posted_by' => $actor->id, 'posted_at' => now()]);
+
+        // Satu sumber hanya boleh punya satu jurnal aktif. Jurnal yang sudah dibalik
+        // (reopen) tidak lagi menghalangi posting ulang pada revisi berikutnya.
+        $existing = Journal::where('type', $type)
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->whereNull('reversed_at')
+            ->lockForUpdate()
+            ->exists();
+        if ($existing) {
+            throw ValidationException::withMessages(['journal' => 'Jurnal untuk sumber ini sudah pernah diposting dan belum dibalik.']);
+        }
+
+        // Revisi naik setiap kali sumber yang sama diposting ulang setelah dibalik.
+        $revision = Journal::where('type', $type)
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->count();
+
+        $journal = Journal::create(['number' => $number ?? $this->numbers->next('jrn'), 'journal_date' => $date, 'type' => $type, 'source_type' => $sourceType, 'source_id' => $sourceId, 'revision' => $revision, 'description' => $description, 'status' => 'posted', 'posted_by' => $actor->id, 'posted_at' => now()]);
         foreach ($entries as $entry) {
             if (Money::decimal($entry['debit'] ?? 0)->isZero() && Money::decimal($entry['credit'] ?? 0)->isZero()) {
                 continue;

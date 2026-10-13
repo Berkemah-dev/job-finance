@@ -44,7 +44,7 @@
         <div>
             <h2>{{ $account->code }} — {{ $account->name }}</h2>
             @if($partyNames->isNotEmpty())
-                <p style="margin:5px 0 0;font-size:11px;color:#64748b;">Rincian pihak: {{ $partyNames->take(8)->implode(' · ') }}@if($partyNames->count() > 8) · +{{ $partyNames->count() - 8 }} lainnya@endif</p>
+                <p style="margin:5px 0 0;font-size:11px;color:#64748b;">Rincian pihak: {{ $partyNames->take(8)->implode(' · ') }}{{ $partyNames->count() > 8 ? ' · +'.($partyNames->count() - 8).' lainnya' : '' }}</p>
             @endif
             <p>Saldo awal Rp {{ \App\Support\Money::format($opening) }}</p>
         </div>
@@ -248,7 +248,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const button = document.getElementById('ledger-filter-toggle');
     const panel = document.getElementById('ledger-advanced-filter');
-    const hasFilter = @json(request()->filled(['job_number', 'invoice_number', 'pr_number', 'customer', 'vendor', 'agent', 'cost_name', 'payment_status']));
+    const hasFilter = {{ request()->filled(['job_number', 'invoice_number', 'pr_number', 'customer', 'vendor', 'agent', 'cost_name', 'payment_status']) ? 'true' : 'false' }};
     const setOpen = (open) => {
         panel.hidden = !open;
         button.setAttribute('aria-expanded', String(open));

@@ -112,17 +112,28 @@ class PricingService
         return TruckingPrice::with('vendor')
             ->where(function ($q) use ($portOrigin) {
                 $q->where('port_origin', 'like', '%'.$portOrigin.'%')
-                    ->orWhereRaw('? LIKE CONCAT("%", port_origin, "%")', [$portOrigin]);
+                    ->orWhereRaw($this->columnContainsValueSql('port_origin'), [$portOrigin]);
             })
             ->where(function ($q) use ($destination) {
                 $q->where('destination', 'like', '%'.$destination.'%')
-                    ->orWhereRaw('? LIKE CONCAT("%", destination, "%")', [$destination]);
+                    ->orWhereRaw($this->columnContainsValueSql('destination'), [$destination]);
             })
             ->where('container_type', $containerType)->where('overweight', $overweight)
             ->where('is_active', true)->where('effective_date', '<=', $date->toDateString())
             ->where(fn ($q) => $q->whereNull('effective_until')->orWhere('effective_until', '>=', $date->toDateString()))
             ->when($vendorId, fn ($q, $id) => $q->where('vendor_id', $id))
             ->orderByDesc('effective_date')->orderByDesc('id')->first();
+    }
+
+    /**
+     * SQL "nilai yang dicari memuat isi kolom" untuk pencocokan dua arah.
+     * CONCAT hanya ada di MySQL, sedangkan SQLite dan PostgreSQL memakai ||.
+     */
+    private function columnContainsValueSql(string $column): string
+    {
+        return DB::connection()->getDriverName() === 'mysql'
+            ? sprintf("? LIKE CONCAT('%%', %s, '%%')", $column)
+            : sprintf("? LIKE '%%' || %s || '%%'", $column);
     }
 
     /**

@@ -28,7 +28,7 @@ class JobCostPolicy
         // Invoice pra-closing masih dapat disesuaikan dari Biaya Job selama
         // invoice tersebut belum mempunyai pembayaran.
         return $this->create($user, $cost->job)
-            && in_array($cost->status, ['draft', 'final'], true)
+            && in_array($cost->status, ['draft', 'approved', 'final'], true)
             && ! $cost->paid_at
             && ! $cost->job->invoice()->where(fn ($invoice) => $invoice->where('paid_amount', '>', 0)->orWhereHas('payments'))->exists()
             && ! $cost->trashed();
