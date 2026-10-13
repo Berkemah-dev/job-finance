@@ -6,7 +6,6 @@ use App\Models\AccountMapping;
 use App\Models\ChartOfAccount;
 use App\Models\Customer;
 use App\Models\Vendor;
-use Illuminate\Support\Str;
 
 /** Membuat COA pembantu per pihak di bawah akun piutang atau hutang induknya. */
 class PartyAccountService
@@ -39,21 +38,30 @@ class PartyAccountService
         if (! $parent) {
             throw new \RuntimeException('Mapping akun '.$mappingKey.' belum tersedia. Jalankan ChartOfAccountSeeder terlebih dahulu.');
         }
-        if ($party->{$column}) {
-            $account = ChartOfAccount::withTrashed()->find($party->{$column});
-            if ($account && (int) $account->parent_id === (int) $parent->id) {
-                $account->forceFill(['name' => $label.' — '.$party->name, 'type' => $parent->type])->save();
-                return $account;
-            }
+        $code = $this->subledgerCode($party, $mappingKey);
+        $account = $party->{$column}
+            ? ChartOfAccount::withTrashed()->find($party->{$column})
+            : null;
+
+        // Gunakan COA dengan kode pembantu yang sudah ada bila seeder dijalankan ulang.
+        $codedAccount = ChartOfAccount::withTrashed()->where('code', $code)->first();
+        if ($codedAccount && (! $account || $codedAccount->id !== $account->id)) {
+            $account = $codedAccount;
         }
 
-        $suffix = Str::upper(preg_replace('/[^A-Z0-9-]/', '', (string) ($party->code ?: $party->id)) ?: (string) $party->id);
-        $code = Str::limit($parent->code.'-'.$suffix, 20, '');
-        $account = ChartOfAccount::withTrashed()->firstOrCreate(
-            ['code' => $code],
-            ['name' => $label.' — '.$party->name, 'type' => $parent->type, 'parent_id' => $parent->id, 'level' => ($parent->level ?? 1) + 1]
-        );
+        if (! $account) {
+            $account = new ChartOfAccount(['code' => $code]);
+        }
+
+        // Akun lama yang memakai kode berbasis nama pihak tetap memakai ID yang sama agar
+        // jurnal historis tidak terputus, lalu dinormalisasi ke format numerik baru.
+        $sameCode = ChartOfAccount::withTrashed()->where('code', $code);
+        if ($account->exists) {
+            $sameCode->where('id', '!=', $account->id);
+        }
+        $canUseCode = ! $sameCode->exists();
         $account->forceFill([
+            'code' => $canUseCode ? $code : $account->code,
             'name' => $label.' — '.$party->name,
             'type' => $parent->type,
             'parent_id' => $parent->id,
@@ -62,5 +70,18 @@ class PartyAccountService
         $party->forceFill([$column => $account->id])->save();
 
         return $account;
+    }
+
+    private function subledgerCode(Customer|Vendor $party, string $mappingKey): string
+    {
+        $prefix = match ($mappingKey) {
+            'receivable' => '1200',
+            'temporary_receivable' => '1201',
+            'vendor_payable' => '2100',
+            'agent_payable' => '2200',
+            default => throw new \InvalidArgumentException('Mapping COA pembantu tidak dikenali.'),
+        };
+
+        return $prefix.str_pad((string) $party->id, 3, '0', STR_PAD_LEFT);
     }
 }

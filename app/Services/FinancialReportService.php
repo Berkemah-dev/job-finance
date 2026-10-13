@@ -161,17 +161,19 @@ class FinancialReportService
             }
         }
 
-        // Tambahkan akun kustom yang memiliki mutasi namun di luar daftar standar agar Trial Balance selalu seimbang
+        // COA pembantu customer/vendor/agent selalu terlihat di Trial Balance, walaupun saldonya masih nol.
+        // Kode 1200001 = Piutang Customer pertama, 1200002 = customer kedua, dan seterusnya.
         foreach ($all as $acc) {
             if (in_array((string) $acc->code, $usedCodes, true)) {
                 continue;
             }
             $hasActivity = ! Money::decimal($acc->debit)->isZero() || ! Money::decimal($acc->credit)->isZero();
-            if (! $hasActivity) {
+            $isPartySubledger = preg_match('/^(1200|1201|2100|2200)\d{3,}$/', (string) $acc->code) === 1;
+            if (! $hasActivity && ! $isPartySubledger) {
                 continue;
             }
             $def = [
-                'acc_no' => $this->inferAccNo($acc),
+                'acc_no' => (string) $acc->code,
                 'name' => $acc->name,
                 'type' => $acc->type,
                 'codes' => [(string) $acc->code],
@@ -525,6 +527,38 @@ class FinancialReportService
 
         $byCode = $allAccounts->keyBy('code');
         $defs = $this->radixDefinitions();
+
+        // Subledger tetap tergabung pada satu baris piutang/hutang di Neraca.
+        // Rinciannya tetap tersedia di Trial Balance dan Buku Besar masing-masing COA.
+        foreach ($defs['aktiva_lancar'] as &$def) {
+            if ($def['name'] === 'Piutang Customer') {
+                $def['codes'] = array_values(array_unique(array_merge(
+                    $def['codes'],
+                    $allAccounts->filter(fn ($account) => preg_match('/^1200\d{3,}$/', (string) $account->code) === 1)->pluck('code')->all(),
+                )));
+            }
+            if ($def['name'] === 'Piutang Temporary') {
+                $def['codes'] = array_values(array_unique(array_merge(
+                    $def['codes'],
+                    $allAccounts->filter(fn ($account) => preg_match('/^1201\d{3,}$/', (string) $account->code) === 1)->pluck('code')->all(),
+                )));
+            }
+        }
+        unset($def);
+        foreach ($defs['kewajiban_lancar'] as &$def) {
+            $prefix = match ($def['name']) {
+                'Hutang Vendor' => '2100',
+                'Hutang Agent' => '2200',
+                default => null,
+            };
+            if ($prefix) {
+                $def['codes'] = array_values(array_unique(array_merge(
+                    $def['codes'],
+                    $allAccounts->filter(fn ($account) => preg_match('/^'.$prefix.'\d{3,}$/', (string) $account->code) === 1)->pluck('code')->all(),
+                )));
+            }
+        }
+        unset($def);
         $usedAssetCodes = ['1', '11000', '12000'];
         $usedLiabilityCodes = ['2'];
         $usedEquityCodes = ['3'];

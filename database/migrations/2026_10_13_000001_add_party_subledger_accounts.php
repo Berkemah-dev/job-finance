@@ -31,8 +31,13 @@ return new class extends Migration
         $ensure = static function (object $party, string $table, string $column, string $key, string $label) use ($parents): void {
             $parent = $parents->get($key);
             if (! $parent) return;
-            $suffix = strtoupper((string) preg_replace('/[^A-Z0-9-]/', '', (string) ($party->code ?: $party->id)));
-            $code = substr($parent->code.'-'.$suffix, 0, 20);
+            $prefix = match ($key) {
+                'receivable' => '1200',
+                'temporary_receivable' => '1201',
+                'vendor_payable' => '2100',
+                'agent_payable' => '2200',
+            };
+            $code = $prefix.str_pad((string) $party->id, 3, '0', STR_PAD_LEFT);
             $account = DB::table('chart_of_accounts')->where('code', $code)->first();
             $values = ['name' => $label.' — '.$party->name, 'type' => $parent->type, 'parent_id' => $parent->id, 'level' => ((int) $parent->level) + 1, 'updated_at' => now()];
             if ($account) {
