@@ -388,3 +388,72 @@
     display: none !important;
 }
 
+/* Import COA */
+.coa-import-modal {
+    max-width: 620px !important;
+    overflow: hidden !important;
+}
+
+.coa-import-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid #e8edf5;
+    background: linear-gradient(135deg, #f8fbff 0%, #ffffff 68%);
+}
+
+.coa-import-modal__heading { display: flex; align-items: flex-start; gap: 14px; }
+.coa-import-modal__icon, .coa-import-dropzone__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    flex: 0 0 42px;
+    color: #1d4ed8;
+    background: #e8f0ff;
+}
+.coa-import-modal__icon svg, .coa-import-dropzone__icon svg { width: 21px; height: 21px; }
+.coa-import-modal__eyebrow { display: block; margin-bottom: 4px; color: #5470a8; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.coa-import-modal h2 { margin: 0; color: #13264b; font-size: 20px; line-height: 1.3; }
+.coa-import-modal__header p { margin: 5px 0 0; color: #64748b; font-size: 13px; line-height: 1.5; }
+.coa-import-modal__close {
+    display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+    border: 1px solid #d9e2f0; border-radius: 9px; color: #64748b; background: #fff; font-size: 21px; line-height: 1; cursor: pointer;
+}
+.coa-import-modal__close:hover { color: #b42318; border-color: #fecaca; background: #fef2f2; }
+.coa-import-modal__body { padding: 22px 28px 24px; }
+.coa-import-modal__notice { padding: 13px 15px; border: 1px solid #dbe7fb; border-radius: 11px; background: #f5f8ff; color: #526b99; }
+.coa-import-modal__notice strong { display: block; color: #24477d; font-size: 13px; }
+.coa-import-modal__notice p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; }
+.coa-import-modal__steps { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 20px 0; }
+.coa-import-modal__steps div { display: flex; align-items: center; gap: 7px; color: #64748b; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.coa-import-modal__steps span { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px; border-radius: 50%; background: #e8f0ff; color: #1d4ed8; font-size: 10px; font-weight: 800; }
+.coa-import-modal__steps p { margin: 0; }
+.coa-import-modal__steps i { width: 22px; height: 1px; background: #dbe3ef; }
+.coa-import-dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px; padding: 20px; border: 1.5px dashed #b7c8e5; border-radius: 13px; background: #fbfdff; color: #465b7b; text-align: center; cursor: pointer; transition: .18s ease; }
+.coa-import-dropzone:hover, .coa-import-dropzone.is-dragging { border-color: #2563eb; background: #f3f7ff; }
+.coa-import-dropzone.has-file { border-style: solid; border-color: #86d5b4; background: #f0fdf7; }
+.coa-import-dropzone__icon { width: 38px; height: 38px; margin-bottom: 9px; color: #2563eb; background: #eef4ff; }
+.coa-import-dropzone.has-file .coa-import-dropzone__icon { color: #07875b; background: #dff9eb; }
+.coa-import-dropzone strong { color: #1e3a69; font-size: 13px; }
+.coa-import-dropzone small { display: block; margin-top: 5px; color: #7b8ba6; font-size: 11px; }
+.coa-import-dropzone input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+.coa-import-modal__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 28px; border-top: 1px solid #e8edf5; background: #fbfcfe; }
+.coa-import-modal__actions { display: flex; gap: 9px; }
+.coa-import-modal__footer .button { min-height: 38px; font-size: 12px; }
+
+@media (max-width: 580px) {
+    .coa-import-modal__header, .coa-import-modal__body, .coa-import-modal__footer { padding-left: 18px; padding-right: 18px; }
+    .coa-import-modal__header { padding-top: 19px; }
+    .coa-import-modal__steps { gap: 5px; }
+    .coa-import-modal__steps div { font-size: 10px; }
+    .coa-import-modal__steps i { width: 10px; }
+    .coa-import-modal__footer { align-items: stretch; flex-direction: column; }
+    .coa-import-modal__footer > .button, .coa-import-modal__actions { width: 100%; }
+    .coa-import-modal__actions .button { flex: 1; }
+}
+

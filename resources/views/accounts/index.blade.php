@@ -27,17 +27,90 @@
     </a>
 </x-menu-banner>
 
-<dialog id="coa-import-dialog" class="modal-dialog" style="max-width:560px">
-    <form method="dialog" class="modal-close"><button aria-label="Tutup">×</button></form>
-    <h2>Import Chart of Accounts</h2>
-    <p>Upload file Excel untuk menambah atau memperbarui COA. Kode akun yang sudah ada akan diperbarui, sementara akun lain tidak dihapus.</p>
-    <div class="info-note"><strong>Kolom wajib:</strong> Kode Akun, Nama Akun, Tipe. Gunakan <strong>Kode Induk</strong> untuk menentukan kepala akun laporan. Sheet <strong>Referensi Kepala Akun</strong> pada template memuat kelompok 10, 11, 12, 20, 21, 22, dan seterusnya.</div>
-    <form method="POST" action="{{ route('accounts.import') }}" enctype="multipart/form-data" class="data-form" style="margin-top:16px">
+<dialog id="coa-import-dialog" class="modal-dialog coa-import-modal">
+    <div class="coa-import-modal__header">
+        <div class="coa-import-modal__heading">
+            <span class="coa-import-modal__icon"><x-icon name="file"/></span>
+            <div>
+                <span class="coa-import-modal__eyebrow">IMPORT DATA COA</span>
+                <h2>Import Chart of Accounts</h2>
+                <p>Tambahkan atau perbarui struktur akun melalui satu file Excel.</p>
+            </div>
+        </div>
+        <button type="button" class="coa-import-modal__close" onclick="document.getElementById('coa-import-dialog').close()" aria-label="Tutup">×</button>
+    </div>
+
+    <form method="POST" action="{{ route('accounts.import') }}" enctype="multipart/form-data">
         @csrf
-        <div class="field"><label for="coa-import-file">File Excel</label><input id="coa-import-file" name="file" type="file" accept=".xls,.xlsx,.csv" required><small>Mendukung XLS, XLSX, dan CSV. Maksimal 5 MB.</small>@error('file')<small class="input-error">{{ $message }}</small>@enderror</div>
-        <div class="form-actions"><a class="button button-secondary" href="{{ route('accounts.template') }}">Download Template</a><button class="button button-primary" type="submit">Import COA</button></div>
+        <div class="coa-import-modal__body">
+            <div class="coa-import-modal__notice">
+                <strong>Format file</strong>
+                <p>Kolom wajib: <b>Kode Akun</b>, <b>Nama Akun</b>, dan <b>Tipe</b>. Kode akun yang sama akan diperbarui; akun lain tetap aman.</p>
+            </div>
+
+            <div class="coa-import-modal__steps" aria-label="Langkah import">
+                <div><span>1</span><p>Unduh template</p></div>
+                <i></i>
+                <div><span>2</span><p>Isi data akun</p></div>
+                <i></i>
+                <div><span>3</span><p>Unggah file</p></div>
+            </div>
+
+            <label for="coa-import-file" id="coa-import-dropzone" class="coa-import-dropzone">
+                <input id="coa-import-file" name="file" type="file" accept=".xls,.xlsx,.csv" required>
+                <span class="coa-import-dropzone__icon"><x-icon name="file"/></span>
+                <strong id="coa-import-file-title">Pilih atau tarik file Excel ke sini</strong>
+                <small id="coa-import-file-detail">Mendukung XLS, XLSX, atau CSV · Maksimal 5 MB</small>
+            </label>
+            @error('file')<small class="input-error">{{ $message }}</small>@enderror
+        </div>
+
+        <div class="coa-import-modal__footer">
+            <a class="button button-secondary" href="{{ route('accounts.template') }}">↓ Download Template</a>
+            <div class="coa-import-modal__actions">
+                <button class="button button-secondary" type="button" onclick="document.getElementById('coa-import-dialog').close()">Batal</button>
+                <button class="button button-primary" type="submit">↑ Import COA</button>
+            </div>
+        </div>
     </form>
 </dialog>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const dialog = document.getElementById('coa-import-dialog');
+    const input = document.getElementById('coa-import-file');
+    const dropzone = document.getElementById('coa-import-dropzone');
+    const title = document.getElementById('coa-import-file-title');
+    const detail = document.getElementById('coa-import-file-detail');
+
+    const showSelectedFile = () => {
+        const file = input.files[0];
+        if (!file) return;
+        title.textContent = file.name;
+        detail.textContent = `File siap diimport · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        dropzone.classList.add('has-file');
+    };
+
+    input.addEventListener('change', showSelectedFile);
+    ['dragenter', 'dragover'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.add('is-dragging');
+    }));
+    ['dragleave', 'drop'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.remove('is-dragging');
+    }));
+    dropzone.addEventListener('drop', (event) => {
+        if (!event.dataTransfer.files.length) return;
+        input.files = event.dataTransfer.files;
+        showSelectedFile();
+    });
+    dialog.addEventListener('click', (event) => {
+        const bounds = dialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+    });
+});
+</script>
 
 @include('accounts.partials.coa')
 
