@@ -46,6 +46,11 @@ class Vendor extends Model
         return $this->belongsTo(ChartOfAccount::class, 'payable_account_id');
     }
 
+    public function agentReceivableAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'agent_receivable_account_id');
+    }
+
     public function categoryLabels(): array
     {
         $types = config('operations.vendor_types');

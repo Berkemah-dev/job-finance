@@ -267,6 +267,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/trucking/{truckingPrice}', [TruckingPriceController::class, 'destroy'])->whereNumber('truckingPrice')->name('trucking.destroy');
     });
     Route::get('/accounts/mappings', [AccountController::class, 'mappings'])->middleware('can:coa.manage')->name('accounts.mappings');
+    Route::get('/accounts/template', [AccountController::class, 'template'])->middleware('can:coa.manage')->name('accounts.template');
+    Route::get('/accounts/export', [AccountController::class, 'export'])->middleware('can:coa.manage')->name('accounts.export');
+    Route::post('/accounts/import', [AccountController::class, 'import'])->middleware('can:coa.manage')->name('accounts.import');
     Route::get('/master/coa', [AccountController::class, 'index'])->defaults('tab', 'coa')->middleware('can:coa.manage')->name('master.coa');
     Route::get('/master/charge-types', [AccountController::class, 'index'])->defaults('tab', 'charge')->middleware('can:master-data.manage')->name('master.charge');
     Route::get('/master/units', [AccountController::class, 'index'])->defaults('tab', 'unit')->middleware('can:master-data.manage')->name('master.units');

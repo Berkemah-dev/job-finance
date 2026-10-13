@@ -43,7 +43,8 @@ class JobCostService
             $hasDraftPayable = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
                 ->whereIn('type', ['job_cost_draft', 'job_cost_direct', 'job_cost_finalization'])->exists();
             $pph = Money::decimal($data['pph23_amount'] ?? $cost->pph23_amount ?? 0);
-            $isCommission = $cost->cost_category === 'credit_note' || str_contains(mb_strtolower($cost->description), 'komisi');
+            $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
+            $isCommission = $vendor?->type === 'commission' || $cost->cost_category === 'credit_note' || str_contains(mb_strtolower($cost->description), 'komisi');
             $taxKey = $isCommission ? 'pph21_payable' : 'pph23_payable';
             $taxLabel = $isCommission ? 'PPh 21 hutang ' : 'PPh 23 hutang ';
             $taxName = $isCommission ? 'PPh 21' : 'PPh 23';
@@ -55,8 +56,7 @@ class JobCostService
                 ->whereHas('journal', fn ($query) => $query->where('source_type', JobCost::class)->where('source_id', $cost->id))
                 ->sum('credit'));
             $amount = Money::decimal($cost->total_cost);
-            $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
-            $payableKey = in_array($vendor?->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable';
+            $payableKey = $vendor ? $this->partyAccounts->payableMappingKey($vendor) : 'vendor_payable';
             $payableAccount = $vendor
                 ? $this->partyAccounts->vendorPayable($vendor)
                 : $this->journals->mapped([$payableKey])[$payableKey];
@@ -74,7 +74,7 @@ class JobCostService
                 $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
                 $draftEntries = [
                     ['account_id' => $mapsDraft[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => (string) $amount, 'credit' => 0],
-                    ['account_id' => $payableAccount->id, 'description' => ($payableKey === 'agent_payable' ? 'Hutang agent ' : 'Hutang vendor ').$cost->number, 'debit' => 0, 'credit' => (string) $amount],
+                    ['account_id' => $payableAccount->id, 'description' => ($vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ').$cost->number, 'debit' => 0, 'credit' => (string) $amount],
                 ];
                 $costDate = $cost->cost_date ? $cost->cost_date->format('Y-m-d') : $data['paid_date'];
                 $this->journals->post('job_cost_finalization', JobCost::class, $cost->id, $costDate, 'Finalisasi '.$cost->number, $draftEntries, $actor);
@@ -91,7 +91,7 @@ class JobCostService
             $additionalPph = $pph->minus($draftPph);
 
             $entries = [
-                ['account_id' => $payableAccount->id, 'description' => 'Pelunasan '.($payableKey === 'agent_payable' ? 'hutang agent ' : 'hutang vendor ').$cost->number, 'debit' => (string) $vendorSettlement, 'credit' => 0],
+                ['account_id' => $payableAccount->id, 'description' => 'Pelunasan '.mb_strtolower($vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ').$cost->number, 'debit' => (string) $vendorSettlement, 'credit' => 0],
                 ['account_id' => $account->id, 'description' => 'Pembayaran biaya job '.$cost->number, 'debit' => 0, 'credit' => (string) $bankPayment],
             ];
             if ($additionalPph->isPositive()) {
@@ -218,13 +218,13 @@ class JobCostService
     private function recognizePayable(JobCost $cost, User $actor, string $journalType): void
     {
         $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
-        $payableKey = in_array($vendor?->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable';
+        $payableKey = $vendor ? $this->partyAccounts->payableMappingKey($vendor) : 'vendor_payable';
         $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
         $maps = $this->journals->mapped([$debitKey]);
         $payableAccount = $vendor
             ? $this->partyAccounts->vendorPayable($vendor)
             : $this->journals->mapped([$payableKey])[$payableKey];
-        $payableLabel = $payableKey === 'agent_payable' ? 'Hutang agent ' : 'Hutang vendor ';
+        $payableLabel = $vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ';
         $this->journals->post($journalType, JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Pencatatan '.$cost->number, [
             ['account_id' => $maps[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => $cost->total_cost, 'credit' => 0],
             ['account_id' => $payableAccount->id, 'description' => $payableLabel.$cost->number, 'debit' => 0, 'credit' => $cost->total_cost],

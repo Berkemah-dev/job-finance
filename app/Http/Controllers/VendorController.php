@@ -43,6 +43,9 @@ class VendorController extends Controller
             }
             $vendor = $service->save(new Vendor, $validated, $request->user());
             $partyAccounts->vendorPayable($vendor);
+            if (in_array($vendor->type, ['international_agent', 'national_agent'], true)) {
+                $partyAccounts->agentReceivable($vendor);
+            }
             if ($request->has('categories')) {
                 $vendor->categories()->delete();
                 foreach ($request->input('categories', []) as $cat) {
@@ -69,7 +72,7 @@ class VendorController extends Controller
 
     public function show(Vendor $vendor)
     {
-        $vendor->load(['truckingPrices', 'categories', 'trucks', 'payableAccount']);
+        $vendor->load(['truckingPrices', 'categories', 'trucks', 'payableAccount', 'agentReceivableAccount']);
 
         return view('vendors.show', compact('vendor'));
     }
@@ -86,6 +89,9 @@ class VendorController extends Controller
             $validated = $request->validated();
             $service->save($vendor, $validated, $request->user());
             $partyAccounts->vendorPayable($vendor);
+            if (in_array($vendor->type, ['international_agent', 'national_agent'], true)) {
+                $partyAccounts->agentReceivable($vendor);
+            }
             if ($request->has('categories')) {
                 $vendor->categories()->delete();
                 foreach ($request->input('categories', []) as $cat) {

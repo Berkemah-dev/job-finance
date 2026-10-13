@@ -12,6 +12,7 @@ return [
         'temporary_receivable' => ['label' => 'Piutang Temporary', 'type' => 'asset', 'code' => '1106', 'name' => 'Piutang Temporary'],
         'agent_receivable' => ['label' => 'Piutang Agent', 'type' => 'asset', 'code' => '1107', 'name' => 'Piutang Agent'],
         'agent_payable' => ['label' => 'Hutang Agent', 'type' => 'liability', 'code' => '2103', 'name' => 'Hutang Agent'],
+        'commission_payable' => ['label' => 'Hutang Komisi', 'type' => 'liability', 'code' => '22500', 'name' => 'Hutang Komisi'],
         'revenue' => ['label' => 'Pendapatan Jasa', 'type' => 'revenue', 'code' => '4101', 'name' => 'Pendapatan Jasa'],
         'cogs' => ['label' => 'HPP Job', 'type' => 'cogs', 'code' => '5101', 'name' => 'HPP Job'],
         'revenue_import_closed' => ['label' => 'Pendapatan Impor (Close)', 'type' => 'revenue', 'code' => '41000', 'name' => 'Pendapatan Impor'],

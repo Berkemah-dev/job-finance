@@ -25,7 +25,7 @@ return new class extends Migration
 
         $parents = DB::table('account_mappings as mappings')
             ->join('chart_of_accounts as accounts', 'accounts.id', '=', 'mappings.chart_of_account_id')
-            ->whereIn('mappings.key', ['receivable', 'temporary_receivable', 'vendor_payable', 'agent_payable'])
+            ->whereIn('mappings.key', ['receivable', 'temporary_receivable', 'agent_receivable', 'vendor_payable', 'agent_payable', 'commission_payable'])
             ->get(['mappings.key', 'accounts.id', 'accounts.code', 'accounts.type', 'accounts.level'])
             ->keyBy('key');
         $ensure = static function (object $party, string $table, string $column, string $key, string $label) use ($parents): void {
@@ -36,6 +36,7 @@ return new class extends Migration
                 'temporary_receivable' => '1201',
                 'vendor_payable' => '2100',
                 'agent_payable' => '2200',
+                'commission_payable' => '2250',
             };
             $code = $prefix.str_pad((string) $party->id, 3, '0', STR_PAD_LEFT);
             $account = DB::table('chart_of_accounts')->where('code', $code)->first();
@@ -53,8 +54,9 @@ return new class extends Migration
             $ensure($customer, 'customers', 'temporary_receivable_account_id', 'temporary_receivable', 'Piutang Temporary');
         }
         foreach (DB::table('vendors')->get() as $vendor) {
-            $key = in_array($vendor->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable';
-            $ensure($vendor, 'vendors', 'payable_account_id', $key, $key === 'agent_payable' ? 'Hutang Agent' : 'Hutang Vendor');
+            $key = $vendor->type === 'commission' ? 'commission_payable' : (in_array($vendor->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable');
+            $label = match ($key) { 'agent_payable' => 'Hutang Agent', 'commission_payable' => 'Hutang Komisi', default => 'Hutang Vendor' };
+            $ensure($vendor, 'vendors', 'payable_account_id', $key, $label);
         }
 
         // Pindahkan mutasi lama ke COA pihak yang tepat agar saldo historis juga terbaca per customer/vendor.
@@ -79,7 +81,7 @@ return new class extends Migration
         foreach (DB::table('vendors')->whereNotNull('payable_account_id')->get(['id', 'payable_account_id', 'type']) as $vendor) {
             $costIds = DB::table('job_costs')->where('vendor_id', $vendor->id)->pluck('id');
             $journalIds = DB::table('journals')->where('source_type', \App\Models\JobCost::class)->whereIn('source_id', $costIds)->pluck('id');
-            $parentKey = in_array($vendor->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable';
+            $parentKey = $vendor->type === 'commission' ? 'commission_payable' : (in_array($vendor->type, ['international_agent', 'national_agent'], true) ? 'agent_payable' : 'vendor_payable');
             if ($journalIds->isNotEmpty()) {
                 DB::table('journal_entries')->whereIn('journal_id', $journalIds)->where('chart_of_account_id', $parents[$parentKey]->id)->update(['chart_of_account_id' => $vendor->payable_account_id]);
             }

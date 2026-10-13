@@ -35,8 +35,8 @@ class FinancialReportService
                 ['acc_no' => '12', 'name' => 'Piutang Karyawan', 'type' => 'asset', 'codes' => ['11160']],
                 ['acc_no' => '12', 'name' => 'Piutang Komisaris', 'type' => 'asset', 'codes' => ['11170']],
                 ['acc_no' => '12', 'name' => 'Piutang Lain - Lain', 'type' => 'asset', 'codes' => ['11150']],
-                ['acc_no' => '13', 'tb_acc_no' => '12', 'name' => 'Provisional Payment', 'type' => 'asset', 'codes' => ['1105', '11181']],
-                ['acc_no' => '13', 'tb_acc_no' => '12', 'name' => 'Temporary Payment', 'type' => 'asset', 'codes' => ['1104', '11180']],
+                ['acc_no' => '12', 'name' => 'Provisional Payment', 'type' => 'asset', 'codes' => ['1105', '11181']],
+                ['acc_no' => '12', 'name' => 'Temporary Payment', 'type' => 'asset', 'codes' => ['1104', '11180']],
                 ['acc_no' => '13', 'name' => 'Jaminan', 'type' => 'asset', 'codes' => ['11190']],
                 ['acc_no' => '14', 'name' => 'PPN Masukan', 'type' => 'asset', 'codes' => ['11191']],
                 ['acc_no' => '14', 'name' => 'PPH 23 Dimuka', 'type' => 'asset', 'codes' => ['11192']],
@@ -161,14 +161,14 @@ class FinancialReportService
             }
         }
 
-        // COA pembantu customer/vendor/agent selalu terlihat di Trial Balance, walaupun saldonya masih nol.
+        // COA pembantu customer/vendor/agent/komisi selalu terlihat di Trial Balance, walaupun saldonya masih nol.
         // Kode 1200001 = Piutang Customer pertama, 1200002 = customer kedua, dan seterusnya.
         foreach ($all as $acc) {
             if (in_array((string) $acc->code, $usedCodes, true)) {
                 continue;
             }
             $hasActivity = ! Money::decimal($acc->debit)->isZero() || ! Money::decimal($acc->credit)->isZero();
-            $isPartySubledger = preg_match('/^(1200|1201|2100|2200)\d{3,}$/', (string) $acc->code) === 1;
+            $isPartySubledger = preg_match('/^(1200|1201|1202|2100|2200|2250)\d{3,}$/', (string) $acc->code) === 1;
             if (! $hasActivity && ! $isPartySubledger) {
                 continue;
             }
@@ -543,12 +543,19 @@ class FinancialReportService
                     $allAccounts->filter(fn ($account) => preg_match('/^1201\d{3,}$/', (string) $account->code) === 1)->pluck('code')->all(),
                 )));
             }
+            if ($def['name'] === 'Piutang Agent') {
+                $def['codes'] = array_values(array_unique(array_merge(
+                    $def['codes'],
+                    $allAccounts->filter(fn ($account) => preg_match('/^1202\d{3,}$/', (string) $account->code) === 1)->pluck('code')->all(),
+                )));
+            }
         }
         unset($def);
         foreach ($defs['kewajiban_lancar'] as &$def) {
             $prefix = match ($def['name']) {
                 'Hutang Vendor' => '2100',
                 'Hutang Agent' => '2200',
+                'Hutang Komisi' => '2250',
                 default => null,
             };
             if ($prefix) {

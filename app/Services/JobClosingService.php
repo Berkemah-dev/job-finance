@@ -7,6 +7,7 @@ use App\Models\Job;
 use App\Models\JobClosingSnapshot;
 use App\Models\Journal;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Facades\DB;
@@ -163,10 +164,36 @@ class JobClosingService
             }
 
             $categoryTotals = $rows->groupBy(fn ($cost) => $cost->cost_category ?: ($cost->type === 'temporary' ? 'reimbursement' : 'payment_request'));
-            $debitNote = Money::decimal((string) ($categoryTotals->get('debit_note', collect())->sum('total_price')));
-            $creditNote = Money::decimal((string) ($categoryTotals->get('credit_note', collect())->sum('total_cost')));
-            if (! $debitNote->isZero()) $this->journals->post('agent_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Agent '.$job->number, [['account_id'=>$maps['agent_receivable']->id,'description'=>'Piutang agent '.$job->number,'debit'=>(string)$debitNote,'credit'=>0],['account_id'=>$customerAccounts['receivable']->id,'description'=>'Reklasifikasi debit note '.$job->number,'debit'=>0,'credit'=>(string)$debitNote]], $actor);
-            if (! $creditNote->isZero()) $this->journals->post('agent_payable_recognition', Job::class, $job->id, $data['closing_date'], 'Hutang Agent '.$job->number, [['account_id'=>$maps[$flow['revenue_unclosed']]->id,'description'=>'Credit note agent '.$job->number,'debit'=>(string)$creditNote,'credit'=>0],['account_id'=>$maps['agent_payable']->id,'description'=>'Hutang agent '.$job->number,'debit'=>0,'credit'=>(string)$creditNote]], $actor);
+            $debitNotes = $categoryTotals->get('debit_note', collect());
+            $debitNote = Money::decimal((string) $debitNotes->sum('total_price'));
+            if (! $debitNote->isZero()) {
+                $entries = [];
+                foreach ($debitNotes as $cost) {
+                    $amount = Money::decimal($cost->total_price);
+                    if ($amount->isZero()) continue;
+                    $agent = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
+                    $account = $agent && in_array($agent->type, ['international_agent', 'national_agent'], true)
+                        ? $this->partyAccounts->agentReceivable($agent)
+                        : $maps['agent_receivable'];
+                    $entries[] = ['account_id' => $account->id, 'description' => 'Piutang agent '.$cost->number.' · '.$job->number, 'debit' => (string) $amount, 'credit' => 0];
+                }
+                $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Reklasifikasi debit note '.$job->number, 'debit' => 0, 'credit' => (string) $debitNote];
+                $this->journals->post('agent_receivable_reclass', Job::class, $job->id, $data['closing_date'], 'Piutang Agent '.$job->number, $entries, $actor);
+            }
+            $creditNotes = $categoryTotals->get('credit_note', collect());
+            $creditNote = Money::decimal((string) $creditNotes->sum('total_cost'));
+            if (! $creditNote->isZero()) {
+                $entries = [];
+                foreach ($creditNotes as $cost) {
+                    $amount = Money::decimal($cost->total_cost);
+                    if ($amount->isZero()) continue;
+                    $payee = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
+                    $account = $payee ? $this->partyAccounts->vendorPayable($payee) : $maps['agent_payable'];
+                    $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Credit note '.$cost->number.' · '.$job->number, 'debit' => (string) $amount, 'credit' => 0];
+                    $entries[] = ['account_id' => $account->id, 'description' => ($payee ? $this->partyAccounts->payableLabel($payee) : 'Hutang agent ').$cost->number.' · '.$job->number, 'debit' => 0, 'credit' => (string) $amount];
+                }
+                $this->journals->post('agent_payable_recognition', Job::class, $job->id, $data['closing_date'], 'Hutang Agent '.$job->number, $entries, $actor);
+            }
             $job->status = 'closed';
             $job->closed_by = $actor->id;
             $job->closed_at = now();

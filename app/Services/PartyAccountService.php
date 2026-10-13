@@ -21,14 +21,46 @@ class PartyAccountService
 
     public function vendorPayable(Vendor $vendor): ChartOfAccount
     {
-        $isAgent = in_array($vendor->type, ['international_agent', 'national_agent'], true);
+        $mappingKey = $this->payableMappingKey($vendor);
+        $label = match ($mappingKey) {
+            'agent_payable' => 'Hutang Agent',
+            'commission_payable' => 'Hutang Komisi',
+            default => 'Hutang Vendor',
+        };
 
         return $this->ensure(
             $vendor,
             'payable_account_id',
-            $isAgent ? 'agent_payable' : 'vendor_payable',
-            $isAgent ? 'Hutang Agent' : 'Hutang Vendor',
+            $mappingKey,
+            $label,
         );
+    }
+
+    public function agentReceivable(Vendor $vendor): ChartOfAccount
+    {
+        if (! in_array($vendor->type, ['international_agent', 'national_agent'], true)) {
+            throw new \InvalidArgumentException('Piutang Agent hanya dapat dibuat untuk data Agent.');
+        }
+
+        return $this->ensure($vendor, 'agent_receivable_account_id', 'agent_receivable', 'Piutang Agent');
+    }
+
+    public function payableMappingKey(Vendor $vendor): string
+    {
+        return match (true) {
+            $vendor->type === 'commission' => 'commission_payable',
+            in_array($vendor->type, ['international_agent', 'national_agent'], true) => 'agent_payable',
+            default => 'vendor_payable',
+        };
+    }
+
+    public function payableLabel(Vendor $vendor): string
+    {
+        return match ($this->payableMappingKey($vendor)) {
+            'agent_payable' => 'Hutang agent ',
+            'commission_payable' => 'Hutang komisi ',
+            default => 'Hutang vendor ',
+        };
     }
 
     private function ensure(Customer|Vendor $party, string $column, string $mappingKey, string $label): ChartOfAccount
@@ -77,8 +109,10 @@ class PartyAccountService
         $prefix = match ($mappingKey) {
             'receivable' => '1200',
             'temporary_receivable' => '1201',
+            'agent_receivable' => '1202',
             'vendor_payable' => '2100',
             'agent_payable' => '2200',
+            'commission_payable' => '2250',
             default => throw new \InvalidArgumentException('Mapping COA pembantu tidak dikenali.'),
         };
 
