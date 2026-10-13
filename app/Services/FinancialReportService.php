@@ -83,9 +83,9 @@ class FinancialReportService
                 ['acc_no' => '50', 'name' => 'HPP Sewa', 'type' => 'cogs', 'codes' => ['5400']],
             ],
             'hpp_unclosed' => [
-                ['acc_no' => '51', 'name' => 'HPP Impor Unlosed', 'type' => 'cogs', 'codes' => ['51100']],
-                ['acc_no' => '51', 'name' => 'HPP Ekspor Unlosed', 'type' => 'cogs', 'codes' => ['52100']],
-                ['acc_no' => '51', 'name' => 'HPP Domestik Unlosed', 'type' => 'cogs', 'codes' => ['53100']],
+                ['acc_no' => '51', 'name' => 'HPP Impor Unclosed', 'type' => 'cogs', 'codes' => ['51100']],
+                ['acc_no' => '51', 'name' => 'HPP Ekspor Unclosed', 'type' => 'cogs', 'codes' => ['52100']],
+                ['acc_no' => '51', 'name' => 'HPP Domestik Unclosed', 'type' => 'cogs', 'codes' => ['53100']],
             ],
             'biaya_operasional' => [
                 ['acc_no' => '60', 'name' => 'Biaya Gaji Karyawan / Training', 'type' => 'expense', 'codes' => ['62100']],
@@ -331,6 +331,13 @@ class FinancialReportService
                 $entry->tax_invoice_number = $payment->invoice?->tax_invoice_number;
                 $entry->withholding_document_number = $payment->withholding_document_number;
                 $entry->payment_status = $payment->invoice?->status === 'paid' ? 'paid' : 'unpaid';
+                $entry->service_type = $payment->invoice?->job?->service_type;
+                if ($payment->invoice) {
+                    $entry->base_amount = $payment->invoice->subtotal;
+                    if ((float) $payment->invoice->tax > 0 && (float) $payment->invoice->subtotal > 0) {
+                        $entry->tax_rate = round(((float) $payment->invoice->tax / (float) $payment->invoice->subtotal) * 100, 1).'%';
+                    }
+                }
             }
         }
     }
@@ -396,7 +403,9 @@ class FinancialReportService
                 'opening_credit' => '0.00',
                 'balance' => (string) $balance,
                 'report_balance' => (string) $balance,
-                'has_activity' => ! $debit->isZero() || ! $credit->isZero(),
+                // COA laporan tetap harus terlihat meskipun belum memiliki mutasi.
+                // Tampilan lama menggunakan flag ini untuk menentukan apakah baris akun dirender.
+                'has_activity' => true,
             ];
         });
 

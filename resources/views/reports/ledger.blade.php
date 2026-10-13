@@ -145,8 +145,28 @@
                                 <small class="subtle" style="color:#2563eb;display:block;">No PR: {{ $entry->cost_number }}</small>
                             @endif
                         </td>
-                        <td><strong>{{ $entry->job_number ?? '—' }}</strong></td>
-                        <td><strong>{{ $entry->invoice_number ?? '—' }}</strong></td>
+                        <td>
+                            <strong>{{ $entry->job_number ?? '—' }}</strong>
+                            @if(!empty($entry->service_type))
+                                @php
+                                    $srv = strtoupper((string) $entry->service_type);
+                                    $isImp = str_contains($srv, 'IMP');
+                                    $isExp = str_contains($srv, 'EXP');
+                                @endphp
+                                <span style="display:block;margin-top:2px;font-size:10px;font-weight:700;color:{{ $isImp ? '#3730a3' : ($isExp ? '#065f46' : '#475569') }};">
+                                    {{ $isImp ? 'IMPORT' : ($isExp ? 'EKSPOR' : 'DOMESTIK') }}
+                                </span>
+                            @endif
+                        </td>
+                        <td>
+                            <strong>{{ $entry->invoice_number ?? '—' }}</strong>
+                            @if(!empty($entry->base_amount))
+                                <small style="color:#64748b;display:block;font-size:11px;">Nilai: Rp {{ \App\Support\Money::format($entry->base_amount) }}</small>
+                            @endif
+                            @if(!empty($entry->tax_rate))
+                                <small style="color:#0284c7;display:block;font-size:11px;font-weight:600;">Tarif: {{ $entry->tax_rate }}</small>
+                            @endif
+                        </td>
                         <td>
                             @if(!empty($entry->customer_name))
                                 <span class="partner-customer"><strong>{{ $entry->customer_name }}</strong></span>
@@ -160,13 +180,13 @@
                         </td>
                         <td>
                             @if(!empty($entry->tax_invoice_number))
-                                <span title="Faktur Pajak" style="font-weight:600;display:block;">NSFP: {{ $entry->tax_invoice_number }}</span>
+                                <span title="Faktur Pajak" style="font-weight:600;display:block;color:#1e40af;">NSFP: {{ $entry->tax_invoice_number }}</span>
                             @endif
                             @if(!empty($entry->withholding_document_number))
-                                <span title="Bukti Potong" style="color:#059669;display:block;font-size:12px;">Bupot: {{ $entry->withholding_document_number }}</span>
+                                <span title="Bukti Potong" style="color:#059669;display:block;font-size:12px;font-weight:600;">Bupot: {{ $entry->withholding_document_number }}</span>
                             @endif
                             @if(empty($entry->tax_invoice_number) && empty($entry->withholding_document_number))
-                                —
+                                <span style="color:#94a3b8;">—</span>
                             @endif
                         </td>
                         <td class="money">{{ \App\Support\Money::format($entry->debit) }}</td>
