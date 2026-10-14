@@ -26,7 +26,7 @@ strong{font-weight:700}
 
 @php $aged = $statement['aged']; @endphp
 @if($aged['invoices'] > 0)
-<p style="margin:12px 0 0">Umur piutang: @foreach(['current'=>'Saat ini','aging_1_30'=>'1-30 hari','aging_31_60'=>'31-60 hari','aging_61_90'=>'61-90 hari','aging_90_plus'=>'> 90 hari'] as $key=>$label)@unless(\App\Support\Money::decimal($aged[$key])->isZero()){{ $label }} Rp {{ \App\Support\Money::format($aged[$key]) }}@unless($loop->last); @endunless@endunless@endforeach</p>
+<p style="margin:12px 0 0">Umur piutang: @foreach(['current'=>'Saat ini','aging_1_30'=>'1-30 hari','aging_31_60'=>'31-60 hari','aging_61_90'=>'61-90 hari','aging_90_plus'=>'> 90 hari'] as $key=>$label) @unless(\App\Support\Money::decimal($aged[$key])->isZero()) {{ $label }} Rp {{ \App\Support\Money::format($aged[$key]) }} @unless($loop->last) ; @endunless @endunless @endforeach</p>
 @endif
 
 <table><thead><tr><th>Tanggal</th><th>Nomor</th><th>Keterangan</th><th class="money">Debet</th><th class="money">Kredit</th><th class="money">Saldo</th></tr></thead>

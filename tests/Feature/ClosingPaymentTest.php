@@ -246,6 +246,55 @@ class ClosingPaymentTest extends TestCase
         $this->assertCount(2, $reversals);
     }
 
+    public function test_job_can_be_closed_again_after_reopen_without_double_posting(): void
+    {
+        $this->close();
+
+        // Simpan nominal Piutang dari penutupan pertama untuk dibandingkan.
+        $firstClosing = Journal::where('source_type', Job::class)->where('source_id', $this->job->id)
+            ->where('type', 'job_closing')->whereNull('reversed_at')->firstOrFail();
+        $firstClosingReceivable = (float) $firstClosing->entries()->where('description', 'like', 'Piutang%')->sum('debit');
+
+        $this->post('/jobs/'.$this->job->id.'/reopen', [
+            'lock_version' => $this->job->fresh()->lock_version,
+            'reason' => 'Koreksi alokasi biaya',
+        ])->assertSessionHasNoErrors();
+
+        $reversed = Journal::where('source_type', Job::class)->where('source_id', $this->job->id)->pluck('id');
+        $this->assertSame('open', $this->job->fresh()->status);
+
+        // Menutup kembali harus berhasil dan memakai revisi jurnal berikutnya.
+        $this->post('/closing/'.$this->job->id, $this->closingData())->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('closed', $this->job->fresh()->status);
+        $this->assertDatabaseCount('invoices', 1);
+
+        // Jurnal lama tetap dibalik; hanya jurnal revisi baru yang aktif.
+        foreach (Journal::whereIn('id', $reversed)->get() as $journal) {
+            $this->assertNotNull($journal->reversed_at);
+        }
+
+        $active = Journal::where('source_type', Job::class)->where('source_id', $this->job->id)
+            ->whereNull('reversed_at')->get();
+        $this->assertCount(2, $active);
+        foreach ($active as $journal) {
+            $this->assertSame(1, $journal->revision);
+        }
+
+        // Buku besar harus seimbang dan nominalnya sama dengan penutupan pertama (tanpa penggandakan).
+        $entries = \App\Models\JournalEntry::whereIn('journal_id', $active->pluck('id'))->get();
+        $totalDebit = (float) $entries->sum('debit');
+        $totalCredit = (float) $entries->sum('credit');
+        $this->assertEqualsWithDelta($totalCredit, $totalDebit, 0.01);
+
+        $repostedClosing = $active->firstWhere('type', 'job_closing');
+        $this->assertEqualsWithDelta(
+            (float) $firstClosingReceivable,
+            (float) $repostedClosing->entries()->where('description', 'like', 'Piutang%')->sum('debit'),
+            0.01
+        );
+    }
+
     public function test_reopen_job_fails_if_invoice_has_payments(): void
     {
         $invoice = $this->close();

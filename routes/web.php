@@ -209,6 +209,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/jobs/{job}/costs/{cost}/approve', [JobCostController::class, 'approve'])->name('jobs.costs.approve');
         Route::post('/jobs/{job}/costs/{cost}/pay', [JobCostController::class, 'pay'])->name('jobs.costs.pay');
         Route::post('/jobs/{job}/costs/{cost}/finalize', [JobCostController::class, 'finalize'])->name('jobs.costs.finalize');
+    Route::put('/jobs/{job}/costs/{cost}/withholding-document', [JobCostController::class, 'withholdingDocument'])->name('jobs.costs.withholding-document');
     });
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('can:customers.view')->name('customers.index');
     Route::get('/customers/create', [CustomerController::class, 'create'])->middleware('can:customers.manage')->name('customers.create');

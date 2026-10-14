@@ -110,7 +110,31 @@ class JobCostService
         }, 3);
     }
 
-    private function lockJob(Job $job, array $data): Job
+    /**
+     * Nomor bukti potong (Bupot) sering baru keluar setelah vendor dibayar,
+     * sehingga harus tetap dapat diisi kapan saja tanpa mengubah jurnal.
+     */
+public function saveWithholdingDocument(Job $job, JobCost $cost, ?string $number, User $actor): void
+    {
+        DB::transaction(function () use ($job, $cost, $number, $actor) {
+            Gate::forUser($actor)->authorize('costs.manage');
+
+            $cost = JobCost::query()->whereKey($cost->id)->lockForUpdate()->firstOrFail();
+            $before = $cost->only(['withholding_document_number']);
+            $cost->withholding_document_number = $number;
+            $cost->updated_by = $actor->id;
+            $cost->save();
+
+            $this->master->log($actor, 'job_cost.withholding_document_updated', 'Nomor bukti potong '.$cost->number, [
+                'module' => 'job_cost',
+                'record_id' => $cost->id,
+                'before' => $before,
+                'after' => $cost->only(['withholding_document_number']),
+            ]);
+        }, 3);
+    }
+
+private function lockJob(Job $job, array $data): Job
     {
         $job = Job::lockForUpdate()->findOrFail($job->id);
         $this->master->checkVersion($job, ['lock_version' => $data['job_version'] ?? -1]);

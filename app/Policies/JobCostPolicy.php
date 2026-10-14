@@ -30,7 +30,7 @@ class JobCostPolicy
         // Finance Confirm dan Finalisasi Invoice tetap fleksibel sebelum
         // ada pembayaran invoice. Setelah ada pembayaran, nominal dikunci.
         return $this->create($user, $cost->job)
-            && in_array($cost->status, ['draft', 'final'], true)
+            && in_array($cost->status, ['draft', 'approved', 'final'], true)
             && ! $cost->paid_at
             && ! $cost->trashed();
     }
