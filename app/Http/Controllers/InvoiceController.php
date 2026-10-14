@@ -72,6 +72,7 @@ class InvoiceController extends Controller
             'invoice_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
             'due_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:invoice_date'],
             'tax' => ['required', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+            'stamp_duty' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
             'funding_account' => ['nullable', 'in:cash,bank'],
         ]);
 

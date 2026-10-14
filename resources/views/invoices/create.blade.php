@@ -126,6 +126,12 @@
                     </span>
                 </div>
 
+                <div class="field">
+                    <label for="stamp_duty_input">Tagihan Materai (Rp)</label>
+                    <input type="number" id="stamp_duty_input" name="stamp_duty" min="0" max="999999999.99" step="0.01" value="{{ old('stamp_duty', '0') }}" placeholder="0.00">
+                    <span style="color: #64748b; font-size: 11.5px; margin-top: 6px; display: block;">Materai ditambahkan ke total invoice dan piutang customer.</span>
+                </div>
+
                 <div class="field span-2">
                     <div class="info-note" style="margin:0;"><strong>Kurs Tagih otomatis.</strong> Kurs setiap baris tagihan diambil dari Biaya Job dan diteruskan ke invoice. Invoice dapat dibuat saat biaya quotation masih Draft; perubahan biaya akan memperbarui invoice selama belum ada pembayaran.</div>
                 </div>

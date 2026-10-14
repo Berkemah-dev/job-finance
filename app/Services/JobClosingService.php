@@ -57,7 +57,8 @@ class JobClosingService
             // Dengan demikian Finance tidak memasukkan ulang PPN pada tahap closing.
             $invoice = $job->invoice()->lockForUpdate()->first();
             $tax = Money::decimal($invoice?->tax ?? ($data['tax'] ?? 0));
-            $total = Money::decimal($summary['subtotal'])->plus($tax);
+            $stampDuty = Money::decimal($invoice?->stamp_duty ?? ($data['stamp_duty'] ?? 0));
+            $total = Money::decimal($summary['subtotal'])->plus($tax)->plus($stampDuty);
             Money::checked($total);
             if ($total->isZero()) {
                 throw ValidationException::withMessages(['total' => 'Total invoice harus lebih besar dari nol.']);
@@ -79,7 +80,7 @@ class JobClosingService
                 $invoice = Invoice::create(['number' => $this->numbers->next('inv'), 'job_id' => $job->id, 'job_closing_snapshot_id' => $snapshot->id, 'customer_id' => $job->customer_id,
                     'customer_snapshot' => $job->quotation_snapshot['customer'], 'invoice_date' => $data['closing_date'], 'due_date' => $data['due_date'], 'status' => 'issued',
                     'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
-                    'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'total' => Money::checked($total), 'paid_amount' => '0.00', 'balance' => Money::checked($total), 'created_by' => $actor->id, 'issued_at' => now()]);
+                    'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'stamp_duty' => (string) $stampDuty, 'total' => Money::checked($total), 'paid_amount' => '0.00', 'balance' => Money::checked($total), 'created_by' => $actor->id, 'issued_at' => now()]);
                 foreach ($rows as $i => $cost) {
                     $invoice->items()->create($this->invoiceItemData($cost, $i + 1));
                 }
@@ -104,7 +105,8 @@ class JobClosingService
             $temporary = Money::decimal($summary['temporary']);
             $provisionSell = Money::decimal($summary['provision_sell']);
             $provisionRows = $rows->where('type', 'provision');
-            $customerReceivable = $provisionSell->plus($tax);
+            $invoiceRevenue = $provisionSell->plus($stampDuty);
+            $customerReceivable = $invoiceRevenue->plus($tax);
 
             $closingEntries = [];
             // If invoice was already created earlier, receivable, revenue, tax and temporary WIP were already posted in job_invoice
@@ -126,6 +128,9 @@ class JobClosingService
                     }
                     $closingEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
                 }
+                if ($stampDuty->isPositive()) {
+                    $closingEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Tagihan Materai · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
+                }
                 if ($tax->isPositive()) {
                     $closingEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran', 'debit' => 0, 'credit' => (string) $tax];
                 }
@@ -144,9 +149,9 @@ class JobClosingService
                 $closingEntries[] = ['account_id' => $maps[$flow['cogs_closed']]->id, 'description' => 'HPP Close '.$job->number, 'debit' => (string) $provisionCost, 'credit' => 0];
                 $closingEntries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'Reklasifikasi HPP Unclose '.$job->number, 'debit' => 0, 'credit' => (string) $provisionCost];
             }
-            if ($provisionSell->isPositive()) {
-                $closingEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Reklasifikasi Pendapatan Unclose '.$job->number, 'debit' => (string) $provisionSell, 'credit' => 0];
-                $closingEntries[] = ['account_id' => $maps[$flow['revenue_closed']]->id, 'description' => 'Pendapatan Close '.$job->number, 'debit' => 0, 'credit' => (string) $provisionSell];
+            if ($invoiceRevenue->isPositive()) {
+                $closingEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Reklasifikasi Pendapatan Unclose '.$job->number, 'debit' => (string) $invoiceRevenue, 'credit' => 0];
+                $closingEntries[] = ['account_id' => $maps[$flow['revenue_closed']]->id, 'description' => 'Pendapatan Close '.$job->number, 'debit' => 0, 'credit' => (string) $invoiceRevenue];
             }
 
             if (! empty($closingEntries)) {
@@ -288,7 +293,8 @@ class JobClosingService
             $rows = $job->costs()->orderBy('id')->get();
             $summary = $this->costs->summary($job)['all'];
             $tax = Money::decimal($data['tax'] ?? 0);
-            $total = Money::decimal($summary['subtotal'])->plus($tax);
+            $stampDuty = Money::decimal($data['stamp_duty'] ?? 0);
+            $total = Money::decimal($summary['subtotal'])->plus($tax)->plus($stampDuty);
             Money::checked($total);
             if ($total->isZero()) {
                 throw ValidationException::withMessages(['total' => 'Total invoice harus lebih besar dari nol.']);
@@ -313,6 +319,7 @@ class JobClosingService
                 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
                 'subtotal' => $summary['subtotal'],
                 'tax' => (string) $tax,
+                'stamp_duty' => (string) $stampDuty,
                 'total' => Money::checked($total),
                 'paid_amount' => '0.00',
                 'balance' => Money::checked($total),
@@ -326,7 +333,8 @@ class JobClosingService
 
             $temporary = Money::decimal($summary['temporary']);
             $provisionSell = Money::decimal($summary['provision_sell']);
-            $customerReceivable = $provisionSell->plus($tax);
+            $invoiceRevenue = $provisionSell->plus($stampDuty);
+            $customerReceivable = $invoiceRevenue->plus($tax);
 
             $invoiceEntries = [];
             if ($customerReceivable->isPositive()) {
@@ -347,6 +355,9 @@ class JobClosingService
                 if ($costValue->isPositive()) {
                     $invoiceEntries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
                 }
+            }
+            if ($stampDuty->isPositive()) {
+                $invoiceEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Tagihan Materai · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
             }
             $provisionCost = Money::decimal($summary['provision_cost']);
             if ($provisionCost->isPositive()) {

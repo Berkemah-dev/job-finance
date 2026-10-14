@@ -2,7 +2,7 @@
 @section('title','Detail Biaya')
 @section('content')
 <div class="page-heading"><div><p class="eyebrow">{{ $job->number }} · {{ config('operations.job_statuses.'.$job->status) }}</p><h1>{{ $cost->number }}</h1><p>{{ $cost->description }}</p></div><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">← Kembali</a></div>
-@if($job->invoice && ($job->invoice->payments()->exists() || (float) $job->invoice->paid_amount > 0))<div class="info-note"><strong>Biaya terkunci karena invoice sudah memiliki pembayaran.</strong> Perubahan nominal tidak tersedia agar saldo invoice dan jurnal pembayaran tetap konsisten.</div>@elseif($job->invoice)<div class="info-note"><strong>Invoice sudah dibuat dan belum dibayar.</strong> Biaya tetap dapat disesuaikan; sistem memperbarui rincian serta jurnal invoice secara otomatis.</div>@elseif($cost->status==='final')<div class="info-note"><strong>Biaya sudah dikonfirmasi Finance.</strong> Finance Confirm hanya menandai biaya telah diperiksa; biaya tetap dapat disesuaikan sebelum maupun sesudah Finalisasi Invoice selama belum ada pembayaran.</div>@endif
+@if($job->invoice && ($job->invoice->payments()->exists() || (float) $job->invoice->paid_amount > 0))<div class="info-note"><strong>Biaya terkunci karena invoice sudah memiliki pembayaran.</strong> Perubahan nominal tidak tersedia agar saldo invoice dan jurnal pembayaran tetap konsisten.</div>@elseif($cost->paid_at)<div class="info-note"><strong>Biaya sudah PAID dan tetap dapat direvisi untuk invoice.</strong> Nilai jual, Kurs Tagih, uraian, dan informasi biaya dapat disesuaikan. Total modal yang sudah dibayar tidak dapat diubah karena jurnal kas/bank telah tercatat.</div>@elseif($job->invoice)<div class="info-note"><strong>Invoice sudah dibuat dan belum dibayar.</strong> Biaya tetap dapat disesuaikan; sistem memperbarui rincian serta jurnal invoice secara otomatis.</div>@elseif($cost->status==='final')<div class="info-note"><strong>Biaya sudah dikonfirmasi Finance.</strong> Finance Confirm hanya menandai biaya telah diperiksa; biaya tetap dapat disesuaikan sebelum maupun sesudah Finalisasi Invoice selama belum ada pembayaran.</div>@endif
 <section class="panel"><div class="panel-heading"><h2>Rincian biaya aktual</h2><span class="status-badge status-{{ $cost->status }}">{{ config('operations.cost_statuses.'.$cost->status) }}</span></div>
 <dl class="detail-grid">
 <div><dt>Jenis transaksi</dt><dd><strong>{{ match($cost->cost_category) { 'reimbursement' => 'Reimbursement (Temporary Payment)', 'debit_note' => 'Debit Note (Piutang Agent)', 'credit_note' => 'Credit Note (Hutang Agent)', default => 'Payment Request (Provisional Payment)' } }}</strong></dd></div><div><dt>Tanggal biaya</dt><dd>{{ $cost->cost_date->format('d/m/Y') }}</dd></div><div><dt>Jumlah / Satuan</dt><dd>{{ \App\Support\Money::format($cost->quantity) }} {{ $cost->unit }}</dd></div>
@@ -137,7 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const base = Number(calculator.dataset.baseAmount || 0);
         calculator.querySelectorAll('[data-pph-rate]').forEach((button) => button.addEventListener('click', () => {
             const value = Math.round(base * Number(button.dataset.pphRate) * 100) / 100;
-            input.value = value.toFixed(2);
+            // Formatter nominal memakai titik sebagai pemisah ribuan dan koma
+            // sebagai desimal. Jangan kirim "4000.00" karena titik terbaca
+            // sebagai pemisah ribuan dan menjadi 400.000.
+            input.value = value.toLocaleString('id-ID', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+            });
             input.dispatchEvent(new Event('input', { bubbles: true }));
             input.focus();
         }));

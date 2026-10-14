@@ -120,9 +120,14 @@
                     💡 <em>PPN Keluaran akan otomatis diposting ke COA 28000 (PPN Keluaran) dan menambah tagihan Piutang Customer (COA 1103).</em>
                 </small>
             </div>
+            <div class="field span-2" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px;">
+                <label for="stamp_duty_closing" style="font-size: 13.5px; font-weight: 700; color: #334155;">Tagihan Materai (Rp)</label>
+                <input type="number" id="stamp_duty_closing" name="stamp_duty" min="0" max="999999999.99" step="0.01" value="{{ old('stamp_duty', '0') }}" placeholder="0.00" style="margin-top: 6px;">
+                <small style="color: #64748b; font-size: 11.5px; margin-top: 6px; display: block;">Materai akan ditampilkan sebagai baris tersendiri dan ditambahkan ke total invoice.</small>
+            </div>
             @else
             <div class="field span-2">
-                <div class="info-note" style="margin:0;"><strong>PPN mengikuti Invoice {{ $job->invoice->number }}.</strong> Nilai PPN Rp {{ \App\Support\Money::format($job->invoice->tax) }} sudah tercatat pada invoice dan tidak perlu diinput kembali saat Closing Job.</div>
+                <div class="info-note" style="margin:0;"><strong>PPN dan Materai mengikuti Invoice {{ $job->invoice->number }}.</strong> Nilai PPN Rp {{ \App\Support\Money::format($job->invoice->tax) }} dan Materai Rp {{ \App\Support\Money::format($job->invoice->stamp_duty) }} sudah tercatat pada invoice dan tidak perlu diinput kembali saat Closing Job.</div>
             </div>
             @endif
             <div class="field span-2">

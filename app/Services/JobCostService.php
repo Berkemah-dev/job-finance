@@ -155,6 +155,7 @@ private function lockJob(Job $job, array $data): Job
             Gate::forUser($actor)->authorize('costs.manage');
             $job = $this->lockJob($job, $data);
             $new = $cost === null;
+            $paidCostTotal = null;
             $costCategory = $data['cost_category'] ?? ($cost?->cost_category ?? (($data['type'] ?? 'provision') === 'temporary' ? 'reimbursement' : 'payment_request'));
             if ($new) {
                 Gate::forUser($actor)->authorize('create', [JobCost::class, $job]);
@@ -174,9 +175,7 @@ private function lockJob(Job $job, array $data): Job
                 Gate::forUser($actor)->authorize('update', $cost);
                 $this->master->checkVersion($cost, $data);
                 $before = $cost->only(['description', 'type', 'currency', 'cost_exchange_rate', 'price_exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
-                if ($cost->paid_at) {
-                    throw ValidationException::withMessages(['cost' => 'Biaya yang sudah dibayar tidak dapat diedit.']);
-                }
+                $paidCostTotal = $cost->paid_at ? Money::decimal($cost->total_cost) : null;
                 // Biaya yang sudah Finance Confirm boleh disesuaikan sebelum
                 // Finalisasi Invoice. Jurnal pengakuan sebelumnya dibalik
                 // agar nilai hutang dan modal mengikuti nilai terbaru.
@@ -226,6 +225,11 @@ private function lockJob(Job $job, array $data): Job
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->foreign_total_cost = Money::checked($quantity->multipliedBy($foreignUnitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->foreign_total_price = Money::checked($quantity->multipliedBy($foreignUnitPrice)->toScale(2, RoundingMode::HalfUp));
+            if ($paidCostTotal && ! Money::decimal($cost->total_cost)->isEqualTo($paidCostTotal)) {
+                throw ValidationException::withMessages([
+                    'unit_cost' => 'Total modal biaya yang sudah PAID tidak dapat diubah karena jurnal kas/bank sudah tercatat. Ubah nilai jual atau Kurs Tagih untuk revisi invoice.',
+                ]);
+            }
             $cost->updated_by = $actor->id;
             $cost->lock_version = $new ? 0 : $cost->lock_version + 1;
             $cost->save();
@@ -330,7 +334,8 @@ private function lockJob(Job $job, array $data): Job
         $rows = $job->costs()->orderBy('id')->get();
         $summary = $this->summary($job)['all'];
         $tax = Money::decimal($invoice->tax);
-        $total = Money::decimal($summary['subtotal'])->plus($tax);
+        $stampDuty = Money::decimal($invoice->stamp_duty ?? 0);
+        $total = Money::decimal($summary['subtotal'])->plus($tax)->plus($stampDuty);
         if ($total->isZero()) {
             throw ValidationException::withMessages(['cost' => 'Perubahan membuat total invoice menjadi nol.']);
         }
@@ -378,10 +383,11 @@ private function lockJob(Job $job, array $data): Job
         $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'temporary_receivable', 'receivable', 'tax_payable'], array_values($flow)));
         $temporary = Money::decimal($summary['temporary']);
         $provisionSell = Money::decimal($summary['provision_sell']);
+        $invoiceRevenue = $provisionSell->plus($stampDuty);
         $provisionCost = Money::decimal($summary['provision_cost']);
         $entries = [];
-        if ($provisionSell->isPositive() || $tax->isPositive()) {
-            $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $provisionSell->plus($tax), 'credit' => 0];
+        if ($invoiceRevenue->isPositive() || $tax->isPositive()) {
+            $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $invoiceRevenue->plus($tax), 'credit' => 0];
         }
         if ($temporary->isPositive()) {
             $entries[] = ['account_id' => $customerAccounts['temporary']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
@@ -393,6 +399,7 @@ private function lockJob(Job $job, array $data): Job
             $costValue = Money::decimal($cost->total_cost);
             if ($costValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
         }
+        if ($stampDuty->isPositive()) $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Tagihan Materai · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
         if ($provisionCost->isPositive()) $entries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisional Payment '.$invoice->number, 'debit' => 0, 'credit' => (string) $provisionCost];
         if ($tax->isPositive()) $entries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran '.$invoice->number, 'debit' => 0, 'credit' => (string) $tax];
         $this->journals->post('job_invoice_amendment', Job::class, $job->id, $invoice->invoice_date->format('Y-m-d'), 'Penyesuaian invoice '.$invoice->number.' untuk '.$job->number, $entries, $actor);

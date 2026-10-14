@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Models\ChartOfAccount;
+use App\Models\Customer;
 use App\Models\Job;
 use App\Models\JobClosingSnapshot;
 use App\Models\JobCost;
 use App\Models\Journal;
 use App\Models\JournalEntry;
 use App\Models\Payment;
+use App\Models\Vendor;
 use App\Support\Money;
 use Brick\Math\RoundingMode;
 use Carbon\Carbon;
@@ -706,7 +708,120 @@ class FinancialReportService
             'totalCurrentLiabilities' => $totalCurrentLiabilities,
             'radixEquity' => $radixEquity,
             'totalModal' => $totalModal,
+            'partyBreakdowns' => $this->partyBreakdowns($allAccounts, $to),
         ];
+    }
+
+    /**
+     * Rincian saldo piutang/hutang per pihak untuk Neraca.
+     * Tiap pihak menyimpan COA pembantu, sehingga nilai belum dibayarnya
+     * selalu sama dengan saldo COA pembantu pada tanggal laporan.
+     */
+    private function partyBreakdowns(Collection $allAccounts, string $to): Collection
+    {
+        $definitions = [
+            'Piutang Customer' => ['prefix' => '1200', 'party' => 'customer', 'label' => 'Customer'],
+            'Piutang Temporary' => ['prefix' => '1201', 'party' => 'customer', 'label' => 'Customer'],
+            'Piutang Agent' => ['prefix' => '1202', 'party' => 'vendor', 'label' => 'Agent'],
+            'Hutang Vendor' => ['prefix' => '2100', 'party' => 'vendor', 'label' => 'Vendor'],
+            'Hutang Agent' => ['prefix' => '2200', 'party' => 'vendor', 'label' => 'Agent'],
+        ];
+
+        $accountsByGroup = collect();
+        foreach ($definitions as $name => $definition) {
+            $accountsByGroup->put($name, $allAccounts->filter(
+                fn ($account) => preg_match('/^'.$definition['prefix'].'\d{3,}$/', (string) $account->code) === 1
+            )->values());
+        }
+        $partyAccountIds = $accountsByGroup->flatten()->pluck('id')->unique()->values();
+        if ($partyAccountIds->isEmpty()) {
+            return collect();
+        }
+
+        $customers = Customer::withTrashed()
+            ->whereIn('receivable_account_id', $partyAccountIds)
+            ->orWhereIn('temporary_receivable_account_id', $partyAccountIds)
+            ->get(['id', 'code', 'name', 'receivable_account_id', 'temporary_receivable_account_id']);
+        $vendors = Vendor::withTrashed()
+            ->whereIn('payable_account_id', $partyAccountIds)
+            ->orWhereIn('agent_receivable_account_id', $partyAccountIds)
+            ->get(['id', 'code', 'name', 'type', 'payable_account_id', 'agent_receivable_account_id']);
+
+        $customerByAccount = collect();
+        foreach ($customers as $customer) {
+            foreach ([$customer->receivable_account_id, $customer->temporary_receivable_account_id] as $accountId) {
+                if ($accountId) $customerByAccount->put($accountId, $customer);
+            }
+        }
+        $vendorByAccount = collect();
+        foreach ($vendors as $vendor) {
+            foreach ([$vendor->payable_account_id, $vendor->agent_receivable_account_id] as $accountId) {
+                if ($accountId) $vendorByAccount->put($accountId, $vendor);
+            }
+        }
+
+        $entries = JournalEntry::with('journal')
+            ->whereIn('chart_of_account_id', $partyAccountIds)
+            ->whereHas('journal', fn (Builder $query) => $query->whereDate('journal_date', '<=', $to))
+            ->get()
+            ->groupBy('chart_of_account_id');
+        $sourceJobs = $entries->flatten()->filter(fn ($entry) => $entry->journal->source_type === Job::class)->pluck('journal.source_id')->unique();
+        $sourceCosts = $entries->flatten()->filter(fn ($entry) => $entry->journal->source_type === JobCost::class)->pluck('journal.source_id')->unique();
+        $sourcePayments = $entries->flatten()->filter(fn ($entry) => $entry->journal->source_type === Payment::class)->pluck('journal.source_id')->unique();
+        $jobs = Job::with('invoice:id,job_id,number,invoice_date,total')->whereIn('id', $sourceJobs)->get()->keyBy('id');
+        $costs = JobCost::with('job:id,number')->whereIn('id', $sourceCosts)->get()->keyBy('id');
+        $payments = Payment::with('invoice.job:id,number')->whereIn('id', $sourcePayments)->get()->keyBy('id');
+
+        return collect($definitions)->map(function (array $definition, string $name) use ($accountsByGroup, $customerByAccount, $vendorByAccount, $entries, $jobs, $costs, $payments) {
+            return $accountsByGroup->get($name, collect())
+                ->map(function ($account) use ($definition, $customerByAccount, $vendorByAccount, $entries, $jobs, $costs, $payments) {
+                    $party = $definition['party'] === 'customer'
+                        ? $customerByAccount->get($account->id)
+                        : $vendorByAccount->get($account->id);
+                    $transactions = $entries->get($account->id, collect())
+                        ->sortBy(fn ($entry) => $entry->journal->journal_date)
+                        ->map(function ($entry) use ($jobs, $costs, $payments) {
+                            $journal = $entry->journal;
+                            $jobNumber = '—';
+                            $documentNumber = $journal->number;
+                            $documentDate = $journal->journal_date;
+                            $documentAmount = max((float) $entry->debit, (float) $entry->credit);
+                            if ($journal->source_type === Job::class && ($job = $jobs->get($journal->source_id))) {
+                                $jobNumber = $job->number;
+                                $documentNumber = $job->invoice?->number ?? $journal->number;
+                                $documentDate = $job->invoice?->invoice_date ?? $journal->journal_date;
+                                $documentAmount = (float) ($job->invoice?->total ?? $documentAmount);
+                            } elseif ($journal->source_type === JobCost::class && ($cost = $costs->get($journal->source_id))) {
+                                $jobNumber = $cost->job?->number ?? '—';
+                                $documentNumber = $cost->number;
+                                $documentDate = $cost->cost_date ?? $journal->journal_date;
+                                $documentAmount = (float) $cost->total_cost;
+                            } elseif ($journal->source_type === Payment::class && ($payment = $payments->get($journal->source_id))) {
+                                $jobNumber = $payment->invoice?->job?->number ?? '—';
+                                $documentNumber = $payment->invoice?->number ?? $journal->number;
+                                $documentDate = $journal->journal_date;
+                            }
+
+                            return (object) [
+                                'job_number' => $jobNumber,
+                                'document_number' => $documentNumber,
+                                'document_date' => $documentDate,
+                                'document_amount' => $documentAmount,
+                            ];
+                        })->values();
+
+                    return (object) [
+                        'party_code' => $party?->code ?? $account->code,
+                        'party_name' => $party?->name ?? preg_replace('/^.+?—\s*/', '', $account->name),
+                        'party_label' => $definition['label'],
+                        'outstanding' => $account->report_balance,
+                        'transactions' => $transactions,
+                    ];
+                })
+                ->filter(fn ($party) => ! Money::decimal($party->outstanding)->isZero() || $party->transactions->isNotEmpty())
+                ->sortBy('party_name')
+                ->values();
+        });
     }
 
     public function cashFlow(string $from, string $to): array

@@ -258,8 +258,7 @@
     $subTotalVat = $totalTax;
     $subTotalSum = $subTotalAmount + $subTotalVat;
 
-    // Materai: if total is set or if difference between invoice total and subtotal + tax exists
-    $materai = max(0, (float)$invoice->total - ($subTotalAmount + $subTotalVat));
+    $materai = (float) ($invoice->stamp_duty ?? 0);
 @endphp
 
 {{-- HEADER --}}
@@ -506,13 +505,13 @@
 @php
     $itemExchangeRates = $invoice->items
         ->filter(fn ($item) => strtoupper((string) ($item->currency ?? 'IDR')) !== 'IDR')
-        ->map(fn ($item) => strtoupper((string) $item->currency).' '.number_format((float) ($item->exchange_rate ?: 1), 2, '.', ','))
+        ->map(fn ($item) => number_format((float) ($item->exchange_rate ?: 1), 2, '.', ','))
         ->unique()
         ->values();
 @endphp
 <div class="rate-said-box">
     <div class="rate-line">
-        EXC. RATE : {{ $itemExchangeRates->isEmpty() ? 'IDR 1.00' : $itemExchangeRates->implode(' · ') }}
+        EXC. RATE : {{ $itemExchangeRates->isEmpty() ? '1.00' : $itemExchangeRates->implode(' · ') }}
     </div>
     <div class="said-line">
         <u>Said :</u> <strong>{{ \App\Support\Money::terbilang($invoice->total, $invoice->currency) }}</strong>

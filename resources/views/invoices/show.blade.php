@@ -14,7 +14,7 @@
     $hasForeignCurrency = $invoice->items->contains(fn ($item) => strtoupper((string) ($item->currency ?? 'IDR')) !== 'IDR');
     $itemExchangeRates = $invoice->items
         ->filter(fn ($item) => strtoupper((string) ($item->currency ?? 'IDR')) !== 'IDR')
-        ->map(fn ($item) => strtoupper((string) $item->currency).' '.\App\Support\Money::format($item->exchange_rate ?: 1))
+        ->map(fn ($item) => \App\Support\Money::format($item->exchange_rate ?: 1))
         ->unique()
         ->values();
 @endphp
@@ -342,11 +342,11 @@
                 </td>
             </tr>
             @endif
-            @if((float)$invoice->total >= 5000000)
+            @if((float) $invoice->stamp_duty > 0)
             <tr>
                 <td style="padding: 4px 8px; font-weight: 700; text-transform: uppercase; color: #475569;">MATERAI</td>
                 <td style="padding: 4px 8px; text-align: right; font-family: monospace; font-weight: 600; color: #64748b;">
-                    10.000,00
+                    Rp {{ \App\Support\Money::format($invoice->stamp_duty) }}
                 </td>
             </tr>
             @endif
@@ -359,7 +359,7 @@
             <tr>
                 <td style="padding: 4px 8px; font-weight: 700; text-transform: uppercase; color: #475569;">Kurs terhadap Rupiah (EXC. RATE)</td>
                 <td style="padding: 4px 8px; text-align: right; font-family: monospace;">
-                    {{ $itemExchangeRates->isEmpty() ? 'IDR 1,00' : $itemExchangeRates->implode(' · ') }}
+                    {{ $itemExchangeRates->isEmpty() ? '1,00' : $itemExchangeRates->implode(' · ') }}
                 </td>
             </tr>
             @if((float)$invoice->paid_amount > 0)
@@ -388,7 +388,7 @@
     @if($hasForeignCurrency)
     <div style="padding: 12px 24px; background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 24px; font-size: 11px; color: #475569;">
         <div>Mata uang: <strong>{{ $invoice->currency }}</strong></div>
-        <div>Kurs Tagih terhadap Rupiah: <strong>{{ $itemExchangeRates->isEmpty() ? 'IDR 1,00' : $itemExchangeRates->implode(' · ') }}</strong></div>
+        <div>Kurs Tagih terhadap Rupiah: <strong>{{ $itemExchangeRates->isEmpty() ? '1,00' : $itemExchangeRates->implode(' · ') }}</strong></div>
         <div>Subtotal setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('subtotal')) }}</strong></div>
         <div>Pajak setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('tax')) }}</strong></div>
         <div>Total setara: <strong>{{ $invoice->currency }} {{ \App\Support\Money::format((string) $invoice->inInvoiceCurrency('total')) }}</strong></div>

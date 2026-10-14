@@ -5,6 +5,9 @@
 <section class="panel form-panel"><form class="data-form" data-cost-form data-cost-existing="{{ $cost->exists ? 'true' : 'false' }}" method="POST" action="{{ $cost->exists?route('jobs.costs.update',[$job,$cost]):route('jobs.costs.store',$job) }}">@csrf @if($cost->exists) @method('PUT') @endif
 <input type="hidden" name="job_version" value="{{ old('job_version',$job->lock_version) }}"><input type="hidden" name="lock_version" value="{{ old('lock_version',$cost->lock_version ?? 0) }}">
 <div class="info-note">Biaya yang dibuat langsung oleh Finance akan dijurnal otomatis. Biaya quotation tetap Draft sampai Finance Confirm. Kurs modal dan kurs tagih dapat dicatat terpisah untuk transaksi valas.</div>
+@if($cost->exists && $cost->paid_at)
+<div class="info-note" style="margin-top:12px;"><strong>Revisi biaya PAID untuk invoice.</strong> Nilai jual dan Kurs Tagih dapat diubah. Total modal harus tetap sama karena pembayaran kas/bank telah dijurnal.</div>
+@endif
 <div class="form-grid">
 <div class="field span-2">
     <label for="description">Uraian biaya <span class="required">*</span></label>
