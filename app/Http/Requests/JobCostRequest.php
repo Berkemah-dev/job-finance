@@ -72,6 +72,13 @@ class JobCostRequest extends FormRequest
             $this->merge(['unit_cost' => '0']);
         }
 
+        // Biaya modal saja tetap sah. Simpan nilai jual kosong sebagai nol agar
+        // perhitungan dan jurnal HPP tetap berjalan, tanpa membuat baris invoice.
+        $rawPrice = $this->input('unit_price');
+        if ($rawPrice === null || trim((string) $rawPrice) === '') {
+            $this->merge(['unit_price' => '0']);
+        }
+
         foreach (['unit_cost', 'unit_price', 'pph23_amount', 'cost_exchange_rate', 'price_exchange_rate'] as $field) {
             if ($this->has($field) && is_string($this->input($field))) {
                 $val = trim($this->input($field));
@@ -107,7 +114,7 @@ class JobCostRequest extends FormRequest
 
     public function rules(): array
     {
-        $money = ['required', 'regex:/^\d{1,9}(\.\d{1,2})?$/'];
+        $money = ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'];
 
         return [
             'job_version' => ['required', 'integer', 'min:0'],

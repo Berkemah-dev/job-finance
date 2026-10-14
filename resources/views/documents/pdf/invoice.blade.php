@@ -482,14 +482,12 @@
         </tr>
 
         {{-- MATERAI ROW --}}
-        @if($materai > 0)
         <tr class="summary-row">
             <td colspan="5" style="text-align: right;"><strong>MATERAI</strong></td>
             <td class="right"></td>
             <td class="right"></td>
             <td class="right"><strong>{{ number_format($materai, 2, '.', ',') }}</strong></td>
         </tr>
-        @endif
 
         {{-- GRAND TOTAL ROW --}}
         <tr class="summary-row" style="background-color: #f5f5f5;">

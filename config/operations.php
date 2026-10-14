@@ -55,7 +55,7 @@ return [
         'DDU' => 'DDU (Delivered Duty Unpaid)',
         'D2D' => 'D2D (Door to Door)',
     ],
-    'vendor_types' => ['shipping_line' => 'Shipping Lines', 'trucking' => 'Vendor Trucking', 'international_agent' => 'International Agent', 'national_agent' => 'National Agent', 'commission' => 'Penerima Komisi'],
+    'vendor_types' => ['shipping_line' => 'Shipping Lines', 'trucking' => 'Vendor Trucking', 'terminal' => 'Terminal', 'depot' => 'Depo', 'international_agent' => 'International Agent', 'national_agent' => 'National Agent', 'commission' => 'Penerima Komisi'],
     'customer_payment_terms' => ['cash' => 'Cash', 'net_7' => 'Net 7', 'net_14' => 'Net 14', 'net_30' => 'Net 30', 'net_45' => 'Net 45', 'net_60' => 'Net 60', 'custom' => 'Custom'],
     // Format kode customer otomatis: prefix + delimiter + tahun (period year) + delimiter + nomor urut pad.
     'customer_code' => ['prefix' => 'CUS', 'delimiter' => '-', 'period' => 'year', 'pad' => 5],

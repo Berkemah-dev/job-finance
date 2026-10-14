@@ -44,15 +44,14 @@ class JobClosingService
             if ($job->costs()->count() === 0) {
                 throw ValidationException::withMessages(['costs' => 'Job belum memiliki detail biaya.']);
             }
-            $workflowDrafts = $job->costs()->where('status', 'draft')->whereIn('cost_category', ['payment_request', 'reimbursement', 'debit_note', 'credit_note'])->lockForUpdate()->count();
-            if ($workflowDrafts > 0) {
-                throw ValidationException::withMessages(['costs' => 'Payment Request, Reimbursement, Debit Note, dan Credit Note harus disetujui sebelum Closing Job.']);
-            }
-            if ($job->costs()->whereIn('status', ['draft', 'approved'])->lockForUpdate()->exists()) {
-                throw ValidationException::withMessages(['costs' => 'Seluruh biaya harus diperiksa dan difinalisasi Finance sebelum Closing Job.']);
+            if ($job->costs()->where('status', 'draft')->lockForUpdate()->exists()) {
+                throw ValidationException::withMessages(['costs' => 'Seluruh biaya harus berstatus Approved atau Finance Confirmed sebelum Closing Job.']);
             }
             $rows = $job->costs()->orderBy('id')->lockForUpdate()->get();
-            $summary = $this->costs->summary($job)['final'];
+            // Biaya Approved dan Finance Confirmed sama-sama sudah layak
+            // ditutup. Gunakan seluruh biaya setelah Draft dipastikan kosong.
+            $summary = $this->costs->summary($job)['all'];
+            $invoiceRows = $rows->filter(fn (\App\Models\JobCost $cost) => $cost->type === 'temporary' || Money::decimal($cost->total_price)->isPositive())->values();
             // Invoice yang sudah diterbitkan menjadi sumber PPN saat Closing Job.
             // Dengan demikian Finance tidak memasukkan ulang PPN pada tahap closing.
             $invoice = $job->invoice()->lockForUpdate()->first();
@@ -65,7 +64,7 @@ class JobClosingService
             }
             $flow = $this->flowAccountKeys($job);
             $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable'], array_values($flow)));
-            [$currency, $rate] = $this->invoiceCurrencyAndRate($rows);
+            [$currency, $rate] = $this->invoiceCurrencyAndRate($invoiceRows);
             $snapshot = JobClosingSnapshot::create(['job_id' => $job->id, 'closing_date' => $data['closing_date'], 'customer_snapshot' => $job->quotation_snapshot['customer'],
                 'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
                 'costs_snapshot' => $rows->map(fn ($c) => $c->only(['number', 'description', 'type', 'cost_category', 'cost_date', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'pph23_amount']))->all(),
@@ -81,7 +80,7 @@ class JobClosingService
                     'customer_snapshot' => $job->quotation_snapshot['customer'], 'invoice_date' => $data['closing_date'], 'due_date' => $data['due_date'], 'status' => 'issued',
                     'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
                     'subtotal' => $summary['subtotal'], 'tax' => (string) $tax, 'stamp_duty' => (string) $stampDuty, 'total' => Money::checked($total), 'paid_amount' => '0.00', 'balance' => Money::checked($total), 'created_by' => $actor->id, 'issued_at' => now()]);
-                foreach ($rows as $i => $cost) {
+                foreach ($invoiceRows as $i => $cost) {
                     $invoice->items()->create($this->invoiceItemData($cost, $i + 1));
                 }
             }
@@ -292,6 +291,7 @@ class JobClosingService
             }
             $rows = $job->costs()->orderBy('id')->get();
             $summary = $this->costs->summary($job)['all'];
+            $invoiceRows = $rows->filter(fn (\App\Models\JobCost $cost) => $cost->type === 'temporary' || Money::decimal($cost->total_price)->isPositive())->values();
             $tax = Money::decimal($data['tax'] ?? 0);
             $stampDuty = Money::decimal($data['stamp_duty'] ?? 0);
             $total = Money::decimal($summary['subtotal'])->plus($tax)->plus($stampDuty);
@@ -301,7 +301,7 @@ class JobClosingService
             }
             $flow = $this->flowAccountKeys($job);
             $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable'], array_values($flow)));
-            [$currency, $rate] = $this->invoiceCurrencyAndRate($rows);
+            [$currency, $rate] = $this->invoiceCurrencyAndRate($invoiceRows);
 
             $invoiceDate = $data['invoice_date'] ?? today()->toDateString();
             $dueDate = $data['due_date'] ?? today()->addDays(30)->toDateString();
@@ -327,7 +327,7 @@ class JobClosingService
                 'issued_at' => now(),
             ]);
 
-            foreach ($rows as $i => $cost) {
+            foreach ($invoiceRows as $i => $cost) {
                 $invoice->items()->create($this->invoiceItemData($cost, $i + 1));
             }
 

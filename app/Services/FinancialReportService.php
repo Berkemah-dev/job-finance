@@ -303,6 +303,7 @@ class FinancialReportService
             $entry->cost_name = null;
             $entry->tax_invoice_number = null;
             $entry->withholding_document_number = null;
+            $entry->payment_id = null;
             $entry->payment_status = null;
             $entry->shipment_category = null;
             $entry->invoice_currency = null;
@@ -345,6 +346,7 @@ class FinancialReportService
                 $entry->invoice_value = $job->invoice?->subtotal;
                 $entry->invoice_tax = $job->invoice?->tax;
             } elseif ($entry->journal->source_type === Payment::class && ($payment = $payments->get($entry->journal->source_id))) {
+                $entry->payment_id = $payment->id;
                 $entry->invoice_id = $payment->invoice?->id;
                 $entry->job_number = $payment->invoice?->job?->number;
                 $entry->invoice_number = $payment->invoice?->number;

@@ -333,6 +333,7 @@ private function lockJob(Job $job, array $data): Job
 
         $rows = $job->costs()->orderBy('id')->get();
         $summary = $this->summary($job)['all'];
+        $invoiceRows = $rows->filter(fn (JobCost $cost) => $cost->type === 'temporary' || Money::decimal($cost->total_price)->isPositive())->values();
         $tax = Money::decimal($invoice->tax);
         $stampDuty = Money::decimal($invoice->stamp_duty ?? 0);
         $total = Money::decimal($summary['subtotal'])->plus($tax)->plus($stampDuty);
@@ -364,7 +365,7 @@ private function lockJob(Job $job, array $data): Job
             $journal->save();
         }
 
-        [$currency, $rate] = $this->invoiceCurrencyAndRate($rows);
+        [$currency, $rate] = $this->invoiceCurrencyAndRate($invoiceRows);
         $invoice->update([
             'currency' => $currency,
             'exchange_rate' => (string) $rate->toScale(2, RoundingMode::HalfUp),
@@ -373,7 +374,7 @@ private function lockJob(Job $job, array $data): Job
             'balance' => Money::checked($total),
         ]);
         $invoice->items()->delete();
-        foreach ($rows as $position => $cost) {
+        foreach ($invoiceRows as $position => $cost) {
             $invoice->items()->create($this->invoiceItemData($cost, $position + 1));
         }
 
