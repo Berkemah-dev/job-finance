@@ -20,23 +20,26 @@ class JobCostPolicy
 
     public function create(User $user, Job $job): bool
     {
-        return $this->viewAny($user) && $job->status === 'open';
+        return $this->viewAny($user)
+            && $job->status === 'open'
+            && ! $this->hasPaidInvoice($job);
     }
 
     public function update(User $user, JobCost $cost): bool
     {
-        // Invoice pra-closing masih dapat disesuaikan dari Biaya Job selama
-        // invoice tersebut belum mempunyai pembayaran.
+        // Finance Confirm dan Finalisasi Invoice tetap fleksibel sebelum
+        // ada pembayaran invoice. Setelah ada pembayaran, nominal dikunci.
         return $this->create($user, $cost->job)
             && in_array($cost->status, ['draft', 'final'], true)
             && ! $cost->paid_at
-            && ! $cost->job->invoice()->where(fn ($invoice) => $invoice->where('paid_amount', '>', 0)->orWhereHas('payments'))->exists()
             && ! $cost->trashed();
     }
 
     public function delete(User $user, JobCost $cost): bool
     {
-        return $this->update($user, $cost) && $cost->status === 'draft' && ! $cost->job->invoice()->exists();
+        return $this->update($user, $cost)
+            && $cost->status === 'draft'
+            && ! $cost->job->invoice()->exists();
     }
 
     public function finalize(User $user, JobCost $cost): bool
@@ -46,11 +49,19 @@ class JobCostPolicy
         return $this->viewAny($user)
             && $cost->job->status === 'open'
             && $cost->status === 'draft'
+            && ! $this->hasPaidInvoice($cost->job)
             && ! $cost->trashed();
     }
 
     public function approve(User $user, JobCost $cost): bool
     {
         return $user->hasPermission('jobs.close') && $cost->status === 'draft' && ! $cost->trashed();
+    }
+
+    private function hasPaidInvoice(Job $job): bool
+    {
+        return $job->invoice()
+            ->where(fn ($invoice) => $invoice->where('paid_amount', '>', 0)->orWhereHas('payments'))
+            ->exists();
     }
 }
