@@ -205,7 +205,9 @@
 
 <div class="summary-box" aria-live="polite">
     <div class="summary-row"><span>Total Penawaran (Jual)</span><strong data-preview-total>Rp 0,00</strong></div>
-    <div class="summary-row"><span>Estimasi Profit</span><strong data-preview-profit style="color:#16a34a;">Rp 0,00</strong></div>
+    @if($canManageCost)
+        <div class="summary-row"><span>Estimasi Profit</span><strong data-preview-profit style="color:#16a34a;">Rp 0,00</strong></div>
+    @endif
 </div>
 <div class="form-actions" style="display:flex; gap:10px; align-items:center;">
     <a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a>
