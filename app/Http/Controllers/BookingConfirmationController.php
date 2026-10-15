@@ -78,6 +78,10 @@ class BookingConfirmationController extends Controller
             return redirect()->route('jobs.index')
                 ->with('warning', 'Job Order tidak ditemukan.');
         }
+        if ($selectedJob->service_type !== 'exp_sea') {
+            return redirect()->to(route('jobs.show', $selectedJob).'#tab-documents')
+                ->with('warning', 'Booking Confirmation (BC) hanya berlaku untuk Export Sea.');
+        }
 
         if ($selectedJob->bookingConfirmations->isNotEmpty()) {
             return redirect()->to(route('jobs.show', $selectedJob->id).'#tab-booking')
@@ -145,6 +149,11 @@ class BookingConfirmationController extends Controller
             'status'              => 'required|string|in:draft,confirmed,cancelled',
             'notes'               => 'nullable|string',
         ]);
+
+        $selectedJob = Job::find($validated['job_id']);
+        if (! $selectedJob || $selectedJob->service_type !== 'exp_sea') {
+            return back()->withInput()->withErrors(['job_id' => 'Booking Confirmation (BC) hanya berlaku untuk Export Sea.']);
+        }
 
         if (!empty($validated['job_id'])) {
             $existingBc = BookingConfirmation::where('job_id', $validated['job_id'])->first();

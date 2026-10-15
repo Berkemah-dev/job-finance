@@ -400,6 +400,14 @@
                         <input type="date" id="add_effective_date" name="effective_date" value="{{ today()->format('Y-m-d') }}">
                     </div>
                 </div>
+
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
+                    <div class="field">
+                        <label for="edit_selling_price" style="font-size: 11.5px; font-weight: 700; color: #166534;">Harga Jual Rute (Semua Tipe)</label>
+                        <input type="number" step="0.01" id="edit_selling_price" name="selling_price" placeholder="cth. 7500000">
+                        <small style="color: #64748b; font-size: 11px;">1 harga jual rute untuk 20GP / 40FT / 40HQ</small>
+                    </div>
+                </div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
@@ -488,6 +496,7 @@
             document.getElementById('edit_cost_20gp_ow').value = item.cost_20gp_ow ? parseFloat(item.cost_20gp_ow) : '';
             document.getElementById('edit_cost_40ft_ow').value = item.cost_40ft_ow ? parseFloat(item.cost_40ft_ow) : '';
             document.getElementById('edit_cost_40hq_ow').value = item.cost_40hq_ow ? parseFloat(item.cost_40hq_ow) : '';
+            document.getElementById('edit_selling_price').value = item.selling_price ? parseFloat(item.selling_price) : '';
             document.getElementById('modal-edit-vendor-cost').showModal();
         }
     </script>

@@ -33,6 +33,12 @@ class JobDocumentController extends Controller
         Gate::authorize('update', $job);
         $docType = DocumentType::findOrFail($request->document_type_id);
         $docText = strtoupper($docType->code.' '.$docType->name);
+        $isSeaJob = in_array($job->service_type, ['imp_sea', 'exp_sea'], true);
+        $isDoOrBc = str_contains($docText, 'DELIVERY ORDER')
+            || preg_match('/(^|[^A-Z])(DO|BC|BOOKING CONFIRMATION)([^A-Z]|$)/', $docText) === 1;
+        if ($isDoOrBc && ! $isSeaJob) {
+            return back()->withErrors(['document_type_id' => 'Dokumen DO/BC hanya berlaku untuk Import Sea atau Export Sea.'])->withInput();
+        }
         $isCustomsDocument = $this->detectCustomsKind($docText) !== '';
         $isCustomsUpload = $request->boolean('customs_upload') || $request->filled('customs_document_kind');
         if ($isCustomsDocument && ! $isCustomsUpload) {

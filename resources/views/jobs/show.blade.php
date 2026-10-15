@@ -1222,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
             @endif
         </div>
 
-        @if(!$isExportSea && !$isExportAir)
+        @if($serviceTypeRaw === 'imp_sea')
         <div style="padding: 0 24px 24px;">
             <article class="report-card">
                 <div class="report-card-head">
@@ -1329,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {{-- ========================================================================= --}}
 {{-- TAB 5: BIAYA & PROFIT                                                     --}}
 {{-- ========================================================================= --}}
-@if($isExportSea || $isExportAir)
+    @if($isExportSea)
 <div id="tab-booking" class="job-tab-content" style="display: none;">
     <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
         <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
@@ -1794,6 +1794,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // DNP hanya dikelola Operational/Finance; CS cukup melihat alur dokumen dan tagihan.
     if (isCustomerService) {
         document.querySelector('.job-tab-btn[data-tab="tab-dnp"]')?.remove();
+    }
+
+    // Alur CS Import Sea: Surat Kuasa hanya untuk DO, tanpa DNP/SK Pabean.
+    if (isCustomerService && @json($serviceTypeRaw === 'imp_sea')) {
+        document.getElementById('tab-dnp')?.remove();
+        const skTab = document.querySelector('.job-tab-btn[data-tab="tab-sk"]');
+        const deliveryTab = document.querySelector('.job-tab-btn[data-tab="tab-delivery"]');
+        const financialTab = document.querySelector('.job-tab-btn[data-tab="tab-financial"]');
+        if (skTab) skTab.textContent = '4. Surat Kuasa (Hanya DO)';
+        if (deliveryTab) deliveryTab.textContent = '5. Surat Jalan';
+        if (financialTab) financialTab.textContent = '6. Rincian Tagihan';
+    }
+
+    // Booking Confirmation (BC) hanya tersedia untuk Export Sea.
+    if (!@json($isExportSea)) {
+        document.querySelector('.job-tab-btn[data-tab="tab-booking"]')?.remove();
     }
 
     if (!isCustomerService && isImportShipment && @json($isOperationalRole)) {

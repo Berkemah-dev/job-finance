@@ -139,6 +139,7 @@ class TruckingPriceController extends Controller
                 'cost_40ft_ow' => $rates->first(fn ($r) => in_array($r->container_type, ['40ft', '40ft_40hq']) && $r->overweight)?->price,
                 'cost_40hq' => $rates->first(fn ($r) => in_array($r->container_type, ['40hc', '40hq', '40ft_40hq']) && ! $r->overweight)?->price,
                 'cost_40hq_ow' => $rates->first(fn ($r) => in_array($r->container_type, ['40hc', '40hq', '40ft_40hq']) && $r->overweight)?->price,
+                'selling_price' => $rates->first()?->selling_price,
                 'currency' => $rates->first()->currency ?? 'IDR',
                 'is_active' => $rates->contains('is_active', true),
             ];
