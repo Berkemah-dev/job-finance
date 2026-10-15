@@ -86,8 +86,7 @@
         <input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}">
 
         @php
-            $approvalCurrencies = $quotation->items->pluck('currency')->filter()->unique()->values();
-            $approvalCurrencyLabel = $approvalCurrencies->count() === 1 ? $approvalCurrencies->first() : 'mata uang item';
+            $salesCreatedQuotation = $quotation->creator?->hasRole('sales') === true;
         @endphp
         <div style="max-height: 360px; overflow-y: auto; margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 10px;">
             <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
@@ -96,7 +95,7 @@
                         <th style="padding: 10px 12px;">Uraian Biaya</th>
                         <th style="padding: 10px 12px;">Qty / Satuan</th>
                         <th style="padding: 10px 12px; text-align: right;">Harga Jual (IDR)</th>
-                        <th style="padding: 10px 12px; text-align: right; width: 170px;">Modal / Unit ({{ $approvalCurrencyLabel }}) <span style="color: #e11d48;">*</span><br><small style="font-size: 10px; font-weight: 500; color: #64748b;">nilai input mengikuti mata uang item</small></th>
+                        <th style="padding: 10px 12px; text-align: right; width: 220px;">Modal / Unit <span style="color: #e11d48;">*</span><br><small style="font-size: 10px; font-weight: 500; color: #64748b;">pilih valuta dan masukkan nilainya</small></th>
                         <th style="padding: 10px 12px; text-align: right;">Subtotal Modal</th>
                     </tr>
                 </thead>
@@ -106,12 +105,12 @@
                         $rate = (float)($item->exchange_rate ?? 1);
                         $qty = (float)$item->quantity;
                         $sellIdr = (float)$item->unit_price * $rate;
-                        $currentCost = (float)($item->unit_cost ?? 0);
-                        // Kosong berarti modal belum diinput oleh Sales; jangan tampilkan
-                        // angka default 0 sebagai modal yang sudah ditentukan.
+                        $currentCost = $salesCreatedQuotation ? 0 : (float)($item->unit_cost ?? 0);
+                        $costCurrency = strtoupper($item->cost_currency ?? $item->currency ?? 'IDR');
+                        $costRate = $costCurrency === 'IDR' ? 1 : (float)($item->cost_exchange_rate ?? $costCurrencyRates[$costCurrency] ?? $item->exchange_rate ?? 1);
                         $formattedCost = $currentCost > 0 ? number_format($currentCost, 0, ',', '.') : '';
                     @endphp
-                    <tr style="border-bottom: 1px solid #f1f5f9;" data-item-row data-qty="{{ $qty }}" data-rate="{{ $rate }}" data-sell="{{ $sellIdr }}">
+                    <tr style="border-bottom: 1px solid #f1f5f9;" data-item-row data-qty="{{ $qty }}" data-rate="{{ $rate }}" data-sell="{{ $sellIdr }}" data-cost-rate="{{ $costRate }}">
                         <td style="padding: 12px;">
                             <strong style="color: #1e293b;">{{ $item->description }}</strong>
                             @if($item->note)<br><small class="subtle" style="color: #64748b;">{{ $item->note }}</small>@endif
@@ -121,13 +120,19 @@
                             Rp {{ \App\Support\Money::format($sellIdr) }}
                         </td>
                         <td style="padding: 12px; text-align: right;">
-                            <div style="position: relative;">
-                                <input type="text" inputmode="decimal" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" class="approve-cost-input" data-currency="{{ $item->currency ?? 'IDR' }}" style="width: 100%; text-align: right; padding: 7px 42px 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="Masukkan modal" autocomplete="off" aria-label="Modal per unit {{ $item->currency ?? 'IDR' }}">
-                                <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 700; color: #64748b; pointer-events: none;">{{ $item->currency ?? 'IDR' }}</span>
+                            <div style="display: grid; grid-template-columns: minmax(82px, 0.7fr) minmax(100px, 1.3fr); gap: 6px;">
+                                <select name="items[{{ $item->id }}][cost_currency]" class="approve-cost-currency" style="min-width: 0; padding: 7px 5px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 12px;" aria-label="Valuta modal {{ $item->description }}">
+                                    @foreach(config('operations.currencies') as $code => $label)
+                                        <option value="{{ $code }}" data-rate="{{ $code === $costCurrency ? $costRate : ($costCurrencyRates[$code] ?? '') }}" @selected($code === $costCurrency)>{{ $code }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="text" inputmode="decimal" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" class="approve-cost-input" style="width: 100%; text-align: right; padding: 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="Masukkan modal" autocomplete="off" aria-label="Modal per unit {{ $costCurrency }}">
+                                <input type="hidden" name="items[{{ $item->id }}][cost_exchange_rate]" value="{{ $costRate }}" class="approve-cost-rate">
                             </div>
+                            <small style="display:block; margin-top:4px; color:#64748b; font-size:10px;">Kurs ke IDR: <span data-cost-rate-label>{{ \App\Support\Money::format($costRate) }}</span></small>
                         </td>
                         <td style="padding: 12px; text-align: right; font-weight: 700; color: #475569;" data-row-cost-total>
-                            Rp {{ \App\Support\Money::format($currentCost * $qty * $rate) }}
+                            Rp {{ \App\Support\Money::format($currentCost * $qty * $costRate) }}
                         </td>
                     </tr>
                     @endforeach
@@ -200,8 +205,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const rate = parseFloat(r.dataset.rate) || 1;
             const sell = parseFloat(r.dataset.sell) || 0;
             const input = r.querySelector('.approve-cost-input');
+            const currency = r.querySelector('.approve-cost-currency');
+            const selectedRate = parseFloat(currency?.selectedOptions?.[0]?.dataset?.rate || '') || (currency?.value === 'IDR' ? 1 : 0);
+            const rateInput = r.querySelector('.approve-cost-rate');
+            if (rateInput) rateInput.value = selectedRate || '';
+            r.dataset.costRate = selectedRate;
+            const rateLabel = r.querySelector('[data-cost-rate-label]');
+            if (rateLabel) rateLabel.textContent = selectedRate ? Number(selectedRate).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'belum tersedia';
             const costVal = parseNum(input.value);
-            const rowCostTotal = costVal * qty * rate;
+            const rowCostTotal = costVal * qty * selectedRate;
             sumSell += sell * qty;
             sumCost += rowCostTotal;
             const rowCostEl = r.querySelector('[data-row-cost-total]');
@@ -234,6 +246,10 @@ document.addEventListener('DOMContentLoaded', function() {
             recalc();
         });
     });
+    dialog.querySelectorAll('.approve-cost-currency').forEach(select => {
+        select.addEventListener('change', recalc);
+    });
+    recalc();
 });
 </script>
 @endcan

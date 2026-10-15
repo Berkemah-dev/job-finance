@@ -15,6 +15,7 @@ use App\Models\TruckingPrice;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\MasterDataService;
+use App\Services\PricingService;
 use App\Services\QuotationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -91,7 +92,7 @@ class QuotationController extends Controller
         return redirect()->route('quotations.show', $quotation)->with('success', 'Draft quotation berhasil dibuat.');
     }
 
-    public function show(Quotation $quotation)
+    public function show(Quotation $quotation, PricingService $pricing)
     {
         Gate::authorize('view', $quotation);
 
@@ -102,9 +103,23 @@ class QuotationController extends Controller
             foreach ($quotation->items as $item) {
                 $item->unit_cost = null;
             }
+        } elseif ($quotation->creator?->hasRole('sales') && ! in_array($quotation->status, [QuotationStatus::Approved, QuotationStatus::Converted], true)) {
+            // Legacy quotations may contain a value copied from the Sales form.
+            // Until approval, that value is not an approved modal and must not be displayed.
+            foreach ($quotation->items as $item) {
+                $item->unit_cost = null;
+            }
         }
 
-        return view('quotations.show', ['quotation' => $quotation]);
+        $costCurrencyRates = ['IDR' => '1.00'];
+        foreach (array_keys(config('operations.currencies')) as $currency) {
+            if ($currency === 'IDR') {
+                continue;
+            }
+            $costCurrencyRates[$currency] = $pricing->activeWeeklyRate($currency, null, $quotation->quotation_date)?->exchange_rate;
+        }
+
+        return view('quotations.show', ['quotation' => $quotation, 'costCurrencyRates' => $costCurrencyRates]);
     }
 
     public function print(Quotation $quotation)

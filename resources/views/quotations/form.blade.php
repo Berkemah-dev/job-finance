@@ -239,6 +239,8 @@
             'pricing_id' => $item->pricing_id ?? '',
             'currency' => $item->currency ?? 'IDR',
             'exchange_rate' => $item->exchange_rate ?? '1.00',
+            'cost_currency' => $item->cost_currency ?? $item->currency ?? 'IDR',
+            'cost_exchange_rate' => $item->cost_exchange_rate ?? $item->exchange_rate ?? '1.00',
             'pricing_snapshot' => $item->pricing_snapshot ?? null,
         ])->toArray();
     }

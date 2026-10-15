@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class VersionRequest extends FormRequest
 {
@@ -28,6 +29,9 @@ class VersionRequest extends FormRequest
                     }
                     $items[$key]['unit_cost'] = $val;
                 }
+                if (isset($item['cost_exchange_rate']) && is_string($item['cost_exchange_rate'])) {
+                    $items[$key]['cost_exchange_rate'] = str_replace(',', '.', trim($item['cost_exchange_rate']));
+                }
             }
             $this->merge(['items' => $items]);
         }
@@ -40,6 +44,8 @@ class VersionRequest extends FormRequest
             'reason' => ['nullable', 'string', 'max:1000'],
             'items' => ['nullable', 'array'],
             'items.*.unit_cost' => ['nullable', 'numeric', 'min:0'],
+            'items.*.cost_currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
+            'items.*.cost_exchange_rate' => ['nullable', 'numeric', 'min:0.01'],
         ];
     }
 }

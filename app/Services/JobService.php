@@ -262,7 +262,9 @@ class JobService
             $source = $sources[$index] ?? null;
             $currency = (string) ($item['currency'] ?? 'IDR');
             $rate = Money::decimal($currency === 'IDR' ? '1' : (string) ($item['exchange_rate'] ?? $snapshot['exchange_rate'] ?? '1'));
-            if ($rate->isZero()) {
+            $costCurrency = (string) ($item['cost_currency'] ?? $currency);
+            $costRate = Money::decimal($costCurrency === 'IDR' ? '1' : (string) ($item['cost_exchange_rate'] ?? $rate));
+            if ($rate->isZero() || $costRate->isZero()) {
                 throw ValidationException::withMessages(['job_date' => 'Quotation memiliki kurs nol sehingga biaya tidak dapat disalin saat membuka job.']);
             }
             $unitCost = Money::decimal((string) $item['unit_cost']);
@@ -281,14 +283,14 @@ class JobService
             $cost->unit = (string) $item['unit'];
             $cost->currency = $currency;
             $cost->exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
-            $cost->cost_exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
+            $cost->cost_exchange_rate = $costRate->toScale(4, RoundingMode::HalfUp);
             $cost->price_exchange_rate = $rate->toScale(4, RoundingMode::HalfUp);
             $cost->quantity = $quantity->toScale(2, RoundingMode::HalfUp);
-            $cost->foreign_unit_cost = $currency === 'IDR' ? null : Money::checked($unitCost->toScale(2, RoundingMode::HalfUp));
+            $cost->foreign_unit_cost = $costCurrency === 'IDR' ? null : Money::checked($unitCost->toScale(2, RoundingMode::HalfUp));
             $cost->foreign_unit_price = $currency === 'IDR' ? null : Money::checked($unitPrice->toScale(2, RoundingMode::HalfUp));
-            $cost->unit_cost = Money::checked($unitCost->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
+            $cost->unit_cost = Money::checked($unitCost->multipliedBy($costRate)->toScale(2, RoundingMode::HalfUp));
             $cost->unit_price = Money::checked($unitPrice->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
-            $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
+            $cost->total_cost = Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($costRate)->toScale(2, RoundingMode::HalfUp));
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp));
             $cost->notes = 'Otomatis dari quotation '.$snapshot['number'];
             $cost->created_by = $actor->id;
@@ -317,7 +319,9 @@ class JobService
         foreach ($quotation->items as $item) {
             $currency = (string) ($item->currency ?: 'IDR');
             $rate = Money::decimal($currency === 'IDR' ? '1' : (string) ($item->exchange_rate ?: 1));
-            if ($rate->isZero()) {
+            $costCurrency = (string) ($item->cost_currency ?: $currency);
+            $costRate = Money::decimal($costCurrency === 'IDR' ? '1' : (string) ($item->cost_exchange_rate ?: $rate));
+            if ($rate->isZero() || $costRate->isZero()) {
                 continue;
             }
             $quantity = Money::decimal((string) ($item->quantity ?: 1));
@@ -330,14 +334,14 @@ class JobService
                 'unit' => (string) $item->unit,
                 'currency' => $currency,
                 'exchange_rate' => $rate->toScale(4, RoundingMode::HalfUp),
-                'cost_exchange_rate' => $rate->toScale(4, RoundingMode::HalfUp),
+                'cost_exchange_rate' => $costRate->toScale(4, RoundingMode::HalfUp),
                 'price_exchange_rate' => $rate->toScale(4, RoundingMode::HalfUp),
                 'quantity' => $quantity->toScale(2, RoundingMode::HalfUp),
-                'foreign_unit_cost' => $currency === 'IDR' ? null : Money::checked($unitCost->toScale(2, RoundingMode::HalfUp)),
+                'foreign_unit_cost' => $costCurrency === 'IDR' ? null : Money::checked($unitCost->toScale(2, RoundingMode::HalfUp)),
                 'foreign_unit_price' => $currency === 'IDR' ? null : Money::checked($unitPrice->toScale(2, RoundingMode::HalfUp)),
-                'unit_cost' => Money::checked($unitCost->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
+                'unit_cost' => Money::checked($unitCost->multipliedBy($costRate)->toScale(2, RoundingMode::HalfUp)),
                 'unit_price' => Money::checked($unitPrice->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
-                'total_cost' => Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
+                'total_cost' => Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($costRate)->toScale(2, RoundingMode::HalfUp)),
                 'total_price' => Money::checked($quantity->multipliedBy($unitPrice)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
                 'updated_by' => $actor->id,
             ];
@@ -356,7 +360,7 @@ class JobService
                     'lock_version' => 0,
                 ]));
             }
-            $snapshotItems[] = $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot']);
+            $snapshotItems[] = $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'cost_currency', 'cost_exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot']);
         }
 
         $snapshot = $job->quotation_snapshot ?? [];

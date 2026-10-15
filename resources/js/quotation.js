@@ -258,8 +258,10 @@ if (form) {
             const price = parseFormattedNumber(item.unit_price) || 0;
             const rate = parseFormattedNumber(item.exchange_rate) || 1;
             const curr = item.currency || 'IDR';
+            const costRate = parseFormattedNumber(item.cost_exchange_rate) || (item.cost_currency === 'IDR' ? 1 : rate);
+            const costCurr = item.cost_currency || curr;
 
-            const costTotalIdr = qty * cost * rate;
+            const costTotalIdr = qty * cost * costRate;
             const sellTotalIdr = qty * price * rate;
 
             grandTotalIdr += sellTotalIdr;
@@ -270,8 +272,10 @@ if (form) {
 
             const costColumnHtml = canManageCost ? `
                 <td style="text-align: right; padding: 10px 8px; color: #64748b;">
-                    ${curr !== 'IDR' ? curr + ' ' + cost.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : formatMoney(cost)}
+                    ${costCurr !== 'IDR' ? costCurr + ' ' + cost.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : formatMoney(cost)}
                     <input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost}">
+                    <input type="hidden" name="items[${index}][cost_currency]" value="${escapeHtml(costCurr)}">
+                    <input type="hidden" name="items[${index}][cost_exchange_rate]" value="${escapeHtml(item.cost_exchange_rate || costRate)}">
                 </td>
             ` : `<input type="hidden" name="items[${index}][unit_cost]" value="">`;
 
@@ -356,6 +360,8 @@ if (form) {
             pricing_id: item.pricing_id || '',
             currency: item.currency || 'IDR',
             exchange_rate: item.exchange_rate || '1.00',
+            cost_currency: item.cost_currency || item.currency || 'IDR',
+            cost_exchange_rate: item.cost_exchange_rate || item.exchange_rate || '1.00',
             pricing_snapshot: item.pricing_snapshot || null,
             container_type: item.container_type || '',
             overweight: !!item.overweight,
@@ -414,6 +420,8 @@ if (form) {
             pricing_snapshot: (trucking && truckingPricing) ? (truckingPricing?.snapshot || truckingPricing) : null,
             currency: curr,
             exchange_rate: String(rate),
+            cost_currency: isSales ? curr : (inputCurrency?.value || curr),
+            cost_exchange_rate: isSales ? String(rate) : String(rate),
             container_type: trucking ? (truckingContainer?.value || '') : '',
             overweight: trucking ? (truckingOverweight?.value === '1') : false,
             port_origin: trucking ? (truckingOrigin?.value?.trim() || '') : '',

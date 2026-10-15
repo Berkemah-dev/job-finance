@@ -87,9 +87,20 @@ class QuotationService
         $rawRows = [];
         foreach ($existingItems as $index => $item) {
             $row = $item->toArray();
-            $costInput = $itemCosts[$item->id]['unit_cost'] ?? ($itemCosts[$index]['unit_cost'] ?? null);
-            if ($costInput !== null && $costInput !== '') {
-                $row['unit_cost'] = (string) $costInput;
+            $submittedRow = $itemCosts[$item->id] ?? ($itemCosts[$index] ?? []);
+            if (! is_array($submittedRow)) {
+                $submittedRow = [];
+            }
+            if (array_key_exists('unit_cost', $submittedRow)) {
+                // Empty approval input means modal is intentionally still zero,
+                // not "keep the value left by the Sales quotation".
+                $row['unit_cost'] = (string) ($submittedRow['unit_cost'] ?? '0');
+            }
+            if (array_key_exists('cost_currency', $submittedRow) && $submittedRow['cost_currency'] !== '') {
+                $row['cost_currency'] = (string) $submittedRow['cost_currency'];
+            }
+            if (array_key_exists('cost_exchange_rate', $submittedRow) && $submittedRow['cost_exchange_rate'] !== '') {
+                $row['cost_exchange_rate'] = (string) $submittedRow['cost_exchange_rate'];
             }
             $rawRows[] = $row;
         }
@@ -104,6 +115,8 @@ class QuotationService
                 $existingItems[$index]->update([
                     'unit_cost' => $updatedItemData['unit_cost'],
                     'total_cost' => $updatedItemData['total_cost'],
+                    'cost_currency' => $updatedItemData['cost_currency'],
+                    'cost_exchange_rate' => $updatedItemData['cost_exchange_rate'],
                 ]);
             }
         }
@@ -195,7 +208,7 @@ class QuotationService
                 'shipper' => ['name' => $quotation->shipper_name, 'address' => $quotation->shipper_address],
                 'consignee' => ['name' => $quotation->consignee_name, 'address' => $quotation->consignee_address],
                 'totals' => $quotation->only(['total_temporary', 'total_provision_cost', 'total_provision_sell', 'subtotal', 'discount', 'tax_rate', 'tax_amount', 'grand_total', 'profit', 'margin']),
-                'items' => $quotation->items->map(fn ($item) => $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot']))->all(),
+                'items' => $quotation->items->map(fn ($item) => $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'cost_currency', 'cost_exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot']))->all(),
             ];
             $firstItem = $quotation->items->first();
             $containerType = $firstItem?->container_type;
@@ -267,7 +280,7 @@ class QuotationService
             $copy->updated_by = $actor->id;
             $copy->lock_version = 0;
             $copy->save();
-            $copy->items()->createMany($quotation->items->map(fn ($item) => $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot', 'position']))->all());
+            $copy->items()->createMany($quotation->items->map(fn ($item) => $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'cost_currency', 'cost_exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot', 'position']))->all());
             $this->master->log($actor, 'quotation.duplicated', 'Menyalin '.$quotation->number.' → '.$copy->number, ['module' => 'quotation', 'record_id' => $quotation->id]);
 
             return $copy;
@@ -309,13 +322,16 @@ class QuotationService
             $unitPriceValue = ($row['unit_price'] ?? '0') === '' ? '0' : ($row['unit_price'] ?? '0');
             $unitCost = Money::decimal($unitCostValue);
             $unitPrice = Money::decimal($unitPriceValue);
-            if ($row['type'] === 'temporary' && ! $unitCost->isZero() && ! $unitCost->isEqualTo($unitPrice)) {
-                throw ValidationException::withMessages(['items.'.$i.'.unit_price' => 'Temporary ditagihkan sebesar biaya: nilai jual harus sama dengan modal.']);
+            $sellExchangeRate = ($row['pricing_source'] ?? '') === 'trucking' ? Money::decimal('1') : Money::decimal($row['exchange_rate'] ?? '1');
+            $costExchangeRate = ($row['cost_currency'] ?? 'IDR') === 'IDR'
+                ? Money::decimal('1')
+                : Money::decimal($row['cost_exchange_rate'] ?? $row['exchange_rate'] ?? '1');
+            if ($row['type'] === 'temporary' && ! $unitCost->isZero() && ! $unitCost->multipliedBy($costExchangeRate)->isEqualTo($unitPrice->multipliedBy($sellExchangeRate))) {
+                throw ValidationException::withMessages(['items.'.$i.'.unit_price' => 'Temporary ditagihkan sebesar biaya: nilai jual harus sama dengan modal setelah dikonversi ke IDR.']);
             }
-            $exchangeRate = ($row['pricing_source'] ?? '') === 'trucking' ? Money::decimal('1') : Money::decimal($row['exchange_rate'] ?? '1');
-            $totalCost = $quantity->multipliedBy($unitCost)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
-            $totalPrice = $quantity->multipliedBy($unitPrice)->multipliedBy($exchangeRate)->toScale(2, RoundingMode::HalfUp);
-            $items[] = array_merge($row, ['position' => $i + 1, 'quantity' => (string) $quantity, 'unit_cost' => (string) $unitCost, 'unit_price' => (string) $unitPrice, 'total_cost' => Money::checked($totalCost), 'total_price' => Money::checked($totalPrice)]);
+            $totalCost = $quantity->multipliedBy($unitCost)->multipliedBy($costExchangeRate)->toScale(2, RoundingMode::HalfUp);
+            $totalPrice = $quantity->multipliedBy($unitPrice)->multipliedBy($sellExchangeRate)->toScale(2, RoundingMode::HalfUp);
+            $items[] = array_merge($row, ['position' => $i + 1, 'quantity' => (string) $quantity, 'unit_cost' => (string) $unitCost, 'unit_price' => (string) $unitPrice, 'cost_exchange_rate' => (string) $costExchangeRate, 'total_cost' => Money::checked($totalCost), 'total_price' => Money::checked($totalPrice)]);
             if ($row['type'] === 'temporary') {
                 $temporary = $temporary->plus($totalCost);
             } else {
@@ -347,6 +363,11 @@ class QuotationService
             throw ValidationException::withMessages(['items.'.$index.'.container_type' => 'Jenis kontainer tidak valid.']);
         }
         $row['currency'] = $currency;
+        $costCurrency = (string) ($row['cost_currency'] ?? $currency);
+        if ($costCurrency === '' || ! array_key_exists($costCurrency, config('operations.currencies'))) {
+            throw ValidationException::withMessages(['items.'.$index.'.cost_currency' => 'Mata uang modal tidak valid.']);
+        }
+        $row['cost_currency'] = $costCurrency;
         $row['note'] = isset($row['note']) && trim((string) $row['note']) !== '' ? (string) $row['note'] : null;
         $row['overweight'] = filter_var($row['overweight'] ?? false, FILTER_VALIDATE_BOOL);
         $row['container_type'] = $containerType;
@@ -360,6 +381,8 @@ class QuotationService
                 throw ValidationException::withMessages(['items.'.$index.'.pricing' => 'Tarif trucking tidak ditemukan atau sudah tidak aktif.']);
             }
             $row['unit_cost'] = $suggestion['unit_cost'];
+            $row['cost_currency'] = 'IDR';
+            $row['cost_exchange_rate'] = '1.00';
             $row['pricing_source'] = 'trucking';
             $row['pricing_id'] = $suggestion['pricing_id'];
             $row['currency'] = $suggestion['currency'];
@@ -376,6 +399,13 @@ class QuotationService
                 $row['exchange_rate'] = (string) $row['exchange_rate'];
             } else {
                 $row['exchange_rate'] = $this->pricing->convertedRate($currency, $date, 'items.'.$index.'.currency');
+            }
+            if ($costCurrency === 'IDR') {
+                $row['cost_exchange_rate'] = '1.00';
+            } elseif (! empty($row['cost_exchange_rate']) && is_numeric($row['cost_exchange_rate']) && (float) $row['cost_exchange_rate'] > 0) {
+                $row['cost_exchange_rate'] = (string) $row['cost_exchange_rate'];
+            } else {
+                $row['cost_exchange_rate'] = $this->pricing->convertedRate($costCurrency, $date, 'items.'.$index.'.cost_currency');
             }
         }
 

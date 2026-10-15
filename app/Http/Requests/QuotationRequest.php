@@ -29,7 +29,7 @@ class QuotationRequest extends FormRequest
                 if (! isset($item['unit_cost']) || $item['unit_cost'] === '' || $item['unit_cost'] === null) {
                     $items[$k]['unit_cost'] = '0';
                 }
-                foreach (['unit_cost', 'unit_price', 'quantity', 'exchange_rate'] as $numField) {
+                foreach (['unit_cost', 'unit_price', 'quantity', 'exchange_rate', 'cost_exchange_rate'] as $numField) {
                     if (isset($items[$k][$numField]) && is_string($items[$k][$numField])) {
                         $val = trim($items[$k][$numField]);
                         if (str_contains($val, '.') && str_contains($val, ',')) {
@@ -81,6 +81,8 @@ class QuotationRequest extends FormRequest
             'items.*.unit_price' => $money,
             'items.*.currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
             'items.*.exchange_rate' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+            'items.*.cost_currency' => ['nullable', 'string', Rule::in(array_keys(config('operations.currencies')))],
+            'items.*.cost_exchange_rate' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
             'items.*.container_type' => ['nullable', 'string', Rule::in(array_keys(ContainerUnit::options()))],
             'items.*.overweight' => ['nullable', 'boolean'],
             'items.*.gross_weight' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
@@ -103,7 +105,7 @@ class QuotationRequest extends FormRequest
             'discount' => 'diskon', 'tax_rate' => 'persentase pajak',
             'items' => 'detail biaya', 'items.*.description' => 'uraian item', 'items.*.note' => 'catatan item', 'items.*.type' => 'jenis biaya',
             'items.*.quantity' => 'jumlah', 'items.*.unit' => 'satuan', 'items.*.unit_cost' => 'modal per unit', 'items.*.unit_price' => 'nilai jual per unit',
-            'items.*.currency' => 'mata uang', 'items.*.exchange_rate' => 'kurs', 'items.*.container_type' => 'jenis kontainer', 'items.*.overweight' => 'overweight',
+            'items.*.currency' => 'mata uang', 'items.*.exchange_rate' => 'kurs', 'items.*.cost_currency' => 'mata uang modal', 'items.*.cost_exchange_rate' => 'kurs modal', 'items.*.container_type' => 'jenis kontainer', 'items.*.overweight' => 'overweight',
             'items.*.gross_weight' => 'berat kotor', 'items.*.volume' => 'volume', 'items.*.pricing_source' => 'sumber tarif', 'items.*.pricing_id' => 'tarif',
             'items.*.port_origin' => 'pelabuhan asal', 'items.*.destination' => 'tujuan',
         ];
