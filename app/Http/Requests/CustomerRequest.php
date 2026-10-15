@@ -25,7 +25,7 @@ class CustomerRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:2000'],
             'authorizer_name' => ['nullable', 'string', 'max:255'],
             'authorizer_title' => ['nullable', 'string', 'max:255'],
-            'tax_number' => ['nullable', 'string', 'max:40', 'regex:/^[0-9]{15,16}$/'],
+            'tax_number' => ['required', 'string', 'max:40', 'regex:/^[0-9]{15,16}$/'],
             'default_payment_terms' => ['nullable', 'string', 'max:60', Rule::in($paymentTerms)],
             'npwp_file' => ['nullable', 'file', 'mimes:'.implode(',', config('operations.customer_documents.mimes')), 'max:'.config('operations.customer_documents.max_kb')],
             'nib_file' => ['nullable', 'file', 'mimes:'.implode(',', config('operations.customer_documents.mimes')), 'max:'.config('operations.customer_documents.max_kb')],

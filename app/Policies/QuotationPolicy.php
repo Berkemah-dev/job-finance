@@ -10,6 +10,9 @@ class QuotationPolicy
 {
     public function viewAny(User $user): bool
     {
+        if ($user->hasRole('operational') && ! $user->hasRole(['super-admin', 'admin'])) {
+            return false;
+        }
         return $user->hasPermission('quotations.view')
             || $user->hasPermission('quotations.manage')
             || $user->hasRole(['super-admin', 'admin']);

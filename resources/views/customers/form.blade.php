@@ -56,9 +56,9 @@
             </div>
 
             <div class="field">
-                <label for="tax_number">NPWP Perusahaan</label>
-                <input id="tax_number" name="tax_number" type="text" value="{{ old('tax_number', $customer->tax_number) }}" placeholder="00.000.000.0-000.000" maxlength="40" inputmode="numeric">
-                <small class="form-help">15–16 digit angka.</small>
+                <label for="tax_number">NPWP Perusahaan <span class="required">*</span></label>
+                <input id="tax_number" name="tax_number" type="text" value="{{ old('tax_number', $customer->tax_number) }}" placeholder="15–16 digit angka" maxlength="40" inputmode="numeric" required>
+                <small class="form-help">Wajib diisi dengan 15–16 digit angka.</small>
             </div>
 
             <div class="field span-2">

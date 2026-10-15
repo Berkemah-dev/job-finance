@@ -19,7 +19,7 @@ class ClosingController extends Controller
                 ->where('number', 'like', '%'.$search.'%')
                 ->orWhere('subject', 'like', '%'.$search.'%')
                 ->orWhere('quotation_snapshot->customer->name', 'like', '%'.$search.'%')))
-            ->withCount(['costs', 'costs as draft_costs_count' => fn ($q) => $q->where('status', 'draft')])
+            ->withCount(['costs', 'costs as draft_costs_count' => fn ($q) => $q->where('status', '!=', 'final')])
             ->latest('id')
             ->paginate(10)
             ->withQueryString();
@@ -38,7 +38,7 @@ class ClosingController extends Controller
             'job' => $job,
             'summary' => $summary['all'],
             'costs' => $costs,
-            'draftCount' => $summary['draft']['count'],
+            'draftCount' => $job->costs()->where('status', '!=', 'final')->count(),
             'finalCount' => $summary['final']['count'],
         ]);
     }

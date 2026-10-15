@@ -126,7 +126,9 @@ class JobDocumentController extends Controller
             }
         }
 
-        return back()->with('success', $notification);
+        // Tetap buka tab Document Upload setelah upload agar pengguna bisa
+        // langsung melihat dokumen yang baru disimpan.
+        return redirect()->to(route('jobs.show', $job).'#tab-documents')->with('success', $notification);
     }
 
     private function syncCustomsDataFromUpload(Request $request, Job $job): void

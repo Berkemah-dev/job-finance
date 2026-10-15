@@ -145,10 +145,12 @@
         <textarea id="cargo_description" name="cargo_description" rows="2" maxlength="2000" placeholder="Masukkan nama barang / komoditas (contoh: Spare Parts Mesin Industri / Garmen / Tekstil)">{{ old('cargo_description', $job->cargo_description) }}</textarea>
     </div>
 
-    <div class="field span-2">
-        <label for="operational_notes">Catatan Operasional</label>
-        <textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000" placeholder="Catatan operasional atau instruksi penanganan khusus...">{{ old('operational_notes', $job->operational_notes) }}</textarea>
-    </div>
+    @unless(auth()->user()?->hasRole('customer-service'))
+        <div class="field span-2">
+            <label for="operational_notes">Catatan Operasional</label>
+            <textarea id="operational_notes" name="operational_notes" rows="2" maxlength="5000" placeholder="Catatan operasional atau instruksi penanganan khusus...">{{ old('operational_notes', $job->operational_notes) }}</textarea>
+        </div>
+    @endunless
 </div>
 <div class="form-actions"><a class="button button-secondary" href="{{ route('jobs.show',$job) }}">Batal</a><button class="button button-primary">Simpan Job Order</button></div>
 </form>

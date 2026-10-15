@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CustomerController extends Controller
 {
@@ -72,7 +73,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $this->authorizeSalesCustomer($customer);
+        $this->authorizeSalesCustomer($customer, false);
         $customer->load(['contacts', 'documents.uploader', 'approver', 'addresses', 'receivableAccount', 'temporaryReceivableAccount']);
 
         return view('customers.show', compact('customer'));
@@ -80,7 +81,7 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
-        $this->authorizeSalesCustomer($customer);
+        $this->authorizeSalesCustomer($customer, true);
         $customer->load(['contacts', 'documents']);
 
         return view('customers.form', compact('customer'));
@@ -88,7 +89,7 @@ class CustomerController extends Controller
 
     public function update(CustomerRequest $request, Customer $customer, MasterDataService $service, Filesystem $filesystem, PartyAccountService $partyAccounts)
     {
-        $this->authorizeSalesCustomer($customer);
+        $this->authorizeSalesCustomer($customer, true);
         $validated = $request->validated();
         $service->save($customer, Arr::except($validated, ['contacts']), $request->user());
         $partyAccounts->customerAccounts($customer);
@@ -105,6 +106,9 @@ class CustomerController extends Controller
         DB::transaction(function () use ($request, $customer, $service) {
             $customer = Customer::query()->lockForUpdate()->findOrFail($customer->id);
             $service->checkVersion($customer, ['lock_version' => $request->integer('lock_version')]);
+            if (! $customer->contacts()->where('type', 'shipper')->where('is_active', true)->exists() || ! $customer->contacts()->where('type', 'consignee')->where('is_active', true)->exists()) {
+                throw ValidationException::withMessages(['contacts' => 'Master List Customer harus memiliki minimal satu Shipper dan satu Consignee aktif sebelum approval.']);
+            }
             $customer->forceFill([
                 'approval_status' => 'approved',
                 'approved_by' => $request->user()->id,
@@ -121,7 +125,7 @@ class CustomerController extends Controller
 
     public function destroy(VersionRequest $request, Customer $customer, MasterDataService $service)
     {
-        $this->authorizeSalesCustomer($customer);
+        $this->authorizeSalesCustomer($customer, true);
         $service->archive($customer, $request->validated(), $request->user());
 
         return redirect()->route('customers.index')->with('success', 'Customer diarsipkan. Histori tetap tersimpan.');
@@ -130,7 +134,7 @@ class CustomerController extends Controller
     public function restore(VersionRequest $request, int $id, MasterDataService $service)
     {
         $customer = Customer::withTrashed()->findOrFail($id);
-        $this->authorizeSalesCustomer($customer);
+        $this->authorizeSalesCustomer($customer, true);
         $service->restore($customer, $request->validated(), $request->user());
 
         return redirect()->route('customers.show', $customer)->with('success', 'Customer diaktifkan kembali.');
@@ -155,9 +159,9 @@ class CustomerController extends Controller
         $service->log($user, 'customer.contacts_updated', 'Memperbarui shipper/consignee '.$customer->code, ['module' => 'customer', 'record_id' => $customer->id, 'before' => $before ?? null]);
     }
 
-    private function authorizeSalesCustomer(Customer $customer): void
+    private function authorizeSalesCustomer(Customer $customer, bool $editing = false): void
     {
-        abort_unless($customer->isAccessibleBy(request()->user()), 403);
+        abort_unless($editing ? $customer->isEditableBy(request()->user()) : $customer->isAccessibleBy(request()->user()), 403, $editing ? 'Customer yang menunggu approval Finance Manager tidak dapat diedit oleh Sales.' : null);
     }
 
     private function handleUploads(Customer $customer, Request $request, Filesystem $filesystem, ?User $user): void

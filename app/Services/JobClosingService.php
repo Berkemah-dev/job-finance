@@ -44,12 +44,12 @@ class JobClosingService
             if ($job->costs()->count() === 0) {
                 throw ValidationException::withMessages(['costs' => 'Job belum memiliki detail biaya.']);
             }
-            if ($job->costs()->where('status', 'draft')->lockForUpdate()->exists()) {
-                throw ValidationException::withMessages(['costs' => 'Seluruh biaya harus berstatus Approved atau Finance Confirmed sebelum Closing Job.']);
+            if ($job->costs()->where('status', '!=', 'final')->lockForUpdate()->exists()) {
+                throw ValidationException::withMessages(['costs' => 'Seluruh biaya harus berstatus Finance Confirmed sebelum Closing Job.']);
             }
             $rows = $job->costs()->orderBy('id')->lockForUpdate()->get();
-            // Biaya Approved dan Finance Confirmed sama-sama sudah layak
-            // ditutup. Gunakan seluruh biaya setelah Draft dipastikan kosong.
+            // Closing hanya boleh dilakukan setelah setiap biaya diperiksa
+            // dan dikonfirmasi Finance.
             $summary = $this->costs->summary($job)['all'];
             $invoiceRows = $rows->filter(fn (\App\Models\JobCost $cost) => $cost->type === 'temporary' || Money::decimal($cost->total_price)->isPositive())->values();
             // Invoice yang sudah diterbitkan menjadi sumber PPN saat Closing Job.

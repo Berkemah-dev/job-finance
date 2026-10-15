@@ -268,22 +268,30 @@ document.addEventListener('DOMContentLoaded', function() {
 <nav class="job-pill-tabs-nav" style="display: flex; gap: 8px; background: #e2e8f0; padding: 6px; border-radius: 9999px; margin-bottom: 24px; overflow-x: auto;">
     <button type="button" class="job-tab-btn active" data-tab="tab-shipping" style="padding: 10px 22px; border-radius: 9999px; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0,0,0,0.12);">1. Job Order</button>
     @if($isImport)
-        <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PIB</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
-        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Surat Kuasa</button>@endunless
-        <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 5.@endif Deklarasi Nilai Pabean</button>
-        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan / Tanda Terima</button>@endunless
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)5.@else 7.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        @if($isOperationalRole)
+            <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PIB</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Deklarasi Nilai Pabean</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Surat Kuasa (Pabean)</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Rincian Tagihan</button>
+        @else
+            <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PIB</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Surat Kuasa</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Deklarasi Nilai Pabean</button>
+            @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. {{ $isCsRole ? 'Surat Jalan' : 'Surat Jalan / Tanda Terima' }}</button>@endunless
+            <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        @endif
     @elseif($isExportSea)
-        <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
-        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button><button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button><button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button><button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>@endunless
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 8.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)2.@else 3.@endif Document Upload</button>
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button><button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button><button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button>@unless($isCsRole)<button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>@endunless@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@elseif($isCsRole)7.@else 8.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @elseif($isExportAir)
-        <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>
-        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
-        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button><button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button><button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button><button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>@endunless
-        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@else 8.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PEB</button>@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)2.@else 3.@endif Document Upload</button>
+        @unless($isOperationalRole)<button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button><button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button><button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button>@unless($isCsRole)<button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>@endunless@endunless
+        <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">@if($isOperationalRole)4.@elseif($isCsRole)7.@else 8.@endif @can('financial.view') Biaya & Profit @else Rincian Tagihan @endcan</button>
     @else
         <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. Document Upload</button>
         <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Surat Jalan / Tanda Terima</button>
@@ -797,6 +805,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <div class="report-grid" style="padding: 0 24px 24px; align-items: start; gap: 24px;">
+            @unless($isOperationalRole)
             <article class="report-card" style="align-self: start;">
                 <div class="report-card-head">
                     <div class="report-card-title">
@@ -810,6 +819,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Surat kuasa dari consignee/customer kepada PT Radix International Logistics untuk mengurus dan mengambil Delivery Order.</p>
                 <a class="button button-primary" href="{{ route('jobs.sk-do.pdf', $job) }}" target="_blank"><x-icon name="file"/> Preview / Cetak SK DO</a>
             </article>
+            @endunless
 
             <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
@@ -1002,6 +1012,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {{-- ========================================================================= --}}
 {{-- TAB: TANDA TERIMA & DELIVERY                                              --}}
 {{-- ========================================================================= --}}
+@if(!$isCsRole || !($isExportSea || $isExportAir))
 <div id="tab-delivery" class="job-tab-content" style="display: none;">
     <section class="panel" style="margin-bottom: 24px;">
         <div class="panel-heading">
@@ -1187,6 +1198,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </article>
             @endif
 
+            @if(!$isImport || !$isCsRole)
             <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <div class="report-card-head">
@@ -1207,6 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <a class="button {{ ($isExportSea || $isExportAir) ? 'button-primary' : 'button-secondary' }}" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank"><x-icon name="file"/> Cetak TT Dokumen</a>
                 </div>
             </article>
+            @endif
         </div>
 
         @if(!$isExportSea && !$isExportAir)
@@ -1312,6 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
         @endif
     </section>
 </div>
+@endif
 {{-- ========================================================================= --}}
 {{-- TAB 5: BIAYA & PROFIT                                                     --}}
 {{-- ========================================================================= --}}
@@ -1769,6 +1783,55 @@ function onVendorTruckSelected(selectEl) {
         }
     }
 }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const isCustomerService = @json($isCsRole);
+    const isExportShipment = @json($isExportSea || $isExportAir);
+    const isImportShipment = @json($isImport && !$isExportSea && !$isExportAir);
+
+    // DNP hanya dikelola Operational/Finance; CS cukup melihat alur dokumen dan tagihan.
+    if (isCustomerService) {
+        document.querySelector('.job-tab-btn[data-tab="tab-dnp"]')?.remove();
+    }
+
+    if (!isCustomerService && isImportShipment && @json($isOperationalRole)) {
+        const nav = document.querySelector('.job-pill-tabs-nav');
+        const first = nav?.querySelector('.job-tab-btn[data-tab="tab-shipping"]');
+        const addTab = (id, label) => {
+            if (!nav || nav.querySelector(`.job-tab-btn[data-tab="${id}"]`)) return;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'job-tab-btn';
+            button.dataset.tab = id;
+            button.textContent = label;
+            button.style.cssText = 'padding:10px 22px;border-radius:9999px;font-weight:600;font-size:13.5px;border:none;cursor:pointer;background:transparent;color:#475569;';
+            button.addEventListener('click', () => activateJobTab(id));
+            first?.after(button);
+        };
+        addTab('tab-customs', '2. PIB');
+        addTab('tab-sk', '3. Surat Kuasa (Pabean)');
+        const skCards = document.querySelectorAll('#tab-sk .report-card');
+        if (skCards.length > 1) skCards[0].remove();
+    }
+
+    // Tanda Terima Dokumen dibuat dari halaman Invoice Finance, bukan dari Job Order.
+    if (isExportShipment) {
+        document.querySelector('.job-tab-btn[data-tab="tab-delivery"]')?.remove();
+        const deliveryCards = document.querySelectorAll('#tab-delivery .report-card');
+        if (deliveryCards.length) deliveryCards[deliveryCards.length - 1].remove();
+    } else if (isImportShipment && isCustomerService) {
+        const deliveryCards = document.querySelectorAll('#tab-delivery .report-card');
+        if (deliveryCards.length > 1) deliveryCards[deliveryCards.length - 1].remove();
+    }
+
+    // CS Import hanya membutuhkan Surat Kuasa DO; data SK Pabean tetap dikelola role lain.
+    if (isImportShipment && isCustomerService) {
+        const skCards = document.querySelectorAll('#tab-sk .report-card');
+        if (skCards.length > 1) skCards[1].remove();
+    }
+});
 </script>
 
 @endsection

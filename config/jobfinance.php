@@ -49,7 +49,7 @@ return [
             'financial.view', 'pricing.view', 'email.manage', 'activity.view',
         ]],
         'finance-manager' => ['label' => 'Finance Manager', 'permissions' => [
-            'dashboard.view', 'customers.view', 'customers.approve', 'quotations.view', 'jobs.view', 'jobs.cancel', 'costs.manage', 'jobs.close',
+            'dashboard.view', 'customers.view', 'customers.manage', 'customers.approve', 'quotations.view', 'jobs.view', 'jobs.cancel', 'costs.manage', 'jobs.close',
             'invoices.manage', 'payments.manage', 'journals.manage', 'reimbursements.manage', 'reports.view',
             'financial.view', 'pricing.view', 'email.manage', 'activity.view', 'users.view',
         ]],
@@ -62,7 +62,7 @@ return [
             'pricing.view',
         ]],
         'operational' => ['label' => 'Operation', 'permissions' => [
-            'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do', 'tps.manage',
+            'dashboard.view', 'jobs.view', 'jobs.manage', 'jobs.confirm-do', 'tps.manage',
         ]],
         'customer-service' => ['label' => 'Customer Service', 'permissions' => [
             'dashboard.view', 'quotations.view', 'quotations.manage', 'jobs.view', 'jobs.manage', 'jobs.confirm-do', 'export-documents.manage',

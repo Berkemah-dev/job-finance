@@ -236,15 +236,6 @@ private function lockJob(Job $job, array $data): Job
             if (Money::decimal($cost->pph23_amount ?? 0)->isGreaterThan(Money::decimal($cost->total_cost))) {
                 throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi total biaya.']);
             }
-            // Charge yang berasal dari quotation wajib ditinjau Finance satu per satu.
-            // Input yang dibuat langsung Finance tidak perlu antre Finalisasi Biaya.
-            if ($new && $cost->quotation_id === null && Money::decimal($cost->total_cost)->isPositive()) {
-                $cost->status = 'final';
-                $cost->finalized_by = $actor->id;
-                $cost->finalized_at = now();
-                $cost->save();
-                $this->recognizePayable($cost, $actor, 'job_cost_direct');
-            }
             if (! $new && $cost->status === 'final' && Money::decimal($cost->total_cost)->isPositive()) {
                 $this->recognizePayable($cost, $actor, 'job_cost_amendment');
             }

@@ -39,6 +39,9 @@
         <button type="button" class="button button-primary" onclick="document.getElementById('modal-add-payment').showModal()">+ Add Payment</button>
     @endif
     <a class="button button-secondary" href="{{ route('invoices.preview', $invoice) }}" target="_blank">🖨 Preview PDF</a>
+    @if($job)
+        <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank">🧾 Tanda Terima Dokumen</a>
+    @endif
     @if((float) $invoice->tax > 0)
         <a class="button button-secondary" href="{{ route('invoices.coretax', $invoice) }}">Ekspor XML Coretax</a>
     @endif

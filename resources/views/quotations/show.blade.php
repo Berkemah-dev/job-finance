@@ -85,6 +85,10 @@
         @csrf
         <input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}">
 
+        @php
+            $approvalCurrencies = $quotation->items->pluck('currency')->filter()->unique()->values();
+            $approvalCurrencyLabel = $approvalCurrencies->count() === 1 ? $approvalCurrencies->first() : 'mata uang item';
+        @endphp
         <div style="max-height: 360px; overflow-y: auto; margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 10px;">
             <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
                 <thead>
@@ -92,7 +96,7 @@
                         <th style="padding: 10px 12px;">Uraian Biaya</th>
                         <th style="padding: 10px 12px;">Qty / Satuan</th>
                         <th style="padding: 10px 12px; text-align: right;">Harga Jual (IDR)</th>
-                        <th style="padding: 10px 12px; text-align: right; width: 170px;">Modal / Unit (IDR) <span style="color: #e11d48;">*</span></th>
+                        <th style="padding: 10px 12px; text-align: right; width: 170px;">Modal / Unit ({{ $approvalCurrencyLabel }}) <span style="color: #e11d48;">*</span><br><small style="font-size: 10px; font-weight: 500; color: #64748b;">nilai input mengikuti mata uang item</small></th>
                         <th style="padding: 10px 12px; text-align: right;">Subtotal Modal</th>
                     </tr>
                 </thead>
@@ -115,7 +119,10 @@
                             Rp {{ \App\Support\Money::format($sellIdr) }}
                         </td>
                         <td style="padding: 12px; text-align: right;">
-                            <input type="text" inputmode="numeric" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" class="approve-cost-input" style="width: 100%; text-align: right; padding: 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="0" autocomplete="off">
+                            <div style="position: relative;">
+                                <input type="text" inputmode="decimal" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" class="approve-cost-input" data-currency="{{ $item->currency ?? 'IDR' }}" style="width: 100%; text-align: right; padding: 7px 42px 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="0" autocomplete="off" aria-label="Modal per unit {{ $item->currency ?? 'IDR' }}">
+                                <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 700; color: #64748b; pointer-events: none;">{{ $item->currency ?? 'IDR' }}</span>
+                            </div>
                         </td>
                         <td style="padding: 12px; text-align: right; font-weight: 700; color: #475569;" data-row-cost-total>
                             Rp {{ \App\Support\Money::format($currentCost * $qty * $rate) }}
@@ -205,22 +212,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (marginEl) marginEl.textContent = margin.toFixed(2).replace('.', ',') + '%';
     }
 
+    function formatCostInput(input) {
+        const value = parseNum(input.value);
+        input.value = value > 0 ? Math.round(value).toLocaleString('id-ID') : '0';
+    }
+
     dialog.querySelectorAll('.approve-cost-input').forEach(inp => {
         inp.addEventListener('input', function() {
-            let raw = inp.value.replace(/\D/g, '');
-            if (raw === '') {
-                inp.value = '';
-            } else {
-                let num = parseInt(raw, 10);
-                inp.value = num.toLocaleString('id-ID');
-            }
+            // Keep the value plain while typing so the caret never jumps.
+            inp.value = inp.value.replace(/[^0-9]/g, '');
             recalc();
         });
         inp.addEventListener('focus', function() {
             if (inp.value === '0') inp.value = '';
+            else inp.value = inp.value.replace(/\./g, '');
         });
         inp.addEventListener('blur', function() {
-            if (inp.value === '') inp.value = '0';
+            formatCostInput(inp);
             recalc();
         });
     });

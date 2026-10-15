@@ -282,9 +282,9 @@ class TruckingPriceController extends Controller
 
     public function store(TruckingPriceRequest $request, PricingService $service)
     {
-        $service->save(new TruckingPrice, $request->validated(), $request->user());
+        $route = $service->save(new TruckingPrice, $request->validated(), $request->user());
 
-        return redirect()->route('pricing.trucking.index')->with('success', 'Trucking price berhasil ditambahkan.');
+        return redirect()->route('pricing.trucking.show', $route)->with('success', 'Rute trucking berhasil ditambahkan. Silakan tambahkan vendor dan modal per armada.');
     }
 
     public function edit(TruckingPrice $truckingPrice)

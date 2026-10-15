@@ -17,7 +17,7 @@
     </form>
     <div class="table-scroll">
         <table>
-            <thead><tr><th>Job / Pekerjaan</th><th>Customer</th><th>Biaya</th><th>Draft</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Job / Pekerjaan</th><th>Customer</th><th>Biaya</th><th>Belum Finance Confirm</th><th>Status</th><th>Aksi</th></tr></thead>
             <tbody>
                 @forelse($jobs as $job)
                     <tr>

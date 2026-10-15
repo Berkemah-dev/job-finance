@@ -131,4 +131,13 @@ class Customer extends Model
                 })
                 ->exists();
     }
+
+    public function isEditableBy(?User $user): bool
+    {
+        if (! $this->isAccessibleBy($user) || ! $user) {
+            return false;
+        }
+
+        return ! ($user->hasRole('sales') && ! $user->hasRole(['sales-manager', 'super-admin', 'admin']) && $this->approval_status === 'pending');
+    }
 }

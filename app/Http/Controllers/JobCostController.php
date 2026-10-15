@@ -58,7 +58,7 @@ class JobCostController extends Controller
     {
         $cost = $service->save($job, null, $request->validated(), $request->user());
 
-        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', $cost->status === 'final' ? 'Biaya Finance tersimpan dan jurnal hutang otomatis dibuat. Invoice serta jurnal tagihan akan diperbarui selama belum ada pembayaran.' : 'Biaya dari quotation tersimpan sebagai Draft. Konfirmasi Finance satu per satu setelah diperiksa.');
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya tersimpan sebagai Draft. Periksa lalu lakukan Finance Confirm agar biaya dapat dipakai untuk Finalisasi Invoice atau Closing Job.');
     }
 
     public function show(Job $job, JobCost $cost)

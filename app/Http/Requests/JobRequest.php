@@ -14,6 +14,15 @@ class JobRequest extends FormRequest
         return $this->user()->can('update', $this->route('job'));
     }
 
+    protected function prepareForValidation(): void
+    {
+        // Customer Service dapat mengubah data Job Order, tetapi catatan operasional
+        // dikelola oleh Operational dan role berwenang lainnya.
+        if ($this->user()?->hasRole('customer-service')) {
+            $this->request->remove('operational_notes');
+        }
+    }
+
     public function rules(): array
     {
         return ['lock_version' => ['required', 'integer', 'min:0'], 'subject' => ['required', 'string', 'max:255'],

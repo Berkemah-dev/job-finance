@@ -4,6 +4,15 @@
 <div class="page-heading"><div><p class="eyebrow">PRICING</p><h1>{{ $truckingPrice->exists?'Edit trucking price':'Tambah trucking price' }}</h1><p>Harga trucking untuk rute dan tipe kontainer tertentu.</p></div>    <a class="button button-secondary" href="{{ route('pricing.trucking.index') }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" method="POST" action="{{ $truckingPrice->exists?route('pricing.trucking.update',$truckingPrice):route('pricing.trucking.store') }}">@csrf @if($truckingPrice->exists) @method('PUT') @endif
 <input type="hidden" name="lock_version" value="{{ old('lock_version',$truckingPrice->lock_version ?? 0) }}">
+@if(!$truckingPrice->exists)
+<div class="form-grid">
+<div class="field"><label for="port_origin">Pelabuhan muat <span class="required">*</span></label><input id="port_origin" name="port_origin" value="{{ old('port_origin') }}" placeholder="Contoh: TANJUNG PRIOK, INDONESIA" required></div>
+<div class="field"><label for="destination">Tujuan / Area <span class="required">*</span></label><input id="destination" name="destination" value="{{ old('destination') }}" placeholder="Contoh: JAKARTA / BEKASI" required></div>
+<div class="field"><label for="effective_date">Tanggal berlaku <span class="required">*</span></label><input id="effective_date" type="date" name="effective_date" value="{{ old('effective_date', today()->format('Y-m-d')) }}" required></div>
+</div>
+<input type="hidden" name="container_type" value="20gp"><input type="hidden" name="overweight" value="0"><input type="hidden" name="currency" value="IDR"><input type="hidden" name="price" value="0"><input type="hidden" name="is_active" value="1">
+<div class="info-note" style="margin-top: 14px;">Setelah rute dibuat, tambahkan vendor trucking, jenis armada, modal normal/overweight, dan harga jual dari halaman detail rute.</div>
+@else
 <div class="form-grid">
 <div class="field"><label for="port_origin">Pelabuhan asal <span class="required">*</span></label><input id="port_origin" name="port_origin" value="{{ old('port_origin',$truckingPrice->port_origin) }}" placeholder="cth. Tanjung Priok" required></div>
 <div class="field"><label for="destination">Tujuan <span class="required">*</span></label><input id="destination" name="destination" value="{{ old('destination',$truckingPrice->destination) }}" placeholder="cth. Bandung / Surabaya" required></div>
@@ -16,6 +25,7 @@
 <div class="field"><label for="effective_date">Tanggal berlaku <span class="required">*</span></label><input id="effective_date" type="date" name="effective_date" value="{{ old('effective_date',$truckingPrice->effective_date?->format('Y-m-d') ?? today()->format('Y-m-d')) }}" required></div>
 <div class="field"><label for="is_active">Status</label><select id="is_active" name="is_active"><option value="1" @selected(!$truckingPrice->exists || $truckingPrice->is_active)>Aktif</option><option value="0" @selected($truckingPrice->exists && !$truckingPrice->is_active)>Nonaktif</option></select></div>
 </div>
+@endif
 <div class="form-actions"><a class="button button-secondary" href="{{ route('pricing.trucking.index') }}">Batal</a><button class="button button-primary">Simpan trucking price</button></div></form></section>
 
 <script>
