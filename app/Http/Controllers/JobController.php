@@ -57,6 +57,13 @@ class JobController extends Controller
         $isSuratJalanType = fn ($type) => preg_match('/\b(SURAT JALAN|SJ)\b/i', $type->code.' '.$type->name) === 1;
         $documentTypes = $allDocumentTypes->reject($isCustomsType)->reject($isSuratJalanType)->values();
         $customsDocumentTypes = $allDocumentTypes->filter($isCustomsType)->values();
+        $specialDocumentCode = in_array($job->service_type, ['imp_sea', 'imp_air'], true)
+            ? strtoupper(str_replace('_', '', $job->service_type)).'-DO'
+            : (in_array($job->service_type, ['exp_sea', 'exp_air'], true) ? strtoupper(str_replace('_', '', $job->service_type)).'-BC' : null);
+        $specialDocumentType = $specialDocumentCode ? $allDocumentTypes->firstWhere('code', $specialDocumentCode) : null;
+        $specialDocument = $specialDocumentType
+            ? $job->documents->where('document_type_id', $specialDocumentType->id)->sortByDesc('id')->first()
+            : null;
         $truckingVendors = \App\Models\Vendor::where(function ($q) {
             $q->where('type', 'trucking')->orWhereHas('categories', fn ($cq) => $cq->where('category', 'trucking'));
         })->with(['trucks' => fn ($tq) => $tq->where('is_active', true)])->orderBy('name')->get(['id', 'name', 'code']);
@@ -80,6 +87,8 @@ class JobController extends Controller
             'truckingVendors' => $truckingVendors,
             'customerAddresses' => $customerAddresses,
             'customsDocumentTypes' => $customsDocumentTypes,
+            'specialDocumentType' => $specialDocumentType,
+            'specialDocument' => $specialDocument,
         ]);
     }
 

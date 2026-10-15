@@ -17,7 +17,7 @@ class JobDocumentController extends Controller
     {
         $request->validate([
             'document_type_id' => 'required|exists:document_types,id',
-            'file'             => 'required|file|max:3072|mimes:pdf',
+            'file'             => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png',
             'notes'            => 'nullable|string|max:500',
             'customs_upload' => ['nullable', 'boolean'],
             'customs_document_kind' => ['nullable', Rule::in(['pib', 'billing', 'spjm', 'sppb', 'behandle', 'npe'])],

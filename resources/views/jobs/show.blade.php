@@ -627,6 +627,38 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="subtle">Dokumen resmi pengapalan sesuai kategori layanan</span>
         </div>
 
+        @if($specialDocumentType)
+            <div style="border:1px solid {{ $specialDocument ? '#bbf7d0' : '#fed7aa' }}; background:{{ $specialDocument ? '#f0fdf4' : '#fff7ed' }}; border-radius:12px; padding:16px 18px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:11px; font-weight:700; letter-spacing:.08em; color:#64748b;">DOKUMEN WAJIB JOB ORDER</div>
+                        <h3 style="margin:4px 0 3px; color:#0f172a;">{{ $specialDocumentType->name }}</h3>
+                        <div style="font-size:12px; color:#64748b;">{{ $specialDocument ? 'Dokumen sudah diunggah dan dapat dilihat kembali.' : 'Upload dokumen untuk menyelesaikan checklist Job Order.' }}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="display:inline-flex; align-items:center; border-radius:999px; padding:6px 10px; font-size:11px; font-weight:700; color:{{ $specialDocument ? '#166534' : '#9a3412' }}; background:{{ $specialDocument ? '#dcfce7' : '#ffedd5' }};">
+                            {{ $specialDocument ? (str_contains($specialDocumentType->code, '-DO') ? 'DO COMPLETE ✓' : 'BC COMPLETE ✓') : (str_contains($specialDocumentType->code, '-DO') ? 'DO BELUM DIUPLOAD' : 'BC BELUM DIUPLOAD') }}
+                        </span>
+                        @if($specialDocument)
+                            <a class="button button-secondary button-sm" href="{{ route('jobs.documents.preview', [$job, $specialDocument]) }}" target="_blank">Lihat Dokumen</a>
+                            <a class="button button-secondary button-sm" href="{{ route('jobs.documents.download', [$job, $specialDocument]) }}">Download</a>
+                        @endif
+                    </div>
+                </div>
+                @can('update',$job)
+                    <form class="data-form" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data" style="margin-top:14px; padding-top:14px; border-top:1px solid {{ $specialDocument ? '#bbf7d0' : '#fed7aa' }};">
+                        @csrf
+                        <input type="hidden" name="document_type_id" value="{{ $specialDocumentType->id }}">
+                        <input type="hidden" name="notes" value="Upload {{ $specialDocumentType->name }} dari Job Order">
+                        <div style="display:flex; align-items:end; gap:12px; flex-wrap:wrap;">
+                            <div class="field" style="flex:1; min-width:260px; margin:0;"><label for="special_document_file">{{ $specialDocument ? 'Ganti' : 'Upload' }} file {{ str_contains($specialDocumentType->code, '-DO') ? 'DO' : 'BC' }}</label><input id="special_document_file" type="file" name="file" accept="application/pdf,.pdf,.jpg,.jpeg,.png" required><small class="form-help">PDF, JPG, JPEG, atau PNG · maksimal 5 MB.</small></div>
+                            <button class="button button-primary">{{ $specialDocument ? 'Upload Versi Baru' : 'Upload Dokumen' }}</button>
+                        </div>
+                    </form>
+                @endcan
+            </div>
+        @endif
+
         {{-- FILE LAMPIRAN BL / CIPL / COO DLL --}}
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
             <div class="panel-heading" style="margin-bottom: 0;">

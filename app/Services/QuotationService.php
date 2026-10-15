@@ -66,6 +66,12 @@ class QuotationService
             $quotation->save();
             $quotation->items()->delete();
             $quotation->items()->createMany($calculated['items']);
+            if (! $new) {
+                $job = $quotation->job()->first();
+                if ($job && $job->status !== 'cancelled') {
+                    app(JobService::class)->syncQuotationCharges($job, $quotation->fresh(['items']), $actor);
+                }
+            }
             $this->master->log($actor, $new ? 'quotation.created' : 'quotation.updated', ($new ? 'Membuat ' : 'Memperbarui ').$quotation->number);
 
             return $quotation;

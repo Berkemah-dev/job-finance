@@ -303,4 +303,73 @@ class JobService
             $this->master->log($actor, 'job.costs.seeded', 'Salinan biaya quotation '.$snapshot['number'].' ● '.implode(', ', $created), ['module' => 'job', 'record_id' => $job->id]);
         }
     }
+
+    /**
+     * Keep an already-converted Job Order aligned when a Sales Manager edits its quotation.
+     * Only costs linked to a quotation item are touched; manually-added costs stay intact.
+     */
+    public function syncQuotationCharges(Job $job, Quotation $quotation, User $actor): void
+    {
+        $quotation->loadMissing('items');
+        $existing = $job->costs()->whereNotNull('quotation_item_id')->get()->keyBy('quotation_item_id');
+        $snapshotItems = [];
+
+        foreach ($quotation->items as $item) {
+            $currency = (string) ($item->currency ?: 'IDR');
+            $rate = Money::decimal($currency === 'IDR' ? '1' : (string) ($item->exchange_rate ?: 1));
+            if ($rate->isZero()) {
+                continue;
+            }
+            $quantity = Money::decimal((string) ($item->quantity ?: 1));
+            $unitCost = Money::decimal((string) ($item->unit_cost ?: 0));
+            $unitPrice = Money::decimal((string) ($item->unit_price ?: 0));
+            $costData = [
+                'description' => (string) $item->description,
+                'type' => (string) $item->type,
+                'cost_category' => $item->type === 'temporary' ? 'reimbursement' : 'payment_request',
+                'unit' => (string) $item->unit,
+                'currency' => $currency,
+                'exchange_rate' => $rate->toScale(4, RoundingMode::HalfUp),
+                'cost_exchange_rate' => $rate->toScale(4, RoundingMode::HalfUp),
+                'price_exchange_rate' => $rate->toScale(4, RoundingMode::HalfUp),
+                'quantity' => $quantity->toScale(2, RoundingMode::HalfUp),
+                'foreign_unit_cost' => $currency === 'IDR' ? null : Money::checked($unitCost->toScale(2, RoundingMode::HalfUp)),
+                'foreign_unit_price' => $currency === 'IDR' ? null : Money::checked($unitPrice->toScale(2, RoundingMode::HalfUp)),
+                'unit_cost' => Money::checked($unitCost->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
+                'unit_price' => Money::checked($unitPrice->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
+                'total_cost' => Money::checked($quantity->multipliedBy($unitCost)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
+                'total_price' => Money::checked($quantity->multipliedBy($unitPrice)->multipliedBy($rate)->toScale(2, RoundingMode::HalfUp)),
+                'updated_by' => $actor->id,
+            ];
+            $cost = $existing->get($item->id);
+            if ($cost) {
+                $cost->update($costData);
+            } else {
+                $job->costs()->create(array_merge($costData, [
+                    'quotation_id' => $quotation->id,
+                    'quotation_item_id' => $item->id,
+                    'number' => $this->numbers->next('cst'),
+                    'status' => 'draft',
+                    'cost_date' => $job->job_date?->toDateString() ?? now()->toDateString(),
+                    'notes' => 'Otomatis disinkronkan dari quotation '.$quotation->number,
+                    'created_by' => $actor->id,
+                    'lock_version' => 0,
+                ]));
+            }
+            $snapshotItems[] = $item->only(['description', 'note', 'type', 'unit', 'quantity', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'currency', 'exchange_rate', 'container_type', 'overweight', 'gross_weight', 'volume', 'pricing_source', 'pricing_id', 'pricing_snapshot']);
+        }
+
+        $snapshot = $job->quotation_snapshot ?? [];
+        $snapshot['number'] = $quotation->number;
+        $snapshot['customer'] = $quotation->customer_snapshot;
+        $snapshot['subject'] = $quotation->subject;
+        $snapshot['currency'] = $quotation->currency;
+        $snapshot['exchange_rate'] = $quotation->exchange_rate;
+        $snapshot['totals'] = $quotation->only(['total_temporary', 'total_provision_cost', 'total_provision_sell', 'subtotal', 'discount', 'tax_rate', 'tax_amount', 'grand_total', 'profit', 'margin']);
+        $snapshot['items'] = $snapshotItems;
+        $job->quotation_snapshot = $snapshot;
+        $job->updated_by = $actor->id;
+        $job->lock_version++;
+        $job->save();
+    }
 }
