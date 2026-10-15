@@ -205,7 +205,7 @@
 
 <div class="summary-box" aria-live="polite">
     <div class="summary-row"><span>Total Penawaran (Jual)</span><strong data-preview-total>Rp 0,00</strong></div>
-    @if($canManageCost)
+    @if(! $isSalesOnly)
         <div class="summary-row"><span>Estimasi Profit</span><strong data-preview-profit style="color:#16a34a;">Rp 0,00</strong></div>
     @endif
 </div>
