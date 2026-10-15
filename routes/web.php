@@ -293,6 +293,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard-operational', [DashboardController::class, 'role'])->defaults('role', 'operational')->middleware('can:dashboard.view')->name('dashboard.operational');
     Route::get('/dashboard-customer-service', [DashboardController::class, 'role'])->defaults('role', 'customer-service')->middleware('can:dashboard.view')->name('dashboard.customer-service');
     Route::get('/users', [AccessController::class, 'users'])->middleware('can:users.view')->name('users.index');
+    Route::get('/roles', [AccessController::class, 'roles'])->middleware('can:users.manage')->name('roles.index');
+    Route::get('/roles/create', [AccessController::class, 'createRole'])->middleware('can:users.manage')->name('roles.create');
+    Route::post('/roles', [AccessController::class, 'storeRole'])->middleware('can:users.manage')->name('roles.store');
+    Route::get('/roles/{role}/edit', [AccessController::class, 'editRole'])->middleware('can:users.manage')->name('roles.edit');
+    Route::put('/roles/{role}', [AccessController::class, 'updateRole'])->middleware('can:users.manage')->name('roles.update');
+    Route::delete('/roles/{role}', [AccessController::class, 'destroyRole'])->middleware('can:users.manage')->name('roles.destroy');
     Route::get('/users/create', [AccessController::class, 'createUser'])->middleware('can:users.manage')->name('users.create');
     Route::post('/users', [AccessController::class, 'storeUser'])->middleware('can:users.manage')->name('users.store');
     Route::get('/users/{user}/edit', [AccessController::class, 'editUser'])->middleware('can:users.manage')->name('users.edit');

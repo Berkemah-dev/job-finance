@@ -14,6 +14,12 @@
     art-subtitle="aman & tertib."
 />
 
+@can('users.manage')
+<div style="display:flex;justify-content:flex-end;margin:-8px 0 18px;">
+    <a class="button button-secondary button-sm" href="{{ route('roles.index') }}"><x-icon name="lock"/> Kelola Role & Permission</a>
+</div>
+@endcan
+
 @php
     $generated = session('generated_password');
 @endphp

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UserRequest;
 use App\Models\ActivityLog;
 use App\Models\Role;
+use App\Models\Permission;
 use App\Models\User;
 use App\Services\MasterDataService;
 use App\Services\UserService;
@@ -16,6 +17,77 @@ use Illuminate\View\View;
 
 class AccessController extends Controller
 {
+    public function roles(): View
+    {
+        Gate::authorize('users.manage');
+
+        return view('access.roles', [
+            'roles' => Role::with(['permissions', 'users'])->orderBy('label')->get(),
+            'builtInRoles' => array_keys(config('jobfinance.roles', [])),
+        ]);
+    }
+
+    public function createRole(): View
+    {
+        Gate::authorize('users.manage');
+
+        return view('access.role-form', [
+            'role' => new Role,
+            'permissions' => Permission::orderBy('name')->get(),
+        ]);
+    }
+
+    public function storeRole(Request $request)
+    {
+        Gate::authorize('users.manage');
+        $data = $request->validate([
+            'label' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'alpha_dash', 'max:60', 'unique:roles,name'],
+            'permissions' => ['array'],
+            'permissions.*' => ['integer', 'exists:permissions,id'],
+        ]);
+        $role = Role::create(['name' => strtolower($data['name']), 'label' => $data['label']]);
+        $role->permissions()->sync($data['permissions'] ?? []);
+
+        return redirect()->route('roles.index')->with('success', 'Role baru berhasil dibuat.');
+    }
+
+    public function editRole(Role $role): View
+    {
+        Gate::authorize('users.manage');
+        abort_if(array_key_exists($role->name, config('jobfinance.roles', [])), 403, 'Role bawaan tidak dapat diubah dari menu ini.');
+
+        return view('access.role-form', ['role' => $role->load('permissions'), 'permissions' => Permission::orderBy('name')->get()]);
+    }
+
+    public function updateRole(Request $request, Role $role)
+    {
+        Gate::authorize('users.manage');
+        abort_if(array_key_exists($role->name, config('jobfinance.roles', [])), 403, 'Role bawaan tidak dapat diubah dari menu ini.');
+        $data = $request->validate([
+            'label' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'alpha_dash', 'max:60', 'unique:roles,name,'.$role->id],
+            'permissions' => ['array'],
+            'permissions.*' => ['integer', 'exists:permissions,id'],
+        ]);
+        $role->update(['name' => strtolower($data['name']), 'label' => $data['label']]);
+        $role->permissions()->sync($data['permissions'] ?? []);
+
+        return redirect()->route('roles.index')->with('success', 'Permission role berhasil diperbarui.');
+    }
+
+    public function destroyRole(Role $role)
+    {
+        Gate::authorize('users.manage');
+        abort_if(array_key_exists($role->name, config('jobfinance.roles', [])), 403, 'Role bawaan tidak dapat dihapus.');
+        if ($role->users()->exists()) {
+            return back()->with('error', 'Role masih dipakai pengguna. Pindahkan pengguna ke role lain terlebih dahulu.');
+        }
+        $role->delete();
+
+        return back()->with('success', 'Role berhasil dihapus.');
+    }
+
     public function users(Request $request): View
     {
         Gate::authorize('viewAny', User::class);

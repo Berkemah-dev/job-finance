@@ -160,6 +160,9 @@
         @can('users.view')
         <p class="nav-heading">ADMINISTRASI</p>
         <a class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}" title="Pengguna & Akses"><x-icon name="users"/><span>Pengguna & Akses</span></a>
+        @can('users.manage')
+        <a class="nav-item {{ request()->routeIs('roles.*') ? 'active' : '' }}" href="{{ route('roles.index') }}" title="Role & Permission"><x-icon name="shield"/><span>Role & Permission</span></a>
+        @endcan
         @endcan
         @can('activity.view')
         <a class="nav-item {{ request()->routeIs('activity.*') ? 'active' : '' }}" href="{{ route('activity.index') }}" title="Log Aktivitas"><x-icon name="clock"/><span>Log Aktivitas</span></a>
