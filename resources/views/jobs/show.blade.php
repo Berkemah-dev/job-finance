@@ -1286,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             Wajib mengunggah berkas Surat Jalan (scan/foto bertanda tangan atau stempel penerima) sebelum mengonfirmasi penyelesaian Delivery Order (DO).
                         </p>
 
-                        @can('update', $job)
+                        @if(auth()->user()->can('update', $job))
                             <form method="POST" action="{{ route('jobs.surat-jalan.upload', $job) }}" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 14px;">
                                 @csrf
                                 <div>
@@ -1304,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </form>
                         @else
                             <p style="color: #64748b; font-size: 12px; margin: 0;">Anda tidak memiliki akses untuk mengunggah berkas pada Job ini.</p>
-                        @endcan
+                        @endif
                     </div>
                 @endif
 

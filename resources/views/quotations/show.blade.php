@@ -107,7 +107,9 @@
                         $qty = (float)$item->quantity;
                         $sellIdr = (float)$item->unit_price * $rate;
                         $currentCost = (float)($item->unit_cost ?? 0);
-                        $formattedCost = $currentCost > 0 ? number_format($currentCost, 0, ',', '.') : '0';
+                        // Kosong berarti modal belum diinput oleh Sales; jangan tampilkan
+                        // angka default 0 sebagai modal yang sudah ditentukan.
+                        $formattedCost = $currentCost > 0 ? number_format($currentCost, 0, ',', '.') : '';
                     @endphp
                     <tr style="border-bottom: 1px solid #f1f5f9;" data-item-row data-qty="{{ $qty }}" data-rate="{{ $rate }}" data-sell="{{ $sellIdr }}">
                         <td style="padding: 12px;">
@@ -120,7 +122,7 @@
                         </td>
                         <td style="padding: 12px; text-align: right;">
                             <div style="position: relative;">
-                                <input type="text" inputmode="decimal" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" class="approve-cost-input" data-currency="{{ $item->currency ?? 'IDR' }}" style="width: 100%; text-align: right; padding: 7px 42px 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="0" autocomplete="off" aria-label="Modal per unit {{ $item->currency ?? 'IDR' }}">
+                                <input type="text" inputmode="decimal" name="items[{{ $item->id }}][unit_cost]" value="{{ $formattedCost }}" class="approve-cost-input" data-currency="{{ $item->currency ?? 'IDR' }}" style="width: 100%; text-align: right; padding: 7px 42px 7px 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; color: #1e3a8a; font-size: 13.5px;" placeholder="Masukkan modal" autocomplete="off" aria-label="Modal per unit {{ $item->currency ?? 'IDR' }}">
                                 <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 700; color: #64748b; pointer-events: none;">{{ $item->currency ?? 'IDR' }}</span>
                             </div>
                         </td>

@@ -298,6 +298,12 @@ class QuotationService
         $items = [];
         foreach (array_values($rows) as $i => $row) {
             $row = $this->normalizePricingRow($row, $i, $date);
+            // Sales hanya memasukkan nilai jual. Modal diisi kemudian pada tahap
+            // persetujuan oleh Sales Manager/Finance, termasuk untuk tarif trucking.
+            $currentUser = auth()->user();
+            if ($currentUser && $currentUser->hasRole('sales') && ! $currentUser->hasRole(['sales-manager', 'super-admin', 'admin'])) {
+                $row['unit_cost'] = '0';
+            }
             $quantity = Money::decimal($row['quantity'] ?? '1');
             $unitCostValue = ($row['unit_cost'] ?? '0') === '' ? '0' : ($row['unit_cost'] ?? '0');
             $unitPriceValue = ($row['unit_price'] ?? '0') === '' ? '0' : ($row['unit_price'] ?? '0');

@@ -120,7 +120,7 @@
                 <input id="input_item_cost" type="text" inputmode="decimal" value="0" autocomplete="off">
             </div>
         @else
-            <input type="hidden" id="input_item_cost" value="0">
+            <input type="hidden" id="input_item_cost" value="">
         @endif
 
         <div class="field">
@@ -232,7 +232,7 @@
             'note' => $item->note ?? '',
             'unit' => $item->unit,
             'quantity' => $item->quantity,
-            'unit_cost' => $item->unit_cost ?? 0,
+            'unit_cost' => $item->unit_cost ?? null,
             'unit_price' => $item->unit_price,
             'type' => $item->type->value ?? 'provision',
             'pricing_source' => $item->pricing_source ?? 'manual',
