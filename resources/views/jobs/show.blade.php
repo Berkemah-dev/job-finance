@@ -1329,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {{-- ========================================================================= --}}
 {{-- TAB 5: BIAYA & PROFIT                                                     --}}
 {{-- ========================================================================= --}}
-    @if($isExportSea)
+@if($isExportSea)
 <div id="tab-booking" class="job-tab-content" style="display: none;">
     <section class="panel" style="padding:0; overflow:hidden; border:1px solid #dbe5f1; box-shadow:0 10px 28px rgba(15,23,42,.06);">
         <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:24px 28px; background:linear-gradient(135deg,#eff6ff 0%,#ffffff 72%); border-bottom:1px solid #e2e8f0;">
