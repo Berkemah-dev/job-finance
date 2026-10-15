@@ -273,7 +273,7 @@ if (form) {
                     ${curr !== 'IDR' ? curr + ' ' + cost.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : formatMoney(cost)}
                     <input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost}">
                 </td>
-            ` : `<input type="hidden" name="items[${index}][unit_cost]" value="${item.unit_cost || 0}">`;
+            ` : `<input type="hidden" name="items[${index}][unit_cost]" value="">`;
 
             const showVendor = canManageCost && !isSales;
             const vendorName = showVendor ? (item.vendor_name || item.pricing_snapshot?.vendor_name || (typeof item.pricing_snapshot === 'string' && item.pricing_snapshot.includes('"vendor_name"') ? JSON.parse(item.pricing_snapshot).vendor_name : null)) : null;
@@ -349,7 +349,7 @@ if (form) {
             note: item.note || '',
             unit: item.unit || 'Shipment',
             quantity: item.quantity || '1',
-            unit_cost: item.unit_cost === undefined || item.unit_cost === null || item.unit_cost === '' ? '0' : String(item.unit_cost),
+            unit_cost: isSales ? '' : (item.unit_cost === undefined || item.unit_cost === null || item.unit_cost === '' ? '0' : String(item.unit_cost)),
             unit_price: item.unit_price === undefined || item.unit_price === null || item.unit_price === '' ? '0' : String(item.unit_price),
             type: item.type || 'provision',
             pricing_source: item.pricing_source || 'manual',
@@ -406,7 +406,7 @@ if (form) {
             note: inputNote?.value?.trim() || '',
             unit: inputUnit?.value || 'Shipment',
             quantity: String(qty),
-            unit_cost: String(cost),
+            unit_cost: isSales ? '' : String(cost),
             unit_price: String(price),
             type: 'provision',
             pricing_source: (trucking && truckingPricing) ? 'trucking' : 'manual',
@@ -490,7 +490,7 @@ if (form) {
                     syncCurrencyInputs();
                 }
                 if (inputExchangeRate) inputExchangeRate.value = item.exchange_rate || '1';
-                if (inputCost) inputCost.value = item.unit_cost || '0';
+                if (inputCost) inputCost.value = isSales ? '' : (item.unit_cost || '0');
                 if (inputPrice) inputPrice.value = item.unit_price || '0';
                 if (truckingOrigin) truckingOrigin.value = item.port_origin || '';
                 if (truckingDestination) truckingDestination.value = item.destination || '';
