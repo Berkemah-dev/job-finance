@@ -125,17 +125,6 @@
             <a class="button button-primary" href="{{ route('jobs.invoices.create', $job) }}"><x-icon name="file"/> Buat Invoice</a>
         @endif
     @endcan
-    @if($isDomestic)
-        @if($job->status==='open' && !$job->do_confirmed_at)
-            @can('jobs.confirm-do')
-                <button type="button" class="button button-primary" style="background:#16a34a;border-color:#16a34a" onclick="document.getElementById('modal-confirm-do').showModal()">
-                    <x-icon name="check"/> DO Selesai
-                </button>
-            @endcan
-        @elseif($job->do_confirmed_at)
-            <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
-        @endif
-    @endif
     @can('cancel', $job)
         <button type="button" class="button button-danger" onclick="document.getElementById('modal-cancel-job').showModal()">
             <x-icon name="x"/> Batalkan Job
@@ -223,54 +212,6 @@ document.addEventListener('DOMContentLoaded', function() {
     </dialog>
     @endif
 @endcan
-
-@if($isDomestic)
-@can('jobs.confirm-do')
-    @if($job->status === 'open' && !$job->do_confirmed_at)
-    @php
-        $hasSj = $job->hasSuratJalanDocument();
-    @endphp
-    <dialog id="modal-confirm-do" class="modal-dialog" style="max-width: 520px !important; border: none; border-radius: 16px; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
-        <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" enctype="multipart/form-data">
-            @csrf
-            <div style="padding: 18px 24px; border-bottom: 1px solid #dcfce7; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border-top-left-radius: 16px; border-top-right-radius: 16px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 20px;">📦</span>
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #166534;">Konfirmasi DO Selesai</h3>
-                </div>
-                <button type="button" onclick="document.getElementById('modal-confirm-do').close()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #166534;">✕</button>
-            </div>
-            <div style="padding: 20px 24px;">
-                <p style="font-size: 13.5px; color: #374151; margin-top: 0; line-height: 1.5;">
-                    Konfirmasi bahwa pengiriman <strong>Delivery Order (DO)</strong> untuk job <strong>{{ $job->number }}</strong> telah selesai dan barang telah diterima oleh customer.
-                </p>
-
-                @if(!$hasSj)
-                    <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
-                        <label for="modal_surat_jalan_file" style="font-size: 12.5px; font-weight: 700; color: #991b1b; display: block; margin-bottom: 4px;">
-                            Upload Berkas Surat Jalan (Wajib) <span style="color: #dc2626;">*</span>
-                        </label>
-                        <input type="file" name="surat_jalan_file" id="modal_surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12px; padding: 6px 10px; border: 1px solid #fca5a5; border-radius: 6px; background: #fff; width: 100%; box-sizing: border-box;">
-                        <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 4px;">Wajib melampirkan foto/scan Surat Jalan yang telah ditandatangani sebelum konfirmasi selesai.</small>
-                    </div>
-                @else
-                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12.5px; color: #166534; display: flex; align-items: center; gap: 8px;">
-                        <span>✓</span>
-                        <span>Berkas Surat Jalan fisik sudah diunggah di sistem.</span>
-                    </div>
-                @endif
-            </div>
-            <div style="padding: 14px 24px; border-top: 1px solid #e5e7eb; background: #f9fafb; display: flex; justify-content: flex-end; gap: 10px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
-                <button type="button" class="button button-secondary" onclick="document.getElementById('modal-confirm-do').close()">Batal</button>
-                <button type="submit" class="button button-primary" style="background: #16a34a; border-color: #16a34a;">
-                    <x-icon name="check"/> Ya, Konfirmasi DO Selesai
-                </button>
-            </div>
-        </form>
-    </dialog>
-    @endif
-@endcan
-@endif
 
 {{-- HORIZONTAL PILL TABS MENU KE KANAN (SESUAI REQUEST & SCREENSHOT CLIENT) --}}
 <nav class="job-pill-tabs-nav" style="display: flex; gap: 8px; background: #e2e8f0; padding: 6px; border-radius: 9999px; margin-bottom: 24px; overflow-x: auto;">
@@ -1062,8 +1003,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="report-card-title">
                             <span class="report-icon blue"><x-icon name="file"/></span>
                             <div>
-                                <h2>Delivery Order</h2>
-                                <small>Delivery order pengantaran barang (Import Sea / Laut)</small>
+                                <h2>{{ $isDomestic ? 'Surat Jalan' : 'Delivery Order' }}</h2>
+                                <small>{{ $isDomestic ? 'Pengaturan dan upload Surat Jalan pengantaran barang' : 'Delivery order pengantaran barang (Import Sea / Laut)' }}</small>
                             </div>
                         </div>
                     </div>
@@ -1250,21 +1191,18 @@ document.addEventListener('DOMContentLoaded', function() {
             @endif
         </div>
 
-        @if($isDomestic && $serviceTypeRaw === 'imp_sea')
+        @if($isDomestic)
         <div style="padding: 0 24px 24px;">
             <article class="report-card">
                 <div class="report-card-head">
                     <div class="report-card-title">
                         <span class="report-icon amber"><x-icon name="briefcase"/></span>
                         <div>
-                            <h2>Status Delivery Order (DO) & Penyelesaian Pengantaran</h2>
-                            <small>Konfirmasi pengantaran selesai & verifikasi berkas Surat Jalan</small>
+                            <h2>Upload Surat Jalan</h2>
+                            <small>Unggah berkas Surat Jalan sebagai bukti pengantaran</small>
                         </div>
                     </div>
                 </div>
-                <strong class="report-value {{ $job->do_confirmed_at ? 'positive' : 'negative' }}" style="font-size: 18px;">
-                    {{ $job->do_confirmed_at ? 'Selesai Dikonfirmasi' : 'Menunggu Penyelesaian Pengantaran' }}
-                </strong>
 
                 @php
                     $suratJalanDoc = $job->getSuratJalanDocument();
@@ -1289,22 +1227,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
 
-                    @if($isDomestic)
-                        @if($job->do_confirmed_at)
-                            <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 12px;">
-                                ✓ DO telah dikonfirmasi selesai pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.
-                            </p>
-                        @elseif($job->status === 'open')
-                            @can('jobs.confirm-do')
-                                <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai dan barang telah diterima?" style="margin-top: 14px;">
-                                    @csrf
-                                    <button type="submit" class="button button-primary" style="background: #16a34a; border-color: #16a34a; font-size: 13px; padding: 9px 18px;">
-                                        <x-icon name="check"/> Konfirmasi DO Selesai
-                                    </button>
-                                </form>
-                            @endcan
-                        @endif
-                    @endif
                 @else
                     {{-- 1 Menu Tunggal: Upload Berkas Surat Jalan --}}
                     <div style="margin-top: 14px; padding: 16px 20px; border-radius: 10px; background: #fff5f5; border: 1.5px solid #fca5a5;">
@@ -1313,7 +1235,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span>Menu Unggah Surat Jalan</span>
                         </div>
                         <p style="margin: 0 0 14px; color: #7f1d1d; font-size: 12.5px; line-height: 1.5;">
-                            Wajib mengunggah berkas Surat Jalan (scan/foto bertanda tangan atau stempel penerima) sebelum mengonfirmasi penyelesaian Delivery Order (DO).
+                            Wajib mengunggah berkas Surat Jalan (scan/foto bertanda tangan atau stempel penerima).
                         </p>
 
                         @if(auth()->user()->can('update', $job))
@@ -1340,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 @if($job->status === 'draft')
                     <div style="margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; font-size: 13px; color: #1e40af; line-height: 1.6;">
-                        <strong>Perhatian:</strong> Job Order ini saat ini masih berstatus <strong>Draft</strong>. Untuk dapat mengonfirmasi DO selesai dan mencatat biaya pengiriman, Job Order perlu dibuka (diaktifkan) terlebih dahulu.
+                        <strong>Perhatian:</strong> Job Order ini saat ini masih berstatus <strong>Draft</strong>. Untuk dapat mengunggah Surat Jalan, Job Order perlu dibuka (diaktifkan) terlebih dahulu.
                     </div>
                     @can('open', $job)
                         <form method="POST" action="{{ route('jobs.open',$job) }}" data-confirm="Buka job ini? Finance dapat mulai mencatat biaya setelah job berstatus Open." style="margin-top: 12px;">
