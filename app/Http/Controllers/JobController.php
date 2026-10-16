@@ -57,10 +57,12 @@ class JobController extends Controller
         $isSuratJalanType = fn ($type) => preg_match('/\b(SURAT JALAN|SJ)\b/i', $type->code.' '.$type->name) === 1;
         $documentTypes = $allDocumentTypes->reject($isCustomsType)->reject($isSuratJalanType)->values();
         $customsDocumentTypes = $allDocumentTypes->filter($isCustomsType)->values();
-        // DO dan BC hanya menjadi checklist khusus untuk pengiriman laut.
+        // DO/BC menjadi dokumen khusus untuk semua pengiriman import/export.
         $specialDocumentCode = match ($job->service_type) {
             'imp_sea' => 'IMPSEA-DO',
+            'imp_air' => 'IMPAIR-DO',
             'exp_sea' => 'EXPSEA-BC',
+            'exp_air' => 'EXPAIR-BC',
             default => null,
         };
         $specialDocumentType = $specialDocumentCode ? $allDocumentTypes->firstWhere('code', $specialDocumentCode) : null;
