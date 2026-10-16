@@ -26,7 +26,14 @@ class ContainerUnit extends Model
             ->pluck('name', 'name')
             ->all();
 
-        return ! empty($options) ? $options : config('operations.container_types', []);
+        if (empty($options)) {
+            return config('operations.container_types', []);
+        }
+
+        // Lowbed adalah tipe trucking khusus dan tidak selalu dibuat sebagai master unit.
+        $options['lowbed'] ??= 'Lowbed';
+
+        return $options;
     }
 
     public static function allowedKeys(): array

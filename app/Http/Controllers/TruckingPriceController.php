@@ -128,18 +128,36 @@ class TruckingPriceController extends Controller
         // Kelompokkan per vendor sehingga "1 rute dibuka langsung ada list modal beberapa vendor didalamnya"
         $vendorList = $allRouteRates->groupBy('vendor_id')->map(function ($rates, $vendorId) {
             $vendor = $rates->first()->vendor;
+            $findRate = function (array $types, bool $overweight = false) use ($rates) {
+                return $rates->first(fn ($rate) => in_array($rate->container_type, $types, true) && (bool) $rate->overweight === $overweight);
+            };
+
+            $rate20gp = $findRate(['20gp', '20ft']);
+            $rate40ft = $findRate(['40ft', '40ft_40hq']);
+            $rate40hq = $findRate(['40hq', '40hc', '40ft_40hq']);
+            $rate20gpOw = $findRate(['20gp', '20ft'], true);
+            $rate40hqOw = $findRate(['40hq', '40hc', '40ft_40hq'], true);
+            $rateLowbed = $findRate(['lowbed', 'low_bed']);
+
             return [
                 'vendor_id' => $vendorId,
                 'vendor' => $vendor,
                 'vendor_name' => $vendor?->name ?? 'Tarif Umum / Standar (Tanpa Vendor)',
                 'rates' => $rates,
-                'cost_20gp' => $rates->first(fn ($r) => in_array($r->container_type, ['20gp', '20ft']) && ! $r->overweight)?->price,
-                'cost_20gp_ow' => $rates->first(fn ($r) => in_array($r->container_type, ['20gp', '20ft']) && $r->overweight)?->price,
-                'cost_40ft' => $rates->first(fn ($r) => in_array($r->container_type, ['40ft', '40ft_40hq']) && ! $r->overweight)?->price,
-                'cost_40ft_ow' => $rates->first(fn ($r) => in_array($r->container_type, ['40ft', '40ft_40hq']) && $r->overweight)?->price,
-                'cost_40hq' => $rates->first(fn ($r) => in_array($r->container_type, ['40hc', '40hq', '40ft_40hq']) && ! $r->overweight)?->price,
-                'cost_40hq_ow' => $rates->first(fn ($r) => in_array($r->container_type, ['40hc', '40hq', '40ft_40hq']) && $r->overweight)?->price,
-                'selling_price' => $rates->first()?->selling_price,
+                'cost_20gp' => $rate20gp?->price,
+                'selling_20gp' => $rate20gp?->selling_price,
+                'cost_40ft' => $rate40ft?->price,
+                'selling_40ft' => $rate40ft?->selling_price,
+                'cost_40hq' => $rate40hq?->price,
+                'selling_40hq' => $rate40hq?->selling_price,
+                'cost_20gp_ow' => $rate20gpOw?->price,
+                'selling_20gp_ow' => $rate20gpOw?->selling_price,
+                'cost_40hq_ow' => $rate40hqOw?->price,
+                'selling_40hq_ow' => $rate40hqOw?->selling_price,
+                'cost_lowbed' => $rateLowbed?->price,
+                'selling_lowbed' => $rateLowbed?->selling_price,
+                // Field lama tetap dikirim agar halaman lama tidak rusak.
+                'selling_price' => $rate20gp?->selling_price ?? $rates->first()?->selling_price,
                 'currency' => $rates->first()->currency ?? 'IDR',
                 'is_active' => $rates->contains('is_active', true),
             ];
@@ -186,6 +204,14 @@ class TruckingPriceController extends Controller
             'destination' => ['required', 'string', 'max:120'],
             'vendor_id' => ['required', 'integer', 'exists:vendors,id'],
             'cost_20gp' => ['nullable', 'numeric', 'min:0'],
+            'selling_20gp' => ['nullable', 'numeric', 'min:0'],
+            'cost_40ft_40hq' => ['nullable', 'numeric', 'min:0'],
+            'selling_40ft_40hq' => ['nullable', 'numeric', 'min:0'],
+            'selling_20gp_ow' => ['nullable', 'numeric', 'min:0'],
+            'selling_40hq_ow' => ['nullable', 'numeric', 'min:0'],
+            'cost_lowbed' => ['nullable', 'numeric', 'min:0'],
+            'selling_lowbed' => ['nullable', 'numeric', 'min:0'],
+            // Field lama tetap diterima untuk kompatibilitas dengan form versi sebelumnya.
             'cost_40ft' => ['nullable', 'numeric', 'min:0'],
             'cost_40hq' => ['nullable', 'numeric', 'min:0'],
             'cost_20gp_ow' => ['nullable', 'numeric', 'min:0'],
@@ -201,50 +227,66 @@ class TruckingPriceController extends Controller
         $vendorId = (int) $validated['vendor_id'];
         $currency = ! empty($validated['currency']) ? $validated['currency'] : 'IDR';
         $effDate = ! empty($validated['effective_date']) ? $validated['effective_date'] : today()->toDateString();
-        $sellingPrice = $validated['selling_price'] ?? null;
+        $legacySellingPrice = $validated['selling_price'] ?? null;
 
-        // Jika selling_price diisi, perbarui semua entri rute ini agar tetap 1 harga jual
-        if ($sellingPrice !== null && $sellingPrice !== '') {
-            TruckingPrice::where('port_origin', $origin)
-                ->where('destination', $dest)
-                ->update(['selling_price' => $sellingPrice, 'updated_by' => $actor->id]);
-        } else {
-            $sellingPrice = TruckingPrice::where('port_origin', $origin)
-                ->where('destination', $dest)
-                ->whereNotNull('selling_price')
-                ->value('selling_price');
-        }
-
-        $saveType = function (string $type, bool $overweight, $cost) use ($origin, $dest, $vendorId, $currency, $effDate, $sellingPrice, $actor) {
-            if ($cost === null || $cost === '') {
+        // Satu vendor memiliki modal dan harga jual masing-masing untuk setiap tipe.
+        $saveType = function (string $canonicalType, array $aliases, bool $overweight, $cost, $selling) use ($origin, $dest, $vendorId, $currency, $effDate, $legacySellingPrice, $actor) {
+            $hasCost = $cost !== null && $cost !== '';
+            $hasSelling = $selling !== null && $selling !== '';
+            if (! $hasCost && ! $hasSelling && ($legacySellingPrice === null || $legacySellingPrice === '')) {
                 return;
             }
-            TruckingPrice::updateOrCreate(
-                [
-                    'port_origin' => $origin,
-                    'destination' => $dest,
-                    'container_type' => $type,
-                    'overweight' => $overweight,
-                    'vendor_id' => $vendorId,
-                ],
-                [
-                    'price' => $cost,
-                    'selling_price' => $sellingPrice,
-                    'currency' => $currency,
-                    'effective_date' => $effDate,
-                    'is_active' => true,
-                    'created_by' => $actor->id,
-                    'updated_by' => $actor->id,
-                ]
-            );
+
+            $existingRates = TruckingPrice::where('port_origin', $origin)
+                ->where('destination', $dest)
+                ->whereIn('container_type', $aliases)
+                ->where('overweight', $overweight)
+                ->where('vendor_id', $vendorId)
+                ->get();
+
+            $existing = $existingRates->first();
+            if (! $hasCost && ! $existing) {
+                // Harga jual saja tidak cukup untuk membuat baris baru karena modal wajib ada.
+                return;
+            }
+
+            $price = $hasCost ? $cost : $existing->price;
+            $sellingPrice = $hasSelling
+                ? $selling
+                : ($legacySellingPrice !== null && $legacySellingPrice !== ''
+                    ? $legacySellingPrice
+                    : ($existing?->selling_price));
+
+            $attributes = [
+                'price' => $price,
+                'selling_price' => $sellingPrice,
+                'currency' => $currency,
+                'effective_date' => $effDate,
+                'is_active' => true,
+                'updated_by' => $actor->id,
+            ];
+
+            if ($existingRates->isNotEmpty()) {
+                // Data lama 40ft/40hq tetap disinkronkan saat diisi lewat field gabungan.
+                $existingRates->each(fn ($rate) => $rate->update($attributes));
+                return;
+            }
+
+            TruckingPrice::create(array_merge([
+                'port_origin' => $origin,
+                'destination' => $dest,
+                'container_type' => $canonicalType,
+                'overweight' => $overweight,
+                'vendor_id' => $vendorId,
+                'created_by' => $actor->id,
+            ], $attributes));
         };
 
-        $saveType('20gp', false, $validated['cost_20gp'] ?? null);
-        $saveType('20gp', true, $validated['cost_20gp_ow'] ?? null);
-        $saveType('40ft', false, $validated['cost_40ft'] ?? null);
-        $saveType('40ft', true, $validated['cost_40ft_ow'] ?? null);
-        $saveType('40hq', false, $validated['cost_40hq'] ?? null);
-        $saveType('40hq', true, $validated['cost_40hq_ow'] ?? null);
+        $saveType('20gp', ['20gp', '20ft'], false, $validated['cost_20gp'] ?? null, $validated['selling_20gp'] ?? null);
+        $saveType('40ft_40hq', ['40ft_40hq', '40ft', '40hq'], false, $validated['cost_40ft_40hq'] ?? ($validated['cost_40ft'] ?? ($validated['cost_40hq'] ?? null)), $validated['selling_40ft_40hq'] ?? null);
+        $saveType('20gp', ['20gp', '20ft'], true, $validated['cost_20gp_ow'] ?? null, $validated['selling_20gp_ow'] ?? null);
+        $saveType('40hq', ['40hq', '40hc', '40ft_40hq'], true, $validated['cost_40hq_ow'] ?? ($validated['cost_40ft_ow'] ?? null), $validated['selling_40hq_ow'] ?? null);
+        $saveType('lowbed', ['lowbed', 'low_bed'], false, $validated['cost_lowbed'] ?? null, $validated['selling_lowbed'] ?? null);
 
         $rep = TruckingPrice::where('port_origin', $origin)->where('destination', $dest)->first();
 

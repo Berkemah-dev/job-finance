@@ -5,6 +5,7 @@
 @php
     $isSalesOnly = auth()->user()?->hasRole('sales') && ! auth()->user()?->hasRole(['sales-manager', 'super-admin', 'admin']);
     $showTruckingCost = ! $isSalesOnly && (auth()->user()?->hasRole(['sales-manager', 'finance', 'finance-manager', 'super-admin', 'admin']) || auth()->user()?->can('pricing.manage'));
+    $formatVendorMoney = static fn ($value, string $currency): string => $value === null ? '—' : $currency . ' ' . number_format((float) $value, 0, ',', '.');
 @endphp
 
 <div class="page-heading">
@@ -34,15 +35,13 @@
     @endcan
 </div>
 
-{{-- HARGA JUAL TUNGGAL RUTE (20GP / 40FT / 40HQ) --}}
+{{-- HARGA JUAL PER TIPE ARMADA --}}
 <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1.5px solid #86efac; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(22,163,74,0.08);">
     <div>
-        <span style="font-size: 11.5px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Harga Jual Tunggal Rute (20GP / 40FT / 40HQ)</span>
-        <div style="font-size: 26px; font-weight: 800; color: #15803d; margin-top: 4px;">
-            {{ $routeSellingPrice ? 'Rp ' . number_format((float) $routeSellingPrice, 0, ',', '.') : 'Belum ditentukan' }}
-        </div>
+        <span style="font-size: 11.5px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Harga Jual Trucking per Tipe</span>
+        <div style="font-size: 22px; font-weight: 800; color: #15803d; margin-top: 4px;">Modal dan jual diatur masing-masing</div>
         <p style="margin: 4px 0 0; font-size: 12px; color: #166534;">
-            1 harga jual cuman 1 untuk semua tipe kontainer (20GP, 40FT, dan 40HQ).
+            20GP · 40FT/40HQ · 20GP Overweight · 40HQ Overweight · Lowbed
         </p>
     </div>
     <div style="text-align: right;">
@@ -102,9 +101,11 @@
             <thead>
                 <tr>
                     <th>Nama Vendor Trucking</th>
-                    <th>Modal 20GP</th>
-                    <th>Modal 40FT</th>
-                    <th>Modal 40HQ</th>
+                        <th>20GP<br><small>Modal / Jual</small></th>
+                        <th>40FT / 40HQ<br><small>Modal / Jual</small></th>
+                        <th>20GP OVERWEIGHT<br><small>Modal / Jual</small></th>
+                        <th>40HQ OVERWEIGHT<br><small>Modal / Jual</small></th>
+                        <th>LOWBED<br><small>Modal / Jual</small></th>
                     <th>Status</th>
                     @can('pricing.manage')
                         <th style="text-align: center;">Aksi</th>
@@ -120,36 +121,11 @@
                                 <br><small class="muted-cell">{{ $vItem['vendor']->code }} · {{ $vItem['vendor']->phone ?? '—' }}</small>
                             @endif
                         </td>
-                        <td>
-                            @if($vItem['cost_20gp'])
-                                <strong>{{ $vItem['currency'] }} {{ number_format((float) $vItem['cost_20gp'], 0, ',', '.') }}</strong>
-                                @if($vItem['cost_20gp_ow'])
-                                    <br><small class="muted-cell">OW: {{ $vItem['currency'] }} {{ number_format((float) $vItem['cost_20gp_ow'], 0, ',', '.') }}</small>
-                                @endif
-                            @else
-                                <span class="muted-cell">—</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if($vItem['cost_40ft'])
-                                <strong>{{ $vItem['currency'] }} {{ number_format((float) $vItem['cost_40ft'], 0, ',', '.') }}</strong>
-                                @if($vItem['cost_40ft_ow'])
-                                    <br><small class="muted-cell">OW: {{ $vItem['currency'] }} {{ number_format((float) $vItem['cost_40ft_ow'], 0, ',', '.') }}</small>
-                                @endif
-                            @else
-                                <span class="muted-cell">—</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if($vItem['cost_40hq'])
-                                <strong>{{ $vItem['currency'] }} {{ number_format((float) $vItem['cost_40hq'], 0, ',', '.') }}</strong>
-                                @if($vItem['cost_40hq_ow'])
-                                    <br><small class="muted-cell">OW: {{ $vItem['currency'] }} {{ number_format((float) $vItem['cost_40hq_ow'], 0, ',', '.') }}</small>
-                                @endif
-                            @else
-                                <span class="muted-cell">—</span>
-                            @endif
-                        </td>
+                        <td><small class="muted-cell">Modal</small><br><strong>{{ $formatVendorMoney($vItem['cost_20gp'], $vItem['currency']) }}</strong><br><small class="muted-cell">Jual: {{ $formatVendorMoney($vItem['selling_20gp'], $vItem['currency']) }}</small></td>
+                        <td><small class="muted-cell">Modal</small><br><strong>{{ $formatVendorMoney($vItem['cost_40ft'], $vItem['currency']) }}</strong><br><small class="muted-cell">Jual: {{ $formatVendorMoney($vItem['selling_40ft'], $vItem['currency']) }}</small></td>
+                        <td><small class="muted-cell">Modal</small><br><strong>{{ $formatVendorMoney($vItem['cost_20gp_ow'], $vItem['currency']) }}</strong><br><small class="muted-cell">Jual: {{ $formatVendorMoney($vItem['selling_20gp_ow'], $vItem['currency']) }}</small></td>
+                        <td><small class="muted-cell">Modal</small><br><strong>{{ $formatVendorMoney($vItem['cost_40hq_ow'], $vItem['currency']) }}</strong><br><small class="muted-cell">Jual: {{ $formatVendorMoney($vItem['selling_40hq_ow'], $vItem['currency']) }}</small></td>
+                        <td><small class="muted-cell">Modal</small><br><strong>{{ $formatVendorMoney($vItem['cost_lowbed'], $vItem['currency']) }}</strong><br><small class="muted-cell">Jual: {{ $formatVendorMoney($vItem['selling_lowbed'], $vItem['currency']) }}</small></td>
                         <td>
                             @if($vItem['is_active'])
                                 <span class="status-badge status-active">Aktif</span>
@@ -177,7 +153,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ auth()->user()->can('pricing.manage') ? 6 : 5 }}">
+                        <td colspan="{{ auth()->user()->can('pricing.manage') ? 8 : 7 }}">
                             <div class="empty-state">
                                 <h3>Belum ada modal vendor</h3>
                                 <p>Gunakan tombol "+ Isi / Tambah Modal Vendor" untuk menambahkan modal vendor di rute ini.</p>
@@ -331,7 +307,7 @@
                     🚚
                 </div>
                 <div>
-                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: #0f172a;">Isi Modal Vendor (Rute Ini)</h3>
+                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: #0f172a;">Isi Modal & Harga Jual Vendor (Rute Ini)</h3>
                     <p style="margin: 2px 0 0; font-size: 11.5px; color: #64748b;">Rute: <strong>{{ $truckingPrice->port_origin }} → {{ $truckingPrice->destination }}</strong></p>
                 </div>
             </div>
@@ -354,58 +330,34 @@
                 </div>
 
                 <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
-                    <span style="font-size: 12.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 10px;">Modal (Cost) Kontainer:</span>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                        <div class="field">
-                            <label for="add_cost_20gp" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 20GP (Rp)</label>
-                            <input type="number" step="0.01" id="add_cost_20gp" name="cost_20gp" placeholder="cth. 3500000">
+                    <span style="font-size: 12.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 10px;">Modal dan Harga Jual per Tipe:</span>
+                    <div style="display: grid; gap: 10px;">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: end; color: #475569; font-size: 11.5px; font-weight: 700;">
+                            <span>Tipe Armada</span><span>Modal / Cost (Rp)</span><span>Harga Jual (Rp)</span>
                         </div>
-                        <div class="field">
-                            <label for="add_cost_40ft" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40FT (Rp)</label>
-                            <input type="number" step="0.01" id="add_cost_40ft" name="cost_40ft" placeholder="cth. 6000000">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>20GP</strong><input type="number" step="0.01" id="add_cost_20gp" name="cost_20gp" placeholder="cth. 3500000"><input type="number" step="0.01" id="add_selling_20gp" name="selling_20gp" placeholder="cth. 5000000">
                         </div>
-                        <div class="field">
-                            <label for="add_cost_40hq" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40HQ (Rp)</label>
-                            <input type="number" step="0.01" id="add_cost_40hq" name="cost_40hq" placeholder="cth. 6500000">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>40FT / 40HQ</strong><input type="number" step="0.01" id="add_cost_40ft_40hq" name="cost_40ft_40hq" placeholder="cth. 6000000"><input type="number" step="0.01" id="add_selling_40ft_40hq" name="selling_40ft_40hq" placeholder="cth. 7500000">
                         </div>
-                    </div>
-                </div>
-
-                <div style="border-top: 1px dashed #e2e8f0; padding-top: 14px;">
-                    <span style="font-size: 12.5px; font-weight: 700; color: #9a3412; display: block; margin-bottom: 10px;">Modal Overweight (Opsional):</span>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                        <div class="field">
-                            <label for="add_cost_20gp_ow" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 20GP OW</label>
-                            <input type="number" step="0.01" id="add_cost_20gp_ow" name="cost_20gp_ow" placeholder="cth. 4200000">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>20GP OVERWEIGHT</strong><input type="number" step="0.01" id="add_cost_20gp_ow" name="cost_20gp_ow" placeholder="cth. 4200000"><input type="number" step="0.01" id="add_selling_20gp_ow" name="selling_20gp_ow" placeholder="cth. 5500000">
                         </div>
-                        <div class="field">
-                            <label for="add_cost_40ft_ow" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40FT OW</label>
-                            <input type="number" step="0.01" id="add_cost_40ft_ow" name="cost_40ft_ow" placeholder="cth. 7100000">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>40HQ OVERWEIGHT</strong><input type="number" step="0.01" id="add_cost_40hq_ow" name="cost_40hq_ow" placeholder="cth. 7800000"><input type="number" step="0.01" id="add_selling_40hq_ow" name="selling_40hq_ow" placeholder="cth. 9000000">
                         </div>
-                        <div class="field">
-                            <label for="add_cost_40hq_ow" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40HQ OW</label>
-                            <input type="number" step="0.01" id="add_cost_40hq_ow" name="cost_40hq_ow" placeholder="cth. 7800000">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>LOWBED</strong><input type="number" step="0.01" id="add_cost_lowbed" name="cost_lowbed" placeholder="cth. 8000000"><input type="number" step="0.01" id="add_selling_lowbed" name="selling_lowbed" placeholder="cth. 10000000">
                         </div>
                     </div>
-                </div>
-
-                <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                    <div class="field">
-                        <label for="add_selling_price" style="font-size: 11.5px; font-weight: 700; color: #166534;">Harga Jual Rute (Semua Tipe)</label>
-                        <input type="number" step="0.01" id="add_selling_price" name="selling_price" value="{{ $routeSellingPrice }}" placeholder="cth. 7500000">
-                        <small style="color: #64748b; font-size: 11px;">1 harga jual rute untuk 20GP/40FT/40HQ</small>
-                    </div>
-                    <div class="field">
-                        <label for="add_effective_date" style="font-size: 11.5px; font-weight: 600; color: #475569;">Tanggal Berlaku</label>
-                        <input type="date" id="add_effective_date" name="effective_date" value="{{ today()->format('Y-m-d') }}">
-                    </div>
+                    <small style="display: block; color: #64748b; font-size: 11px; margin-top: 10px;">Isi modal dan harga jual sesuai tipe. Kosongkan tipe yang belum digunakan.</small>
                 </div>
 
                 <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
                     <div class="field">
-                        <label for="edit_selling_price" style="font-size: 11.5px; font-weight: 700; color: #166534;">Harga Jual Rute (Semua Tipe)</label>
-                        <input type="number" step="0.01" id="edit_selling_price" name="selling_price" placeholder="cth. 7500000">
-                        <small style="color: #64748b; font-size: 11px;">1 harga jual rute untuk 20GP / 40FT / 40HQ</small>
+                        <label for="add_effective_date" style="font-size: 11.5px; font-weight: 600; color: #475569;">Tanggal Berlaku</label>
+                        <input type="date" id="add_effective_date" name="effective_date" value="{{ today()->format('Y-m-d') }}">
                     </div>
                 </div>
             </div>
@@ -413,7 +365,7 @@
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
                 <button type="button" class="button button-secondary" onclick="document.getElementById('modal-add-vendor-cost').close()">Batal</button>
                 <button type="submit" class="button button-primary">
-                    <x-icon name="check"/> Simpan Modal Vendor
+                    <x-icon name="check"/> Simpan Modal & Harga Jual
                 </button>
             </div>
         </form>
@@ -427,7 +379,7 @@
                     🚚
                 </div>
                 <div>
-                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: #0f172a;">Edit Modal Vendor</h3>
+                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: #0f172a;">Edit Modal & Harga Jual Vendor</h3>
                     <p id="edit_vendor_subtitle" style="margin: 2px 0 0; font-size: 11.5px; color: #64748b;"></p>
                 </div>
             </div>
@@ -441,46 +393,35 @@
             
             <div style="display: grid; gap: 16px;">
                 <div style="border-top: 1px solid #e2e8f0; padding-top: 14px;">
-                    <span style="font-size: 12.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 10px;">Modal (Cost) Kontainer:</span>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                        <div class="field">
-                            <label for="edit_cost_20gp" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 20GP (Rp)</label>
-                            <input type="number" step="0.01" id="edit_cost_20gp" name="cost_20gp">
+                    <span style="font-size: 12.5px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 10px;">Modal dan Harga Jual per Tipe:</span>
+                    <div style="display: grid; gap: 10px;">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: end; color: #475569; font-size: 11.5px; font-weight: 700;">
+                            <span>Tipe Armada</span><span>Modal / Cost (Rp)</span><span>Harga Jual (Rp)</span>
                         </div>
-                        <div class="field">
-                            <label for="edit_cost_40ft" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40FT (Rp)</label>
-                            <input type="number" step="0.01" id="edit_cost_40ft" name="cost_40ft">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>20GP</strong><input type="number" step="0.01" id="edit_cost_20gp" name="cost_20gp"><input type="number" step="0.01" id="edit_selling_20gp" name="selling_20gp">
                         </div>
-                        <div class="field">
-                            <label for="edit_cost_40hq" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40HQ (Rp)</label>
-                            <input type="number" step="0.01" id="edit_cost_40hq" name="cost_40hq">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>40FT / 40HQ</strong><input type="number" step="0.01" id="edit_cost_40ft_40hq" name="cost_40ft_40hq"><input type="number" step="0.01" id="edit_selling_40ft_40hq" name="selling_40ft_40hq">
                         </div>
-                    </div>
-                </div>
-
-                <div style="border-top: 1px dashed #e2e8f0; padding-top: 14px;">
-                    <span style="font-size: 12.5px; font-weight: 700; color: #9a3412; display: block; margin-bottom: 10px;">Modal Overweight (Opsional):</span>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                        <div class="field">
-                            <label for="edit_cost_20gp_ow" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 20GP OW</label>
-                            <input type="number" step="0.01" id="edit_cost_20gp_ow" name="cost_20gp_ow">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>20GP OVERWEIGHT</strong><input type="number" step="0.01" id="edit_cost_20gp_ow" name="cost_20gp_ow"><input type="number" step="0.01" id="edit_selling_20gp_ow" name="selling_20gp_ow">
                         </div>
-                        <div class="field">
-                            <label for="edit_cost_40ft_ow" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40FT OW</label>
-                            <input type="number" step="0.01" id="edit_cost_40ft_ow" name="cost_40ft_ow">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>40HQ OVERWEIGHT</strong><input type="number" step="0.01" id="edit_cost_40hq_ow" name="cost_40hq_ow"><input type="number" step="0.01" id="edit_selling_40hq_ow" name="selling_40hq_ow">
                         </div>
-                        <div class="field">
-                            <label for="edit_cost_40hq_ow" style="font-size: 11.5px; font-weight: 600; color: #475569;">Modal 40HQ OW</label>
-                            <input type="number" step="0.01" id="edit_cost_40hq_ow" name="cost_40hq_ow">
+                        <div style="display: grid; grid-template-columns: minmax(140px, 1fr) 1fr 1fr; gap: 12px; align-items: center;">
+                            <strong>LOWBED</strong><input type="number" step="0.01" id="edit_cost_lowbed" name="cost_lowbed"><input type="number" step="0.01" id="edit_selling_lowbed" name="selling_lowbed">
                         </div>
                     </div>
+                    <small style="display: block; color: #64748b; font-size: 11px; margin-top: 10px;">Isi modal dan harga jual sesuai tipe. Kosongkan tipe yang belum digunakan.</small>
                 </div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
                 <button type="button" class="button button-secondary" onclick="document.getElementById('modal-edit-vendor-cost').close()">Batal</button>
                 <button type="submit" class="button button-primary">
-                    <x-icon name="check"/> Simpan Perubahan Modal
+                    <x-icon name="check"/> Simpan Perubahan
                 </button>
             </div>
         </form>
@@ -491,12 +432,17 @@
             document.getElementById('edit_vendor_id').value = item.vendor_id;
             document.getElementById('edit_vendor_subtitle').textContent = 'Vendor: ' + item.vendor_name;
             document.getElementById('edit_cost_20gp').value = item.cost_20gp ? parseFloat(item.cost_20gp) : '';
-            document.getElementById('edit_cost_40ft').value = item.cost_40ft ? parseFloat(item.cost_40ft) : '';
-            document.getElementById('edit_cost_40hq').value = item.cost_40hq ? parseFloat(item.cost_40hq) : '';
+            document.getElementById('edit_selling_20gp').value = item.selling_20gp ? parseFloat(item.selling_20gp) : '';
+            const cost40 = item.cost_40ft ?? item.cost_40hq;
+            const selling40 = item.selling_40ft ?? item.selling_40hq;
+            document.getElementById('edit_cost_40ft_40hq').value = cost40 ? parseFloat(cost40) : '';
+            document.getElementById('edit_selling_40ft_40hq').value = selling40 ? parseFloat(selling40) : '';
             document.getElementById('edit_cost_20gp_ow').value = item.cost_20gp_ow ? parseFloat(item.cost_20gp_ow) : '';
-            document.getElementById('edit_cost_40ft_ow').value = item.cost_40ft_ow ? parseFloat(item.cost_40ft_ow) : '';
+            document.getElementById('edit_selling_20gp_ow').value = item.selling_20gp_ow ? parseFloat(item.selling_20gp_ow) : '';
             document.getElementById('edit_cost_40hq_ow').value = item.cost_40hq_ow ? parseFloat(item.cost_40hq_ow) : '';
-            document.getElementById('edit_selling_price').value = item.selling_price ? parseFloat(item.selling_price) : '';
+            document.getElementById('edit_selling_40hq_ow').value = item.selling_40hq_ow ? parseFloat(item.selling_40hq_ow) : '';
+            document.getElementById('edit_cost_lowbed').value = item.cost_lowbed ? parseFloat(item.cost_lowbed) : '';
+            document.getElementById('edit_selling_lowbed').value = item.selling_lowbed ? parseFloat(item.selling_lowbed) : '';
             document.getElementById('modal-edit-vendor-cost').showModal();
         }
     </script>

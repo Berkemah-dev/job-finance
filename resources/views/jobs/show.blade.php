@@ -125,14 +125,16 @@
             <a class="button button-primary" href="{{ route('jobs.invoices.create', $job) }}"><x-icon name="file"/> Buat Invoice</a>
         @endif
     @endcan
-    @if($job->status==='open' && !$job->do_confirmed_at)
-        @can('jobs.confirm-do')
-            <button type="button" class="button button-primary" style="background:#16a34a;border-color:#16a34a" onclick="document.getElementById('modal-confirm-do').showModal()">
-                <x-icon name="check"/> DO Selesai
-            </button>
-        @endcan
-    @elseif($job->do_confirmed_at)
-        <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
+    @if($isDomestic)
+        @if($job->status==='open' && !$job->do_confirmed_at)
+            @can('jobs.confirm-do')
+                <button type="button" class="button button-primary" style="background:#16a34a;border-color:#16a34a" onclick="document.getElementById('modal-confirm-do').showModal()">
+                    <x-icon name="check"/> DO Selesai
+                </button>
+            @endcan
+        @elseif($job->do_confirmed_at)
+            <span class="status-badge status-paid">DO Selesai ({{ $job->do_confirmed_at->format('d/m/Y H:i') }})@if($job->doConfirmedBy)<br><small>oleh {{ $job->doConfirmedBy->name }}</small>@endif</span>
+        @endif
     @endif
     @can('cancel', $job)
         <button type="button" class="button button-danger" onclick="document.getElementById('modal-cancel-job').showModal()">
@@ -222,6 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
 @endcan
 
+@if($isDomestic)
 @can('jobs.confirm-do')
     @if($job->status === 'open' && !$job->do_confirmed_at)
     @php
@@ -267,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </dialog>
     @endif
 @endcan
+@endif
 
 {{-- HORIZONTAL PILL TABS MENU KE KANAN (SESUAI REQUEST & SCREENSHOT CLIENT) --}}
 <nav class="job-pill-tabs-nav" style="display: flex; gap: 8px; background: #e2e8f0; padding: 6px; border-radius: 9999px; margin-bottom: 24px; overflow-x: auto;">
@@ -1246,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', function() {
             @endif
         </div>
 
-        @if($serviceTypeRaw === 'imp_sea')
+        @if($isDomestic && $serviceTypeRaw === 'imp_sea')
         <div style="padding: 0 24px 24px;">
             <article class="report-card">
                 <div class="report-card-head">

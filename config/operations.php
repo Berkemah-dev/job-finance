@@ -67,7 +67,7 @@ return [
     'container_types' => [
         '20ft' => '20 FT', '40ft' => '40 FT', '40hc' => '40 HC', 'lcl' => 'LCL',
         '20gp' => '20GP Trailer', '40ft_40hq' => '40FT / 40HQ Trailer',
-        'pickup' => 'Pickup', 'blindvan' => 'Blindvan', 'cde' => 'CDE', 'cdd' => 'CDD', 'fuso' => 'Fuso',
+        'pickup' => 'Pickup', 'lowbed' => 'Lowbed', 'blindvan' => 'Blindvan', 'cde' => 'CDE', 'cdd' => 'CDD', 'fuso' => 'Fuso',
     ],
     'trucking_container_types' => [
         '20ft' => '20 FT',
@@ -77,6 +77,7 @@ return [
         '20gp' => '20GP Trailer',
         '40ft_40hq' => '40FT / 40HQ Trailer',
         'pickup' => 'Pickup',
+        'lowbed' => 'Lowbed',
         'blindvan' => 'Blindvan',
         'cde' => 'CDE',
         'cdd' => 'CDD',

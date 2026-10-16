@@ -54,12 +54,26 @@
             <span class="calc-cta-arrow"><x-icon name="arrow"/></span>
         </div>
     </a>
+
+    <a class="calculator-hub-card card-nav" href="{{ route('calculators.tax') }}">
+        <div>
+            <div class="card-top">
+                <div class="calc-icon-badge violet">
+                    <x-icon name="file"/>
+                </div>
+            </div>
+            <h3>IMPORT</h3>
+        </div>
+        <div class="calc-cta-row">
+            <span class="calc-cta-arrow"><x-icon name="arrow"/></span>
+        </div>
+    </a>
 </div>
 
 <style>
 .calculator-cards-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 22px !important;
     margin-top: 10px !important;
 }
@@ -113,6 +127,10 @@
     background: #ecfdf5 !important;
     color: #059669 !important;
 }
+.calc-icon-badge.violet {
+    background: #f5f3ff !important;
+    color: #7c3aed !important;
+}
 .calculator-hub-card h3 {
     font-size: 16px !important;
     font-weight: 700 !important;
@@ -148,6 +166,11 @@
 @media(max-width: 960px) {
     .calculator-cards-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+@media(max-width: 1200px) and (min-width: 961px) {
+    .calculator-cards-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 }
 @media(max-width: 640px) {
