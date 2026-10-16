@@ -34,7 +34,7 @@
                     <x-icon name="briefcase"/>
                 </div>
             </div>
-            <h3>Estimasi Biaya LCL</h3>
+            <h3>Estimasi Biaya LCL Import</h3>
         </div>
         <div class="calc-cta-row">
             <span class="calc-cta-arrow"><x-icon name="arrow"/></span>
