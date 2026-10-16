@@ -1289,19 +1289,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
 
-                    @if($job->do_confirmed_at)
-                        <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 12px;">
-                            ✓ DO telah dikonfirmasi selesai pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.
-                        </p>
-                    @elseif($job->status === 'open')
-                        @can('jobs.confirm-do')
-                            <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai dan barang telah diterima?" style="margin-top: 14px;">
-                                @csrf
-                                <button type="submit" class="button button-primary" style="background: #16a34a; border-color: #16a34a; font-size: 13px; padding: 9px 18px;">
-                                    <x-icon name="check"/> Konfirmasi DO Selesai
-                                </button>
-                            </form>
-                        @endcan
+                    @if($isDomestic)
+                        @if($job->do_confirmed_at)
+                            <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin-top: 12px;">
+                                ✓ DO telah dikonfirmasi selesai pada {{ $job->do_confirmed_at->format('d/m/Y H:i') }} oleh {{ $job->doConfirmedBy?->name ?? 'Petugas' }}.
+                            </p>
+                        @elseif($job->status === 'open')
+                            @can('jobs.confirm-do')
+                                <form method="POST" action="{{ route('jobs.confirm-do', $job) }}" data-confirm="Konfirmasi bahwa Delivery Order (DO) telah selesai dan barang telah diterima?" style="margin-top: 14px;">
+                                    @csrf
+                                    <button type="submit" class="button button-primary" style="background: #16a34a; border-color: #16a34a; font-size: 13px; padding: 9px 18px;">
+                                        <x-icon name="check"/> Konfirmasi DO Selesai
+                                    </button>
+                                </form>
+                            @endcan
+                        @endif
                     @endif
                 @else
                     {{-- 1 Menu Tunggal: Upload Berkas Surat Jalan --}}
