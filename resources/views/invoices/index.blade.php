@@ -18,7 +18,7 @@
         <input name="search" value="{{ $search ?? request('search') }}" placeholder="Cari invoice, customer, atau job" aria-label="Cari invoice">
         <select name="status">
             <option value="">Semua status</option>
-            @foreach(['issued'=>'Issued','partially_paid'=>'Partially Paid','paid'=>'Paid'] as $v=>$l)
+            @foreach(['draft'=>'Draft','issued'=>'Issued','partially_paid'=>'Partially Paid','paid'=>'Paid'] as $v=>$l)
                 <option value="{{ $v }}" @selected(($status ?? request('status'))===$v)>{{ $l }}</option>
             @endforeach
         </select>
@@ -30,7 +30,9 @@
         </select>
         <button class="button button-primary">Cari</button>
         <a class="text-link" href="{{ route('invoices.index') }}">Reset</a>
-        <a class="button button-primary" href="{{ route('invoices.create') }}" style="margin-left: auto;"><x-icon name="plus"/> Buat Invoice</a>
+        @if(auth()->user()->hasRole(['finance', 'finance-manager', 'super-admin', 'admin']))
+            <a class="button button-primary" href="{{ route('invoices.create') }}" style="margin-left: auto;"><x-icon name="file"/> Buat Draft Invoice</a>
+        @endif
     </form>
     <div class="table-scroll">
         <table>
@@ -77,7 +79,15 @@
                             <div class="table-actions">
                                 <a class="btn-action btn-action-primary" href="{{ route('invoices.show', $invoice) }}" title="Detail Invoice" data-tooltip="Detail" aria-label="Detail Invoice"><x-icon name="eye"/></a>
                                 <a class="btn-action btn-action-purple" href="{{ route('invoices.preview', $invoice) }}" target="_blank" title="Cetak PDF Invoice" data-tooltip="PDF" aria-label="Cetak PDF Invoice"><x-icon name="printer"/></a>
-                                @if($invoice->balance > 0)
+                                @if($invoice->status === 'draft' && auth()->user()->hasRole(['finance-manager', 'super-admin', 'admin']))
+                                    <form method="POST" action="{{ route('invoices.finalize', $invoice) }}" style="display:inline;" data-confirm="Finalisasi invoice ini sekarang? Jurnal penagihan akan dibuat.">
+                                        @csrf
+                                        <input type="hidden" name="job_version" value="{{ $invoice->job?->lock_version ?? 0 }}">
+                                        <input type="hidden" name="lock_version" value="{{ $invoice->lock_version }}">
+                                        <button type="submit" class="btn-action btn-action-success" title="Finalisasi Invoice" data-tooltip="Finalisasi" aria-label="Finalisasi Invoice"><x-icon name="check"/></button>
+                                    </form>
+                                @endif
+                                @if($invoice->status !== 'draft' && $invoice->balance > 0)
                                 <a class="btn-action btn-action-success" href="{{ route('payments.create', $invoice) }}" title="Catat Pembayaran" data-tooltip="Bayar" aria-label="Catat Pembayaran"><x-icon name="wallet"/></a>
                                 @endif
                             </div>

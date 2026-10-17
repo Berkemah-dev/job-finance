@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->middleware('can:invoices.manage')->name('invoices.pdf');
     Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])->middleware('can:invoices.manage')->name('invoices.delivery');
     Route::get('/invoices/{invoice}/tax-invoice', [InvoiceController::class, 'taxInvoiceFile'])->middleware('can:invoices.manage')->name('invoices.tax-invoice');
+    Route::post('/invoices/{invoice}/finalize', [InvoiceController::class, 'finalize'])->middleware('can:invoices.manage')->name('invoices.finalize');
     Route::get('/jobs/{job}/invoices/create', [InvoiceController::class, 'create'])->middleware('can:invoices.manage')->name('jobs.invoices.create');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show'])->middleware('can:invoices.manage');
     Route::get('/invoices/{invoice}/coretax', [InvoiceController::class, 'coretax'])->middleware('can:invoices.manage')->name('invoices.coretax');
@@ -209,8 +210,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('jobs.costs', JobCostController::class);
         Route::post('/jobs/{job}/costs/{cost}/approve', [JobCostController::class, 'approve'])->name('jobs.costs.approve');
         Route::post('/jobs/{job}/costs/{cost}/pay', [JobCostController::class, 'pay'])->name('jobs.costs.pay');
+        Route::post('/jobs/{job}/costs/{cost}/unpaid', [JobCostController::class, 'unpaid'])->name('jobs.costs.unpaid');
         Route::post('/jobs/{job}/costs/{cost}/finalize', [JobCostController::class, 'finalize'])->name('jobs.costs.finalize');
-    Route::put('/jobs/{job}/costs/{cost}/withholding-document', [JobCostController::class, 'withholdingDocument'])->name('jobs.costs.withholding-document');
+        Route::put('/jobs/{job}/costs/{cost}/withholding-document', [JobCostController::class, 'withholdingDocument'])->name('jobs.costs.withholding-document');
     });
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('can:customers.view')->name('customers.index');
     Route::get('/customers/create', [CustomerController::class, 'create'])->middleware('can:customers.manage')->name('customers.create');

@@ -4,7 +4,7 @@
 <x-menu-banner
     tag="SALES & CUSTOMER"
     title="Master Data Partner"
-    description="Kelola Mitra Partner: Shipping Lines, Vendor Trucking, Agen, dan mitra pendukung operasional ekspedisi."
+    description="Kelola Mitra Partner: Shipping Lines, Vendor Trucking, Clearance Dokumen, Agen, dan mitra pendukung operasional ekspedisi."
     :action-url="route('vendors.create')"
     action-label="Tambah Partner"
     action-icon="plus"

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Services\CoretaxService;
+use App\Services\JobClosingService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
@@ -19,7 +20,7 @@ class InvoiceController extends Controller
                 ->where('number', 'like', '%'.$search.'%')
                 ->orWhere('customer_snapshot->name', 'like', '%'.$search.'%')
                 ->orWhereHas('job', fn ($job) => $job->where('number', 'like', '%'.$search.'%'))))
-            ->when(in_array($status, ['issued', 'partially_paid', 'paid'], true), fn ($q) => $q->where('status', $status))
+            ->when(in_array($status, ['draft', 'issued', 'partially_paid', 'paid'], true), fn ($q) => $q->where('status', $status))
             ->when(in_array($deliveryStatus, ['not_sent', 'sent', 'received'], true), fn ($q) => $q->where('delivery_status', $deliveryStatus))
             ->latest('id')
             ->paginate(10)
@@ -64,7 +65,7 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function store(Request $request, \App\Services\JobClosingService $service)
+    public function store(Request $request, JobClosingService $service)
     {
         $data = $request->validate([
             'job_id' => ['required', 'exists:jobs,id'],
@@ -79,12 +80,23 @@ class InvoiceController extends Controller
         $job = \App\Models\Job::findOrFail($data['job_id']);
         $invoice = $service->createInvoiceForJob($job, $data, $request->user());
 
-        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice berhasil difinalisasi dan dijurnal ke akun Unclose. Job tetap berstatus Open.');
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Draft invoice berhasil disimpan. Finance Manager dapat melakukan finalisasi dan membuat jurnal.');
+    }
+
+    public function finalize(Request $request, Invoice $invoice, JobClosingService $service)
+    {
+        $data = $request->validate([
+            'job_version' => ['required', 'integer', 'min:0'],
+            'lock_version' => ['required', 'integer', 'min:0'],
+        ]);
+        $invoice = $service->finalizeInvoice($invoice, $data, $request->user());
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice berhasil difinalisasi dan jurnal penagihan sudah dibuat.');
     }
 
     public function coretaxIndex(Request $request)
     {
-        $q = Invoice::query()->with('job')->where('tax', '>', 0)->where('subtotal', '>', 0)->latest('id');
+        $q = Invoice::query()->with('job')->where('status', '!=', 'draft')->where('tax', '>', 0)->where('subtotal', '>', 0)->latest('id');
         $search = mb_substr($request->string('search')->toString(), 0, 60);
         $status = $request->string('status')->toString();
         if (in_array($status, ['issued', 'partially_paid', 'paid'], true)) {
@@ -121,6 +133,7 @@ class InvoiceController extends Controller
 
     public function coretax(Invoice $invoice, CoretaxService $service)
     {
+        abort_if($invoice->status === 'draft', 422, 'Invoice draft belum dapat diekspor sebagai faktur pajak.');
         $xml = $service->generate($invoice, request()->user());
 
         return response($xml, 200, ['Content-Type' => 'application/xml', 'Content-Disposition' => 'attachment; filename=faktur-'.$invoice->number.'.xml']);
@@ -128,6 +141,7 @@ class InvoiceController extends Controller
 
     public function coretaxPreview(Invoice $invoice, CoretaxService $service)
     {
+        abort_if($invoice->status === 'draft', 422, 'Invoice draft belum dapat dipreview sebagai faktur pajak.');
         $xml = $service->generate($invoice, request()->user(), false);
 
         return response($xml, 200, ['Content-Type' => 'text/plain; charset=utf-8', 'X-Robots-Tag' => 'noindex']);
@@ -135,6 +149,7 @@ class InvoiceController extends Controller
 
     public function coretaxSelected(Request $request, Invoice $invoice, CoretaxService $service)
     {
+        abort_if($invoice->status === 'draft', 422, 'Invoice draft belum dapat diekspor sebagai faktur pajak.');
         $data = $request->validate(['item_ids' => ['required', 'array', 'min:1'], 'item_ids.*' => ['integer']]);
         $items = $invoice->items()->whereIn('id', $data['item_ids'])->where('type', 'provision')->get();
         $xml = $service->generate($invoice, $request->user(), true, $items);

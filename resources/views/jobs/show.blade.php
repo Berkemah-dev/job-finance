@@ -121,8 +121,8 @@
     @can('invoices.manage')
         @if($job->invoice)
             <a class="button button-primary" href="{{ route('invoices.show',$job->invoice) }}">Lihat Invoice</a>
-        @elseif($job->status === 'open')
-            <a class="button button-primary" href="{{ route('jobs.invoices.create', $job) }}"><x-icon name="file"/> Buat Invoice</a>
+        @elseif($job->status === 'open' && auth()->user()->hasRole(['finance-manager', 'super-admin', 'admin']))
+            <a class="button button-primary" href="{{ route('jobs.invoices.create', $job) }}"><x-icon name="file"/> Finalisasi Invoice</a>
         @endif
     @endcan
     @can('cancel', $job)

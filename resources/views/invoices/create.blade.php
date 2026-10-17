@@ -4,8 +4,8 @@
 <div class="page-heading">
     <div>
         <p class="eyebrow">INVOICE PENAGIHAN</p>
-        <h1>Finalisasi Invoice</h1>
-        <p>Finalisasi invoice dan jurnal Unclose saat Job masih berstatus <strong>Open</strong>. Biaya quotation tidak harus sudah Finance Confirmed.</p>
+        <h1>Buat Draft Invoice</h1>
+        <p>Finance dapat menyiapkan draft invoice saat Job masih berstatus <strong>Open</strong>. Finalisasi dan pembuatan jurnal dilakukan oleh Finance Manager.</p>
     </div>
     <div class="action-group">
         <a class="button button-secondary" href="{{ $job ? route('jobs.show', $job) : route('invoices.index') }}">← Kembali</a>
@@ -86,7 +86,7 @@
             </div>
         @endif
 
-        <form class="data-form" method="POST" action="{{ route('invoices.store') }}" data-confirm="Finalisasi invoice sekarang? Jurnal Piutang, Pendapatan Unclose, HPP Unclose, dan PPN akan dibuat. Job tetap OPEN.">
+        <form class="data-form" method="POST" action="{{ route('invoices.store') }}" data-confirm="Simpan invoice sebagai Draft? Jurnal belum dibuat sampai Finance Manager melakukan finalisasi.">
             @csrf
             <input type="hidden" name="job_id" value="{{ $job->id }}">
             <input type="hidden" name="lock_version" value="{{ $job->lock_version }}">
@@ -140,7 +140,7 @@
             <div class="form-actions" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 12.5px; color: #64748b;">Job order <strong>{{ $job->number }}</strong> akan tetap berstatus Open.</span>
                 <button type="submit" class="button button-primary">
-                    <x-icon name="check"/> Finalisasi Invoice
+                    <x-icon name="check"/> Simpan Draft Invoice
                 </button>
             </div>
         </form>

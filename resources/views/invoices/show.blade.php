@@ -35,14 +35,21 @@
 </div>
 
 <div class="quote-actions" style="margin-bottom: 20px;">
-    @if($invoice->status !== 'paid')
+    @if($invoice->status === 'draft' && auth()->user()->hasRole(['finance-manager', 'super-admin', 'admin']))
+        <form method="POST" action="{{ route('invoices.finalize', $invoice) }}" data-confirm="Finalisasi invoice ini sekarang? Jurnal piutang, pendapatan, HPP, dan PPN akan dibuat.">
+            @csrf
+            <input type="hidden" name="job_version" value="{{ $job?->lock_version ?? 0 }}">
+            <input type="hidden" name="lock_version" value="{{ $invoice->lock_version }}">
+            <button class="button button-primary"><x-icon name="check"/> Finalisasi Invoice</button>
+        </form>
+    @elseif($invoice->status !== 'paid' && $invoice->status !== 'draft')
         <button type="button" class="button button-primary" onclick="document.getElementById('modal-add-payment').showModal()">+ Add Payment</button>
     @endif
     <a class="button button-secondary" href="{{ route('invoices.preview', $invoice) }}" target="_blank">🖨 Preview PDF</a>
     @if($job)
         <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank">🧾 Tanda Terima Dokumen</a>
     @endif
-    @if((float) $invoice->tax > 0)
+    @if($invoice->status !== 'draft' && (float) $invoice->tax > 0)
         <a class="button button-secondary" href="{{ route('invoices.coretax', $invoice) }}">Ekspor XML Coretax</a>
     @endif
     <a class="button button-secondary" href="{{ route('jobs.show', $job) }}">Lihat Job Order</a>
@@ -55,7 +62,11 @@
     @endcan
 </div>
 
-@if((float) $invoice->tax > 0 && $charges->isNotEmpty())
+@if($invoice->status === 'draft')
+    <div class="info-note" style="margin-bottom: 20px;"><strong>Invoice masih Draft.</strong> Jurnal penagihan belum dibuat dan pembayaran belum dapat dicatat. Finance Manager perlu melakukan Finalisasi Invoice setelah memeriksa data.</div>
+@endif
+
+@if($invoice->status !== 'draft' && (float) $invoice->tax > 0 && $charges->isNotEmpty())
 <section class="panel" style="margin-bottom:20px;">
     <div class="panel-heading"><div><h2>XML Coretax dari Charges Terpilih</h2><p>Pilih charge yang akan digabungkan menjadi satu XML Coretax untuk invoice ini.</p></div></div>
     <form method="POST" action="{{ route('invoices.coretax.selected', $invoice) }}" style="padding:0 24px 20px;">
@@ -523,7 +534,7 @@
 </section>
 
 {{-- MODAL ADD PAYMENT (DESAIN SESUAI IMAGE 9 CLIENT) --}}
-@if($invoice->status !== 'paid')
+@if($invoice->status !== 'paid' && $invoice->status !== 'draft')
 <dialog id="modal-add-payment" class="modal-dialog" style="max-width: 620px !important; width: calc(100% - 32px); border: 2px solid #3b82f6; border-radius: 8px; padding: 0; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); background: #ffffff; position: fixed; inset: 0; margin: auto; overflow: hidden;">
     <form method="POST" action="{{ route('payments.store', $invoice) }}" style="margin: 0; padding: 0;">
         @csrf

@@ -138,6 +138,28 @@ class JobCostRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $description = mb_strtolower(trim((string) $this->input('description')));
+            if (! $this->filled('vendor_id') || ! preg_match('/\btrucking\b/u', $description)) {
+                return;
+            }
+
+            $isTruckingVendor = \App\Models\Vendor::query()
+                ->whereKey($this->input('vendor_id'))
+                ->where('is_active', true)
+                ->where(fn ($query) => $query
+                    ->where('type', 'trucking')
+                    ->orWhereHas('categories', fn ($category) => $category->where('category', 'trucking')))
+                ->exists();
+
+            if (! $isTruckingVendor) {
+                $validator->errors()->add('vendor_id', 'Untuk biaya Trucking, vendor harus berkategori Vendor Trucking.');
+            }
+        });
+    }
+
     public function attributes(): array
     {
         return ['description' => 'uraian biaya', 'type' => 'jenis biaya', 'cost_category' => 'kategori biaya', 'vendor_id' => 'vendor', 'cost_date' => 'tanggal biaya', 'quantity' => 'jumlah', 'unit' => 'satuan', 'unit_cost' => 'modal per unit', 'unit_price' => 'nilai jual per unit', 'cost_exchange_rate' => 'kurs modal', 'price_exchange_rate' => 'kurs tagih', 'payee' => 'penerima/vendor', 'reference' => 'nomor bukti', 'notes' => 'catatan', 'job_version' => 'versi job', 'lock_version' => 'versi biaya'];

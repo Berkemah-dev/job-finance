@@ -30,71 +30,72 @@ class JobCostService
             Gate::forUser($actor)->authorize('costs.manage');
             $job = $this->lockJob($job, $data);
             $cost = $job->costs()->lockForUpdate()->findOrFail($cost->id);
-            if ($cost->paid_at) {
-                throw ValidationException::withMessages(['cost' => 'Biaya ini sudah dibayar.']);
-            }
 
             if (Money::decimal($cost->total_cost)->isZero()) {
                 throw ValidationException::withMessages(['cost' => 'Biaya tagih tanpa modal tidak memiliki hutang vendor dan tidak perlu ditandai PAID.']);
             }
 
-            $hasDraftPayable = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
-                ->whereIn('type', self::RECOGNITION_JOURNAL_TYPES)
-                ->whereNull('reversed_at')->whereNull('reversal_of_id')->exists();
-            $pph = Money::decimal($data['pph23_amount'] ?? $cost->pph23_amount ?? 0);
+            $paidAmount = $this->paidAmount($cost);
+            $totalAmount = Money::decimal($cost->total_cost);
+            $outstanding = $totalAmount->minus($paidAmount);
+            if (! $outstanding->isPositive()) {
+                throw ValidationException::withMessages(['cost' => 'Biaya ini sudah lunas. Gunakan Unpaid terlebih dahulu bila pembayaran perlu dibatalkan.']);
+            }
+
+            $pph = Money::decimal($data['pph23_amount'] ?? 0);
             $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
             $isCommission = $vendor?->type === 'commission' || $cost->cost_category === 'credit_note' || str_contains(mb_strtolower($cost->description), 'komisi');
             $taxKey = $isCommission ? 'pph21_payable' : 'pph23_payable';
             $taxLabel = $isCommission ? 'PPh 21 hutang ' : 'PPh 23 hutang ';
             $taxName = $isCommission ? 'PPh 21' : 'PPh 23';
-            // PPh baru menjadi Hutang Pajak ketika PAID. Nilai ini hanya untuk
-            // transaksi lama yang telah mencatat PPh sebelum alur finalisasi.
-            $draftPph = Money::decimal((string) JournalEntry::query()
-                ->where('chart_of_account_id', $this->journals->mapped([$taxKey])[$taxKey]->id)
-                ->where('credit', '>', 0)
-                ->whereHas('journal', fn ($query) => $query->where('source_type', JobCost::class)->where('source_id', $cost->id))
-                ->sum('credit'));
-            $amount = Money::decimal($cost->total_cost);
             $payableKey = $vendor ? $this->partyAccounts->payableMappingKey($vendor) : 'vendor_payable';
             $payableAccount = $vendor
                 ? $this->partyAccounts->vendorPayable($vendor)
                 : $this->journals->mapped([$payableKey])[$payableKey];
-            if ($pph->isGreaterThan($amount)) {
-                throw ValidationException::withMessages(['pph23_amount' => $taxName.' tidak boleh melebihi biaya.']);
-            }
-            if ($hasDraftPayable && $pph->isLessThan($draftPph)) {
-                throw ValidationException::withMessages(['pph23_amount' => $taxName.' tidak dapat dikurangi karena jurnal Draft sudah tercatat.']);
+            if ($pph->isGreaterThan($outstanding)) {
+                throw ValidationException::withMessages(['pph23_amount' => $taxName.' tidak boleh melebihi kekurangan pembayaran Rp '.Money::format($outstanding).'.']);
             }
 
-            // Data lama yang sudah final tetapi belum punya jurnal tetap dapat
-            // diselesaikan tanpa melewati proses Finance lagi.
-            if (! $hasDraftPayable) {
-                $mapsDraft = $this->journals->mapped([$cost->type === 'temporary' ? 'temporary' : 'provision_wip']);
-                $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
-                $draftEntries = [
-                    ['account_id' => $mapsDraft[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => (string) $amount, 'credit' => 0],
-                    ['account_id' => $payableAccount->id, 'description' => ($vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ').$cost->number, 'debit' => 0, 'credit' => (string) $amount],
-                ];
-                $costDate = $cost->cost_date ? $cost->cost_date->format('Y-m-d') : $data['paid_date'];
-                $this->journals->post('job_cost_finalization', JobCost::class, $cost->id, $costDate, 'Finalisasi '.$cost->number, $draftEntries, $actor);
-                $hasDraftPayable = true;
-                $draftPph = Money::decimal(0);
+            // Pastikan pengakuan hutang selalu sama dengan modal terbaru sebelum
+            // pembayaran. Bila modal naik setelah pembayaran lama, hanya selisih
+            // modal yang ditambahkan ke jurnal hutang.
+            $recognitionAmount = $this->recognitionAmount($cost);
+            if (! $recognitionAmount->isEqualTo($totalAmount)) {
+                $this->reverseRecognition($cost, $actor);
+                $this->recognizePayable($cost, $actor, $recognitionAmount->isZero() ? 'job_cost_finalization' : 'job_cost_amendment', $totalAmount);
             }
 
             $account = ChartOfAccount::where('type', 'asset')->findOrFail($data['payment_account_id']);
             $maps = $this->journals->mapped([$taxKey]);
-            // Hutang vendor yang telah terbentuk pada Draft harus dilunasi penuh.
-            // PPh yang baru diinput ketika PAID dipindahkan ke Hutang Pajak.
-            $vendorSettlement = $amount->minus($draftPph);
-            $bankPayment = $amount->minus($pph);
-            $additionalPph = $pph->minus($draftPph);
+            $isSubsequentProvision = $cost->type === 'provision' && $this->isSubsequentCost($job, $cost);
+            if ($isSubsequentProvision) {
+                $flow = $this->invoiceFlowAccountKeys($job);
+                $maps += $this->journals->mapped(['provision_wip', $flow['cogs_unclosed']]);
+            }
+            $previousPph = $paidAmount->isPositive() ? Money::decimal($cost->pph23_amount ?? 0) : Money::decimal(0);
+            $totalPph = $previousPph->plus($pph);
+            if ($totalPph->isGreaterThan($totalAmount)) {
+                throw ValidationException::withMessages(['pph23_amount' => $taxName.' tidak boleh melebihi total biaya.']);
+            }
+
+            // Satu biaya memiliki satu jurnal pembayaran aktif. Untuk pelunasan
+            // kekurangan, jurnal pembayaran lama dibalik lalu dibuat ulang dengan
+            // total pembayaran terbaru. Saldo kas tetap hanya berkurang sebesar
+            // selisihnya, sementara audit trail tetap utuh.
+            foreach ($this->activePaymentJournals($cost) as $paymentJournal) {
+                $this->reverseJournal($paymentJournal, $cost, $actor, 'Pembatalan pembayaran lama sebelum pelunasan kekurangan');
+            }
 
             $entries = [
-                ['account_id' => $payableAccount->id, 'description' => 'Pelunasan '.mb_strtolower($vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ').$cost->number, 'debit' => (string) $vendorSettlement, 'credit' => 0],
-                ['account_id' => $account->id, 'description' => 'Pembayaran biaya job '.$cost->number, 'debit' => 0, 'credit' => (string) $bankPayment],
+                ['account_id' => $payableAccount->id, 'description' => 'Pelunasan '.mb_strtolower($vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ').$cost->number, 'debit' => (string) $totalAmount, 'credit' => 0],
+                ['account_id' => $account->id, 'description' => 'Pembayaran biaya job '.$cost->number, 'debit' => 0, 'credit' => (string) $totalAmount->minus($totalPph)],
             ];
-            if ($additionalPph->isPositive()) {
-                $entries[] = ['account_id' => $maps[$taxKey]->id, 'description' => $taxLabel.$cost->number, 'debit' => 0, 'credit' => (string) $additionalPph];
+            if ($totalPph->isPositive()) {
+                $entries[] = ['account_id' => $maps[$taxKey]->id, 'description' => $taxLabel.$cost->number, 'debit' => 0, 'credit' => (string) $totalPph];
+            }
+            if ($isSubsequentProvision) {
+                $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose biaya susulan · '.$cost->number, 'debit' => (string) $totalAmount, 'credit' => 0];
+                $entries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisi biaya susulan · '.$cost->number, 'debit' => 0, 'credit' => (string) $totalAmount];
             }
 
             $number = $this->numbers->nextBankJournal($account->code, $account->name, false, Carbon::parse($data['paid_date']));
@@ -103,10 +104,62 @@ class JobCostService
                 'paid_date' => $data['paid_date'],
                 'paid_at' => now(),
                 'payment_account_id' => $account->id,
-                'pph23_amount' => (string) $pph,
+                'pph23_amount' => (string) $totalPph,
                 'withholding_document_number' => $data['withholding_document_number'] ?? null,
             ]);
             $this->touchJob($job, $actor);
+        }, 3);
+    }
+
+    /** Nilai modal yang sudah dibayar berdasarkan jurnal pembayaran aktif. */
+    public function paidAmount(JobCost $cost): BigDecimal
+    {
+        $amount = Money::decimal(0);
+        foreach ($this->activePaymentJournals($cost) as $journal) {
+            foreach ($journal->entries as $entry) {
+                $amount = $amount->plus($entry->credit);
+            }
+        }
+
+        // Kompatibilitas data lama yang sudah PAID sebelum jurnal pembayaran
+        // dapat ditelusuri dari detail biaya.
+        if ($amount->isPositive()) {
+            return $amount;
+        }
+        if ($cost->paid_at) {
+            $recognized = $this->recognitionAmount($cost);
+
+            return $recognized->isPositive() ? $recognized : Money::decimal($cost->total_cost);
+        }
+
+        return $amount;
+    }
+
+    public function unpaid(Job $job, JobCost $cost, array $data, User $actor): void
+    {
+        DB::transaction(function () use ($job, $cost, $data, $actor) {
+            Gate::forUser($actor)->authorize('costs.manage');
+            $job = $this->lockJob($job, $data);
+            $cost = $job->costs()->lockForUpdate()->findOrFail($cost->id);
+            $cost->setRelation('job', $job);
+            Gate::forUser($actor)->authorize('unpaid', $cost);
+            $this->master->checkVersion($cost, $data);
+
+            foreach ($this->activePaymentJournals($cost) as $paymentJournal) {
+                $this->reverseJournal($paymentJournal, $cost, $actor, 'Unpaid biaya job oleh Finance');
+            }
+
+            $cost->update([
+                'paid_date' => null,
+                'paid_at' => null,
+                'payment_account_id' => null,
+                'pph23_amount' => '0.00',
+                'withholding_document_number' => null,
+                'updated_by' => $actor->id,
+                'lock_version' => $cost->lock_version + 1,
+            ]);
+            $this->touchJob($job, $actor);
+            $this->master->log($actor, 'job_cost.unpaid', 'Unpaid '.$cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id]);
         }, 3);
     }
 
@@ -155,7 +208,7 @@ private function lockJob(Job $job, array $data): Job
             Gate::forUser($actor)->authorize('costs.manage');
             $job = $this->lockJob($job, $data);
             $new = $cost === null;
-            $paidCostTotal = null;
+            $paidAmount = null;
             $costCategory = $data['cost_category'] ?? ($cost?->cost_category ?? (($data['type'] ?? 'provision') === 'temporary' ? 'reimbursement' : 'payment_request'));
             if ($new) {
                 Gate::forUser($actor)->authorize('create', [JobCost::class, $job]);
@@ -175,12 +228,20 @@ private function lockJob(Job $job, array $data): Job
                 Gate::forUser($actor)->authorize('update', $cost);
                 $this->master->checkVersion($cost, $data);
                 $before = $cost->only(['description', 'type', 'currency', 'cost_exchange_rate', 'price_exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
-                $paidCostTotal = $cost->paid_at ? Money::decimal($cost->total_cost) : null;
-                // Biaya yang sudah Finance Confirm boleh disesuaikan sebelum
-                // Finalisasi Invoice. Jurnal pengakuan sebelumnya dibalik
-                // agar nilai hutang dan modal mengikuti nilai terbaru.
+                $paidAmount = $this->paidAmount($cost);
+                $wasPaid = $paidAmount->isPositive() || (bool) $cost->paid_at;
+                // Setelah biaya final diedit, biaya kembali menjadi Draft agar
+                // Finance Manager memeriksa dan melakukan Finalisasi Biaya lagi.
+                // Jika belum dibayar, pengakuan lama dibalik sekarang. Jika
+                // sudah dibayar, pengakuan lama dipertahankan sampai finalisasi
+                // ulang agar jurnal pembayaran tetap seimbang.
                 if ($cost->status === 'final') {
-                    $this->reverseRecognition($cost, $actor);
+                    if (! $wasPaid) {
+                        $this->reverseRecognition($cost, $actor);
+                    }
+                    $cost->status = 'draft';
+                    $cost->finalized_by = null;
+                    $cost->finalized_at = null;
                 }
             }
             $date = Carbon::parse($data['cost_date']);
@@ -225,9 +286,9 @@ private function lockJob(Job $job, array $data): Job
             $cost->total_price = Money::checked($quantity->multipliedBy($unitPrice)->toScale(2, RoundingMode::HalfUp));
             $cost->foreign_total_cost = Money::checked($quantity->multipliedBy($foreignUnitCost)->toScale(2, RoundingMode::HalfUp));
             $cost->foreign_total_price = Money::checked($quantity->multipliedBy($foreignUnitPrice)->toScale(2, RoundingMode::HalfUp));
-            if ($paidCostTotal && ! Money::decimal($cost->total_cost)->isEqualTo($paidCostTotal)) {
+            if ($paidAmount && Money::decimal($cost->total_cost)->isLessThan($paidAmount)) {
                 throw ValidationException::withMessages([
-                    'unit_cost' => 'Total modal biaya yang sudah PAID tidak dapat diubah karena jurnal kas/bank sudah tercatat. Ubah nilai jual atau Kurs Tagih untuk revisi invoice.',
+                    'unit_cost' => 'Total modal tidak boleh lebih kecil dari modal yang sudah dibayar Rp '.Money::format((string) $paidAmount).'. Tambahkan modal atau lakukan Unpaid terlebih dahulu.',
                 ]);
             }
             $cost->updated_by = $actor->id;
@@ -235,9 +296,6 @@ private function lockJob(Job $job, array $data): Job
             $cost->save();
             if (Money::decimal($cost->pph23_amount ?? 0)->isGreaterThan(Money::decimal($cost->total_cost))) {
                 throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi total biaya.']);
-            }
-            if (! $new && $cost->status === 'final' && Money::decimal($cost->total_cost)->isPositive()) {
-                $this->recognizePayable($cost, $actor, 'job_cost_amendment');
             }
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
             $this->refreshIssuedInvoice($job, $actor);
@@ -250,8 +308,12 @@ private function lockJob(Job $job, array $data): Job
     }
 
     /** Pengakuan modal dan hutang vendor/agent; dipanggil saat Finance menyimpan biaya langsung atau memfinalisasi biaya quotation. */
-    private function recognizePayable(JobCost $cost, User $actor, string $journalType): void
+    private function recognizePayable(JobCost $cost, User $actor, string $journalType, ?BigDecimal $amount = null): void
     {
+        $amount ??= Money::decimal($cost->total_cost);
+        if (! $amount->isPositive()) {
+            return;
+        }
         $vendor = $cost->vendor_id ? Vendor::find($cost->vendor_id) : null;
         $payableKey = $vendor ? $this->partyAccounts->payableMappingKey($vendor) : 'vendor_payable';
         $debitKey = $cost->type === 'temporary' ? 'temporary' : 'provision_wip';
@@ -261,15 +323,14 @@ private function lockJob(Job $job, array $data): Job
             : $this->journals->mapped([$payableKey])[$payableKey];
         $payableLabel = $vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ';
         $this->journals->post($journalType, JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Pencatatan '.$cost->number, [
-            ['account_id' => $maps[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => $cost->total_cost, 'credit' => 0],
-            ['account_id' => $payableAccount->id, 'description' => $payableLabel.$cost->number, 'debit' => 0, 'credit' => $cost->total_cost],
+            ['account_id' => $maps[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => (string) $amount, 'credit' => 0],
+            ['account_id' => $payableAccount->id, 'description' => $payableLabel.$cost->number, 'debit' => 0, 'credit' => (string) $amount],
         ], $actor);
     }
 
-    /** Membalik jurnal pengakuan saat biaya yang sudah Finance Confirm diperbarui. */
-    private function reverseRecognition(JobCost $cost, User $actor): void
+    private function activeRecognitionJournals(JobCost $cost): \Illuminate\Support\Collection
     {
-        $journals = Journal::with('entries')
+        return Journal::with('entries')
             ->where('source_type', JobCost::class)
             ->where('source_id', $cost->id)
             ->whereIn('type', self::RECOGNITION_JOURNAL_TYPES)
@@ -277,6 +338,61 @@ private function lockJob(Job $job, array $data): Job
             ->whereNull('reversal_of_id')
             ->lockForUpdate()
             ->get();
+    }
+
+    private function recognitionAmount(JobCost $cost): BigDecimal
+    {
+        $amount = Money::decimal(0);
+        foreach ($this->activeRecognitionJournals($cost) as $journal) {
+            foreach ($journal->entries as $entry) {
+                $amount = $amount->plus($entry->debit);
+            }
+        }
+
+        return $amount;
+    }
+
+    private function activePaymentJournals(JobCost $cost): \Illuminate\Support\Collection
+    {
+        return Journal::with('entries')
+            ->where('source_type', JobCost::class)
+            ->where('source_id', $cost->id)
+            ->where('type', 'job_cost_payment')
+            ->whereNull('reversed_at')
+            ->whereNull('reversal_of_id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /**
+     * Biaya baru setelah invoice customer diterbitkan diperlakukan sebagai biaya
+     * susulan. Modalnya tetap masuk Provisi saat finalisasi biaya, lalu dipindah
+     * ke HPP Unclosed ketika biaya dibayar.
+     */
+    private function isSubsequentCost(Job $job, JobCost $cost): bool
+    {
+        $invoice = $job->invoice()->first();
+
+        return $invoice
+            && in_array($invoice->status, ['issued', 'partially_paid', 'paid'], true)
+            && $invoice->issued_at
+            && $cost->created_at
+            && $cost->created_at->greaterThan($invoice->issued_at);
+    }
+
+    private function reverseJournal(Journal $journal, JobCost $cost, User $actor, string $reason): void
+    {
+        $this->journals->reverse($journal, [
+            'reversal_date' => today()->toDateString(),
+            'reason' => $reason.' · '.$cost->number,
+            'lock_version' => $journal->lock_version,
+        ], $actor);
+    }
+
+    /** Membalik jurnal pengakuan saat biaya yang sudah Finance Confirm diperbarui. */
+    private function reverseRecognition(JobCost $cost, User $actor): void
+    {
+        $journals = $this->activeRecognitionJournals($cost);
 
         foreach ($journals as $journal) {
             $entries = $journal->entries->map(fn (JournalEntry $entry) => [
@@ -332,6 +448,23 @@ private function lockJob(Job $job, array $data): Job
             throw ValidationException::withMessages(['cost' => 'Perubahan membuat total invoice menjadi nol.']);
         }
 
+        if ($invoice->status === 'draft') {
+            [$currency, $rate] = $this->invoiceCurrencyAndRate($invoiceRows);
+            $invoice->update([
+                'currency' => $currency,
+                'exchange_rate' => (string) $rate->toScale(2, RoundingMode::HalfUp),
+                'subtotal' => $summary['subtotal'],
+                'total' => Money::checked($total),
+                'balance' => Money::checked($total),
+            ]);
+            $invoice->items()->delete();
+            foreach ($invoiceRows as $position => $cost) {
+                $invoice->items()->create($this->invoiceItemData($cost, $position + 1));
+            }
+
+            return;
+        }
+
         $activeJournals = Journal::with('entries')
             ->where('source_type', Job::class)
             ->where('source_id', $job->id)
@@ -376,7 +509,11 @@ private function lockJob(Job $job, array $data): Job
         $temporary = Money::decimal($summary['temporary']);
         $provisionSell = Money::decimal($summary['provision_sell']);
         $invoiceRevenue = $provisionSell->plus($stampDuty);
-        $provisionCost = Money::decimal($summary['provision_cost']);
+        // HPP Unclosed hanya dibentuk dari biaya yang sudah Final.
+        $provisionCost = $rows->where('type', 'provision')->where('status', 'final')->reduce(
+            fn ($total, $cost) => $total->plus(Money::decimal($cost->total_cost)),
+            Money::decimal(0)
+        );
         $entries = [];
         if ($invoiceRevenue->isPositive() || $tax->isPositive()) {
             $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $invoiceRevenue->plus($tax), 'credit' => 0];
@@ -388,6 +525,7 @@ private function lockJob(Job $job, array $data): Job
         foreach ($rows->where('type', 'provision') as $cost) {
             $sellingValue = Money::decimal($cost->total_price);
             if ($sellingValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
+            if ($cost->status !== 'final') continue;
             $costValue = Money::decimal($cost->total_cost);
             if ($costValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
         }
@@ -440,11 +578,11 @@ private function lockJob(Job $job, array $data): Job
             $cost->updated_by = $actor->id;
             $cost->lock_version++;
             $cost->save();
-            $hasRecognition = Journal::where('source_type', JobCost::class)->where('source_id', $cost->id)
-                ->whereIn('type', self::RECOGNITION_JOURNAL_TYPES)
-                ->whereNull('reversed_at')->whereNull('reversal_of_id')->exists();
-            if (! $hasRecognition && Money::decimal($cost->total_cost)->isPositive()) {
-                $this->recognizePayable($cost, $actor, 'job_cost_finalization');
+            $recognitionAmount = $this->recognitionAmount($cost);
+            $totalAmount = Money::decimal($cost->total_cost);
+            if (! $recognitionAmount->isEqualTo($totalAmount)) {
+                $this->reverseRecognition($cost, $actor);
+                $this->recognizePayable($cost, $actor, $recognitionAmount->isZero() ? 'job_cost_finalization' : 'job_cost_amendment', $totalAmount);
             }
             $this->touchJob($job, $actor);
             $this->master->log($actor, 'job_cost.finalized', 'Finalisasi '.$cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'after' => $cost->only(['type', 'total_cost', 'total_price', 'status'])]);

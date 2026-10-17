@@ -6,7 +6,7 @@
 <input type="hidden" name="job_version" value="{{ old('job_version',$job->lock_version) }}"><input type="hidden" name="lock_version" value="{{ old('lock_version',$cost->lock_version ?? 0) }}">
 <div class="info-note">Setiap biaya tetap berstatus Draft sampai diperiksa dan dikonfirmasi Finance. Kurs modal dan kurs tagih dapat dicatat terpisah untuk transaksi valas.</div>
 @if($cost->exists && $cost->paid_at)
-<div class="info-note" style="margin-top:12px;"><strong>Revisi biaya PAID untuk invoice.</strong> Nilai jual dan Kurs Tagih dapat diubah. Total modal harus tetap sama karena pembayaran kas/bank telah dijurnal.</div>
+<div class="info-note" style="margin-top:12px;"><strong>Revisi biaya PAID.</strong> Total modal boleh dinaikkan. Jika ada perubahan, biaya kembali menjadi Draft untuk Finalisasi Biaya ulang; sistem menghitung kekurangan pembayaran secara otomatis. Total modal tidak boleh lebih kecil dari yang sudah dibayar.</div>
 @endif
 <div class="form-grid">
 <div class="field span-2">
@@ -73,7 +73,14 @@
         @foreach($groupedVendors as $groupLabel => $vList)
             <optgroup label="{{ $groupLabel }}">
                 @foreach($vList as $vItem)
-                    <option value="{{ $vItem->id }}" data-name="{{ $vItem->name }}" @selected(old('vendor_id', $cost->vendor_id) == $vItem->id || (!old('vendor_id') && old('payee', $cost->payee) === $vItem->name))>
+                    @php
+                        $vendorCategoryKeys = collect($vItem->categories->pluck('category')->all())
+                            ->push($vItem->type)
+                            ->filter()
+                            ->unique()
+                            ->implode(',');
+                    @endphp
+                    <option value="{{ $vItem->id }}" data-name="{{ $vItem->name }}" data-vendor-categories="{{ $vendorCategoryKeys }}" @selected(old('vendor_id', $cost->vendor_id) == $vItem->id || (!old('vendor_id') && old('payee', $cost->payee) === $vItem->name))>
                         {{ $vItem->code ? '['.$vItem->code.'] ' : '' }}{{ $vItem->name }}
                     </option>
                 @endforeach
@@ -94,8 +101,41 @@ window.__weeklyRates = @json($activeWeeklyRates ?? []);
 document.addEventListener('DOMContentLoaded', function() {
     const typeSelect = document.querySelector('[data-cost-type]');
     const catSelect = document.getElementById('cost_category');
+    const descriptionSelect = document.getElementById('description');
     const vendorSelect = document.getElementById('vendor_id');
     const payeeInput = document.getElementById('payee');
+
+    if (descriptionSelect && vendorSelect) {
+        const vendorOptions = Array.from(vendorSelect.querySelectorAll('option[data-vendor-categories]'));
+
+        function syncVendorFilter() {
+            const isTruckingCost = /\btrucking\b/i.test((descriptionSelect.value || '').trim());
+            let selectedIsAllowed = true;
+
+            vendorOptions.forEach((option) => {
+                const categories = (option.dataset.vendorCategories || '').split(',').filter(Boolean);
+                const allowed = !isTruckingCost || categories.includes('trucking');
+                option.hidden = !allowed;
+                if (option.selected && !allowed) {
+                    selectedIsAllowed = false;
+                }
+            });
+
+            vendorSelect.querySelectorAll('optgroup').forEach((group) => {
+                group.hidden = !Array.from(group.querySelectorAll('option[data-vendor-categories]')).some((option) => !option.hidden);
+            });
+
+            if (!selectedIsAllowed) {
+                vendorSelect.value = '';
+                if (payeeInput) {
+                    payeeInput.value = '';
+                }
+            }
+        }
+
+        descriptionSelect.addEventListener('change', syncVendorFilter);
+        syncVendorFilter();
+    }
 
     if (vendorSelect && payeeInput) {
         vendorSelect.addEventListener('change', function() {

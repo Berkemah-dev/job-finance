@@ -22,6 +22,9 @@ class PaymentService
             Gate::forUser($actor)->authorize('payments.manage');
             $invoice = Invoice::lockForUpdate()->findOrFail($invoice->id);
             $this->master->checkVersion($invoice, $data);
+            if ($invoice->status === 'draft') {
+                throw ValidationException::withMessages(['amount' => 'Invoice masih Draft. Finance Manager harus melakukan finalisasi terlebih dahulu.']);
+            }
             if ($invoice->status === 'paid') {
                 throw ValidationException::withMessages(['amount' => 'Invoice sudah lunas.']);
             }
