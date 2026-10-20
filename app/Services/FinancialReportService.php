@@ -492,6 +492,7 @@ class FinancialReportService
             'cogsAccounts' => $cogsAccounts,
             'expenseAccounts' => $expenseAccounts,
             'hppBreakdown' => $this->hppByCostType($from, $to)['rows'],
+            'hppUnclosedBreakdown' => $this->hppUnclosedByCostType($from, $to),
             // Struktur Laporan Laba Rugi PT Radix International Logistics
             'pendapatanClosed' => $pendapatanClosed,
             'totalPendapatanClosed' => (string) $totalPendapatanClosed,
@@ -1111,6 +1112,114 @@ class FinancialReportService
             'totalTransactions' => (int) $rows->sum('transaction_count'),
             'totalJobs' => count($jobIds),
         ];
+    }
+
+    /**
+     * Rincian biaya yang masih berada pada akun HPP Unclosed di periode laporan.
+     * Sumbernya jurnal HPP, sehingga tetap mengikuti nilai yang benar-benar masuk
+     * ke laporan meskipun invoice sudah terbit atau biaya dibuat susulan.
+     */
+    private function hppUnclosedByCostType(string $from, string $to): Collection
+    {
+        $accountIds = ChartOfAccount::query()
+            ->whereIn('code', ['51100', '52100', '53100'])
+            ->pluck('id');
+
+        if ($accountIds->isEmpty()) {
+            return collect();
+        }
+
+        $entries = JournalEntry::query()
+            ->with('journal')
+            ->whereIn('chart_of_account_id', $accountIds)
+            ->whereHas('journal', fn (Builder $query) => $query
+                ->whereDate('journal_date', '>=', $from)
+                ->whereDate('journal_date', '<=', $to))
+            ->get(['id', 'journal_id', 'description', 'debit', 'credit']);
+
+        $costs = JobCost::with('job:id,number')
+            ->whereIn('id', $entries->filter(fn ($entry) => $entry->journal?->source_type === JobCost::class)->pluck('journal.source_id'))
+            ->get()
+            ->keyBy('id');
+        $jobs = Job::query()
+            ->whereIn('id', $entries->filter(fn ($entry) => $entry->journal?->source_type === Job::class)->pluck('journal.source_id'))
+            ->get(['id', 'number'])
+            ->keyBy('id');
+
+        $grouped = [];
+        foreach ($entries as $entry) {
+            $description = trim((string) $entry->description);
+            $description = preg_replace('/^(?:Reversal:\s*)+/i', '', $description) ?: $description;
+            if (! str_contains(mb_strtoupper($description), 'HPP UNCLOSE')) {
+                continue;
+            }
+
+            $parts = array_values(array_filter(array_map('trim', explode('·', $description)), fn ($part) => $part !== ''));
+            if (count($parts) < 2) {
+                continue;
+            }
+
+            $costNumber = null;
+            $chargeDescription = 'Tanpa uraian';
+            $jobNumber = '—';
+            if (count($parts) >= 4) {
+                $costNumber = $parts[1];
+                $chargeDescription = $parts[2] ?: $chargeDescription;
+                $jobNumber = $parts[3] ?: $jobNumber;
+            } elseif (count($parts) === 3) {
+                $chargeDescription = $parts[1] ?: $chargeDescription;
+                $jobNumber = $parts[2] ?: $jobNumber;
+            } else {
+                $costNumber = $parts[1];
+            }
+
+            $key = $costNumber ?: $chargeDescription.'|'.$jobNumber;
+            $jobId = null;
+            if ($entry->journal?->source_type === JobCost::class && ($cost = $costs->get($entry->journal->source_id))) {
+                $jobId = $cost->job_id;
+                $costNumber = $cost->number;
+                $chargeDescription = $cost->description ?: $chargeDescription;
+                $jobNumber = $cost->job?->number ?? $jobNumber;
+            } elseif ($entry->journal?->source_type === Job::class && ($job = $jobs->get($entry->journal->source_id))) {
+                $jobId = $job->id;
+                $jobNumber = $job->number;
+            }
+            $key = $costNumber ?: $chargeDescription.'|'.$jobNumber;
+            $grouped[$key] ??= [
+                'description' => $chargeDescription,
+                'transaction_count' => 0,
+                'job_ids' => [],
+                'total_cost' => Money::decimal(0),
+                'items' => [],
+            ];
+            $amount = Money::decimal((string) $entry->debit)->minus(Money::decimal((string) $entry->credit));
+            $grouped[$key]['total_cost'] = $grouped[$key]['total_cost']->plus($amount);
+            $grouped[$key]['transaction_count']++;
+            if ($jobId) {
+                $grouped[$key]['job_ids'][$jobId] = true;
+            }
+            $grouped[$key]['items'][] = [
+                'job_id' => $jobId,
+                'job_number' => $jobNumber,
+                'cost_number' => $costNumber ?: '—',
+                'cost_date' => $entry->journal?->journal_date?->format('d/m/Y') ?? '—',
+                'total_cost' => (string) $amount,
+            ];
+        }
+
+        return collect($grouped)
+            ->filter(fn (array $row) => Money::decimal((string) $row['total_cost'])->isPositive())
+            ->map(fn (array $row) => (object) [
+                'description' => $row['description'],
+                'transaction_count' => $row['transaction_count'],
+                'job_count' => count($row['job_ids']),
+                'total_cost' => (string) $row['total_cost'],
+                'total_price' => '0.00',
+                'total_pph23' => '0.00',
+                'items' => $row['items'],
+            ])
+            ->sortByDesc(fn ($row) => (float) $row->total_cost)
+            ->values();
     }
 
     private function buildRadixLine(array $def, Collection $byCode, bool $useTbAccNo = false): object

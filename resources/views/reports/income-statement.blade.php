@@ -179,10 +179,54 @@
                 @endforeach
                 <tr style="background: #f1f5f9; font-weight: 700;">
                     <td></td>
-                    <td>Total Harga Pokok Pendapatan Unclosed</td>
+                    <td>
+                        Total Harga Pokok Pendapatan Unclosed
+                        @if(!empty($hppUnclosedBreakdown) && count($hppUnclosedBreakdown) > 0)
+                            <button type="button" onclick="toggleIncomeDetail('hpp-unclosed-detail')" style="margin-left:8px;border:0;background:none;color:#0284c7;font-weight:700;cursor:pointer;font-size:12px;">(Lihat Rincian Biaya <span id="hpp-unclosed-detail-icon">▶</span>)</button>
+                        @endif
+                    </td>
                     <td></td>
                     <td class="money">{{ $money($totalHppUnclosed ?? 0) }}</td>
                 </tr>
+                @if(!empty($hppUnclosedBreakdown) && count($hppUnclosedBreakdown) > 0)
+                    <tr id="hpp-unclosed-detail" style="display:none;background:#f8fafc;">
+                        <td colspan="4" style="padding:14px 18px;">
+                            <strong style="font-size:12px;color:#334155;">Rincian HPP Unclosed per uraian biaya</strong>
+                            <div style="margin-top:8px;border:1px solid #dbe3ee;border-radius:8px;background:#fff;overflow:hidden;">
+                                @foreach($hppUnclosedBreakdown as $index => $charge)
+                                    @php $detailId = 'hpp-unclosed-charge-'.$index; @endphp
+                                    <div style="border-bottom:1px solid #eef2f7;">
+                                        <button type="button" onclick="toggleIncomeDetail('{{ $detailId }}')" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;background:#fff;padding:10px 12px;cursor:pointer;text-align:left;">
+                                            <span style="font-weight:700;color:#0f172a;">{{ strtoupper($charge->description) }} <small style="font-weight:500;color:#64748b;">({{ $charge->transaction_count }} transaksi)</small></span>
+                                            <span style="font-family:monospace;font-weight:700;color:#0f172a;">{{ $money($charge->total_cost) }} <span id="{{ $detailId }}-icon" style="color:#94a3b8;">▶</span></span>
+                                        </button>
+                                        <div id="{{ $detailId }}" style="display:none;padding:0 12px 12px;background:#f8fafc;">
+                                            <table style="width:100%;font-size:11px;border-collapse:collapse;">
+                                                <thead><tr style="color:#64748b;text-align:left;"><th style="padding:6px;">Job Order</th><th style="padding:6px;">Nomor Biaya</th><th style="padding:6px;">Tanggal</th><th style="padding:6px;text-align:right;">Modal / HPP</th></tr></thead>
+                                                <tbody>
+                                                    @foreach($charge->items as $item)
+                                                        <tr style="border-top:1px solid #e2e8f0;">
+                                                            <td style="padding:6px;">
+                                                                @if(!empty($item['job_id']))
+                                                                    <a href="{{ route('jobs.show', $item['job_id']) }}" style="color:#0284c7;font-weight:700;text-decoration:none;">{{ $item['job_number'] }}</a>
+                                                                @else
+                                                                    {{ $item['job_number'] }}
+                                                                @endif
+                                                            </td>
+                                                            <td style="padding:6px;">{{ $item['cost_number'] }}</td>
+                                                            <td style="padding:6px;">{{ $item['cost_date'] }}</td>
+                                                            <td style="padding:6px;text-align:right;font-family:monospace;font-weight:700;">{{ $money($item['total_cost']) }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </td>
+                    </tr>
+                @endif
 
                 {{-- TOTAL HPP --}}
                 <tr style="background: #e2e8f0; font-weight: 800; color: #0f172a;">
