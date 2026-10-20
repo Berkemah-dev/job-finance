@@ -431,7 +431,7 @@ class JobClosingService
             }
             $costValue = Money::decimal($cost->total_cost);
             if ($costValue->isPositive()) {
-                $invoiceEntries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
+                $invoiceEntries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.$cost->number.' · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
             }
         }
         if ($stampDuty->isPositive()) {

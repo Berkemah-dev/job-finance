@@ -53,6 +53,7 @@
 
     @php
         $isPpnKeluaran = $account->code === '28000';
+        $isPph21Payable = $account->code === '26000';
         $isPph23Payable = $account->code === '27000';
         $isPph23Prepaid = $account->code === '11192';
     @endphp
@@ -97,7 +98,7 @@
                     <th>No. Job</th>
                     <th>No. Invoice</th>
                     <th>Customer / Vendor</th>
-                    <th>{{ $isPph23Prepaid ? 'No. Bupot' : 'Faktur Pajak / Bupot' }}</th>
+                    <th>{{ ($isPph21Payable || $isPph23Prepaid) ? 'No. Bupot' : 'Faktur Pajak / Bupot' }}</th>
                     <th class="money">Debit</th>
                     <th class="money">Kredit</th>
                     <th class="money">Saldo</th>
@@ -214,7 +215,18 @@
                             @endif
                         </td>
                         <td>
-                            @if($isPph23Prepaid && $entry->payment_id)
+                            @if($isPph21Payable && $entry->cost_id)
+                                @if(auth()->user()?->can('costs.manage'))
+                                    <form method="POST" action="{{ route('reports.ledger.withholding-document', $entry->cost_id) }}" style="display:flex;gap:4px;min-width:170px;">
+                                        @csrf
+                                        @method('PUT')
+                                        <input name="withholding_document_number" value="{{ $entry->withholding_document_number }}" placeholder="Nomor Bupot" aria-label="Nomor Bukti Potong" style="min-width:0;width:100%;padding:6px 8px;font-size:11px;">
+                                        <button type="submit" class="button button-secondary" style="padding:5px 8px;font-size:11px;" title="Simpan Nomor Bukti Potong">Simpan</button>
+                                    </form>
+                                @else
+                                    {{ $entry->withholding_document_number ?? 'Belum diisi' }}
+                                @endif
+                            @elseif($isPph23Prepaid && $entry->payment_id)
                                 @if(auth()->user()?->can('payments.manage'))
                                     <form method="POST" action="{{ route('reports.ledger.payment-withholding-document', $entry->payment_id) }}" style="display:flex;gap:4px;min-width:170px;">
                                         @csrf

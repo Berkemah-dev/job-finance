@@ -6,7 +6,6 @@ use App\Models\ChartOfAccount;
 use App\Models\Job;
 use App\Models\JobCost;
 use App\Models\Journal;
-use App\Models\JournalEntry;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Support\Money;
@@ -21,6 +20,7 @@ use Illuminate\Validation\ValidationException;
 class JobCostService
 {
     private const RECOGNITION_JOURNAL_TYPES = ['job_cost_draft', 'job_cost_direct', 'job_cost_finalization', 'job_cost_amendment'];
+    private const POST_INVOICE_HPP_JOURNAL_TYPE = 'job_cost_post_invoice_hpp';
 
     public function __construct(private MasterDataService $master, private DocumentNumberService $numbers, private JournalService $journals, private PartyAccountService $partyAccounts) {}
 
@@ -67,7 +67,9 @@ class JobCostService
 
             $account = ChartOfAccount::where('type', 'asset')->findOrFail($data['payment_account_id']);
             $maps = $this->journals->mapped([$taxKey]);
-            $isSubsequentProvision = $cost->type === 'provision' && $this->isSubsequentCost($job, $cost);
+            $hasStandaloneHppReclassification = $this->activePostInvoiceHppJournals($cost)->isNotEmpty();
+            $isSubsequentProvision = $cost->type === 'provision'
+                && ($hasStandaloneHppReclassification || $this->isSubsequentCost($job, $cost));
             if ($isSubsequentProvision) {
                 $flow = $this->invoiceFlowAccountKeys($job);
                 $maps += $this->journals->mapped(['provision_wip', $flow['cogs_unclosed']]);
@@ -84,6 +86,9 @@ class JobCostService
             // selisihnya, sementara audit trail tetap utuh.
             foreach ($this->activePaymentJournals($cost) as $paymentJournal) {
                 $this->reverseJournal($paymentJournal, $cost, $actor, 'Pembatalan pembayaran lama sebelum pelunasan kekurangan');
+            }
+            foreach ($this->activePostInvoiceHppJournals($cost) as $hppJournal) {
+                $this->reverseJournal($hppJournal, $cost, $actor, 'Pembatalan reklasifikasi HPP sebelum pelunasan kekurangan');
             }
 
             $entries = [
@@ -107,6 +112,9 @@ class JobCostService
                 'pph23_amount' => (string) $totalPph,
                 'withholding_document_number' => $data['withholding_document_number'] ?? null,
             ]);
+            foreach ($this->activePostInvoiceHppJournals($cost) as $hppJournal) {
+                $this->reverseJournal($hppJournal, $cost, $actor, 'Unpaid biaya job');
+            }
             $this->touchJob($job, $actor);
         }, 3);
     }
@@ -117,6 +125,12 @@ class JobCostService
         $amount = Money::decimal(0);
         foreach ($this->activePaymentJournals($cost) as $journal) {
             foreach ($journal->entries as $entry) {
+                // Jurnal pembayaran dapat memuat reklasifikasi Provisi ke HPP.
+                // Reklasifikasi bukan pembayaran kas dan tidak boleh dihitung
+                // dua kali sebagai nominal yang sudah dibayar.
+                if (str_starts_with((string) $entry->description, 'Reklasifikasi Provisi biaya susulan')) {
+                    continue;
+                }
                 $amount = $amount->plus($entry->credit);
             }
         }
@@ -230,6 +244,11 @@ private function lockJob(Job $job, array $data): Job
                 $before = $cost->only(['description', 'type', 'currency', 'cost_exchange_rate', 'price_exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'status']);
                 $paidAmount = $this->paidAmount($cost);
                 $wasPaid = $paidAmount->isPositive() || (bool) $cost->paid_at;
+                if ($wasPaid) {
+                    foreach ($this->activePostInvoiceHppJournals($cost) as $hppJournal) {
+                        $this->reverseJournal($hppJournal, $cost, $actor, 'Penyesuaian biaya paid');
+                    }
+                }
                 // Setelah biaya final diedit, biaya kembali menjadi Draft agar
                 // Finance Manager memeriksa dan melakukan Finalisasi Biaya lagi.
                 // Jika belum dibayar, pengakuan lama dibalik sekarang. Jika
@@ -364,6 +383,18 @@ private function lockJob(Job $job, array $data): Job
             ->get();
     }
 
+    private function activePostInvoiceHppJournals(JobCost $cost): \Illuminate\Support\Collection
+    {
+        return Journal::with('entries')
+            ->where('type', self::POST_INVOICE_HPP_JOURNAL_TYPE)
+            ->where('source_type', JobCost::class)
+            ->where('source_id', $cost->id)
+            ->whereNull('reversed_at')
+            ->whereNull('reversal_of_id')
+            ->lockForUpdate()
+            ->get();
+    }
+
     /**
      * Biaya baru setelah invoice customer diterbitkan diperlakukan sebagai biaya
      * susulan. Modalnya tetap masuk Provisi saat finalisasi biaya, lalu dipindah
@@ -373,11 +404,75 @@ private function lockJob(Job $job, array $data): Job
     {
         $invoice = $job->invoice()->first();
 
-        return $invoice
-            && in_array($invoice->status, ['issued', 'partially_paid', 'paid'], true)
-            && $invoice->issued_at
-            && $cost->created_at
-            && $cost->created_at->greaterThan($invoice->issued_at);
+        if (! $invoice || ! in_array($invoice->status, ['issued', 'partially_paid', 'paid'], true) || ! $invoice->issued_at) {
+            return false;
+        }
+
+        if ($this->activePostInvoiceHppJournals($cost)->isNotEmpty()) {
+            return false;
+        }
+
+        if ($this->hasActiveInvoiceHppEntry($job, $cost)) {
+            return false;
+        }
+
+        return ($cost->created_at && $cost->created_at->greaterThan($invoice->issued_at))
+            || ($cost->finalized_at && $cost->finalized_at->greaterThan($invoice->issued_at));
+    }
+
+    private function hasActiveInvoiceHppEntry(Job $job, JobCost $cost): bool
+    {
+        $flow = $this->invoiceFlowAccountKeys($job);
+        $hppAccount = $this->journals->mapped([$flow['cogs_unclosed']])[$flow['cogs_unclosed']];
+        $costNumber = (string) $cost->number;
+        $legacyDescription = strtoupper((string) $cost->description);
+
+        return Journal::query()
+            ->where('source_type', Job::class)
+            ->where('source_id', $job->id)
+            ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])
+            ->whereNull('reversed_at')
+            ->whereNull('reversal_of_id')
+            ->whereHas('entries', fn ($query) => $query
+                ->where('chart_of_account_id', $hppAccount->id)
+                ->where('description', 'like', '%HPP Unclose%')
+                ->where(function ($description) use ($costNumber, $legacyDescription, $job) {
+                    $description->where('description', 'like', '%'.$costNumber.'%')
+                        ->orWhere(fn ($fallback) => $fallback
+                            ->where('description', 'like', '%'.$legacyDescription.'%')
+                            ->where('description', 'like', '%'.$job->number.'%'));
+                }))
+            ->exists();
+    }
+
+    private function postPaidSubsequentHppReclassification(Job $job, JobCost $cost, User $actor): void
+    {
+        if ($cost->type !== 'provision' || ! $cost->paid_at || $this->hasActivePaymentHppReclassification($cost) || ! $this->isSubsequentCost($job, $cost)) {
+            return;
+        }
+
+        $flow = $this->invoiceFlowAccountKeys($job);
+        $maps = $this->journals->mapped(['provision_wip', $flow['cogs_unclosed']]);
+        $amount = Money::decimal($cost->total_cost);
+        if (! $amount->isPositive()) {
+            return;
+        }
+
+        $this->journals->post(self::POST_INVOICE_HPP_JOURNAL_TYPE, JobCost::class, $cost->id, ($cost->paid_date ?: today())->format('Y-m-d'), 'Reklasifikasi Provisi ke HPP Unclosed '.$cost->number, [
+            ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose biaya susulan · '.$cost->number, 'debit' => (string) $amount, 'credit' => 0],
+            ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisi biaya susulan · '.$cost->number, 'debit' => 0, 'credit' => (string) $amount],
+        ], $actor);
+    }
+
+    private function hasActivePaymentHppReclassification(JobCost $cost): bool
+    {
+        foreach ($this->activePaymentJournals($cost) as $journal) {
+            if ($journal->entries->contains(fn ($entry) => str_starts_with((string) $entry->description, 'HPP Unclose biaya susulan'))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function reverseJournal(Journal $journal, JobCost $cost, User $actor, string $reason): void
@@ -395,31 +490,11 @@ private function lockJob(Job $job, array $data): Job
         $journals = $this->activeRecognitionJournals($cost);
 
         foreach ($journals as $journal) {
-            $entries = $journal->entries->map(fn (JournalEntry $entry) => [
-                'account_id' => $entry->chart_of_account_id,
-                'description' => 'Penyesuaian '.$cost->number.': '.$entry->description,
-                'debit' => $entry->credit,
-                'credit' => $entry->debit,
-            ])->all();
-            if ($entries === []) {
-                continue;
-            }
-
-            $reversal = $this->journals->post(
-                'job_cost_amendment_reversal',
-                JobCost::class,
-                $cost->id,
-                $cost->cost_date->format('Y-m-d'),
-                'Penyesuaian biaya '.$cost->number,
-                $entries,
-                $actor
-            );
-            $reversal->reversal_of_id = $journal->id;
-            $reversal->save();
-            $journal->reversed_by = $actor->id;
-            $journal->reversed_at = now();
-            $journal->lock_version++;
-            $journal->save();
+            $this->journals->reverse($journal, [
+                'reversal_date' => today()->toDateString(),
+                'reason' => 'Penyesuaian biaya '.$cost->number,
+                'lock_version' => $journal->lock_version,
+            ], $actor);
         }
     }
 
@@ -474,19 +549,11 @@ private function lockJob(Job $job, array $data): Job
             ->lockForUpdate()
             ->get();
         foreach ($activeJournals as $journal) {
-            $entries = $journal->entries->map(fn (JournalEntry $entry) => [
-                'account_id' => $entry->chart_of_account_id,
-                'description' => 'Penyesuaian '.$invoice->number.': '.$entry->description,
-                'debit' => $entry->credit,
-                'credit' => $entry->debit,
-            ])->all();
-            $reversal = $this->journals->post('job_invoice_amendment_reversal', Job::class, $job->id, $invoice->invoice_date->format('Y-m-d'), 'Penyesuaian invoice '.$invoice->number, $entries, $actor);
-            $reversal->reversal_of_id = $journal->id;
-            $reversal->save();
-            $journal->reversed_by = $actor->id;
-            $journal->reversed_at = now();
-            $journal->lock_version++;
-            $journal->save();
+            $this->journals->reverse($journal, [
+                'reversal_date' => today()->toDateString(),
+                'reason' => 'Penyesuaian invoice '.$invoice->number,
+                'lock_version' => $journal->lock_version,
+            ], $actor);
         }
 
         [$currency, $rate] = $this->invoiceCurrencyAndRate($invoiceRows);
@@ -527,7 +594,7 @@ private function lockJob(Job $job, array $data): Job
             if ($sellingValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
             if ($cost->status !== 'final') continue;
             $costValue = Money::decimal($cost->total_cost);
-            if ($costValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
+            if ($costValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.$cost->number.' · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
         }
         if ($stampDuty->isPositive()) $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Tagihan Materai · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
         if ($provisionCost->isPositive()) $entries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisional Payment '.$invoice->number, 'debit' => 0, 'credit' => (string) $provisionCost];
@@ -584,6 +651,10 @@ private function lockJob(Job $job, array $data): Job
                 $this->reverseRecognition($cost, $actor);
                 $this->recognizePayable($cost, $actor, $recognitionAmount->isZero() ? 'job_cost_finalization' : 'job_cost_amendment', $totalAmount);
             }
+            // Bila biaya sudah terlanjur dibayar sebelum Finance Manager
+            // memfinalisasikannya, tetap lakukan reklasifikasi Provisi ke HPP
+            // sekarang agar saldo tidak tertahan di Provisi.
+            $this->postPaidSubsequentHppReclassification($job, $cost, $actor);
             $this->touchJob($job, $actor);
             $this->master->log($actor, 'job_cost.finalized', 'Finalisasi '.$cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'after' => $cost->only(['type', 'total_cost', 'total_price', 'status'])]);
         }, 3);
