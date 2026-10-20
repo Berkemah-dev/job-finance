@@ -153,6 +153,7 @@ class ChartOfAccountSeeder extends Seeder
                 ['code' => '65300', 'name' => 'PPH 21', 'type' => 'expense', 'parent_code' => '65000', 'level' => 3],
                 ['code' => '65400', 'name' => 'Biaya Pajak Tidak Dapat Dikreditkan', 'type' => 'expense', 'parent_code' => '65000', 'level' => 3],
                 ['code' => '65500', 'name' => 'Biaya Denda Pajak', 'type' => 'expense', 'parent_code' => '65000', 'level' => 3],
+                ['code' => '65600', 'name' => 'Biaya Materai', 'type' => 'expense', 'parent_code' => '65000', 'level' => 3],
             ];
 
             $idByCode = [];

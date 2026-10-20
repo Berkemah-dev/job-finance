@@ -32,6 +32,7 @@ return [
         'pph21_payable' => ['label' => 'PPh 21 Utang Pajak', 'type' => 'liability', 'code' => '26000', 'name' => 'PPH 21 Hutang Pajak'],
         'pph23_payable' => ['label' => 'PPh 23 Utang Pajak', 'type' => 'liability', 'code' => '27000', 'name' => 'PPH 23 Hutang Pajak'],
         'pph23_prepaid' => ['label' => 'PPh 23 Dibayar Dimuka', 'type' => 'asset', 'code' => '11192', 'name' => 'PPH 23 Dimuka'],
+        'stamp_duty_expense' => ['label' => 'Biaya Materai', 'type' => 'expense', 'code' => '65600', 'name' => 'Biaya Materai'],
     ],
     'coretax' => [
         // Profil PKP penjual untuk ekspor XML Coretax (NPWP 16 digit).

@@ -119,6 +119,7 @@ class FinancialReportService
                 ['acc_no' => '80', 'name' => 'Biaya Provisi dan Adminstrasi Bank', 'type' => 'expense', 'codes' => ['64100', '64000']],
                 ['acc_no' => '80', 'name' => 'Pajak Bunga', 'type' => 'expense', 'codes' => ['64200']],
                 ['acc_no' => '80', 'name' => 'Biaya Transfer Antar Bank', 'type' => 'expense', 'codes' => ['64300']],
+                ['acc_no' => '80', 'name' => 'Biaya Materai', 'type' => 'expense', 'codes' => ['65600']],
                 ['acc_no' => '81', 'name' => 'Rugi Selisih Kurs', 'type' => 'expense', 'codes' => ['63200']],
                 ['acc_no' => '81', 'name' => 'Selisih Pembulatan', 'type' => 'expense', 'codes' => ['63300', '63100', '63000']],
             ],

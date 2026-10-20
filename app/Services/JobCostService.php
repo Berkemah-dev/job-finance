@@ -572,18 +572,18 @@ private function lockJob(Job $job, array $data): Job
         $customer = $job->customer()->withTrashed()->firstOrFail();
         $customerAccounts = $this->partyAccounts->customerAccounts($customer);
         $flow = $this->invoiceFlowAccountKeys($job);
-        $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'temporary_receivable', 'receivable', 'tax_payable'], array_values($flow)));
+        $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'temporary_receivable', 'receivable', 'tax_payable', 'stamp_duty_expense'], array_values($flow)));
         $temporary = Money::decimal($summary['temporary']);
         $provisionSell = Money::decimal($summary['provision_sell']);
-        $invoiceRevenue = $provisionSell->plus($stampDuty);
+        $invoiceRevenue = $provisionSell;
         // HPP Unclosed hanya dibentuk dari biaya yang sudah Final.
         $provisionCost = $rows->where('type', 'provision')->where('status', 'final')->reduce(
             fn ($total, $cost) => $total->plus(Money::decimal($cost->total_cost)),
             Money::decimal(0)
         );
         $entries = [];
-        if ($invoiceRevenue->isPositive() || $tax->isPositive()) {
-            $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $invoiceRevenue->plus($tax), 'credit' => 0];
+        if ($invoiceRevenue->isPositive() || $stampDuty->isPositive() || $tax->isPositive()) {
+            $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $invoiceRevenue->plus($stampDuty)->plus($tax), 'credit' => 0];
         }
         if ($temporary->isPositive()) {
             $entries[] = ['account_id' => $customerAccounts['temporary']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
@@ -596,7 +596,7 @@ private function lockJob(Job $job, array $data): Job
             $costValue = Money::decimal($cost->total_cost);
             if ($costValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.$cost->number.' · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
         }
-        if ($stampDuty->isPositive()) $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Tagihan Materai · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
+        if ($stampDuty->isPositive()) $entries[] = ['account_id' => $maps['stamp_duty_expense']->id, 'description' => 'Materai ditagihkan · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
         if ($provisionCost->isPositive()) $entries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisional Payment '.$invoice->number, 'debit' => 0, 'credit' => (string) $provisionCost];
         if ($tax->isPositive()) $entries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran '.$invoice->number, 'debit' => 0, 'credit' => (string) $tax];
         $this->journals->post('job_invoice_amendment', Job::class, $job->id, $invoice->invoice_date->format('Y-m-d'), 'Penyesuaian invoice '.$invoice->number.' untuk '.$job->number, $entries, $actor);

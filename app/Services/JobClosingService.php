@@ -63,7 +63,7 @@ class JobClosingService
                 throw ValidationException::withMessages(['total' => 'Total invoice harus lebih besar dari nol.']);
             }
             $flow = $this->flowAccountKeys($job);
-            $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable'], array_values($flow)));
+            $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable', 'stamp_duty_expense'], array_values($flow)));
             [$currency, $rate] = $this->invoiceCurrencyAndRate($invoiceRows);
             $snapshot = JobClosingSnapshot::create(['job_id' => $job->id, 'closing_date' => $data['closing_date'], 'customer_snapshot' => $job->quotation_snapshot['customer'],
                 'currency' => $currency, 'exchange_rate' => $rate->toScale(2, RoundingMode::HalfUp),
@@ -104,8 +104,8 @@ class JobClosingService
             $temporary = Money::decimal($summary['temporary']);
             $provisionSell = Money::decimal($summary['provision_sell']);
             $provisionRows = $rows->where('type', 'provision');
-            $invoiceRevenue = $provisionSell->plus($stampDuty);
-            $customerReceivable = $invoiceRevenue->plus($tax);
+            $invoiceRevenue = $provisionSell;
+            $customerReceivable = $provisionSell->plus($stampDuty)->plus($tax);
 
             $closingEntries = [];
             // If invoice was already created earlier, receivable, revenue, tax and temporary WIP were already posted in job_invoice
@@ -128,7 +128,7 @@ class JobClosingService
                     $closingEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
                 }
                 if ($stampDuty->isPositive()) {
-                    $closingEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Tagihan Materai · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
+                    $closingEntries[] = ['account_id' => $maps['stamp_duty_expense']->id, 'description' => 'Materai ditagihkan · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
                 }
                 if ($tax->isPositive()) {
                     $closingEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran', 'debit' => 0, 'credit' => (string) $tax];
@@ -407,11 +407,11 @@ class JobClosingService
     {
         $customerAccounts = $this->partyAccounts->customerAccounts($job->customer()->withTrashed()->firstOrFail());
         $flow = $this->flowAccountKeys($job);
-        $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable'], array_values($flow)));
+        $maps = $this->journals->mapped(array_merge(['temporary', 'provision_wip', 'vendor_payable', 'temporary_receivable', 'agent_receivable', 'agent_payable', 'receivable', 'tax_payable', 'stamp_duty_expense'], array_values($flow)));
         $temporary = Money::decimal($summary['temporary']);
         $provisionSell = Money::decimal($summary['provision_sell']);
-        $invoiceRevenue = $provisionSell->plus($stampDuty);
-        $customerReceivable = $invoiceRevenue->plus($tax);
+        $invoiceRevenue = $provisionSell;
+        $customerReceivable = $provisionSell->plus($stampDuty)->plus($tax);
 
         $invoiceEntries = [];
         if ($customerReceivable->isPositive()) {
@@ -435,7 +435,7 @@ class JobClosingService
             }
         }
         if ($stampDuty->isPositive()) {
-            $invoiceEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Tagihan Materai · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
+            $invoiceEntries[] = ['account_id' => $maps['stamp_duty_expense']->id, 'description' => 'Materai ditagihkan · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
         }
         // HPP Unclosed hanya dibentuk dari biaya yang sudah Final.
         $provisionCost = $rows->where('type', 'provision')->where('status', 'final')->reduce(
