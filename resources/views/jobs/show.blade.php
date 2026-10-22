@@ -1011,6 +1011,7 @@ document.addEventListener('DOMContentLoaded', function() {
         @endif
     </section>
 </div>
+@endif
 
 @if(!$isCsRole || !($isExportSea || $isExportAir))
 <div id="tab-delivery" class="job-tab-content" style="display: none;">
