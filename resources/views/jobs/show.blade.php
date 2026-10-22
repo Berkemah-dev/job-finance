@@ -634,9 +634,6 @@ document.addEventListener('DOMContentLoaded', function() {
     </section>
 </div>
 
-{{-- ========================================================================= --}}
-{{-- TAB 3: DOKUMEN (BL/CIPL/SI/BC/SK DO/DNP/SK PABEAN)                        --}}
-{{-- ========================================================================= --}}
 <div id="tab-documents" class="job-tab-content" style="display: none;">
     <section class="panel" style="padding: 24px; margin-bottom: 24px;">
         <div class="panel-heading" style="margin-bottom: 16px;">
@@ -797,9 +794,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 @if($isImport)
-{{-- ========================================================================= --}}
-{{-- TAB: SURAT KUASA (SK DO & SK PABEAN)                                      --}}
-{{-- ========================================================================= --}}
 <div id="tab-sk" class="job-tab-content" style="display: none;">
     <section class="panel" style="margin-bottom: 24px;">
         <div class="panel-heading">
