@@ -16,7 +16,8 @@ class JobDocumentController extends Controller
     public function store(Request $request, Job $job)
     {
         $request->validate([
-            'document_type_id' => 'required|exists:document_types,id',
+            'document_type_id' => 'nullable|required_without:special_document_code|exists:document_types,id',
+            'special_document_code' => ['nullable', Rule::in(['IMPSEA-DO', 'EXPSEA-BC'])],
             'file'             => 'required|file|max:5120|mimes:pdf,jpg,jpeg,png',
             'notes'            => 'nullable|string|max:500',
             'customs_upload' => ['nullable', 'boolean'],
@@ -31,7 +32,26 @@ class JobDocumentController extends Controller
         ]);
 
         Gate::authorize('update', $job);
-        $docType = DocumentType::findOrFail($request->document_type_id);
+        if ($request->filled('special_document_code')) {
+            $expectedCode = match ($job->service_type) {
+                'imp_sea' => 'IMPSEA-DO',
+                'exp_sea' => 'EXPSEA-BC',
+                default => null,
+            };
+            abort_unless($request->input('special_document_code') === $expectedCode, 422, 'Jenis dokumen tidak sesuai layanan Job Order.');
+            $docType = DocumentType::updateOrCreate(
+                ['code' => $expectedCode],
+                [
+                    'name' => $expectedCode === 'IMPSEA-DO' ? 'DELIVERY ORDER (DO)' : 'BILL OF CUSTOMS (BC)',
+                    'category' => 'shipment',
+                    'service_codes' => [$job->service_type],
+                    'is_active' => true,
+                    'sort_order' => 86,
+                ]
+            );
+        } else {
+            $docType = DocumentType::findOrFail($request->document_type_id);
+        }
         $docText = strtoupper($docType->code.' '.$docType->name);
         $isSeaJob = in_array($job->service_type, ['imp_sea', 'exp_sea'], true);
         $isDoOrBc = str_contains($docText, 'DELIVERY ORDER')
@@ -54,7 +74,7 @@ class JobDocumentController extends Controller
         $path      = $file->store('job-documents/'.$job->id, 'private');
 
         $job->documents()->create([
-            'document_type_id' => $request->document_type_id,
+            'document_type_id' => $docType->id,
             'original_name'    => $file->getClientOriginalName(),
             'file_path'        => $path,
             'mime_type'        => $file->getMimeType(),

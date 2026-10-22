@@ -64,6 +64,13 @@ class JobController extends Controller
             default => null,
         };
         $specialDocumentType = $specialDocumentCode ? $allDocumentTypes->firstWhere('code', $specialDocumentCode) : null;
+        if ($specialDocumentCode && ! $specialDocumentType) {
+            $specialDocumentType = \App\Models\DocumentType::where('code', $specialDocumentCode)->first()
+                ?? new \App\Models\DocumentType([
+                    'code' => $specialDocumentCode,
+                    'name' => $specialDocumentCode === 'IMPSEA-DO' ? 'DELIVERY ORDER (DO)' : 'BILL OF CUSTOMS (BC)',
+                ]);
+        }
         if (! in_array($job->service_type, ['imp_sea', 'exp_sea'], true)) {
             $documentTypes = $documentTypes->reject(fn ($type) => preg_match('/\b(DO|BC|DELIVERY ORDER|BOOKING CONFIRMATION)\b/i', $type->code.' '.$type->name) === 1)->values();
         }

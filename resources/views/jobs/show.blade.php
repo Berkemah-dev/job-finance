@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Surat Kuasa</button>
             <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Deklarasi Nilai Pabean</button>
             @unless($isOperationalRole)
-                <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. {{ $isCsRole ? 'Surat Jalan' : 'Surat Jalan / Tanda Terima' }}</button>
+                <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan</button>
             @endunless
             <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. {{ $financialTabLabel }}</button>
         @endif
@@ -243,9 +243,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
             <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
             <button type="button" class="job-tab-btn" data-tab="tab-bl" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Bill of Lading (B/L)</button>
-            @unless($isCsRole)
-                <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
-            @endunless
         @endunless
         <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">{{ $financialTabNumber }} {{ $financialTabLabel }}</button>
     @elseif($isExportAir)
@@ -257,9 +254,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="job-tab-btn" data-tab="tab-si" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Shipping Instruction</button>
             <button type="button" class="job-tab-btn" data-tab="tab-booking" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Booking Confirmation</button>
             <button type="button" class="job-tab-btn" data-tab="tab-awb" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Air Waybill (AWB)</button>
-            @unless($isCsRole)
-                <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Tanda Terima Dokumen</button>
-            @endunless
         @endunless
         <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">{{ $financialTabNumber }} {{ $financialTabLabel }}</button>
     @else
@@ -664,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 @can('update',$job)
                     <form class="data-form" method="POST" action="{{ route('jobs.documents.store',$job) }}" enctype="multipart/form-data" style="margin-top:14px; padding-top:14px; border-top:1px solid {{ $specialDocument ? '#bbf7d0' : '#fed7aa' }};">
                         @csrf
-                        <input type="hidden" name="document_type_id" value="{{ $specialDocumentType->id }}">
+                        <input type="hidden" name="special_document_code" value="{{ $specialDocumentType->code }}">
                         <input type="hidden" name="notes" value="Upload {{ $specialDocumentType->name }} dari Job Order">
                         <div style="display:flex; align-items:end; gap:12px; flex-wrap:wrap;">
                             <div class="field" style="flex:1; min-width:260px; margin:0;"><label for="special_document_file">{{ $specialDocument ? 'Ganti' : 'Upload' }} file {{ str_contains($specialDocumentType->code, '-DO') ? 'DO' : 'BC' }}</label><input id="special_document_file" type="file" name="file" accept="application/pdf,.pdf,.jpg,.jpeg,.png" required><small class="form-help">PDF, JPG, JPEG, atau PNG · maksimal 5 MB.</small></div>
@@ -1015,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 @endif
 
-@if(!$isCsRole || !($isExportSea || $isExportAir))
+@if(!$isExportSea && !$isExportAir)
 <div id="tab-delivery" class="job-tab-content" style="display: none;">
     <section class="panel" style="margin-bottom: 24px;">
         <div class="panel-heading">
@@ -1023,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="stat-icon blue"><x-icon name="file"/></span>
                 <div>
                     <p class="eyebrow" style="margin-bottom:4px;">DOKUMEN OPERASIONAL</p>
-                    <h2>{{ ($isExportSea || $isExportAir) ? 'Tanda Terima Dokumen' : 'Surat Jalan & Tanda Terima' }}</h2>
+                    <h2>{{ $isImport ? 'Surat Jalan' : 'Surat Jalan & Tanda Terima' }}</h2>
                     <p>{{ ($isExportSea || $isExportAir) ? 'Dokumen tanda terima berkas dan serah terima dokumen ekspor.' : 'Dokumen serah terima barang dan konfirmasi pengantaran.' }}</p>
                 </div>
             </div>
@@ -1201,25 +1195,24 @@ document.addEventListener('DOMContentLoaded', function() {
             </article>
             @endif
 
-            @if(!$isImport || !$isCsRole)
+            @if(!$isImport && !$isExportSea && !$isExportAir)
             <article class="report-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <div class="report-card-head">
                         <div class="report-card-title">
                             <span class="report-icon green"><x-icon name="check"/></span>
                             <div>
-                                <h2>{{ ($isExportSea || $isExportAir) ? 'Tanda Terima Dokumen' : 'Tanda Terima' }}</h2>
-                                <small>{{ ($isExportSea || $isExportAir) ? 'Bukti serah terima dokumen ekspor' : 'Bukti serah terima dokumen / barang' }}</small>
+                                <h2>Tanda Terima Barang</h2>
+                                <small>Bukti serah terima barang</small>
                             </div>
                         </div>
                     </div>
-                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan dengan detail job, referensi {{ ($isExportSea || $isExportAir) ? 'BL/AWB, daftar berkas ekspor' : 'BL/AWB, daftar dokumen/barang' }}, catatan, dan tanda tangan.</p>
+                    <p style="font-size: 12px; color: #64748b; line-height: 1.8; margin: 14px 0 18px;">Cetak bukti penerimaan barang dengan detail job, referensi BL/AWB, catatan, dan tanda tangan.</p>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     @if(!$isExportSea && !$isExportAir)
                         <a class="button button-primary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'barang']) }}" target="_blank"><x-icon name="file"/> Cetak TT Barang</a>
                     @endif
-                    <a class="button {{ ($isExportSea || $isExportAir) ? 'button-primary' : 'button-secondary' }}" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank"><x-icon name="file"/> Cetak TT Dokumen</a>
                 </div>
             </article>
             @endif
@@ -1818,15 +1811,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (skCards.length > 1) skCards[0].remove();
     }
 
-    // Tanda Terima Dokumen dibuat dari halaman Invoice Finance, bukan dari Job Order.
-    if (isExportShipment) {
-        document.querySelector('.job-tab-btn[data-tab="tab-delivery"]')?.remove();
-        const deliveryCards = document.querySelectorAll('#tab-delivery .report-card');
-        if (deliveryCards.length) deliveryCards[deliveryCards.length - 1].remove();
-    } else if (isImportShipment && isCustomerService) {
-        const deliveryCards = document.querySelectorAll('#tab-delivery .report-card');
-        if (deliveryCards.length > 1) deliveryCards[deliveryCards.length - 1].remove();
-    }
 
     // CS Import hanya membutuhkan Surat Kuasa DO; data SK Pabean tetap dikelola role lain.
     if (isImportShipment && isCustomerService) {
