@@ -55,6 +55,7 @@
     $financialTabLabel = $canViewFinancial ? 'Biaya & Profit' : 'Rincian Tagihan';
     $documentTabNumber = $isOperationalRole ? '2.' : '3.';
     $financialTabNumber = $isOperationalRole ? '4.' : ($isCsRole ? '7.' : '8.');
+    $curIncoterm = strtoupper(old('incoterm', $job->incoterm ?: ($job->quotation?->incoterm ?? 'CIF')));
 @endphp
 
 <div class="page-heading">
@@ -1017,9 +1018,6 @@ document.addEventListener('DOMContentLoaded', function() {
     </section>
 </div>
 
-{{-- ========================================================================= --}}
-{{-- TAB: TANDA TERIMA & DELIVERY                                              --}}
-{{-- ========================================================================= --}}
 @if(!$isCsRole || !($isExportSea || $isExportAir))
 <div id="tab-delivery" class="job-tab-content" style="display: none;">
     <section class="panel" style="margin-bottom: 24px;">
