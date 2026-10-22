@@ -593,7 +593,9 @@ document.addEventListener('DOMContentLoaded', function() {
         @endif
 
         @if($isImport)
-            @php($suratJalanDoc = $job->getSuratJalanDocument())
+            @php
+                $suratJalanDoc = $job->getSuratJalanDocument();
+            @endphp
             <div style="margin-top: 20px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
                 <div class="panel-heading" style="margin-bottom: 12px;">
                     <h2>Upload Surat Jalan</h2>
