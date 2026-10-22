@@ -138,14 +138,29 @@ class JobClosingService
                 }
             }
             $provisionCost = Money::decimal($summary['provision_cost']);
-            if (! $hasInvoiceJournal && $provisionCost->isPositive()) {
-                foreach ($provisionRows as $cost) {
-                    $costValue = Money::decimal($cost->total_cost);
-                    if ($costValue->isPositive()) {
-                        $closingEntries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
-                    }
+            // Invoice dan pembayaran dapat sudah memindahkan sebagian modal ke
+            // HPP Unclosed. Saat closing, pindahkan hanya sisa yang masih di
+            // Provisi sebelum seluruh HPP direklasifikasi ke HPP Closed.
+            $hppAccountId = $maps[$flow['cogs_unclosed']]->id;
+            $recognizedHpp = Money::decimal(0);
+            $hppJournals = Journal::with(['entries' => fn ($q) => $q->where('chart_of_account_id', $hppAccountId)])
+                ->whereNull('reversed_at')->whereNull('reversal_of_id')
+                ->where(function ($q) use ($job, $rows) {
+                    $q->where(fn ($source) => $source->where('source_type', Job::class)->where('source_id', $job->id))
+                        ->orWhere(fn ($source) => $source->where('source_type', \App\Models\JobCost::class)->whereIn('source_id', $rows->pluck('id')));
+                })->get();
+            foreach ($hppJournals as $hppJournal) {
+                foreach ($hppJournal->entries as $entry) {
+                    $recognizedHpp = $recognizedHpp->plus($entry->debit)->minus($entry->credit);
                 }
-                $closingEntries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisional Payment '.$invoice->number, 'debit' => 0, 'credit' => (string) $provisionCost];
+            }
+            $pendingProvision = $provisionCost->minus($recognizedHpp);
+            if ($pendingProvision->isNegative()) {
+                throw ValidationException::withMessages(['journal' => 'HPP Unclosed job melebihi total modal. Periksa jurnal HPP sebelum Closing Job.']);
+            }
+            if ($pendingProvision->isPositive()) {
+                $closingEntries[] = ['account_id' => $hppAccountId, 'description' => 'HPP Unclose · Sisa Provisi saat closing · '.$job->number, 'debit' => (string) $pendingProvision, 'credit' => 0];
+                $closingEntries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi sisa Provisi saat closing '.$invoice->number, 'debit' => 0, 'credit' => (string) $pendingProvision];
             }
             if ($provisionCost->isPositive()) {
                 $closingEntries[] = ['account_id' => $maps[$flow['cogs_closed']]->id, 'description' => 'HPP Close '.$job->number, 'debit' => (string) $provisionCost, 'credit' => 0];
@@ -214,7 +229,7 @@ class JobClosingService
 
             $journals = Journal::where('source_type', Job::class)
                 ->where('source_id', $job->id)
-                ->whereIn('type', ['job_closing', 'job_cost_capitalization', 'job_invoice', 'job_invoice_amendment', 'agent_receivable_reclass', 'agent_payable_recognition'])
+                ->whereIn('type', ['job_closing', 'job_cost_capitalization', 'job_invoice', 'job_invoice_amendment', 'agent_receivable_reclass', 'agent_payable_recognition', LegacyJournalRepairService::TYPE])
                 ->whereNull('reversal_of_id')
                 ->get();
 

@@ -162,6 +162,9 @@ class JobCostService
             foreach ($this->activePaymentJournals($cost) as $paymentJournal) {
                 $this->reverseJournal($paymentJournal, $cost, $actor, 'Unpaid biaya job oleh Finance');
             }
+            foreach ($this->activePostInvoiceHppJournals($cost) as $hppJournal) {
+                $this->reverseJournal($hppJournal, $cost, $actor, 'Unpaid biaya job oleh Finance');
+            }
 
             $cost->update([
                 'paid_date' => null,
