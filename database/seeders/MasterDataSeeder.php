@@ -210,6 +210,27 @@ class MasterDataSeeder extends Seeder
             );
         }
 
+        // Dokumen Surat Jalan harus ikut dibuat oleh seeder agar tidak hilang
+        // setelah database di-reset dengan migrate:fresh lalu di-seed ulang.
+        foreach ([
+            ['code' => 'IMPSEA-SJ', 'service_codes' => ['imp_sea']],
+            ['code' => 'IMPAIR-SJ', 'service_codes' => ['imp_air']],
+            ['code' => 'GEN-SJ', 'service_codes' => ['sea', 'air', 'trucking', 'domestic']],
+        ] as $document) {
+            DocumentType::updateOrCreate(
+                ['code' => $document['code']],
+                [
+                    'name' => 'SURAT JALAN',
+                    'category' => 'delivery',
+                    'service_codes' => $document['service_codes'],
+                    'description' => 'Berkas Surat Jalan yang ditandatangani supir/penerima',
+                    'is_required' => true,
+                    'is_active' => true,
+                    'sort_order' => 80,
+                ]
+            );
+        }
+
         // =============================================
         // DATA PORT (dari DATA DEFAULT.xlsx Kolom D & E)
         // =============================================
