@@ -253,6 +253,8 @@ class OperationalDocumentController extends Controller
 
     public function invoicePdf(Request $request, \App\Models\Invoice $invoice, MasterDataService $master)
     {
+        abort_if($invoice->status === 'draft', 403, 'Invoice belum dapat dicetak. Finance Manager harus melakukan Finalisasi Invoice terlebih dahulu.');
+
         $invoice->load(['items', 'job.customer', 'job.quotation']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.invoice', ['invoice' => $invoice])->setPaper('a4');
         $filename = 'Invoice_'.$invoice->number.'.pdf';

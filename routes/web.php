@@ -21,6 +21,7 @@ use App\Http\Controllers\JobDocumentController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\OperationalDocumentController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentListController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PricingSuggestionController;
@@ -63,6 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/invoices/{invoice}/coretax', [InvoiceController::class, 'coretax'])->middleware('can:invoices.manage')->name('invoices.coretax');
     Route::get('/invoices/{invoice}/coretax/preview', [InvoiceController::class, 'coretaxPreview'])->middleware('can:invoices.manage')->name('invoices.coretax.preview');
     Route::post('/invoices/{invoice}/coretax/selected', [InvoiceController::class, 'coretaxSelected'])->middleware('can:invoices.manage')->name('invoices.coretax.selected');
+    Route::get('/list-payment', [PaymentListController::class, 'index'])->middleware('can:costs.manage')->name('payments.list');
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('can:payments.manage')->name('payments.index');
     Route::get('/invoices/{invoice}/payments/create', [PaymentController::class, 'create'])->middleware('can:payments.manage')->name('payments.create');
     Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->middleware('can:payments.manage')->name('payments.store');

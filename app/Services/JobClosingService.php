@@ -55,6 +55,9 @@ class JobClosingService
             // Invoice yang sudah diterbitkan menjadi sumber PPN saat Closing Job.
             // Dengan demikian Finance tidak memasukkan ulang PPN pada tahap closing.
             $invoice = $job->invoice()->lockForUpdate()->first();
+            if ($invoice && $invoice->status === 'draft') {
+                throw ValidationException::withMessages(['invoice' => 'Finance Manager wajib melakukan Finalisasi Invoice sebelum Closing Job.']);
+            }
             $tax = Money::decimal($invoice?->tax ?? ($data['tax'] ?? 0));
             $stampDuty = Money::decimal($invoice?->stamp_duty ?? ($data['stamp_duty'] ?? 0));
             $total = Money::decimal($summary['subtotal'])->plus($tax)->plus($stampDuty);
@@ -421,12 +424,13 @@ class JobClosingService
             $invoiceEntries[] = ['account_id' => $customerAccounts['temporary']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
             $invoiceEntries[] = ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary '.$invoice->number, 'debit' => 0, 'credit' => (string) $temporary];
         }
+        $hppCosts = $this->costs->invoiceHppCosts($job, $rows);
         foreach ($rows->where('type', 'provision') as $cost) {
             $sellingValue = Money::decimal($cost->total_price);
             if ($sellingValue->isPositive()) {
                 $invoiceEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
             }
-            if ($cost->status !== 'final') {
+            if (! $hppCosts->contains('id', $cost->id)) {
                 continue;
             }
             $costValue = Money::decimal($cost->total_cost);
@@ -438,7 +442,7 @@ class JobClosingService
             $invoiceEntries[] = ['account_id' => $maps['stamp_duty_expense']->id, 'description' => 'Materai ditagihkan · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
         }
         // HPP Unclosed hanya dibentuk dari biaya yang sudah Final.
-        $provisionCost = $rows->where('type', 'provision')->where('status', 'final')->reduce(
+        $provisionCost = $hppCosts->reduce(
             fn ($total, $cost) => $total->plus(Money::decimal($cost->total_cost)),
             Money::decimal(0)
         );

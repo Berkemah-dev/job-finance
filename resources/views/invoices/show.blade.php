@@ -45,7 +45,11 @@
     @elseif($invoice->status !== 'paid' && $invoice->status !== 'draft')
         <button type="button" class="button button-primary" onclick="document.getElementById('modal-add-payment').showModal()">+ Add Payment</button>
     @endif
-    <a class="button button-secondary" href="{{ route('invoices.preview', $invoice) }}" target="_blank">🖨 Preview PDF</a>
+    @if($invoice->status !== 'draft')
+        <a class="button button-secondary" href="{{ route('invoices.preview', $invoice) }}" target="_blank">🖨 Preview PDF</a>
+    @else
+        <span class="info-note">Cetak invoice terkunci sampai Finance Manager melakukan Finalisasi Invoice. Setiap perubahan jual memerlukan finalisasi ulang.</span>
+    @endif
     @if($job)
         <a class="button button-secondary" href="{{ route('jobs.tanda-terima.pdf', ['job' => $job, 'type' => 'dokumen']) }}" target="_blank">🧾 Tanda Terima Dokumen</a>
     @endif

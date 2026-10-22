@@ -312,12 +312,15 @@ private function lockJob(Job $job, array $data): Job
             }
             $cost->updated_by = $actor->id;
             $cost->lock_version = $new ? 0 : $cost->lock_version + 1;
+            $invoiceChanged = $new
+                ? $cost->type === 'temporary' || Money::decimal($cost->total_price)->isPositive()
+                : $cost->isDirty(['description', 'type', 'currency', 'quantity', 'unit', 'price_exchange_rate', 'foreign_unit_price', 'unit_price', 'total_price']);
             $cost->save();
             if (Money::decimal($cost->pph23_amount ?? 0)->isGreaterThan(Money::decimal($cost->total_cost))) {
                 throw ValidationException::withMessages(['pph23_amount' => 'PPh 23 tidak boleh melebihi total biaya.']);
             }
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
-            $this->refreshIssuedInvoice($job, $actor);
+            $this->refreshIssuedInvoice($job, $actor, $invoiceChanged);
             $this->touchJob($job, $actor);
             $after = $cost->only(['description', 'type', 'cost_category', 'currency', 'cost_exchange_rate', 'price_exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
             $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => $new ? null : $before, 'after' => $after]);
@@ -404,7 +407,14 @@ private function lockJob(Job $job, array $data): Job
     {
         $invoice = $job->invoice()->first();
 
-        if (! $invoice || ! in_array($invoice->status, ['issued', 'partially_paid', 'paid'], true) || ! $invoice->issued_at) {
+        if (! $invoice) {
+            return false;
+        }
+
+        $hasIssuedInvoice = $invoice->issued_at || Journal::where('source_type', Job::class)
+            ->where('source_id', $job->id)->where('type', 'job_invoice')
+            ->whereNull('reversal_of_id')->exists();
+        if (! $hasIssuedInvoice) {
             return false;
         }
 
@@ -416,8 +426,37 @@ private function lockJob(Job $job, array $data): Job
             return false;
         }
 
-        return ($cost->created_at && $cost->created_at->greaterThan($invoice->issued_at))
-            || ($cost->finalized_at && $cost->finalized_at->greaterThan($invoice->issued_at));
+        return true;
+    }
+
+    /** Biaya susulan tetap di Provisi sampai Paid; reklasifikasi tidak boleh dicatat dua kali. */
+    public function invoiceHppCosts(Job $job, \Illuminate\Support\Collection $rows): \Illuminate\Support\Collection
+    {
+        $firstInvoiceJournal = Journal::with('entries')
+            ->where('source_type', Job::class)->where('source_id', $job->id)
+            ->where('type', 'job_invoice')->whereNull('reversal_of_id')
+            ->orderBy('id')->first();
+
+        return $rows->filter(function (JobCost $cost) use ($firstInvoiceJournal, $job) {
+            if ($cost->type !== 'provision' || $cost->status !== 'final') {
+                return false;
+            }
+            if ($this->hasActivePaymentHppReclassification($cost) || $this->activePostInvoiceHppJournals($cost)->isNotEmpty()) {
+                return false;
+            }
+            if (! $firstInvoiceJournal) {
+                return true;
+            }
+
+            // Gunakan isi jurnal invoice pertama, bukan issued_at yang berubah
+            // setiap finalisasi ulang atau timestamp biaya dengan detik yang sama.
+            return $firstInvoiceJournal->entries->contains(function ($entry) use ($cost, $job) {
+                $description = (string) $entry->description;
+                return str_starts_with($description, 'HPP Unclose')
+                    && (str_contains($description, '· '.$cost->number.' ·')
+                        || $description === 'HPP Unclose · '.strtoupper($cost->description).' · '.$job->number);
+            });
+        });
     }
 
     private function hasActiveInvoiceHppEntry(Job $job, JobCost $cost): bool
@@ -503,7 +542,7 @@ private function lockJob(Job $job, array $data): Job
      * Baris invoice serta jurnal invoice lama dibalik terlebih dahulu agar audit
      * trail tetap ada dan nilai piutang, pendapatan, HPP mengikuti nilai terbaru.
      */
-    private function refreshIssuedInvoice(Job $job, User $actor): void
+    private function refreshIssuedInvoice(Job $job, User $actor, bool $requiresApproval = false): void
     {
         $invoice = $job->invoice()->lockForUpdate()->first();
         if (! $invoice) {
@@ -523,6 +562,25 @@ private function lockJob(Job $job, array $data): Job
             throw ValidationException::withMessages(['cost' => 'Perubahan membuat total invoice menjadi nol.']);
         }
 
+        if ($requiresApproval && $invoice->status !== 'draft') {
+            $journals = Journal::where('source_type', Job::class)
+                ->where('source_id', $job->id)
+                ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])
+                ->whereNull('reversed_at')->whereNull('reversal_of_id')
+                ->lockForUpdate()->get();
+            foreach ($journals as $journal) {
+                $this->journals->reverse($journal, [
+                    'reversal_date' => today()->toDateString(),
+                    'reason' => 'Invoice menunggu finalisasi ulang setelah perubahan jual '.$invoice->number,
+                    'lock_version' => $journal->lock_version,
+                ], $actor);
+            }
+            $invoice->update(['status' => 'draft', 'issued_at' => null]);
+            $this->master->log($actor, 'invoice.refinalization_required', 'Perubahan jual pada '.$invoice->number.' memerlukan finalisasi ulang Finance Manager.', [
+                'module' => 'invoice', 'record_id' => $invoice->id,
+            ]);
+        }
+
         if ($invoice->status === 'draft') {
             [$currency, $rate] = $this->invoiceCurrencyAndRate($invoiceRows);
             $invoice->update([
@@ -531,6 +589,7 @@ private function lockJob(Job $job, array $data): Job
                 'subtotal' => $summary['subtotal'],
                 'total' => Money::checked($total),
                 'balance' => Money::checked($total),
+                'lock_version' => $invoice->lock_version + 1,
             ]);
             $invoice->items()->delete();
             foreach ($invoiceRows as $position => $cost) {
@@ -577,7 +636,8 @@ private function lockJob(Job $job, array $data): Job
         $provisionSell = Money::decimal($summary['provision_sell']);
         $invoiceRevenue = $provisionSell;
         // HPP Unclosed hanya dibentuk dari biaya yang sudah Final.
-        $provisionCost = $rows->where('type', 'provision')->where('status', 'final')->reduce(
+        $hppCosts = $this->invoiceHppCosts($job, $rows);
+        $provisionCost = $hppCosts->reduce(
             fn ($total, $cost) => $total->plus(Money::decimal($cost->total_cost)),
             Money::decimal(0)
         );
@@ -592,7 +652,7 @@ private function lockJob(Job $job, array $data): Job
         foreach ($rows->where('type', 'provision') as $cost) {
             $sellingValue = Money::decimal($cost->total_price);
             if ($sellingValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
-            if ($cost->status !== 'final') continue;
+            if (! $hppCosts->contains('id', $cost->id)) continue;
             $costValue = Money::decimal($cost->total_cost);
             if ($costValue->isPositive()) $entries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose · '.$cost->number.' · '.strtoupper($cost->description).' · '.$job->number, 'debit' => (string) $costValue, 'credit' => 0];
         }

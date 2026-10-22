@@ -158,6 +158,8 @@ class InvoiceController extends Controller
 
     public function preview(Invoice $invoice)
     {
+        abort_if($invoice->status === 'draft', 403, 'Invoice belum dapat dicetak. Finance Manager harus melakukan Finalisasi Invoice terlebih dahulu.');
+
         return view('documents.pdf-preview', [
             'title'       => 'Invoice '.$invoice->number,
             'backUrl'     => route('invoices.show', $invoice),
@@ -168,6 +170,8 @@ class InvoiceController extends Controller
 
     public function pdf(Request $request, Invoice $invoice, \App\Services\MasterDataService $master)
     {
+        abort_if($invoice->status === 'draft', 403, 'Invoice belum dapat dicetak. Finance Manager harus melakukan Finalisasi Invoice terlebih dahulu.');
+
         $invoice->load(['items', 'job.customer', 'job.quotation', 'snapshot']);
         $pdf = app('dompdf.wrapper')->loadView('documents.pdf.invoice', ['invoice' => $invoice])->setPaper('a4');
         $filename = 'Invoice_'.$invoice->number.'.pdf';

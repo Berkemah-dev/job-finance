@@ -78,7 +78,9 @@
                         <td>
                             <div class="table-actions">
                                 <a class="btn-action btn-action-primary" href="{{ route('invoices.show', $invoice) }}" title="Detail Invoice" data-tooltip="Detail" aria-label="Detail Invoice"><x-icon name="eye"/></a>
-                                <a class="btn-action btn-action-purple" href="{{ route('invoices.preview', $invoice) }}" target="_blank" title="Cetak PDF Invoice" data-tooltip="PDF" aria-label="Cetak PDF Invoice"><x-icon name="printer"/></a>
+                                @if($invoice->status !== 'draft')
+                                    <a class="btn-action btn-action-purple" href="{{ route('invoices.preview', $invoice) }}" target="_blank" title="Cetak PDF Invoice" data-tooltip="PDF" aria-label="Cetak PDF Invoice"><x-icon name="printer"/></a>
+                                @endif
                                 @if($invoice->status === 'draft' && auth()->user()->hasRole(['finance-manager', 'super-admin', 'admin']))
                                     <form method="POST" action="{{ route('invoices.finalize', $invoice) }}" style="display:inline;" data-confirm="Finalisasi invoice ini sekarang? Jurnal penagihan akan dibuat.">
                                         @csrf
