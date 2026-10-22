@@ -1015,7 +1015,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         @endif
     </section>
-</div>@endif
+</div>
+@endif
 
 {{-- ========================================================================= --}}
 {{-- TAB: TANDA TERIMA & DELIVERY                                              --}}
