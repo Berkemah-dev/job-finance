@@ -183,7 +183,9 @@ class JobController extends Controller
 
         $service->uploadSuratJalan($job, $request->file('surat_jalan_file'), $request->user(), $request->input('notes'));
 
-        return redirect()->to(route('jobs.show', $job).'#tab-delivery')->with('success', 'Berkas Surat Jalan berhasil diunggah.');
+        $redirectTab = str_contains((string) $job->service_type, 'imp') ? 'tab-customs' : 'tab-delivery';
+
+        return redirect()->to(route('jobs.show', $job).'#'.$redirectTab)->with('success', 'Berkas Surat Jalan berhasil diunggah.');
     }
 
     public function shipmentStatus(ShipmentStatusRequest $request, Job $job, JobService $service)

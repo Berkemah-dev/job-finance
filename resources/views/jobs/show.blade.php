@@ -590,6 +590,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div><label style="display: block; font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">{{ $isImport ? 'Nomor Pendaftaran (Nopen)' : 'NOPEN PEB' }}</label><div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0f172a; background: #fff;">{{ $isImport ? $noNopen : $noPeb }} @if($isImport && $job->nopen_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $nopenDate }})</span>@elseif(!$isImport && $job->peb_date)<span style="font-size: 13px; font-weight: normal; color: #64748b;">(Tgl: {{ $pebDate }})</span>@endif</div></div>
             </div>
         @endif
+
+        @if($isImport)
+            @php($suratJalanDoc = $job->getSuratJalanDocument())
+            <div style="margin-top: 20px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
+                <div class="panel-heading" style="margin-bottom: 12px;">
+                    <h2>Upload Surat Jalan</h2>
+                    <span class="subtle">Unggah Surat Jalan Import pada menu PIB.</span>
+                </div>
+
+                @if($suratJalanDoc)
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-radius: 10px; background: #f0fdf4; border: 1px solid #86efac;">
+                        <div style="font-size: 12.5px; color: #166534;">
+                            <strong>Surat Jalan sudah terunggah</strong><br>
+                            <span style="color: #374151;">{{ $suratJalanDoc->original_name }}</span>
+                        </div>
+                        <a class="button button-secondary button-sm" href="{{ route('jobs.documents.download', [$job, $suratJalanDoc]) }}" target="_blank">
+                            <x-icon name="download"/> Unduh Berkas
+                        </a>
+                    </div>
+                @endif
+
+                @can('update', $job)
+                    <form method="POST" action="{{ route('jobs.surat-jalan.upload', $job) }}" enctype="multipart/form-data" style="margin-top: 12px; padding: 14px 16px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                        @csrf
+                        <label for="import_surat_jalan_file" style="display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 6px;">
+                            {{ $suratJalanDoc ? 'Ganti' : 'Pilih' }} Berkas Surat Jalan <span style="color: #dc2626;">*</span>
+                            <small style="color: #64748b; font-weight: normal;">(PDF, JPG, JPEG, PNG · Maks. 5MB)</small>
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <input type="file" id="import_surat_jalan_file" name="surat_jalan_file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size: 12.5px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; max-width: 480px;">
+                            <button type="submit" class="button button-primary" style="font-size: 12.5px; padding: 8px 16px;">
+                                <x-icon name="upload"/> {{ $suratJalanDoc ? 'Upload Versi Baru' : 'Upload Surat Jalan' }}
+                            </button>
+                        </div>
+                    </form>
+                @endcan
+            </div>
+        @endif
+
         <p class="form-help" style="margin:0;">Status kepabeanan diperbarui otomatis saat dokumen PIB, PEB, NPE, SPJM, SLIM, atau SPPB diunggah.</p>
     </section>
 </div>
