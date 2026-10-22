@@ -223,7 +223,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
             <button type="button" class="job-tab-btn" data-tab="tab-dnp" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">4. Deklarasi Nilai Pabean</button>
             <button type="button" class="job-tab-btn" data-tab="tab-sk" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">5. Surat Kuasa (Pabean)</button>
-            <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Rincian Tagihan</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-delivery" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">6. Surat Jalan</button>
+            <button type="button" class="job-tab-btn" data-tab="tab-financial" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">7. Rincian Tagihan</button>
         @else
             <button type="button" class="job-tab-btn" data-tab="tab-customs" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">2. PIB</button>
             <button type="button" class="job-tab-btn" data-tab="tab-documents" style="padding: 10px 22px; border-radius: 9999px; font-weight: 600; font-size: 13.5px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">3. Document Upload</button>
@@ -1031,8 +1032,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="report-card-title">
                             <span class="report-icon blue"><x-icon name="file"/></span>
                             <div>
-                                <h2>{{ $isDomestic ? 'Surat Jalan' : 'Delivery Order' }}</h2>
-                                <small>{{ $isDomestic ? 'Pengaturan dan upload Surat Jalan pengantaran barang' : 'Delivery order pengantaran barang (Import Sea / Laut)' }}</small>
+                                <h2>Surat Jalan</h2>
+                                <small>Pengaturan dan upload Surat Jalan pengantaran barang</small>
                             </div>
                         </div>
                     </div>
@@ -1218,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
             @endif
         </div>
 
-        @if($isDomestic)
+        @if($isDomestic || $isImport)
         <div style="padding: 0 24px 24px;">
             <article class="report-card">
                 <div class="report-card-head">
@@ -1268,6 +1269,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         @if(auth()->user()->can('update', $job))
                             <form method="POST" action="{{ route('jobs.surat-jalan.upload', $job) }}" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 14px;">
                                 @csrf
+                                <input type="hidden" name="redirect_tab" value="delivery">
                                 <div>
                                     <label for="single_surat_jalan_file" style="display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 6px;">
                                         Pilih Berkas Surat Jalan <span style="color: #dc2626;">*</span> <small style="color: #64748b; font-weight: normal;">(Format: PDF, JPG, JPEG, PNG · Maks. 5MB)</small>
