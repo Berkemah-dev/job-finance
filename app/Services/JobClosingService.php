@@ -384,6 +384,7 @@ class JobClosingService
             }
 
             $rows = $job->costs()->orderBy('id')->lockForUpdate()->get();
+            $this->costs->assertInvoiceTemporaryRecognized($rows);
             $summary = $this->costs->summary($job)['all'];
             $invoiceRows = $rows->filter(fn (\App\Models\JobCost $cost) => $cost->type === 'temporary' || Money::decimal($cost->total_price)->isPositive())->values();
             $tax = Money::decimal($invoice->tax);
@@ -468,7 +469,14 @@ class JobClosingService
             $invoiceEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran '.$invoice->number, 'debit' => 0, 'credit' => (string) $tax];
         }
 
-        $this->journals->post('job_invoice', Job::class, $job->id, $invoice->invoice_date->format('Y-m-d'), 'Invoice '.$invoice->number.' untuk '.$job->number, $invoiceEntries, $actor);
+        $wasPreviouslyPosted = Journal::where('source_type', Job::class)
+            ->where('source_id', $job->id)
+            ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])
+            ->whereNull('reversal_of_id')->exists();
+        // Keep the document date, but book a reapproval in the revision period
+        // rather than introducing another WIP credit into an earlier period.
+        $postingDate = $wasPreviouslyPosted ? today()->toDateString() : $invoice->invoice_date->format('Y-m-d');
+        $this->journals->post('job_invoice', Job::class, $job->id, $postingDate, 'Invoice '.$invoice->number.' untuk '.$job->number, $invoiceEntries, $actor);
     }
 
     /** Mapping akun Close/Unclose mengikuti jenis pekerjaan dalam referensi Neraca dan Laba Rugi. */

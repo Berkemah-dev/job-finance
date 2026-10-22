@@ -61,8 +61,7 @@ class JobCostService
             // modal yang ditambahkan ke jurnal hutang.
             $recognitionAmount = $this->recognitionAmount($cost);
             if (! $recognitionAmount->isEqualTo($totalAmount)) {
-                $this->reverseRecognition($cost, $actor);
-                $this->recognizePayable($cost, $actor, $recognitionAmount->isZero() ? 'job_cost_finalization' : 'job_cost_amendment', $totalAmount);
+                $this->replaceRecognition($cost, $actor, $totalAmount);
             }
 
             $account = ChartOfAccount::where('type', 'asset')->findOrFail($data['payment_account_id']);
@@ -226,6 +225,7 @@ private function lockJob(Job $job, array $data): Job
             $job = $this->lockJob($job, $data);
             $new = $cost === null;
             $paidAmount = null;
+            $reverseUnpaidRecognition = false;
             $costCategory = $data['cost_category'] ?? ($cost?->cost_category ?? (($data['type'] ?? 'provision') === 'temporary' ? 'reimbursement' : 'payment_request'));
             if ($new) {
                 Gate::forUser($actor)->authorize('create', [JobCost::class, $job]);
@@ -259,7 +259,7 @@ private function lockJob(Job $job, array $data): Job
                 // ulang agar jurnal pembayaran tetap seimbang.
                 if ($cost->status === 'final') {
                     if (! $wasPaid) {
-                        $this->reverseRecognition($cost, $actor);
+                        $reverseUnpaidRecognition = true;
                     }
                     $cost->status = 'draft';
                     $cost->finalized_by = null;
@@ -324,6 +324,12 @@ private function lockJob(Job $job, array $data): Job
             }
             $this->summary($job); // Reject aggregate overflow inside the same transaction.
             $this->refreshIssuedInvoice($job, $actor, $invoiceChanged);
+            // Release the old invoice's WIP credit before removing its cost
+            // debit. Reversing in the opposite order creates a negative
+            // running balance in the ledger, even within one transaction.
+            if ($reverseUnpaidRecognition) {
+                $this->reverseRecognition($cost, $actor);
+            }
             $this->touchJob($job, $actor);
             $after = $cost->only(['description', 'type', 'cost_category', 'currency', 'cost_exchange_rate', 'price_exchange_rate', 'quantity', 'unit', 'unit_cost', 'unit_price', 'total_cost', 'total_price', 'status']);
             $this->master->log($actor, $new ? 'job_cost.created' : 'job_cost.updated', $cost->number.' · '.$job->number, ['module' => 'job_cost', 'record_id' => $cost->id, 'before' => $new ? null : $before, 'after' => $after]);
@@ -333,7 +339,7 @@ private function lockJob(Job $job, array $data): Job
     }
 
     /** Pengakuan modal dan hutang vendor/agent; dipanggil saat Finance menyimpan biaya langsung atau memfinalisasi biaya quotation. */
-    private function recognizePayable(JobCost $cost, User $actor, string $journalType, ?BigDecimal $amount = null): void
+    private function recognizePayable(JobCost $cost, User $actor, string $journalType, ?BigDecimal $amount = null, ?string $journalDate = null): void
     {
         $amount ??= Money::decimal($cost->total_cost);
         if (! $amount->isPositive()) {
@@ -347,7 +353,7 @@ private function lockJob(Job $job, array $data): Job
             ? $this->partyAccounts->vendorPayable($vendor)
             : $this->journals->mapped([$payableKey])[$payableKey];
         $payableLabel = $vendor ? $this->partyAccounts->payableLabel($vendor) : 'Hutang vendor ';
-        $this->journals->post($journalType, JobCost::class, $cost->id, $cost->cost_date->format('Y-m-d'), 'Pencatatan '.$cost->number, [
+        $this->journals->post($journalType, JobCost::class, $cost->id, $journalDate ?? $cost->cost_date->format('Y-m-d'), 'Pencatatan '.$cost->number, [
             ['account_id' => $maps[$debitKey]->id, 'description' => ($cost->type === 'temporary' ? 'Temporary Payment ' : 'Provisional Payment ').$cost->number, 'debit' => (string) $amount, 'credit' => 0],
             ['account_id' => $payableAccount->id, 'description' => $payableLabel.$cost->number, 'debit' => 0, 'credit' => (string) $amount],
         ], $actor);
@@ -375,6 +381,41 @@ private function lockJob(Job $job, array $data): Job
         }
 
         return $amount;
+    }
+
+    /** Replace recognition without temporarily withdrawing WIP already reclassified. */
+    private function replaceRecognition(JobCost $cost, User $actor, BigDecimal $amount): void
+    {
+        $oldJournals = $this->activeRecognitionJournals($cost);
+        if ($amount->isPositive()) {
+            // Posting the replacement first keeps every ledger balance backed.
+            // Use a free recognition type to respect JournalService's one-active
+            // journal-per-source/type rule; only the captured old set is reversed.
+            $types = $oldJournals->isEmpty()
+                ? ['job_cost_finalization', 'job_cost_amendment', 'job_cost_direct', 'job_cost_draft']
+                : ['job_cost_amendment', 'job_cost_finalization', 'job_cost_direct', 'job_cost_draft'];
+            $type = collect($types)->first(fn ($type) => ! $oldJournals->contains('type', $type));
+            if (! $type) {
+                throw ValidationException::withMessages(['cost' => 'Jurnal pengakuan biaya perlu diperiksa sebelum dapat diganti.']);
+            }
+            $this->recognizePayable($cost, $actor, $type, $amount,
+                $oldJournals->isEmpty() ? null : today()->toDateString());
+        }
+        foreach ($oldJournals as $journal) {
+            $this->reverseJournal($journal, $cost, $actor, 'Penyesuaian pengakuan biaya');
+        }
+    }
+
+    /** Never reclassify draft Temporary amounts that have no cost recognition. */
+    public function assertInvoiceTemporaryRecognized(\Illuminate\Support\Collection $rows): void
+    {
+        foreach ($rows->where('type', 'temporary') as $cost) {
+            if ($this->recognitionAmount($cost)->isLessThan(Money::decimal($cost->total_cost))) {
+                throw ValidationException::withMessages([
+                    'invoice' => 'Biaya Temporary '.$cost->number.' belum memiliki pengakuan modal yang lengkap. Finalisasi Biaya terlebih dahulu sebelum finalisasi invoice.',
+                ]);
+            }
+        }
     }
 
     private function activePaymentJournals(JobCost $cost): \Illuminate\Support\Collection
@@ -645,6 +686,7 @@ private function lockJob(Job $job, array $data): Job
             Money::decimal(0)
         );
         $entries = [];
+        $this->assertInvoiceTemporaryRecognized($rows);
         if ($invoiceRevenue->isPositive() || $stampDuty->isPositive() || $tax->isPositive()) {
             $entries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $invoiceRevenue->plus($stampDuty)->plus($tax), 'credit' => 0];
         }
@@ -662,7 +704,10 @@ private function lockJob(Job $job, array $data): Job
         if ($stampDuty->isPositive()) $entries[] = ['account_id' => $maps['stamp_duty_expense']->id, 'description' => 'Materai ditagihkan · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
         if ($provisionCost->isPositive()) $entries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi Provisional Payment '.$invoice->number, 'debit' => 0, 'credit' => (string) $provisionCost];
         if ($tax->isPositive()) $entries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran '.$invoice->number, 'debit' => 0, 'credit' => (string) $tax];
-        $this->journals->post('job_invoice_amendment', Job::class, $job->id, $invoice->invoice_date->format('Y-m-d'), 'Penyesuaian invoice '.$invoice->number.' untuk '.$job->number, $entries, $actor);
+        // A revision belongs to the revision date, alongside its reversal.
+        // Backdating it to the original invoice double-credits historical WIP
+        // until today's reversal, producing negative ledger running balances.
+        $this->journals->post('job_invoice_amendment', Job::class, $job->id, today()->toDateString(), 'Penyesuaian invoice '.$invoice->number.' untuk '.$job->number, $entries, $actor);
     }
 
     private function invoiceFlowAccountKeys(Job $job): array
@@ -711,8 +756,7 @@ private function lockJob(Job $job, array $data): Job
             $recognitionAmount = $this->recognitionAmount($cost);
             $totalAmount = Money::decimal($cost->total_cost);
             if (! $recognitionAmount->isEqualTo($totalAmount)) {
-                $this->reverseRecognition($cost, $actor);
-                $this->recognizePayable($cost, $actor, $recognitionAmount->isZero() ? 'job_cost_finalization' : 'job_cost_amendment', $totalAmount);
+                $this->replaceRecognition($cost, $actor, $totalAmount);
             }
             // Bila biaya sudah terlanjur dibayar sebelum Finance Manager
             // memfinalisasikannya, tetap lakukan reklasifikasi Provisi ke HPP

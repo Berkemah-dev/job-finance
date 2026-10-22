@@ -52,6 +52,132 @@ class JournalAuditTest extends TestCase
         }
     }
 
+    private function assertWipLedgerNeverNegative(): void
+    {
+        foreach (['temporary', 'provision_wip'] as $key) {
+            $account = app(JournalService::class)->mapped([$key])[$key];
+            $ledger = app(\App\Services\FinancialReportService::class)->ledgerExport($account->id, '1900-01-01', today()->toDateString());
+            foreach ($ledger['entries'] as $entry) {
+                $this->assertFalse(\App\Support\Money::decimal($entry->running_balance)->isNegative(),
+                    $key.' became negative at '.$entry->journal->number.': '.$entry->running_balance);
+            }
+        }
+    }
+
+    public function test_editing_invoiced_unpaid_cost_releases_invoice_before_reversing_recognition(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $initial = $job->costs()->firstOrFail();
+            $costs->save($job->fresh(), $initial, [
+                'job_version' => $job->fresh()->lock_version, 'lock_version' => $initial->lock_version,
+                'description' => $initial->description, 'cost_category' => 'payment_request',
+                'cost_date' => today()->toDateString(), 'currency' => 'IDR', 'quantity' => '1',
+                'unit' => 'Layanan', 'unit_cost' => '120000', 'unit_price' => '700000',
+            ], $finance);
+            $this->assertWipLedgerNeverNegative();
+            $this->assertEquals(0, $balance('provision_wip'));
+        });
+    }
+
+    public function test_invoice_rejects_unrecognized_temporary_without_posting_any_journal(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $costs->save($job->fresh(), null, [
+                'job_version' => $job->fresh()->lock_version, 'description' => 'Temporary handling',
+                'cost_category' => 'reimbursement', 'cost_date' => today()->toDateString(),
+                'currency' => 'IDR', 'quantity' => '1', 'unit' => 'Layanan',
+                'unit_cost' => '250000', 'unit_price' => '250000',
+            ], $finance);
+            $before = \App\Models\Journal::count();
+            try {
+                $issue();
+                $this->fail('Invoice must not credit Temporary before cost recognition.');
+            } catch (\Illuminate\Validation\ValidationException $error) {
+                $this->assertArrayHasKey('invoice', $error->errors());
+            }
+            $this->assertSame('draft', $invoice->fresh()->status);
+            $this->assertSame($before, \App\Models\Journal::count());
+            $this->assertWipLedgerNeverNegative();
+            $temporary = $job->costs()->where('type', 'temporary')->firstOrFail();
+            $finalize($temporary);
+            $issue();
+            $this->assertSame('issued', $invoice->fresh()->status);
+            $this->assertEquals(0, $balance('temporary'));
+            $this->assertWipLedgerNeverNegative();
+        });
+    }
+
+    public function test_editing_invoiced_temporary_preserves_nonnegative_ledger_history(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $data = ['description' => 'Temporary handling', 'cost_category' => 'reimbursement',
+                'cost_date' => today()->toDateString(), 'currency' => 'IDR', 'quantity' => '1',
+                'unit' => 'Layanan', 'unit_cost' => '250000', 'unit_price' => '250000'];
+            $temporary = $costs->save($job->fresh(), null, $data + ['job_version' => $job->fresh()->lock_version], $finance);
+            $finalize($temporary);
+            $issue();
+            $data['unit_cost'] = $data['unit_price'] = '300000';
+            $temporary = $costs->save($job->fresh(), $temporary->fresh(), $data + [
+                'job_version' => $job->fresh()->lock_version, 'lock_version' => $temporary->fresh()->lock_version,
+            ], $finance);
+            $this->assertSame('draft', $invoice->fresh()->status);
+            $this->assertWipLedgerNeverNegative();
+            $finalize($temporary);
+            $issue();
+            $this->assertEquals(0, $balance('temporary'));
+            $this->assertWipLedgerNeverNegative();
+        });
+    }
+
+    public function test_paid_subsequent_cost_increase_never_makes_provision_ledger_negative(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $late = $save('Paid handling', '500000', '0');
+            $finalize($late);
+            $pay($late);
+            foreach (['800000', '900000'] as $amount) {
+                $late = $costs->save($job->fresh(), $late->fresh(), [
+                    'job_version' => $job->fresh()->lock_version, 'lock_version' => $late->fresh()->lock_version,
+                    'description' => 'Paid handling', 'cost_category' => 'payment_request',
+                    'cost_date' => today()->toDateString(), 'currency' => 'IDR', 'quantity' => '1',
+                    'unit' => 'Layanan', 'unit_cost' => $amount, 'unit_price' => '0',
+                ], $finance);
+                $this->assertSame('draft', $late->fresh()->status);
+                $finalize($late);
+                $this->assertWipLedgerNeverNegative();
+                $pay($late);
+                $this->assertEquals((float) $amount, (float) (string) $costs->paidAmount($late->fresh()));
+                $this->assertEquals(0, $balance('provision_wip'));
+                $this->assertEquals(100000 + (float) $amount, $balance('cogs_export_unclosed'));
+                $this->assertWipLedgerNeverNegative();
+            }
+        });
+    }
+
+    public function test_next_day_invoice_revisions_do_not_backdate_wip_reclassification(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $originalInvoiceDate = $invoice->fresh()->invoice_date->format('Y-m-d');
+            $previousClock = \Illuminate\Support\Carbon::getTestNow();
+            \Illuminate\Support\Carbon::setTestNow(today()->addDay()->setTime(12, 0));
+            try {
+                $late = $save('Next-day handling', '500000', '0');
+                $finalize($late);
+                $this->assertWipLedgerNeverNegative();
+                $sale = $save('Next-day sale', '100000', '200000');
+                $finalize($sale);
+                $issue();
+                $this->assertSame($originalInvoiceDate, $invoice->fresh()->invoice_date->format('Y-m-d'));
+                $this->assertWipLedgerNeverNegative();
+            } finally {
+                \Illuminate\Support\Carbon::setTestNow($previousClock);
+            }
+        });
+    }
+
     public function test_unpaid_restores_provision_after_standalone_hpp_reclassification(): void
     {
         $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
