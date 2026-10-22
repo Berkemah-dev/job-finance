@@ -178,6 +178,121 @@ class JournalAuditTest extends TestCase
         });
     }
 
+    private function trialLegacyPair($job, $manager): array
+    {
+        return DB::transaction(function () use ($job, $manager) {
+            $service = app(JournalService::class);
+            $maps = $service->mapped(['provision_wip', 'cogs_export_unclosed']);
+            $old = $service->post('job_invoice_amendment', Job::class, $job->id, today()->toDateString(), 'Legacy trial reclassification', [
+                ['account_id' => $maps['cogs_export_unclosed']->id, 'description' => 'Legacy HPP', 'debit' => '250000', 'credit' => '0'],
+                ['account_id' => $maps['provision_wip']->id, 'description' => 'Legacy Provision', 'debit' => '0', 'credit' => '250000'],
+            ], $manager);
+            $reverse = $service->reverse($old->fresh(), ['lock_version' => $old->fresh()->lock_version, 'reversal_date' => today()->toDateString(), 'reason' => 'Trial fixture'], $manager);
+
+            return [$old, $reverse];
+        });
+    }
+
+    public function test_trial_history_cleanup_is_scoped_backed_up_and_idempotent(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            \Illuminate\Support\Facades\Storage::fake('private');
+            $issue();
+            [$old, $reverse] = $this->trialLegacyPair($job, $manager);
+            $active = \App\Models\Journal::with('entries')->whereNull('reversed_at')->whereNull('reversal_of_id')->get()->toJson();
+            $service = app(\App\Services\TrialJournalHistoryService::class);
+            $confirmation = 'TRIAL '.$job->number;
+            $count = \App\Models\Journal::count();
+            $plan = $service->compact($job, $manager, $confirmation);
+            $this->assertSame(1, $plan['jumlah_pasangan']);
+            $this->assertSame($count, \App\Models\Journal::count());
+            $this->assertSame([], \Illuminate\Support\Facades\Storage::disk('private')->allFiles());
+
+            $result = $service->compact($job, $manager, $confirmation, true);
+            $this->assertSame($count - 2, \App\Models\Journal::count());
+            $this->assertFalse(\App\Models\Journal::whereKey($old->id)->exists());
+            $this->assertFalse(\App\Models\Journal::whereKey($reverse->id)->exists());
+            $this->assertSame($active, \App\Models\Journal::with('entries')->whereNull('reversed_at')->whereNull('reversal_of_id')->get()->toJson());
+            $this->assertSame($result['saldo_per_akun_sebelum'], $result['saldo_per_akun_sesudah']);
+            $files = \Illuminate\Support\Facades\Storage::disk('private')->allFiles();
+            $this->assertCount(1, $files);
+            $json = \Illuminate\Support\Facades\Storage::disk('private')->get($files[0]);
+            $this->assertSame($result['sha256'], hash('sha256', $json));
+            $backup = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            $this->assertSame($job->number, $backup['job_number']);
+            $this->assertCount(2, $backup['archived_journals']);
+            $this->assertSame($old->id, $backup['archived_journals'][0]['journal']['id']);
+            $this->assertWipLedgerNeverNegative();
+            $this->assertSame(0, $service->compact($job, $manager, $confirmation, true)['jumlah_pasangan']);
+            $this->assertCount(1, \Illuminate\Support\Facades\Storage::disk('private')->allFiles());
+        });
+    }
+
+    public function test_trial_history_cleanup_rejects_unequal_reversals(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            [$old, $reverse] = $this->trialLegacyPair($job, $manager);
+            $reverse->entries()->where('debit', '>', 0)->update(['debit' => '200000']);
+            $reverse->entries()->where('credit', '>', 0)->update(['credit' => '200000']);
+            try {
+                app(\App\Services\TrialJournalHistoryService::class)->compact($job, $manager, 'TRIAL '.$job->number, true);
+                $this->fail('Unequal reversal must not be deleted.');
+            } catch (\Illuminate\Validation\ValidationException $error) {
+                $this->assertArrayHasKey('trial_history', $error->errors());
+            }
+            $this->assertNotNull($old->fresh());
+            $this->assertNotNull($reverse->fresh());
+        });
+    }
+
+    public function test_trial_history_cleanup_rolls_back_if_other_history_is_still_negative(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            \Illuminate\Support\Facades\Storage::fake('private');
+            $issue();
+            [$old, $reverse] = $this->trialLegacyPair($job, $manager);
+            $outside = Job::factory()->open()->create(['service_type' => 'exp_sea']);
+            DB::transaction(function () use ($outside, $manager) {
+                $service = app(JournalService::class);
+                $maps = $service->mapped(['provision_wip', 'cogs_export_unclosed']);
+                $service->post('outside_trial', Job::class, $outside->id, today()->toDateString(), 'Outside scope', [
+                    ['account_id' => $maps['cogs_export_unclosed']->id, 'description' => 'Outside', 'debit' => '100000', 'credit' => '0'],
+                    ['account_id' => $maps['provision_wip']->id, 'description' => 'Outside', 'debit' => '0', 'credit' => '100000'],
+                ], $manager);
+            });
+            $before = \App\Models\Journal::with('entries')->orderBy('id')->get()->toJson();
+            try {
+                app(\App\Services\TrialJournalHistoryService::class)->compact($job, $manager, 'TRIAL '.$job->number, true);
+                $this->fail('Remaining negative history must roll back all deletions.');
+            } catch (\Illuminate\Validation\ValidationException $error) {
+                $this->assertArrayHasKey('trial_history', $error->errors());
+            }
+            $this->assertSame($before, \App\Models\Journal::with('entries')->orderBy('id')->get()->toJson());
+        });
+    }
+
+    public function test_trial_history_cleanup_requires_confirmation_and_unpaid_customer_invoice(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $service = app(\App\Services\TrialJournalHistoryService::class);
+            try {
+                $service->compact($job, $manager, 'TRIAL WRONG-JOB', true);
+                $this->fail('Exact scope confirmation is required.');
+            } catch (\Illuminate\Validation\ValidationException $error) {
+                $this->assertArrayHasKey('trial_history', $error->errors());
+            }
+            $invoice->update(['paid_amount' => '1.00']);
+            try {
+                $service->compact($job, $manager, 'TRIAL '.$job->number, true);
+                $this->fail('An invoice with customer payments must not be compacted.');
+            } catch (\Illuminate\Validation\ValidationException $error) {
+                $this->assertArrayHasKey('trial_history', $error->errors());
+            }
+        });
+    }
+
     public function test_unpaid_restores_provision_after_standalone_hpp_reclassification(): void
     {
         $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
