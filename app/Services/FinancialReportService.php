@@ -844,13 +844,17 @@ class FinancialReportService
         $cashIds = $cashAccounts->pluck('id');
 
         $openingEntries = JournalEntry::whereIn('chart_of_account_id', $cashIds)
-            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '<', $from)->whereNull('reversal_of_id'))
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '<', $from))
             ->get();
-        $openingBalance = Money::decimal((string) $openingEntries->sum(fn ($e) => (float) $e->debit - (float) $e->credit));
+        $openingBalance = $openingEntries->reduce(
+            fn ($sum, $entry) => $sum->plus($entry->debit)->minus($entry->credit), Money::decimal(0)
+        );
 
-        $entries = JournalEntry::with(['journal', 'account'])
+        // Original dan pembalik sama-sama dihitung pada tanggal jurnalnya,
+        // sebagaimana Buku Besar, termasuk reversal lintas periode.
+        $entries = JournalEntry::with(['journal.reversalOf', 'account'])
             ->whereIn('chart_of_account_id', $cashIds)
-            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to)->whereNull('reversal_of_id'))
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
             ->orderBy(Journal::select('journal_date')->whereColumn('journals.id', 'journal_entries.journal_id')->limit(1))
             ->get();
 
@@ -866,7 +870,10 @@ class FinancialReportService
         $outflow = Money::decimal(0);
 
         foreach ($entries as $entry) {
-            $key = array_key_exists($entry->journal->type, $groups) ? $entry->journal->type : 'other';
+            $type = $entry->journal->reversal_of_id
+                ? ($entry->journal->reversalOf?->type ?? $entry->journal->type)
+                : $entry->journal->type;
+            $key = array_key_exists($type, $groups) ? $type : 'other';
             $netMovement = Money::decimal((string) $entry->debit)->minus(Money::decimal((string) $entry->credit));
             $groups[$key] = $groups[$key]->plus($netMovement);
 
@@ -882,14 +889,14 @@ class FinancialReportService
         $closingBalance = $openingBalance->plus($net);
 
         $openingPerAccount = JournalEntry::whereIn('chart_of_account_id', $cashIds)
-            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '<', $from)->whereNull('reversal_of_id'))
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '<', $from))
             ->selectRaw('chart_of_account_id, SUM(debit) as total_debit, SUM(credit) as total_credit')
             ->groupBy('chart_of_account_id')
             ->get()
             ->keyBy('chart_of_account_id');
 
         $periodPerAccount = JournalEntry::whereIn('chart_of_account_id', $cashIds)
-            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to)->whereNull('reversal_of_id'))
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
             ->selectRaw('chart_of_account_id, SUM(debit) as total_debit, SUM(credit) as total_credit')
             ->groupBy('chart_of_account_id')
             ->get()
@@ -897,13 +904,13 @@ class FinancialReportService
 
         $accountBreakdown = $cashAccounts->map(function ($acc) use ($openingPerAccount, $periodPerAccount) {
             $opRow = $openingPerAccount->get($acc->id);
-            $op = (float) ($opRow->total_debit ?? 0) - (float) ($opRow->total_credit ?? 0);
+            $op = Money::decimal((string) ($opRow->total_debit ?? 0))->minus((string) ($opRow->total_credit ?? 0));
 
             $periodRow = $periodPerAccount->get($acc->id);
-            $inflow = (float) ($periodRow->total_debit ?? 0);
-            $outflow = (float) ($periodRow->total_credit ?? 0);
-            $net = $inflow - $outflow;
-            $closing = $op + $net;
+            $inflow = Money::decimal((string) ($periodRow->total_debit ?? 0));
+            $outflow = Money::decimal((string) ($periodRow->total_credit ?? 0));
+            $net = $inflow->minus($outflow);
+            $closing = $op->plus($net);
 
             return (object) [
                 'id' => $acc->id,
