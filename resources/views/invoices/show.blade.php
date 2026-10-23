@@ -17,6 +17,17 @@
         ->map(fn ($item) => \App\Support\Money::format($item->exchange_rate ?: 1))
         ->unique()
         ->values();
+    $canFinalizeInvoice = $invoice->status === 'draft'
+        && $job?->status === 'open'
+        && auth()->user()?->hasRole(['finance-manager', 'super-admin', 'admin'])
+        && auth()->user()?->can('invoices.manage')
+        && \App\Support\Money::decimal($invoice->paid_amount)->isZero()
+        && $invoice->payments->isEmpty();
+    $canUpdateStampDuty = in_array($invoice->status, ['draft', 'issued'], true)
+        && $job?->status === 'open'
+        && auth()->user()?->can('invoices.manage')
+        && \App\Support\Money::decimal($invoice->paid_amount)->isZero()
+        && $invoice->payments->isEmpty();
 @endphp
 
 <div class="page-heading">
@@ -35,13 +46,8 @@
 </div>
 
 <div class="quote-actions" style="margin-bottom: 20px;">
-    @if($invoice->status === 'draft' && auth()->user()->hasRole(['finance-manager', 'super-admin', 'admin']))
-        <form method="POST" action="{{ route('invoices.finalize', $invoice) }}" data-confirm="Finalisasi invoice ini sekarang? Jurnal piutang, pendapatan, HPP, dan PPN akan dibuat.">
-            @csrf
-            <input type="hidden" name="job_version" value="{{ $job?->lock_version ?? 0 }}">
-            <input type="hidden" name="lock_version" value="{{ $invoice->lock_version }}">
-            <button class="button button-primary"><x-icon name="check"/> Finalisasi Invoice</button>
-        </form>
+    @if($canFinalizeInvoice)
+        @include('invoices.partials.finalize-form', ['finalizeFormId' => 'invoice-finalize-top'])
     @elseif($invoice->status !== 'paid' && $invoice->status !== 'draft')
         <button type="button" class="button button-primary" onclick="document.getElementById('modal-add-payment').showModal()">+ Add Payment</button>
     @endif
@@ -442,6 +448,40 @@
         </div>
     </div>
 </section>
+
+@if($canUpdateStampDuty)
+    <section class="panel" id="invoice-stamp-duty-editor" style="margin-bottom:24px;">
+        <div class="panel-heading">
+            <div><h2>Tagihan Materai</h2><p>Materai dapat ditambahkan atau diubah setelah invoice dibuat. Perubahan wajib difinalisasi ulang oleh Finance Manager sebelum invoice dapat dicetak.</p></div>
+        </div>
+        <form method="POST" action="{{ route('invoices.stamp-duty.update', $invoice) }}" style="padding:0 24px 20px;" data-confirm="Simpan perubahan tagihan materai? Invoice akan kembali menjadi Draft dan menunggu finalisasi Finance Manager.">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="job_version" value="{{ $job->lock_version }}">
+            <input type="hidden" name="lock_version" value="{{ $invoice->lock_version }}">
+            <div class="field" style="max-width:360px;">
+                <label for="invoice_stamp_duty">Tagihan Materai (Rp)</label>
+                <input id="invoice_stamp_duty" type="number" name="stamp_duty" min="0" max="999999999.99" step="0.01" value="{{ old('stamp_duty', $invoice->stamp_duty ?? '0') }}" required>
+            </div>
+            @foreach($errors->getBag('stampDuty')->all() as $message)
+                <p class="info-note" style="color:#b91c1c;">{{ $message }}</p>
+            @endforeach
+            <button type="submit" class="button button-secondary">Simpan Tagihan Materai</button>
+        </form>
+    </section>
+@endif
+
+@if($canFinalizeInvoice)
+    <section class="panel" id="invoice-finalization-review" style="margin-bottom:24px;">
+        <div class="panel-heading" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div>
+                <h2>Finalisasi Invoice</h2>
+                <p>Sudah selesai memeriksa rincian dan total invoice? Finalisasi langsung di sini untuk menerbitkan invoice dan membuat jurnal penagihan.</p>
+            </div>
+            @include('invoices.partials.finalize-form', ['finalizeFormId' => 'invoice-finalize-after-review'])
+        </div>
+    </section>
+@endif
 
 {{-- STATUS PENGIRIMAN INVOICE ASLI (FISIK) --}}
 <div class="section-heading" style="margin-top: 24px;">

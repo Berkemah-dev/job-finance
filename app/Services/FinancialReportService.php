@@ -482,6 +482,7 @@ class FinancialReportService
         $revenueAccounts = $accountDetails->where('type', 'revenue')->values();
         $cogsAccounts = $accountDetails->where('type', 'cogs')->values();
         $expenseAccounts = $accountDetails->where('type', 'expense')->values();
+        $revenueBreakdown = $this->revenueByCharge($from, $to);
 
         return [
             'revenue' => (string) $revenue,
@@ -492,6 +493,8 @@ class FinancialReportService
             'revenueAccounts' => $revenueAccounts,
             'cogsAccounts' => $cogsAccounts,
             'expenseAccounts' => $expenseAccounts,
+            'revenueClosedBreakdown' => $revenueBreakdown['closed'],
+            'revenueUnclosedBreakdown' => $revenueBreakdown['unclosed'],
             'hppBreakdown' => $this->hppByCostType($from, $to)['rows'],
             'hppUnclosedBreakdown' => $this->hppUnclosedByCostType($from, $to),
             // Struktur Laporan Laba Rugi PT Radix International Logistics
@@ -1046,6 +1049,110 @@ class FinancialReportService
         return ['rows' => $rows, 'totals' => $totals];
     }
 
+    /** Revenue drill-down uses posted amounts, not the current editable cost rows. */
+    public function revenueByCharge(string $from, string $to): array
+    {
+        $defs = $this->radixDefinitions();
+        $codes = [];
+        foreach (['pendapatan_closed' => 'closed', 'pendapatan_unclosed' => 'unclosed'] as $section => $bucket) {
+            foreach ($defs[$section] as $line) {
+                foreach ($line['codes'] as $code) {
+                    $codes[(string) $code] = $bucket;
+                }
+            }
+        }
+        $accounts = ChartOfAccount::withTrashed()->whereIn('code', array_keys($codes))->get()->keyBy('id');
+        $entries = JournalEntry::with(['journal.entries', 'journal.reversalOf.entries'])
+            ->whereIn('chart_of_account_id', $accounts->keys())
+            ->whereHas('journal', fn ($q) => $q->whereDate('journal_date', '>=', $from)->whereDate('journal_date', '<=', $to))
+            ->orderBy('id')->get();
+        $sourceOf = fn ($journal) => $journal->reversal_of_id ? $journal->reversalOf : $journal;
+        $jobIds = $entries->map(fn ($entry) => $sourceOf($entry->journal))
+            ->filter(fn ($journal) => $journal?->source_type === Job::class)->pluck('source_id')->unique();
+        $jobs = Job::with('invoice:id,job_id,number')->whereIn('id', $jobIds)->get()->keyBy('id');
+        // Preserve history after reopen or cost edits: resolve a closing's
+        // aggregate revenue from the invoice journal that preceded it.
+        $invoices = Journal::with(['entries' => fn ($q) => $q->whereIn('chart_of_account_id', $accounts->keys())])
+            ->where('source_type', Job::class)->whereIn('source_id', $jobIds)
+            ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])->whereNull('reversal_of_id')
+            ->whereDate('journal_date', '<=', $to)
+            ->orderBy('id')->get()->groupBy('source_id');
+        $chargeName = function (string $description): ?string {
+            $description = preg_replace('/^(?:Reversal:\s*)+/i', '', trim($description));
+            if (preg_match('/^Pendapatan Unclose\s*·\s*(.+)\s*·\s*[^·]+$/iu', $description, $matches)) {
+                return trim($matches[1]);
+            }
+
+            return null;
+        };
+        $grouped = ['closed' => [], 'unclosed' => []];
+        foreach ($entries as $entry) {
+            $source = $sourceOf($entry->journal);
+            $job = $source?->source_type === Job::class ? $jobs->get($source->source_id) : null;
+            $amount = Money::decimal($entry->credit)->minus($entry->debit);
+            $description = preg_replace('/^(?:Reversal:\s*)+/i', '', trim((string) $entry->description));
+            $parts = [];
+            if ($name = $chargeName($description)) {
+                $parts[] = [$name, $amount];
+            } elseif ($source?->source_type === Job::class && $source->type === 'job_closing'
+                && preg_match('/^(?:Reklasifikasi )?Pendapatan (?:Unclose|Close)\b/i', $description)) {
+                $detailEntries = $source->entries;
+                if (! $detailEntries->contains(fn ($e) => $chargeName((string) $e->description) !== null)) {
+                    $historical = $invoices->get($source->source_id, collect())->last(fn ($j) =>
+                        $j->id < $source->id && $j->journal_date->lte($source->journal_date));
+                    $detailEntries = $historical?->entries ?? collect();
+                }
+                $allocated = Money::decimal(0);
+                foreach ($detailEntries as $detail) {
+                    if (! isset($accounts[$detail->chart_of_account_id]) || ! ($name = $chargeName((string) $detail->description))) {
+                        continue;
+                    }
+                    $value = Money::decimal($detail->credit)->minus($detail->debit);
+                    if ($amount->isNegative()) {
+                        $value = $value->negated();
+                    }
+                    $parts[] = [$name, $value];
+                    $allocated = $allocated->plus($value);
+                }
+                // Do not silently prorate a historical discrepancy or omit a
+                // manual closing entry: expose the remainder and reconcile exactly.
+                if (! $amount->isEqualTo($allocated)) {
+                    $parts[] = [$parts ? 'Penyesuaian pendapatan saat closing' : $description, $amount->minus($allocated)];
+                }
+            } else {
+                $parts[] = [$description ?: 'Pendapatan tanpa uraian', $amount];
+            }
+            $bucket = $codes[(string) $accounts[$entry->chart_of_account_id]->code];
+            foreach ($parts as [$name, $value]) {
+                if ($value->isZero()) {
+                    continue;
+                }
+                $key = mb_strtoupper($name);
+                $grouped[$bucket][$key] ??= ['description' => $name, 'total_price' => Money::decimal(0), 'items' => [], 'jobs' => []];
+                $row = &$grouped[$bucket][$key];
+                $row['total_price'] = $row['total_price']->plus($value);
+                if ($job) {
+                    $row['jobs'][$job->id] = true;
+                }
+                $row['items'][] = [
+                    'job_id' => $job?->id, 'job_number' => $job?->number ?? '—',
+                    'invoice_number' => $job?->invoice?->number ?? '—',
+                    'journal_number' => $entry->journal->number,
+                    'date' => $entry->journal->journal_date->format('d/m/Y'),
+                    'total_price' => (string) $value,
+                ];
+                unset($row);
+            }
+        }
+
+        return collect($grouped)->map(fn ($rows) => collect($rows)
+            ->filter(fn ($row) => ! $row['total_price']->isZero())
+            ->map(fn ($row) => (object) [
+                'description' => $row['description'], 'total_price' => (string) $row['total_price'],
+                'transaction_count' => count($row['items']), 'job_count' => count($row['jobs']), 'items' => $row['items'],
+            ])->sortBy('description')->values())->all();
+    }
+
     /**
      * Rekap HPP yang benar-benar telah diakui saat Closing Job.
      * Data dibaca dari snapshot closing sehingga tidak berubah ketika biaya Job diedit setelahnya.
@@ -1138,24 +1245,45 @@ class FinancialReportService
         }
 
         $entries = JournalEntry::query()
-            ->with('journal')
+            ->with('journal.reversalOf')
             ->whereIn('chart_of_account_id', $accountIds)
             ->whereHas('journal', fn (Builder $query) => $query
                 ->whereDate('journal_date', '>=', $from)
                 ->whereDate('journal_date', '<=', $to))
             ->get(['id', 'journal_id', 'description', 'debit', 'credit']);
 
-        $costs = JobCost::with('job:id,number')
-            ->whereIn('id', $entries->filter(fn ($entry) => $entry->journal?->source_type === JobCost::class)->pluck('journal.source_id'))
+        $sources = $entries->mapWithKeys(fn ($entry) => [$entry->id => $entry->journal->reversal_of_id
+            ? ($entry->journal->reversalOf ?? $entry->journal) : $entry->journal]);
+        $costs = JobCost::withTrashed()->with('job:id,number')
+            ->whereIn('id', $sources->filter(fn ($journal) => $journal->source_type === JobCost::class)->pluck('source_id'))
             ->get()
             ->keyBy('id');
         $jobs = Job::query()
-            ->whereIn('id', $entries->filter(fn ($entry) => $entry->journal?->source_type === Job::class)->pluck('journal.source_id'))
+            ->whereIn('id', $sources->filter(fn ($journal) => $journal->source_type === Job::class)->pluck('source_id'))
             ->get(['id', 'number'])
             ->keyBy('id');
 
+        // Include ALL unclosed movements before choosing charge details. The
+        // aggregate closing credit has no charge name, but it clears the Job's
+        // HPP just as surely as the earlier per-charge debits created it.
+        $contexts = [];
+        $jobMovements = [];
+        $allocated = [];
+        foreach ($entries as $entry) {
+            $source = $sources->get($entry->id);
+            $cost = $source?->source_type === JobCost::class ? $costs->get($source->source_id) : null;
+            $job = $source?->source_type === Job::class ? $jobs->get($source->source_id) : $cost?->job;
+            $key = $job ? 'job:'.$job->id : 'journal:'.$source->id;
+            $contexts[$entry->id] = ['key' => $key, 'job' => $job];
+            $jobMovements[$key] ??= ['job' => $job, 'amount' => Money::decimal(0)];
+            $jobMovements[$key]['amount'] = $jobMovements[$key]['amount']->plus($entry->debit)->minus($entry->credit);
+        }
         $grouped = [];
         foreach ($entries as $entry) {
+            $context = $contexts[$entry->id];
+            if (! $jobMovements[$context['key']]['amount']->isPositive()) {
+                continue;
+            }
             $description = trim((string) $entry->description);
             $description = preg_replace('/^(?:Reversal:\s*)+/i', '', $description) ?: $description;
             if (! str_contains(mb_strtoupper($description), 'HPP UNCLOSE')) {
@@ -1183,12 +1311,13 @@ class FinancialReportService
 
             $key = $costNumber ?: $chargeDescription.'|'.$jobNumber;
             $jobId = null;
-            if ($entry->journal?->source_type === JobCost::class && ($cost = $costs->get($entry->journal->source_id))) {
+            $source = $sources->get($entry->id);
+            if ($source?->source_type === JobCost::class && ($cost = $costs->get($source->source_id))) {
                 $jobId = $cost->job_id;
                 $costNumber = $cost->number;
                 $chargeDescription = $cost->description ?: $chargeDescription;
                 $jobNumber = $cost->job?->number ?? $jobNumber;
-            } elseif ($entry->journal?->source_type === Job::class && ($job = $jobs->get($entry->journal->source_id))) {
+            } elseif ($source?->source_type === Job::class && ($job = $jobs->get($source->source_id))) {
                 $jobId = $job->id;
                 $jobNumber = $job->number;
             }
@@ -1201,6 +1330,7 @@ class FinancialReportService
                 'items' => [],
             ];
             $amount = Money::decimal((string) $entry->debit)->minus(Money::decimal((string) $entry->credit));
+            $allocated[$context['key']] = ($allocated[$context['key']] ?? Money::decimal(0))->plus($amount);
             $grouped[$key]['total_cost'] = $grouped[$key]['total_cost']->plus($amount);
             $grouped[$key]['transaction_count']++;
             if ($jobId) {
@@ -1215,8 +1345,29 @@ class FinancialReportService
             ];
         }
 
+        foreach ($jobMovements as $key => $movement) {
+            $remaining = $movement['amount']->minus($allocated[$key] ?? Money::decimal(0));
+            if ($remaining->isZero()) {
+                continue;
+            }
+            // A closing in a later reporting period can legitimately produce a
+            // negative period movement. Show that as a reclassification, not a
+            // second positive list of the Closed Job's charges.
+            $job = $movement['job'];
+            $grouped['reconciliation:'.$key] = [
+                'description' => $remaining->isNegative() ? 'Reklasifikasi / penyesuaian HPP Unclosed' : 'Penyesuaian HPP Unclosed',
+                'transaction_count' => 1, 'job_ids' => $job ? [$job->id => true] : [],
+                'total_cost' => $remaining,
+                'items' => [[
+                    'job_id' => $job?->id, 'job_number' => $job?->number ?? '—',
+                    'cost_number' => 'Reklasifikasi / penyesuaian jurnal',
+                    'cost_date' => $from.' s/d '.$to, 'total_cost' => (string) $remaining,
+                ]],
+            ];
+        }
+
         return collect($grouped)
-            ->filter(fn (array $row) => Money::decimal((string) $row['total_cost'])->isPositive())
+            ->filter(fn (array $row) => ! Money::decimal((string) $row['total_cost'])->isZero())
             ->map(fn (array $row) => (object) [
                 'description' => $row['description'],
                 'transaction_count' => $row['transaction_count'],

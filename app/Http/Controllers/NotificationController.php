@@ -30,7 +30,17 @@ class NotificationController extends Controller
             }));
         }
         if($user->hasPermission('jobs.manage')) $notifications=$notifications->merge(Job::where('status','open')->whereHas('costs',fn($q)=>$q->where('status','!=','final'))->latest('id')->limit(8)->get()->map(fn($j)=>['title'=>'Biaya job belum final','message'=>$j->number.' · '.$j->subject,'url'=>route('jobs.show',$j),'type'=>'warning']));
-        if($user->hasPermission('jobs.view')) $notifications=$notifications->merge(Job::where('status','open')->whereBetween('eta',[today(),today()->addDays(7)])->orderBy('eta')->limit(8)->get()->map(fn($j)=>['title'=>'ETA job mendekat','message'=>$j->number.' · tiba '.$j->eta->format('d/m/Y'),'url'=>route('jobs.show',$j),'type'=>'info']));
+        if ($user->hasPermission('jobs.view')) {
+            $isCs = $user->hasRole('customer-service');
+            $etaNotifications = Job::approachingEta(7, $isCs)->orderBy('eta')->limit(8)->get()->map(fn ($job) => [
+                'title' => $isCs ? 'ETA Import mendekat' : 'ETA job mendekat',
+                'message' => $job->number.' · '.($job->service_type === 'imp_sea' ? 'Kapal' : 'Kargo').' tiba '.$job->eta->format('d/m/Y').($job->eta->isToday() ? ' (hari ini)' : ''),
+                'url' => route('jobs.show', $job),
+                'type' => $job->eta->isToday() ? 'warning' : 'info',
+            ]);
+            // Prioritaskan ETA untuk CS agar tidak terpotong oleh batas 20 notifikasi lainnya.
+            $notifications = $isCs ? $etaNotifications->merge($notifications) : $notifications->merge($etaNotifications);
+        }
         return view('notifications.index',['notifications'=>$notifications->take(20)->values()]);
     }
 }

@@ -178,7 +178,7 @@ class DashboardService
             'invoiceAging' => $invoiceAging,
             'costProgress' => ['open' => $openJobs, 'draft' => $jobsWithDraftCosts, 'final' => max(0, $openJobs - $jobsWithDraftCosts)],
             'unfinishedJobs' => Job::where('status', 'open')->whereHas('costs', fn ($q) => $q->where('status', '!=', 'final'))->latest('id')->limit(8)->get(),
-            'arrivalSoon' => Job::with('customer')->where('status', 'open')->whereNotNull('eta')->whereBetween('eta', [today(), today()->addDays(3)])->orderBy('eta')->limit(20)->get(),
+            'arrivalSoon' => Job::with('customer')->approachingEta(3, $role === 'customer-service')->orderBy('eta')->limit(20)->get(),
             'widgets' => $widgets,
         ];
     }

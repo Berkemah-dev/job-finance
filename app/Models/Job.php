@@ -12,6 +12,15 @@ class Job extends Model
 {
     use HasFactory;
 
+    public function scopeApproachingEta(\Illuminate\Database\Eloquent\Builder $query, int $days = 3, bool $importOnly = false): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('status', 'open')
+            ->whereNotNull('eta')
+            ->whereDate('eta', '>=', today()->toDateString())
+            ->whereDate('eta', '<=', today()->addDays($days)->toDateString())
+            ->when($importOnly, fn ($q) => $q->whereIn('service_type', ['imp_sea', 'imp_air']));
+    }
+
     public function costs(): HasMany
     {
         return $this->hasMany(JobCost::class);

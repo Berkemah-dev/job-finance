@@ -361,6 +361,56 @@ class JobClosingService
         }, 3);
     }
 
+    public function updateInvoiceStampDuty(Invoice $invoice, array $data, User $actor): Invoice
+    {
+        return DB::transaction(function () use ($invoice, $data, $actor) {
+            Gate::forUser($actor)->authorize('invoices.manage');
+            $invoice = Invoice::lockForUpdate()->findOrFail($invoice->id);
+            $job = Job::lockForUpdate()->findOrFail($invoice->job_id);
+            $this->master->checkVersion($job, ['lock_version' => $data['job_version'] ?? -1]);
+            $this->master->checkVersion($invoice, $data);
+            if ($job->status !== 'open' || ! in_array($invoice->status, ['draft', 'issued'], true)) {
+                throw ValidationException::withMessages(['stamp_duty' => 'Materai hanya dapat diubah pada invoice Draft/Issued dari Job Open.']);
+            }
+            if ($invoice->payments()->exists() || ! Money::decimal($invoice->paid_amount)->isZero()) {
+                throw ValidationException::withMessages(['stamp_duty' => 'Materai tidak dapat diubah karena invoice sudah memiliki pembayaran customer.']);
+            }
+            $stampDuty = Money::decimal($data['stamp_duty']);
+            if ($stampDuty->isNegative() || $stampDuty->isGreaterThan('999999999.99')) {
+                throw ValidationException::withMessages(['stamp_duty' => 'Tagihan materai harus antara Rp 0 dan Rp 999.999.999,99.']);
+            }
+            if ($stampDuty->isEqualTo(Money::decimal($invoice->stamp_duty ?? 0))) {
+                return $invoice;
+            }
+            $total = Money::decimal($invoice->subtotal)->plus($invoice->tax)->plus($stampDuty);
+            Money::checked($total);
+            if (! $total->isPositive()) {
+                throw ValidationException::withMessages(['stamp_duty' => 'Total invoice harus lebih besar dari nol.']);
+            }
+            $before = $invoice->only(['stamp_duty', 'total', 'balance', 'status']);
+            $activeJournals = Journal::where('source_type', Job::class)->where('source_id', $job->id)
+                ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])
+                ->whereNull('reversed_at')->whereNull('reversal_of_id')->lockForUpdate()->get();
+            foreach ($activeJournals as $journal) {
+                $this->journals->reverse($journal, [
+                    'lock_version' => $journal->lock_version, 'reversal_date' => today()->toDateString(),
+                    'reason' => 'Perubahan tagihan materai '.$invoice->number.'; menunggu finalisasi ulang Finance Manager',
+                ], $actor);
+            }
+            $invoice->update([
+                'stamp_duty' => (string) $stampDuty, 'total' => (string) $total, 'balance' => (string) $total,
+                'status' => 'draft', 'issued_at' => null, 'lock_version' => $invoice->lock_version + 1,
+            ]);
+            $job->update(['updated_by' => $actor->id, 'lock_version' => $job->lock_version + 1]);
+            $this->master->log($actor, 'invoice.stamp_duty_updated', 'Perubahan materai '.$invoice->number.' memerlukan finalisasi Finance Manager.', [
+                'module' => 'invoice', 'record_id' => $invoice->id,
+                'before' => $before, 'after' => $invoice->only(['stamp_duty', 'total', 'balance', 'status']),
+            ]);
+
+            return $invoice->fresh();
+        }, 3);
+    }
+
     public function finalizeInvoice(Invoice $invoice, array $data, User $actor): Invoice
     {
         return DB::transaction(function () use ($invoice, $data, $actor) {

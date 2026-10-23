@@ -21,7 +21,7 @@
 </div>
 
 <section class="panel">
-    <div class="panel-heading"><div><h2>Job mendekati tiba</h2><p>ETA dalam H-3 (3 hari ke depan).</p></div><span class="count-badge">{{ $arrivalSoon->count() }}</span></div>
+    <div class="panel-heading"><div><h2>Pengingat ETA Import</h2><p>Import SEA/AIR dengan ETA hari ini hingga 3 hari ke depan. <a class="text-link" href="{{ route('notifications.index') }}">Lihat pengingat hingga H-7</a></p></div><span class="count-badge">{{ $arrivalSoon->count() }}</span></div>
     <div class="table-scroll">
         <table>
             <thead><tr><th>NO JOB</th><th>EXPORT/IMPORT</th><th>ETA</th><th>NAMA CUSTOMER</th><th>KONFIRMASI DO</th></tr></thead>
@@ -45,7 +45,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="5">Tidak ada job yang mendekati tiba dalam 3 hari ke depan.</td></tr>
+                <tr><td colspan="5">Tidak ada Job Import berstatus Open dengan ETA hari ini hingga 3 hari ke depan.</td></tr>
                 @endforelse
             </tbody>
         </table>

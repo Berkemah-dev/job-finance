@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])->middleware('can:invoices.manage')->name('invoices.delivery');
     Route::get('/invoices/{invoice}/tax-invoice', [InvoiceController::class, 'taxInvoiceFile'])->middleware('can:invoices.manage')->name('invoices.tax-invoice');
     Route::post('/invoices/{invoice}/finalize', [InvoiceController::class, 'finalize'])->middleware('can:invoices.manage')->name('invoices.finalize');
+    Route::patch('/invoices/{invoice}/stamp-duty', [InvoiceController::class, 'updateStampDuty'])->middleware('can:invoices.manage')->name('invoices.stamp-duty.update');
     Route::get('/jobs/{job}/invoices/create', [InvoiceController::class, 'create'])->middleware('can:invoices.manage')->name('jobs.invoices.create');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show'])->middleware('can:invoices.manage');
     Route::get('/invoices/{invoice}/coretax', [InvoiceController::class, 'coretax'])->middleware('can:invoices.manage')->name('invoices.coretax');
@@ -91,6 +92,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/income-statement', [ReportController::class, 'incomeStatement'])->name('income-statement');
         Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
         Route::get('/profit-per-job', [ReportController::class, 'profitPerJob'])->name('profit-per-job');
+        Route::get('/profit-per-job/{job}/pdf', [ReportController::class, 'jobProfitPdf'])->middleware('can:financial.view')->name('job-profit.pdf');
         Route::get('/profit-bulanan', [ReportController::class, 'profitMonthly'])->name('profit-monthly');
         Route::get('/hpp-per-jenis-biaya', [ReportController::class, 'hppByCostType'])->name('hpp-by-cost-type');
         Route::get('/statement-of-account', [StatementOfAccountController::class, 'index'])->name('soa');

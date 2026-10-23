@@ -85,10 +85,16 @@
                 @endforeach
                 <tr style="background: #f1f5f9; font-weight: 700;">
                     <td></td>
-                    <td>Total Pendapatan</td>
+                    <td>
+                        Total Pendapatan
+                        @if(count($revenueClosedBreakdown ?? []) > 0)
+                            <button type="button" onclick="toggleIncomeDetail('revenue-closed-detail')" style="margin-left:8px;border:0;background:none;color:#0284c7;font-weight:700;cursor:pointer;font-size:12px;">(Lihat Rincian Biaya <span id="revenue-closed-detail-icon">▶</span>)</button>
+                        @endif
+                    </td>
                     <td></td>
                     <td class="money">{{ $money($totalPendapatanClosed ?? 0) }}</td>
                 </tr>
+                @include('reports.partials.revenue-charge-detail', ['charges' => $revenueClosedBreakdown ?? collect(), 'detailPrefix' => 'revenue-closed', 'detailTitle' => 'Rincian Pendapatan Closed per uraian biaya / charge'])
 
                 {{-- PENDAPATAN JOB UNCLOSED --}}
                 <tr style="background: #f8fafc;">
@@ -104,10 +110,16 @@
                 @endforeach
                 <tr style="background: #f1f5f9; font-weight: 700;">
                     <td></td>
-                    <td>Total Pendapatan Unclosed</td>
+                    <td>
+                        Total Pendapatan Unclosed
+                        @if(count($revenueUnclosedBreakdown ?? []) > 0)
+                            <button type="button" onclick="toggleIncomeDetail('revenue-unclosed-detail')" style="margin-left:8px;border:0;background:none;color:#0284c7;font-weight:700;cursor:pointer;font-size:12px;">(Lihat Rincian Biaya <span id="revenue-unclosed-detail-icon">▶</span>)</button>
+                        @endif
+                    </td>
                     <td></td>
                     <td class="money">{{ $money($totalPendapatanUnclosed ?? 0) }}</td>
                 </tr>
+                @include('reports.partials.revenue-charge-detail', ['charges' => $revenueUnclosedBreakdown ?? collect(), 'detailPrefix' => 'revenue-unclosed', 'detailTitle' => 'Rincian Pendapatan Unclosed per uraian biaya / charge'])
 
                 {{-- TOTAL PENDAPATAN --}}
                 <tr style="background: #e2e8f0; font-weight: 800; color: #0f172a;">
@@ -192,6 +204,7 @@
                     <tr id="hpp-unclosed-detail" style="display:none;background:#f8fafc;">
                         <td colspan="4" style="padding:14px 18px;">
                             <strong style="font-size:12px;color:#334155;">Rincian HPP Unclosed per uraian biaya</strong>
+                            <p class="subtle" style="font-size:11px;margin:6px 0;">Rincian mengikuti tanggal filter. Pemindahan HPP dari periode sebelumnya ditampilkan sebagai reklasifikasi, bukan biaya baru.</p>
                             <div style="margin-top:8px;border:1px solid #dbe3ee;border-radius:8px;background:#fff;overflow:hidden;">
                                 @foreach($hppUnclosedBreakdown as $index => $charge)
                                     @php $detailId = 'hpp-unclosed-charge-'.$index; @endphp

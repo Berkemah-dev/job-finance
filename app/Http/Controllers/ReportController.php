@@ -13,6 +13,18 @@ use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    public function jobProfitPdf(Request $request, \App\Models\Job $job, \App\Services\JobProfitReportService $report, \App\Services\JobCostService $costs)
+    {
+        \Illuminate\Support\Facades\Gate::authorize('financial.view');
+        \Illuminate\Support\Facades\Gate::authorize('view', $job);
+        $pdf = app('dompdf.wrapper')->loadView('reports.pdf.job-profit', $report->report($job, $costs))
+            ->setPaper('a4', 'portrait');
+        $filename = 'JO_Profit_'.preg_replace('/[^A-Za-z0-9_-]/', '_', $job->number).'.pdf';
+        return $request->query('mode') === 'download'
+            ? $pdf->download($filename)
+            : response($pdf->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$filename.'"']);
+    }
+
     private function period(ReportFilterRequest $request): array
     {
         $to = $request->input('to', today()->toDateString());

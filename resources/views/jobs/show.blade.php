@@ -1629,7 +1629,11 @@ document.addEventListener('DOMContentLoaded', function() {
     @endcan
 
     @can('financial.view')
-        <div class="section-heading"><h2>Ringkasan keuangan</h2><span class="subtle">Biaya aktual final · Khusus Finance</span></div>
+        <div class="section-heading"><h2>Ringkasan keuangan</h2><span class="subtle">Biaya aktual final · Khusus Finance</span>
+            @can('reports.view')
+                <a class="button button-secondary" href="{{ route('reports.job-profit.pdf', $job) }}" target="_blank" rel="noopener">PDF JO Profit</a>
+            @endcan
+        </div>
         <section class="panel">
             <div class="cost-summary-body">
                 <div class="summary-box">

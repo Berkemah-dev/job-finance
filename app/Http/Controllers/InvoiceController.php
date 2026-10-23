@@ -83,6 +83,25 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.show', $invoice)->with('success', 'Draft invoice berhasil disimpan. Finance Manager dapat melakukan finalisasi dan membuat jurnal.');
     }
 
+    public function updateStampDuty(Request $request, Invoice $invoice, JobClosingService $service)
+    {
+        $data = $request->validateWithBag('stampDuty', [
+            'job_version' => ['required', 'integer', 'min:0'],
+            'lock_version' => ['required', 'integer', 'min:0'],
+            'stamp_duty' => ['required', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+        ]);
+        try {
+            $invoice = $service->updateInvoiceStampDuty($invoice, $data, $request->user());
+        } catch (\Illuminate\Validation\ValidationException $error) {
+            $error->errorBag = 'stampDuty';
+            throw $error;
+        }
+
+        return redirect()->route('invoices.show', $invoice)->with('success', $invoice->status === 'draft'
+            ? 'Tagihan materai disimpan. Invoice wajib difinalisasi oleh Finance Manager sebelum dicetak.'
+            : 'Nilai tagihan materai tidak berubah. Status invoice tetap.');
+    }
+
     public function finalize(Request $request, Invoice $invoice, JobClosingService $service)
     {
         $data = $request->validate([

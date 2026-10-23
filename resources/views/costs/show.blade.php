@@ -1,8 +1,11 @@
 @extends('layouts.app')
 @section('title','Detail Biaya')
 @section('content')
+@php
+    $hasModal = \App\Support\Money::decimal($cost->total_cost)->isPositive();
+@endphp
 <div class="page-heading"><div><p class="eyebrow">{{ $job->number }} · {{ config('operations.job_statuses.'.$job->status) }}</p><h1>{{ $cost->number }}</h1><p>{{ $cost->description }}</p></div><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">← Kembali</a></div>
-@if($job->invoice && ($job->invoice->payments()->exists() || (float) $job->invoice->paid_amount > 0))<div class="info-note"><strong>Biaya terkunci karena invoice sudah memiliki pembayaran.</strong> Perubahan nominal tidak tersedia agar saldo invoice dan jurnal pembayaran tetap konsisten.</div>@elseif($cost->paid_at)<div class="info-note"><strong>Biaya sudah PAID dan tetap dapat direvisi.</strong> Jika modal dinaikkan, biaya kembali menjadi Draft dan Finance Manager perlu melakukan Finalisasi Biaya ulang. Sistem menghitung kekurangan pembayaran otomatis.</div>@elseif($job->invoice)<div class="info-note"><strong>Invoice sudah dibuat dan belum dibayar.</strong> Biaya tetap dapat disesuaikan; sistem memperbarui rincian serta jurnal invoice secara otomatis.</div>@elseif($cost->status==='final')<div class="info-note"><strong>Biaya sudah dikonfirmasi Finance.</strong> Finance Confirm hanya menandai biaya telah diperiksa; biaya tetap dapat disesuaikan sebelum maupun sesudah Finalisasi Invoice.</div>@endif
+@if($job->invoice && ($job->invoice->payments()->exists() || (float) $job->invoice->paid_amount > 0))<div class="info-note"><strong>Biaya terkunci karena invoice sudah memiliki pembayaran.</strong> Perubahan nominal tidak tersedia agar saldo invoice dan jurnal pembayaran tetap konsisten.</div>@elseif($hasModal && $cost->paid_at)<div class="info-note"><strong>Biaya sudah PAID dan tetap dapat direvisi.</strong> Jika modal dinaikkan, biaya kembali menjadi Draft dan Finance Manager perlu melakukan Finalisasi Biaya ulang. Sistem menghitung kekurangan pembayaran otomatis.</div>@elseif($job->invoice)<div class="info-note"><strong>Invoice sudah dibuat dan belum dibayar.</strong> Biaya tetap dapat disesuaikan; sistem memperbarui rincian serta jurnal invoice secara otomatis.</div>@elseif($cost->status==='final')<div class="info-note"><strong>Biaya sudah dikonfirmasi Finance.</strong> Finance Confirm hanya menandai biaya telah diperiksa; biaya tetap dapat disesuaikan sebelum maupun sesudah Finalisasi Invoice.</div>@endif
 <section class="panel"><div class="panel-heading"><h2>Rincian biaya aktual</h2><span class="status-badge status-{{ $cost->status }}">{{ config('operations.cost_statuses.'.$cost->status) }}</span></div>
 <dl class="detail-grid">
 <div><dt>Jenis transaksi</dt><dd><strong>{{ match($cost->cost_category) { 'reimbursement' => 'Reimbursement (Temporary Payment)', 'debit_note' => 'Debit Note (Piutang Agent)', 'credit_note' => 'Credit Note (Hutang Agent)', default => 'Payment Request (Provisional Payment)' } }}</strong></dd></div><div><dt>Tanggal biaya</dt><dd>{{ $cost->cost_date->format('d/m/Y') }}</dd></div><div><dt>Jumlah / Satuan</dt><dd>{{ \App\Support\Money::format($cost->quantity) }} {{ $cost->unit }}</dd></div>
@@ -25,7 +28,11 @@
     <div class="summary-row"><span>Estimasi profit</span><strong>@if($isForeign) {{ $cost->currency }} {{ \App\Support\Money::format($foreignProfit) }} (Rp {{ \App\Support\Money::format(\App\Support\Money::decimal($cost->total_price)->minus(\App\Support\Money::decimal($cost->total_cost))) }}) @else Rp {{ \App\Support\Money::format(\App\Support\Money::decimal($cost->total_price)->minus(\App\Support\Money::decimal($cost->total_cost))) }} @endif</strong></div>
     @endif
 </div>
+@if($hasModal)
 <div class="info-note" style="margin-top:16px;"><strong>Status Pembayaran Vendor:</strong> @if($paidAmount->isPositive() && $outstandingAmount->isPositive()) <span class="status-badge status-warning" style="vertical-align:middle;margin:0 4px;">KURANG BAYAR</span> Sudah dibayar Rp {{ \App\Support\Money::format((string) $paidAmount) }}, kekurangan Rp {{ \App\Support\Money::format((string) $outstandingAmount) }}. @elseif($paidAmount->isPositive()) <span class="status-badge status-paid" style="vertical-align:middle;margin:0 4px;">PAID</span> {{ $cost->paid_date?->format('d/m/Y') }} · {{ $cost->paymentAccount?->name }} @else <span class="status-badge status-draft" style="vertical-align:middle;margin:0 4px;">Belum PAID</span> — biaya dapat dibayar meskipun masih Draft; Finance Manager dapat membuat jurnal melalui Finalisasi Invoice. @endif</div>
+@else
+<p class="subtle" style="margin-top:16px;">Tanpa modal — tidak memerlukan pembayaran vendor.</p>
+@endif
 </section>
 <div class="actions-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:20px; margin-bottom:24px;">
     @if($job->status === 'open' && !$job->invoice && auth()->user()->hasRole(['finance-manager', 'super-admin', 'admin']))
@@ -34,6 +41,7 @@
     @can('update',$cost)
         <a class="button button-secondary" href="{{ route('jobs.costs.edit',[$job,$cost]) }}">Edit biaya</a>
     @endcan
+    @if($hasModal)
     @can('unpaid',$cost)
         <form method="POST" action="{{ route('jobs.costs.unpaid',[$job,$cost]) }}" data-confirm="Kembalikan biaya ini menjadi UNPAID? Jurnal pembayaran akan dibalik otomatis dan biaya dapat dibayar ulang.">
             @csrf
@@ -42,6 +50,7 @@
             <button class="button button-danger">Unpaid Biaya</button>
         </form>
     @endcan
+    @endif
     @can('finalize',$cost)
         <form method="POST" action="{{ route('jobs.costs.finalize',[$job,$cost]) }}" data-confirm="Konfirmasi biaya ini setelah diperiksa Finance? Biaya masih dapat disesuaikan sampai Finalisasi Invoice.">
             @csrf

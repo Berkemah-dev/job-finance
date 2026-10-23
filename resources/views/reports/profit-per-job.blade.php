@@ -50,6 +50,9 @@
                         <td>
                             @if(!empty($row->job_id))
                                 <a class="text-link" href="{{ route('jobs.show', $row->job_id) }}"><strong>{{ $row->job_number }}</strong></a>
+                                @can('financial.view')
+                                    <br><a class="text-link" href="{{ route('reports.job-profit.pdf', $row->job_id) }}" target="_blank" rel="noopener">PDF JO Profit</a>
+                                @endcan
                             @else
                                 <strong>{{ $row->job_number }}</strong>
                             @endif

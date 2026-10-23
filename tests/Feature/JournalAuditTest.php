@@ -293,6 +293,106 @@ class JournalAuditTest extends TestCase
         });
     }
 
+    private function hppDetailTotal($rows): string
+    {
+        return (string) $rows->reduce(fn ($sum, $row) => $sum->plus($row->total_cost), \App\Support\Money::decimal(0));
+    }
+
+    public function test_closed_job_charge_details_leave_unclosed_and_appear_only_in_closed(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $late = $save('Late handling', '500000', '0');
+            $finalize($late);
+            $pay($late);
+            $unpaid = $save('Unpaid handling', '250000', '0');
+            $finalize($unpaid);
+            $report = app(\App\Services\FinancialReportService::class);
+            $from = today()->startOfMonth()->toDateString();
+            $to = today()->toDateString();
+            $open = $report->incomeStatement($from, $to);
+            $this->assertSame('600000.00', $this->hppDetailTotal($open['hppUnclosedBreakdown']));
+            $this->assertSame($open['totalHppUnclosed'], $this->hppDetailTotal($open['hppUnclosedBreakdown']));
+            $this->assertCount(0, $open['hppBreakdown']);
+            $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                'closing_date' => $to, 'due_date' => today()->addDays(30)->toDateString()], $manager);
+            $count = \App\Models\Journal::count();
+            $closed = $report->incomeStatement($from, $to);
+            $this->assertSame('0.00', $closed['totalHppUnclosed']);
+            $this->assertCount(0, $closed['hppUnclosedBreakdown']);
+            $this->assertSame('850000.00', $this->hppDetailTotal($closed['hppBreakdown']));
+            $this->assertSame($closed['totalHppClosed'], $this->hppDetailTotal($closed['hppBreakdown']));
+            $this->assertSame($count, \App\Models\Journal::count(), 'Rendering the report must never change journals.');
+        });
+    }
+
+    public function test_mixed_open_and_closed_jobs_do_not_duplicate_hpp_details_and_reopen_is_supported(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $other = Job::factory()->open()->create(['service_type' => 'exp_sea']);
+            $cost = $costs->save($other, null, ['job_version' => $other->lock_version,
+                'description' => 'Initial freight', 'cost_category' => 'payment_request', 'cost_date' => today()->toDateString(),
+                'currency' => 'IDR', 'quantity' => '1', 'unit' => 'Layanan', 'unit_cost' => '250000', 'unit_price' => '400000'], $finance);
+            $costs->finalize($other->fresh(), $cost->fresh(), ['job_version' => $other->fresh()->lock_version,
+                'lock_version' => $cost->fresh()->lock_version], $manager);
+            $makeInvoice = function ($target) use ($closing, $finance, $manager) {
+                $draft = $closing->createInvoiceForJob($target->fresh(), ['lock_version' => $target->fresh()->lock_version,
+                    'invoice_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'tax' => '0', 'stamp_duty' => '0'], $finance);
+                $closing->finalizeInvoice($draft->fresh(), ['job_version' => $target->fresh()->lock_version,
+                    'lock_version' => $draft->fresh()->lock_version], $manager);
+            };
+            $makeInvoice($other);
+            $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+            $report = app(\App\Services\FinancialReportService::class);
+            $read = fn () => $report->incomeStatement(today()->startOfMonth()->toDateString(), today()->toDateString());
+            $r = $read();
+            $this->assertSame('250000.00', $this->hppDetailTotal($r['hppUnclosedBreakdown']));
+            $this->assertSame('100000.00', $this->hppDetailTotal($r['hppBreakdown']));
+            foreach ($r['hppUnclosedBreakdown'] as $row) {
+                foreach ($row->items as $item) {
+                    $this->assertSame($other->id, $item['job_id']);
+                }
+            }
+            $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'reason' => 'Report regression'], $manager);
+            $makeInvoice($job);
+            $r = $read();
+            $this->assertSame('0.00', $r['totalHppClosed']);
+            $this->assertCount(0, $r['hppBreakdown']);
+            $this->assertSame('350000.00', $this->hppDetailTotal($r['hppUnclosedBreakdown']));
+            $this->assertSame($r['totalHppUnclosed'], $this->hppDetailTotal($r['hppUnclosedBreakdown']));
+        });
+    }
+
+    public function test_hpp_details_respect_historical_periods_when_closing_in_next_month(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $originalDay = today();
+            $previousClock = \Illuminate\Support\Carbon::getTestNow();
+            \Illuminate\Support\Carbon::setTestNow($originalDay->copy()->addMonthNoOverflow()->startOfMonth()->setTime(12, 0));
+            try {
+                $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                    'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+                $report = app(\App\Services\FinancialReportService::class);
+                $old = $report->incomeStatement($originalDay->copy()->startOfMonth()->toDateString(), $originalDay->copy()->endOfMonth()->toDateString());
+                $this->assertSame('100000.00', $this->hppDetailTotal($old['hppUnclosedBreakdown']));
+                $this->assertCount(0, $old['hppBreakdown']);
+                $current = $report->incomeStatement(today()->startOfMonth()->toDateString(), today()->endOfMonth()->toDateString());
+                $this->assertSame('-100000.00', $this->hppDetailTotal($current['hppUnclosedBreakdown']));
+                $this->assertSame($current['totalHppUnclosed'], $this->hppDetailTotal($current['hppUnclosedBreakdown']));
+                $this->assertStringContainsString('Reklasifikasi', $current['hppUnclosedBreakdown']->first()->description);
+                $this->assertSame('100000.00', $this->hppDetailTotal($current['hppBreakdown']));
+                $all = $report->incomeStatement($originalDay->copy()->startOfMonth()->toDateString(), today()->endOfMonth()->toDateString());
+                $this->assertCount(0, $all['hppUnclosedBreakdown']);
+                $this->assertSame('100000.00', $this->hppDetailTotal($all['hppBreakdown']));
+            } finally {
+                \Illuminate\Support\Carbon::setTestNow($previousClock);
+            }
+        });
+    }
+
     public function test_unpaid_restores_provision_after_standalone_hpp_reclassification(): void
     {
         $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
