@@ -53,6 +53,7 @@ class QuotationPdfHeaderTest extends TestCase
             $this->assertStringNotContainsString('text-decoration', $letterhead);
             $this->assertStringNotContainsString('<u>', $letterhead);
             $this->assertStringContainsString('data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/rdx-logo-clean.png'))), $html);
+            $this->assertStringContainsString('<img src="data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/logo.png'))).'" alt="RDX">', $html);
             $this->assertSame($html, view('quotations.pdf', compact('quotation'))->render());
             $this->get(route('quotations.preview', $quotation))->assertOk();
             $this->get(route('quotations.pdf', $quotation))->assertOk()->assertHeader('Content-Type', 'application/pdf');
@@ -63,6 +64,18 @@ class QuotationPdfHeaderTest extends TestCase
             if (getenv('QUOTATION_HEADER_PREVIEW')) {
                 \Illuminate\Support\Facades\File::ensureDirectoryExists(base_path('tmp/pdfs'));
                 $pdf->save(base_path('tmp/pdfs/quotation-header-preview.pdf'));
+            }
+            foreach (range(1, 60) as $index) {
+                $quotation->items()->create(['position' => $index + 3, 'description' => 'ADDITIONAL CHARGE '.$index,
+                    'type' => 'provision', 'unit' => 'Layanan', 'quantity' => '1', 'unit_cost' => '1000000',
+                    'unit_price' => '1500000', 'total_cost' => '1000000', 'total_price' => '1500000', 'currency' => 'IDR']);
+            }
+            $quotation->load('items');
+            $longPdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', compact('quotation'))->setPaper('a4');
+            $this->assertStringStartsWith('%PDF-', $longPdf->output());
+            $this->assertGreaterThan(1, $longPdf->getDomPDF()->getCanvas()->get_page_count());
+            if (getenv('QUOTATION_HEADER_PREVIEW')) {
+                $longPdf->save(base_path('tmp/pdfs/quotation-footer-multipage.pdf'));
             }
         } finally {
             DB::setDefaultConnection($previous);

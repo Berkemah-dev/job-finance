@@ -5,7 +5,7 @@
     <title>Quotation {{ $quotation->number }}</title>
     <style>
         @page {
-            margin: 22px 26px 20px 26px;
+            margin: 22px 26px 210px 26px;
             size: a4 portrait;
         }
         * {
@@ -222,7 +222,10 @@
             color: #000;
         }
         .sign {
-            margin-top: 210px;
+            position: absolute;
+            bottom: -175px;
+            left: 0;
+            margin: 0;
             font-size: 8.5pt;
             line-height: 1.25;
             color: #000;
@@ -250,9 +253,7 @@
             color: #000;
         }
         .footer-disclaimer {
-            position: absolute;
-            bottom: 12px;
-            left: 0;
+            margin-top: 6px;
             font-style: italic;
             font-size: 7.5pt;
             color: #000;
@@ -463,7 +464,7 @@
 <div class="sign">
     <div>Yours Faithfully,</div>
     <div class="sign-logo">
-        <img src="{{ \App\Support\PdfBranding::logoSource() }}" alt="RDX">
+        <img src="{{ $signLogoSrc }}" alt="RDX">
     </div>
     @php
         $salesUser = $quotation->sales ?? ($quotation->creator ?? null);
@@ -472,11 +473,9 @@
     <div class="sign-role">MARKETING</div>
     <div class="sign-contact">Mobile : {{ $salesUser?->phone ?? '082246500047' }}</div>
     <div class="sign-contact">Email : {{ $salesUser?->email ?? 'steven@rdx-interlog.com' }}</div>
-</div>
-
-{{-- FOOTER DISCLAIMER --}}
-<div class="footer-disclaimer">
-    This is computer-generated does not require signature
+    <div class="footer-disclaimer">
+        This is computer-generated does not require signature
+    </div>
 </div>
 
 </body>
