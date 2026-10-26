@@ -34,7 +34,7 @@
         $isLcl = str_contains(strtolower($job->service_type ?? ''), 'lcl');
     }
 
-    $bannerFile = public_path('images/rdx-banner.png');
+    $bannerFile = public_path('images/logo.png');
     $bannerBase64 = file_exists($bannerFile) ? 'data:image/png;base64,' . base64_encode(file_get_contents($bannerFile)) : '';
 
     $signAlliyahFile = public_path('images/signature-alliyah.jpeg');
@@ -214,7 +214,7 @@
     <table class="header-table">
         <tr>
             <td style="width: 50%;">
-                <img src="{{ $bannerBase64 ?: public_path('images/rdx-banner.png') }}" style="max-height: 42pt; max-width: 210pt;" alt="RDX LOGISTICS">
+                <img src="{{ $bannerBase64 ?: public_path('images/logo.png') }}" style="max-height: 42pt; max-width: 210pt;" alt="RDX LOGISTICS">
             </td>
             <td style="width: 50%; text-align: right;">
                 <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>

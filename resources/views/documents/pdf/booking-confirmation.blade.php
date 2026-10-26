@@ -161,14 +161,14 @@
     $altLogoFile = public_path('images/rdx-logistics-doc-logo.png');
     $pngLogoFile = public_path('images/logo.png');
 
-    if (file_exists($cleanLogoFile)) {
+    if (file_exists($pngLogoFile)) {
+        $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($pngLogoFile));
+    } elseif (file_exists($cleanLogoFile)) {
         $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($cleanLogoFile));
     } elseif (file_exists($headerLogoFile)) {
         $logoPath = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerLogoFile));
     } elseif (file_exists($altLogoFile)) {
         $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($altLogoFile));
-    } elseif (file_exists($pngLogoFile)) {
-        $logoPath = 'data:image/png;base64,' . base64_encode(file_get_contents($pngLogoFile));
     } else {
         $logoPath = '';
     }

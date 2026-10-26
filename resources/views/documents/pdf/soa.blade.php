@@ -1,5 +1,5 @@
 @php
-    $bannerFile = public_path('images/rdx-banner.png');
+    $bannerFile = public_path('images/logo.png');
     $bannerBase64 = file_exists($bannerFile) ? 'data:image/png;base64,' . base64_encode(file_get_contents($bannerFile)) : '';
 
     $rows = $statement['all_rows'] ?? ($statement['rows'] instanceof \Illuminate\Contracts\Pagination\Paginator ? $statement['rows']->items() : $statement['rows']);
@@ -196,7 +196,7 @@
     <table class="header-table">
         <tr>
             <td style="width: 50%;">
-                <img src="{{ $bannerBase64 ?: public_path('images/rdx-banner.png') }}" style="max-height: 40pt; max-width: 200pt;" alt="RDX LOGISTICS">
+                <img src="{{ $bannerBase64 ?: public_path('images/logo.png') }}" style="max-height: 40pt; max-width: 200pt;" alt="RDX LOGISTICS">
             </td>
             <td style="width: 50%; text-align: right;">
                 <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>

@@ -33,7 +33,7 @@
             'SURAT KUASA & DELIVERY ORDER',
         ];
     }
-    $bannerFile = public_path('images/rdx-banner.png');
+    $bannerFile = public_path('images/logo.png');
     $altLogoFile = public_path('images/rdx-header-logo.jpg');
     if (file_exists($bannerFile)) {
         $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($bannerFile));
@@ -195,7 +195,7 @@
             <table class="header-table">
                 <tr>
                     <td style="width: 45%;">
-                        <img src="{{ $logoBase64 ?: public_path('images/rdx-banner.png') }}" class="logo-img" alt="RDX LOGISTICS">
+                        <img src="{{ $logoBase64 ?: public_path('images/logo.png') }}" class="logo-img" alt="RDX LOGISTICS">
                     </td>
                     <td style="width: 55%; text-align: right;">
                         <div class="doc-title">{{ $isDokumen ? 'TANDA TERIMA DOKUMEN' : 'TANDA TERIMA BARANG' }}</div>
