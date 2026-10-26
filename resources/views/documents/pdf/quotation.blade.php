@@ -30,27 +30,29 @@
         }
         .header-table {
             width: 100%;
-            margin-bottom: 76px;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
         }
         .header-logo {
-            width: 58%;
-            vertical-align: top;
+            width: 45%;
+            vertical-align: middle;
         }
         .header-logo img {
-            width: 198pt;
+            width: 190px;
             height: auto;
+            display: block;
         }
         .header-company {
-            width: 42%;
-            vertical-align: top;
-            text-align: left;
-            font-size: 8pt;
-            line-height: 1.2;
-            padding-left: 15px;
+            width: 55%;
+            vertical-align: middle;
+            text-align: right;
+            font-size: 9.5px;
+            line-height: 1.45;
+            padding-left: 8px;
         }
         .header-company .company-name {
             font-weight: bold;
-            font-size: 9.5pt;
+            font-size: 11px;
             margin-bottom: 2px;
         }
         .top-block-table {
@@ -91,11 +93,11 @@
             padding-left: 5px;
         }
         .quo-title {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 20pt;
-            font-weight: normal;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16pt;
+            font-weight: bold;
             letter-spacing: 0.5px;
-            line-height: 0.85;
+            line-height: 1.2;
             margin-top: 3px;
             margin-bottom: 5px;
         }
@@ -260,9 +262,9 @@
 <body>
 
 @php
-    $headerLogoFile = public_path('images/rdx-header-logo.jpg');
+    $headerLogoFile = public_path('images/logo.png');
     $headerLogoSrc = file_exists($headerLogoFile)
-        ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($headerLogoFile))
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($headerLogoFile))
         : (file_exists(public_path('images/rdx-logo-clean.png'))
             ? 'data:image/png;base64,' . base64_encode(file_get_contents(public_path('images/rdx-logo-clean.png')))
             : (file_exists(public_path('images/rdx-logistics-doc-logo.png'))
@@ -283,7 +285,8 @@
         </td>
         <td class="header-company">
             <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
-            <div>Jl.Teh No.3C Jakarta Barat 11110 Indonesia</div>
+            <div>Address : Jl.Teh No 3C Tamansari Pinangsia</div>
+            <div>Jakarta Barat Indonesia 11110</div>
             <div>Telp : 021-38873060</div>
         </td>
     </tr>
