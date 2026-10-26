@@ -173,9 +173,7 @@
 @endphp
 
 {{-- LOGO ATAS KIRI (TANPA TEKS INTERNATIONAL FREIGHT FORWARDERS) --}}
-<div class="top-header">
-    <img class="logo-img" src="{{ $logoPath }}" alt="RDX LOGISTICS">
-</div>
+@include('documents.pdf.partials.letterhead')
 
 {{-- MAIN SI TABLE --}}
 <table class="si-main-table">

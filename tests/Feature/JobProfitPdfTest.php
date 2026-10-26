@@ -68,8 +68,8 @@ class JobProfitPdfTest extends TestCase
             $this->assertSame('300000.00', $report['unpaidCreditNotes'][0]['outstanding']);
             $this->assertSame(1, $report['draftCount']);
             $html = view('reports.pdf.job-profit', $report)->render();
-            $this->assertStringContainsString('alt="RDX Logistics"', $html);
-            $this->assertStringContainsString('data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/logo.png'))), $html);
+            $this->assertStringContainsString('alt="RDX LOGISTICS"', $html);
+            $this->assertStringContainsString('data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/rdx-logo-clean.png'))), $html);
             $this->assertStringContainsString("font-family: 'Courier New', Courier, monospace", $html);
             $this->assertStringContainsString('background: #dfdfdf', $html);
             $this->assertStringNotContainsString('#182337', $html);

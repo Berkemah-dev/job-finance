@@ -64,7 +64,7 @@
             padding: 0;
         }
         .half-sheet {
-            height: 380px;
+            min-height: 380px;
             position: relative;
         }
         .header-table {
@@ -192,10 +192,10 @@
     @for($copy = 1; $copy <= 2; $copy++)
         <div class="half-sheet {{ $copy === 2 ? 'copy-second' : '' }}">
             <!-- HEADER -->
+            @include('documents.pdf.partials.letterhead')
             <table class="header-table">
                 <tr>
                     <td style="width: 45%;">
-                        <img src="{{ $logoBase64 ?: public_path('images/logo.png') }}" class="logo-img" alt="RDX LOGISTICS">
                     </td>
                     <td style="width: 55%; text-align: right;">
                         <div class="doc-title">{{ $isDokumen ? 'TANDA TERIMA DOKUMEN' : 'TANDA TERIMA BARANG' }}</div>

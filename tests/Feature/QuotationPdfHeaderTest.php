@@ -47,8 +47,9 @@ class QuotationPdfHeaderTest extends TestCase
             $this->assertMatchesRegularExpression('/\.header-logo\s*\{[^}]*vertical-align:\s*middle/s', $html);
             $this->assertMatchesRegularExpression('/\.header-company\s*\{[^}]*vertical-align:\s*middle/s', $html);
             $this->assertStringContainsString('PT.RADIX INTERNATIONAL LOGISTICS', $html);
-            $this->assertStringContainsString('Address : Jl.Teh No 3C Tamansari Pinangsia', $html);
-            $this->assertStringContainsString('data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/logo.png'))), $html);
+            $this->assertStringContainsString('Jl.Teh No 3C Tamansari Pinangsia', $html);
+            $this->assertStringContainsString('class="rdx-letterhead"', $html);
+            $this->assertStringContainsString('data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/rdx-logo-clean.png'))), $html);
             $this->assertSame($html, view('quotations.pdf', compact('quotation'))->render());
             $this->get(route('quotations.preview', $quotation))->assertOk();
             $this->get(route('quotations.pdf', $quotation))->assertOk()->assertHeader('Content-Type', 'application/pdf');

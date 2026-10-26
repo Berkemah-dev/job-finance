@@ -38,9 +38,11 @@ class PdfLogoConsistencyTest extends TestCase
             $from = today()->startOfMonth();
             $to = today();
             $data = compact('job', 'quotation', 'customer', 'bc', 'si', 'statement', 'from', 'to');
-            $expectedLogo = 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/logo.png')));
+            $expectedLogo = 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/rdx-logo-clean.png')));
             foreach (['booking-confirmation', 'shipping-instruction', 'surat-jalan', 'tanda-terima', 'soa'] as $name) {
                 $html = view('documents.pdf.'.$name, $data)->render();
+                $this->assertStringContainsString('class="rdx-letterhead"', $html);
+                $this->assertStringContainsString('PT.RADIX INTERNATIONAL LOGISTICS', $html);
                 $previousErrors = libxml_use_internal_errors(true);
                 try {
                     $document = new \DOMDocument;
@@ -63,6 +65,26 @@ class PdfLogoConsistencyTest extends TestCase
                 $this->assertStringContainsString("public_path('images/signature-syanne.jpeg')", file_get_contents(resource_path('views/documents/pdf/'.$name.'.blade.php')));
             }
             $this->assertStringContainsString("public_path('images/signature-alliyah.jpeg')", file_get_contents(resource_path('views/documents/pdf/surat-jalan.blade.php')));
+            $invoice = \App\Models\Invoice::factory()->create([
+                'job_closing_snapshot_id' => null, 'job_id' => $job->id, 'customer_id' => $customer->id,
+            ])->refresh();
+            $ledger = app(\App\Services\FinancialReportService::class)->ledgerExport(
+                \App\Models\ChartOfAccount::where('code', '11121')->value('id'), $from->toDateString(), $to->toDateString()
+            );
+            foreach ([
+                ['documents.pdf.invoice', ['invoice' => $invoice], 'invoice'],
+                ['documents.pdf.job-order', $data, 'job-order'],
+                ['reports.pdf.ledger', $ledger + ['from' => $from->toDateString(), 'to' => $to->toDateString()], 'ledger'],
+            ] as [$template, $viewData, $name]) {
+                $html = view($template, $viewData)->render();
+                $this->assertStringContainsString('class="rdx-letterhead"', $html);
+                $this->assertStringContainsString($expectedLogo, $html);
+                $pdf = app('dompdf.wrapper')->loadView($template, $viewData)->setPaper('a4');
+                $this->assertStringStartsWith('%PDF-', $pdf->output());
+                if (getenv('PDF_LOGO_PREVIEW')) {
+                    $pdf->save(base_path('tmp/pdfs/logo-'.$name.'.pdf'));
+                }
+            }
         } finally {
             DB::setDefaultConnection($previous);
             DB::purge('pdf_logo_test');

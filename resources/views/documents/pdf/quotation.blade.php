@@ -278,19 +278,7 @@
 @endphp
 
 {{-- HEADER --}}
-<table class="header-table">
-    <tr>
-        <td class="header-logo">
-            <img src="{{ $headerLogoSrc }}" alt="RDX LOGISTICS">
-        </td>
-        <td class="header-company">
-            <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
-            <div>Address : Jl.Teh No 3C Tamansari Pinangsia</div>
-            <div>Jakarta Barat Indonesia 11110</div>
-            <div>Telp : 021-38873060</div>
-        </td>
-    </tr>
-</table>
+@include('documents.pdf.partials.letterhead')
 
 {{-- TO + QUOTATION TITLE --}}
 <table class="top-block-table">
@@ -475,7 +463,7 @@
 <div class="sign">
     <div>Yours Faithfully,</div>
     <div class="sign-logo">
-        <img src="{{ $signLogoSrc }}" alt="RDX">
+        <img src="{{ \App\Support\PdfBranding::logoSource() }}" alt="RDX">
     </div>
     @php
         $salesUser = $quotation->sales ?? ($quotation->creator ?? null);

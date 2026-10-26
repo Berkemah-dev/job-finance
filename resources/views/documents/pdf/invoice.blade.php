@@ -262,18 +262,7 @@
 @endphp
 
 {{-- HEADER --}}
-<div class="header">
-    <div class="header-logo">
-        <img src="{{ public_path('images/logo.png') }}" alt="RDX Logistics">
-    </div>
-    <div class="header-company">
-        <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
-        <div><span class="company-label">Address :</span> Jl.Teh No 3C Tamansari Pinangsia</div>
-        <div>Jakarta Barat Indonesia 11110</div>
-        <div><span class="company-label">Telp :</span> 021-38873060</div>
-    </div>
-    <div class="clear"></div>
-</div>
+@include('documents.pdf.partials.letterhead')
 
 {{-- TITLE --}}
 <div class="doc-title"><u>INVOICE</u></div>

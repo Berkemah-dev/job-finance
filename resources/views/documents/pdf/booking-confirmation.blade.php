@@ -207,9 +207,7 @@
 @endphp
 
 {{-- LOGO (TOP LEFT) --}}
-<div class="logo-box">
-    <img class="logo-img" src="{{ $logoPath }}" alt="RDX LOGISTICS">
-</div>
+@include('documents.pdf.partials.letterhead')
 
 {{-- CENTERED TITLE & NUMBER --}}
 <div class="title-box">

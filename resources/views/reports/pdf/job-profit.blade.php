@@ -34,25 +34,9 @@
     </style>
 </head>
 <body>
-    @php
-        $logoFile = public_path('images/logo.png');
-        $logoSource = is_file($logoFile) ? 'data:image/png;base64,'.base64_encode(file_get_contents($logoFile)) : null;
-    @endphp
-    <table class="header-table">
-        <tr>
-            <td class="header-logo">
-                @if($logoSource)
-                    <img src="{{ $logoSource }}" alt="RDX Logistics">
-                @else
-                    <strong>RDX LOGISTICS</strong>
-                @endif
-            </td>
-            <td class="header-title">
-                <h1>JO PROFIT</h1>
-                <p><strong>{{ $job->number }}</strong><br>{{ strtoupper($job->status) }} | {{ $job->job_date?->format('d/m/Y') }}</p>
-            </td>
-        </tr>
-    </table>
+    @include('documents.pdf.partials.letterhead')
+    <h1>JO PROFIT</h1>
+    <p><strong>{{ $job->number }}</strong> | {{ strtoupper($job->status) }} | {{ $job->job_date?->format('d/m/Y') }}</p>
     <p class="muted">Rincian biaya final per Job. Seluruh nominal jual dan beli dalam IDR.</p>
     <table class="meta">
         <tr><td class="label">Customer</td><td style="width:43%">{{ $job->customer?->name ?? data_get($job->quotation_snapshot, 'customer.name', '-') }}</td><td class="label">QTY</td><td>{{ $job->package_count ?? $job->quotation?->cargo_qty ?? '-' }} {{ $job->container_type }}</td></tr>

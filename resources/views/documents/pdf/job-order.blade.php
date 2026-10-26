@@ -151,15 +151,10 @@
 @endphp
 
 {{-- HEADER --}}
+@include('documents.pdf.partials.letterhead')
 <table class="header-table">
     <tr>
         <td class="header-logo">
-            <img src="{{ $logoBase64 ?: public_path('images/logo.png') }}" alt="RDX Logistics">
-            <div class="header-company">
-                <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
-                Jl.Teh No.3C Jakarta Barat 11110 Indonesia<br>
-                Telp : 021-38873060
-            </div>
         </td>
         <td class="header-meta">
             <table class="meta-table">

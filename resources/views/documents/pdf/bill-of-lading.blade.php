@@ -173,7 +173,7 @@
             </div>
         </td>
         <td style="width: 25%; height: 26pt;" class="logo-center">
-            <img src="{{ $logoPath }}" alt="RDX">
+            <img src="{{ \App\Support\PdfBranding::logoSource() }}" alt="RDX">
         </td>
         <td style="width: 25%; height: 26pt;">
             <span class="cell-lbl">BILL OF LADING NO.</span>

@@ -193,18 +193,7 @@
 <body>
 
     <!-- TOP HEADER -->
-    <table class="header-table">
-        <tr>
-            <td style="width: 50%;">
-                <img src="{{ $bannerBase64 ?: public_path('images/logo.png') }}" style="max-height: 40pt; max-width: 200pt;" alt="RDX LOGISTICS">
-            </td>
-            <td style="width: 50%; text-align: right;">
-                <div class="company-name">PT.RADIX INTERNATIONAL LOGISTICS</div>
-                <div class="company-address">Jl.Teh No.3C Jakarta Barat 11110 Indonesia</div>
-                <div class="company-address">Telp : 021-38873060 | Email : operations@jobfinance.test</div>
-            </td>
-        </tr>
-    </table>
+    @include('documents.pdf.partials.letterhead')
 
     <!-- DOCUMENT TITLE -->
     <div class="doc-title-container">

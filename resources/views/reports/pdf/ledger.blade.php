@@ -35,9 +35,7 @@
     $logoFile = public_path('images/logo.png');
     $logo = file_exists($logoFile) ? 'data:image/png;base64,'.base64_encode(file_get_contents($logoFile)) : '';
 @endphp
-<div class="header">
-    @if($logo)<img class="logo" src="{{ $logo }}" alt="Logo">@endif
-</div>
+@include('documents.pdf.partials.letterhead')
 <div class="title">DETIL ACCOUNT (BUKU BESAR)</div>
 <table class="meta">
     <tr>
