@@ -49,6 +49,9 @@ class QuotationPdfHeaderTest extends TestCase
             $this->assertStringContainsString('PT.RADIX INTERNATIONAL LOGISTICS', $html);
             $this->assertStringContainsString('Jl.Teh No 3C Tamansari Pinangsia', $html);
             $this->assertStringContainsString('class="rdx-letterhead"', $html);
+            $letterhead = view('documents.pdf.partials.letterhead')->render();
+            $this->assertStringNotContainsString('text-decoration', $letterhead);
+            $this->assertStringNotContainsString('<u>', $letterhead);
             $this->assertStringContainsString('data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/rdx-logo-clean.png'))), $html);
             $this->assertSame($html, view('quotations.pdf', compact('quotation'))->render());
             $this->get(route('quotations.preview', $quotation))->assertOk();
