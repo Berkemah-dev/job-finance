@@ -130,7 +130,7 @@ class JobCostController extends Controller
     {
         $service->finalize($job, $cost, $request->validated(), $request->user());
 
-        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya sudah dikonfirmasi Finance. Biaya masih dapat disesuaikan selama invoice belum memiliki pembayaran.');
+        return redirect()->route('jobs.costs.show', [$job, $cost])->with('success', 'Biaya sudah difinalisasi Finance Manager. Jika biaya direvisi, biaya kembali Draft dan wajib difinalisasi ulang.');
     }
 
     public function approve(CostVersionRequest $request, Job $job, JobCost $cost, JobCostService $service)

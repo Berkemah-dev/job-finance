@@ -4,7 +4,7 @@
 <div class="page-heading"><div><p class="eyebrow">{{ $job->number }}</p><h1>{{ $cost->exists?'Edit biaya':'Tambah biaya Finance' }}</h1><p>{{ $job->subject }}</p></div><a class="button button-secondary" href="{{ route('jobs.costs.index',$job) }}">← Kembali</a></div>
 <section class="panel form-panel"><form class="data-form" data-cost-form data-cost-existing="{{ $cost->exists ? 'true' : 'false' }}" method="POST" action="{{ $cost->exists?route('jobs.costs.update',[$job,$cost]):route('jobs.costs.store',$job) }}">@csrf @if($cost->exists) @method('PUT') @endif
 <input type="hidden" name="job_version" value="{{ old('job_version',$job->lock_version) }}"><input type="hidden" name="lock_version" value="{{ old('lock_version',$cost->lock_version ?? 0) }}">
-<div class="info-note">Setiap biaya tetap berstatus Draft sampai diperiksa dan dikonfirmasi Finance. Kurs modal dan kurs tagih dapat dicatat terpisah untuk transaksi valas.</div>
+<div class="info-note">Biaya baru atau biaya final yang diedit berstatus Draft dan wajib difinalisasi ulang oleh Finance Manager. Perubahan jual juga memerlukan finalisasi ulang invoice. Kurs modal dan kurs tagih dapat dicatat terpisah untuk transaksi valas.</div>
 @if($cost->exists && \App\Support\Money::decimal($cost->total_cost)->isPositive() && $cost->paid_at)
 <div class="info-note" style="margin-top:12px;"><strong>Revisi biaya PAID.</strong> Total modal boleh dinaikkan. Jika ada perubahan, biaya kembali menjadi Draft untuk Finalisasi Biaya ulang; sistem menghitung kekurangan pembayaran secara otomatis. Total modal tidak boleh lebih kecil dari yang sudah dibayar.</div>
 @endif

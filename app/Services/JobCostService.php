@@ -328,6 +328,9 @@ private function lockJob(Job $job, array $data): Job
             // debit. Reversing in the opposite order creates a negative
             // running balance in the ledger, even within one transaction.
             if ($reverseUnpaidRecognition) {
+                foreach ($this->activePostInvoiceHppJournals($cost) as $hppJournal) {
+                    $this->reverseJournal($hppJournal, $cost, $actor, 'Penyesuaian HPP biaya yang pernah di-closing');
+                }
                 $this->reverseRecognition($cost, $actor);
             }
             $this->touchJob($job, $actor);
@@ -433,7 +436,7 @@ private function lockJob(Job $job, array $data): Job
     private function activePostInvoiceHppJournals(JobCost $cost): \Illuminate\Support\Collection
     {
         return Journal::with('entries')
-            ->where('type', self::POST_INVOICE_HPP_JOURNAL_TYPE)
+            ->whereIn('type', [self::POST_INVOICE_HPP_JOURNAL_TYPE, JobClosingService::CLOSING_PROVISION])
             ->where('source_type', JobCost::class)
             ->where('source_id', $cost->id)
             ->whereNull('reversed_at')

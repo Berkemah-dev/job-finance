@@ -16,6 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 class JobClosingService
 {
+    public const CLOSING_TRANSFER = 'job_closing_transfer';
+    public const LEGACY_REOPEN_TRANSFER = 'job_reopen_legacy_transfer';
+    public const CLOSING_PROVISION = 'job_closing_provision';
     public function __construct(private JobCostService $costs, private DocumentNumberService $numbers, private JournalService $journals, private MasterDataService $master, private PartyAccountService $partyAccounts) {}
 
     public function close(Job $job, array $data, User $actor): Invoice
@@ -97,6 +100,20 @@ class JobClosingService
             $capitalizedTemporary = Money::decimal((string) $uncapitalizedRows->where('type', 'temporary')->sum('total_cost'));
             $capitalizedProvision = Money::decimal((string) $uncapitalizedRows->where('type', '!=', 'temporary')->sum('total_cost'));
             $fund = $capitalizedTemporary->plus($capitalizedProvision);
+            $existingCapitalization = Journal::with('entries')->where('source_type', Job::class)->where('source_id', $job->id)
+                ->where('type', 'job_cost_capitalization')->whereNull('reversed_at')->whereNull('reversal_of_id')->lockForUpdate()->first();
+            if ($existingCapitalization && ! $fund->isZero()) {
+                $oldTemporary = Money::decimal(0);
+                $oldProvision = Money::decimal(0);
+                foreach ($existingCapitalization->entries as $entry) {
+                    if ($entry->chart_of_account_id === $maps['temporary']->id) $oldTemporary = $oldTemporary->plus($entry->debit)->minus($entry->credit);
+                    if ($entry->chart_of_account_id === $maps['provision_wip']->id) $oldProvision = $oldProvision->plus($entry->debit)->minus($entry->credit);
+                }
+                if (! $oldTemporary->isEqualTo($capitalizedTemporary) || ! $oldProvision->isEqualTo($capitalizedProvision)) {
+                    throw ValidationException::withMessages(['journal' => 'Kapitalisasi biaya lama berbeda dari biaya Job. Periksa penyesuaian kapitalisasi sebelum closing ulang.']);
+                }
+                $fund = Money::decimal(0);
+            }
             if (! $fund->isZero()) {
                 $this->journals->post('job_cost_capitalization', Job::class, $job->id, $data['closing_date'], 'Kapitalisasi biaya '.$job->number, [
                     ['account_id' => $maps['temporary']->id, 'description' => 'Temporary '.$job->number, 'debit' => $capitalizedTemporary, 'credit' => 0],
@@ -112,30 +129,12 @@ class JobClosingService
 
             $closingEntries = [];
             // If invoice was already created earlier, receivable, revenue, tax and temporary WIP were already posted in job_invoice
-            $hasInvoiceJournal = Journal::where('source_type', Job::class)->where('source_id', $job->id)->whereIn('type', ['job_invoice', 'job_invoice_amendment'])->whereNull('reversal_of_id')->whereNull('reversed_at')->exists();
+            $hasInvoiceJournal = Journal::where('source_type', Job::class)->where('source_id', $job->id)
+                ->where(fn ($q) => $q->whereIn('type', ['job_invoice', 'job_invoice_amendment'])
+                    ->orWhere(fn ($legacy) => $legacy->where('type', 'job_closing')->whereHas('entries', fn ($e) => $e->where('description', 'like', 'Piutang%'))))
+                ->whereNull('reversal_of_id')->whereNull('reversed_at')->exists();
             if (! $hasInvoiceJournal) {
-                if ($customerReceivable->isPositive()) {
-                    $closingEntries[] = ['account_id' => $customerAccounts['receivable']->id, 'description' => 'Piutang '.$invoice->number, 'debit' => (string) $customerReceivable, 'credit' => 0];
-                }
-                if ($temporary->isPositive()) {
-                    $closingEntries[] = ['account_id' => $customerAccounts['temporary']->id, 'description' => 'Piutang Temporary '.$invoice->number, 'debit' => (string) $temporary, 'credit' => 0];
-                }
-                if ($temporary->isPositive()) {
-                    $closingEntries[] = ['account_id' => $maps['temporary']->id, 'description' => 'Reklasifikasi temporary', 'debit' => 0, 'credit' => (string) $temporary];
-                }
-                foreach ($provisionRows as $cost) {
-                    $sellingValue = Money::decimal($cost->total_price);
-                    if ($sellingValue->isZero()) {
-                        continue;
-                    }
-                    $closingEntries[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose · '.strtoupper($cost->description).' · '.$job->number, 'debit' => 0, 'credit' => (string) $sellingValue];
-                }
-                if ($stampDuty->isPositive()) {
-                    $closingEntries[] = ['account_id' => $maps['stamp_duty_expense']->id, 'description' => 'Materai ditagihkan · '.$job->number, 'debit' => 0, 'credit' => (string) $stampDuty];
-                }
-                if ($tax->isPositive()) {
-                    $closingEntries[] = ['account_id' => $maps['tax_payable']->id, 'description' => 'Pajak keluaran', 'debit' => 0, 'credit' => (string) $tax];
-                }
+                $this->postInvoiceJournal($job, $invoice, $rows, $summary, $tax, $stampDuty, $actor);
             }
             $provisionCost = Money::decimal($summary['provision_cost']);
             // Invoice dan pembayaran dapat sudah memindahkan sebagian modal ke
@@ -158,10 +157,34 @@ class JobClosingService
             if ($pendingProvision->isNegative()) {
                 throw ValidationException::withMessages(['journal' => 'HPP Unclosed job melebihi total modal. Periksa jurnal HPP sebelum Closing Job.']);
             }
+            // Pengakuan invoice/Provisi dipisahkan dari transfer Closed agar
+            // membuka kembali Job tidak membatalkan piutang, pajak, atau WIP.
             if ($pendingProvision->isPositive()) {
-                $closingEntries[] = ['account_id' => $hppAccountId, 'description' => 'HPP Unclose · Sisa Provisi saat closing · '.$job->number, 'debit' => (string) $pendingProvision, 'credit' => 0];
-                $closingEntries[] = ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi sisa Provisi saat closing '.$invoice->number, 'debit' => 0, 'credit' => (string) $pendingProvision];
+                $remaining = $pendingProvision;
+                foreach ($provisionRows->reverse() as $cost) {
+                    $recognized = Money::decimal(0);
+                    foreach ($hppJournals as $journal) {
+                        foreach ($journal->entries as $entry) {
+                            if (($journal->source_type === \App\Models\JobCost::class && $journal->source_id === $cost->id)
+                                || str_contains((string) $entry->description, '· '.$cost->number.' ·')
+                                || str_ends_with((string) $entry->description, '· '.$cost->number)) {
+                                $recognized = $recognized->plus($entry->debit)->minus($entry->credit);
+                            }
+                        }
+                    }
+                    $amount = Money::decimal($cost->total_cost)->minus($recognized);
+                    if (! $amount->isPositive()) continue;
+                    if ($amount->isGreaterThan($remaining)) $amount = $remaining;
+                    $this->journals->post(self::CLOSING_PROVISION, \App\Models\JobCost::class, $cost->id, $data['closing_date'], 'Kapitalisasi Provisi saat closing '.$cost->number, [
+                        ['account_id' => $hppAccountId, 'description' => 'HPP Unclose · Sisa Provisi saat closing · '.$cost->number.' · '.$job->number, 'debit' => (string) $amount, 'credit' => 0],
+                        ['account_id' => $maps['provision_wip']->id, 'description' => 'Reklasifikasi sisa Provisi saat closing '.$cost->number, 'debit' => 0, 'credit' => (string) $amount],
+                    ], $actor);
+                    $remaining = $remaining->minus($amount);
+                    if ($remaining->isZero()) break;
+                }
+                if (! $remaining->isZero()) throw ValidationException::withMessages(['journal' => 'Sisa Provisi tidak dapat ditelusuri per biaya. Periksa rincian HPP Job.']);
             }
+            $closingEntries = [];
             if ($provisionCost->isPositive()) {
                 $closingEntries[] = ['account_id' => $maps[$flow['cogs_closed']]->id, 'description' => 'HPP Close '.$job->number, 'debit' => (string) $provisionCost, 'credit' => 0];
                 $closingEntries[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'Reklasifikasi HPP Unclose '.$job->number, 'debit' => 0, 'credit' => (string) $provisionCost];
@@ -172,13 +195,16 @@ class JobClosingService
             }
 
             if (! empty($closingEntries)) {
-                $this->journals->post('job_closing', Job::class, $job->id, $data['closing_date'], 'Closing '.$job->number, $closingEntries, $actor);
+            if ($closingEntries) {
+                $this->journals->post(self::CLOSING_TRANSFER, Job::class, $job->id, $data['closing_date'], 'Closing '.$job->number, $closingEntries, $actor);
+            }
             }
 
             $categoryTotals = $rows->groupBy(fn ($cost) => $cost->cost_category ?: ($cost->type === 'temporary' ? 'reimbursement' : 'payment_request'));
             $debitNotes = $categoryTotals->get('debit_note', collect());
             $debitNote = Money::decimal((string) $debitNotes->sum('total_price'));
-            if (! $debitNote->isZero()) {
+            if (! $debitNote->isZero() && ! Journal::where('source_type', Job::class)->where('source_id', $job->id)
+                ->where('type', 'agent_receivable_reclass')->whereNull('reversed_at')->whereNull('reversal_of_id')->exists()) {
                 $entries = [];
                 foreach ($debitNotes as $cost) {
                     $amount = Money::decimal($cost->total_price);
@@ -221,17 +247,29 @@ class JobClosingService
             }
 
             $invoice = $job->invoice()->lockForUpdate()->first();
+            if ($invoice && ! Journal::where('source_type', Job::class)->where('source_id', $job->id)
+                ->whereNull('reversed_at')->whereNull('reversal_of_id')
+                ->where(fn ($q) => $q->whereIn('type', ['job_invoice', 'job_invoice_amendment'])
+                    ->orWhere(fn ($legacy) => $legacy->where('type', 'job_closing')->whereHas('entries', fn ($e) => $e->where('description', 'like', 'Piutang%'))))
+                ->exists()) {
+                throw ValidationException::withMessages(['journal' => 'Jurnal pengakuan invoice tidak tersedia. Periksa jurnal invoice sebelum membuka kembali Job; invoice dan pembayaran tidak diubah.']);
+            }
             if ($invoice) {
-                if ($invoice->payments()->exists() || (float) $invoice->paid_amount > 0) {
-                    throw ValidationException::withMessages(['job' => 'Job tidak dapat dibuka kembali karena invoice telah memiliki riwayat pembayaran. Hapus atau batalkan pembayaran terlebih dahulu.']);
+                $payments = $invoice->payments()->lockForUpdate()->get();
+                $journalizedPayments = Journal::where('source_type', \App\Models\Payment::class)
+                    ->whereIn('source_id', $payments->pluck('id'))->where('type', 'customer_payment')
+                    ->whereNull('reversed_at')->whereNull('reversal_of_id')->pluck('source_id');
+                if ((Money::decimal($invoice->paid_amount)->isPositive() && $payments->isEmpty())
+                    || $payments->pluck('id')->diff($journalizedPayments)->isNotEmpty()) {
+                    throw ValidationException::withMessages(['journal' => 'Jurnal pembayaran invoice tidak lengkap. Periksa pembayaran sebelum membuka kembali Job; tidak ada jurnal atau pembayaran yang diubah.']);
                 }
             }
 
             $journals = Journal::where('source_type', Job::class)
                 ->where('source_id', $job->id)
-                ->whereIn('type', ['job_closing', 'job_cost_capitalization', 'job_invoice', 'job_invoice_amendment', 'agent_receivable_reclass', 'agent_payable_recognition', LegacyJournalRepairService::TYPE])
+                ->where('type', self::CLOSING_TRANSFER)
                 ->whereNull('reversal_of_id')
-                ->get();
+                ->whereNull('reversed_at')->lockForUpdate()->get();
 
             $reversalDate = now()->toDateString();
             $reason = ! empty($data['reason']) ? $data['reason'] : 'Undo / Buka Kembali Job '.$job->number;
@@ -250,9 +288,13 @@ class JobClosingService
                 }
             }
 
+            if ($journals->isEmpty()) {
+                $this->reopenLegacyClosedBalances($job, $actor, $reason);
+            }
+
             if ($invoice) {
-                $invoice->items()->delete();
-                $invoice->delete();
+                $invoice->job_closing_snapshot_id = null;
+                $invoice->save();
             }
 
             $snapshot = $job->closingSnapshot()->lockForUpdate()->first();
@@ -283,6 +325,48 @@ class JobClosingService
 
             return $job;
         }, 3);
+    }
+
+    /** Jurnal closing lama bisa mencampur invoice, WIP dan transfer Closed.
+     * Jangan reverse seluruh jurnal tersebut: pindahkan hanya saldo Closed.
+     */
+    private function reopenLegacyClosedBalances(Job $job, User $actor, string $reason): void
+    {
+        $flow = $this->flowAccountKeys($job);
+        $maps = $this->journals->mapped(array_values($flow));
+        $closedIds = [$maps[$flow['revenue_closed']]->id, $maps[$flow['cogs_closed']]->id];
+        $entries = \App\Models\JournalEntry::whereIn('chart_of_account_id', $closedIds)
+            ->whereHas('journal', fn ($q) => $q->where('status', 'posted')->where(function ($source) use ($job) {
+                $source->where(fn ($s) => $s->where('source_type', Job::class)->where('source_id', $job->id))
+                    ->orWhere(fn ($s) => $s->where('source_type', \App\Models\JobCost::class)->whereIn('source_id', $job->costs()->withTrashed()->select('id')));
+            }))->get();
+        $revenue = Money::decimal(0);
+        $hpp = Money::decimal(0);
+        foreach ($entries as $entry) {
+            if ($entry->chart_of_account_id === $closedIds[0]) {
+                $revenue = $revenue->plus($entry->credit)->minus($entry->debit);
+            } else {
+                $hpp = $hpp->plus($entry->debit)->minus($entry->credit);
+            }
+        }
+        $snapshot = $job->closingSnapshot;
+        if ($revenue->isNegative() || $hpp->isNegative()
+            || ($snapshot && (! $revenue->isEqualTo(Money::decimal($snapshot->total_provision_sell))
+                || ! $hpp->isEqualTo(Money::decimal($snapshot->total_provision_cost))))) {
+            throw ValidationException::withMessages(['journal' => 'Saldo Pendapatan/HPP Closed tidak sesuai closing Job. Periksa jurnal sebelum membuka kembali.']);
+        }
+        $lines = [];
+        if ($revenue->isPositive()) {
+            $lines[] = ['account_id' => $closedIds[0], 'description' => 'Pendapatan Close dibuka kembali '.$job->number, 'debit' => (string) $revenue, 'credit' => 0];
+            $lines[] = ['account_id' => $maps[$flow['revenue_unclosed']]->id, 'description' => 'Pendapatan Unclose dibuka kembali '.$job->number, 'debit' => 0, 'credit' => (string) $revenue];
+        }
+        if ($hpp->isPositive()) {
+            $lines[] = ['account_id' => $closedIds[1], 'description' => 'HPP Close dibuka kembali '.$job->number, 'debit' => 0, 'credit' => (string) $hpp];
+            $lines[] = ['account_id' => $maps[$flow['cogs_unclosed']]->id, 'description' => 'HPP Unclose dibuka kembali '.$job->number, 'debit' => (string) $hpp, 'credit' => 0];
+        }
+        if ($lines) {
+            $this->journals->post(self::LEGACY_REOPEN_TRANSFER, Job::class, $job->id, today()->toDateString(), $reason, $lines, $actor);
+        }
     }
 
     public function createInvoiceForJob(Job $job, array $data, User $actor): Invoice

@@ -113,7 +113,7 @@
     @can('jobs.close')
         @if($job->status==='open')
             <a class="button button-primary" href="{{ route('closing.create',$job) }}">Closing Job</a>
-        @elseif($job->status==='closed' && (!$job->invoice || ($job->invoice->payments()->doesntExist() && (float)$job->invoice->paid_amount == 0)))
+        @elseif($job->status==='closed')
             <button type="button" class="button button-secondary" style="color:#dc2626; border-color:#fca5a5;" onclick="document.getElementById('modal-reopen-job').showModal()">
                 ↺ Undo / Buka Kembali Job
             </button>
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     Apakah Anda yakin ingin membuka kembali job <strong>{{ $job->number }}</strong>?
                 </p>
                 <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px; font-size: 12px; color: #92400e; margin-bottom: 16px; line-height: 1.5;">
-                    ⚠️ Tindakan ini akan mengembalikan status Job ke <strong>Open</strong>, membatalkan/menghapus invoice {{ $job->invoice?->number }}, dan me-reverse jurnal penutupan akuntansi secara otomatis.
+                    Tindakan ini mengembalikan status Job ke <strong>Open</strong> dan memindahkan Pendapatan/HPP Closed ke Unclosed. Invoice {{ $job->invoice?->number }}, piutang, utang, pajak, Provisi, dan jurnal pembayaran tetap dipertahankan.
                 </div>
                 <div class="field">
                     <label for="reopen_reason_job" style="font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 4px; display: block;">Alasan Buka Kembali (opsional)</label>

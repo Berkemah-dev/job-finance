@@ -166,7 +166,7 @@ class JobController extends Controller
 
         $service->reopen($job, $data, $request->user());
 
-        return redirect()->route('jobs.show', $job)->with('success', 'Job berhasil dibuka kembali. Jurnal closing dan invoice telah dibatalkan.');
+        return redirect()->route('jobs.show', $job)->with('success', 'Job berhasil dibuka kembali. Pendapatan/HPP Closed dipindahkan ke Unclosed. Invoice dan jurnal lainnya tetap dipertahankan.');
     }
 
     public function confirmDo(Request $request, Job $job, JobService $service)

@@ -47,6 +47,7 @@ class JobCostPolicy
         // Konfirmasi Finance tetap dapat dilakukan setelah vendor dibayar.
         // Penyesuaian modal dan pembentukan ulang jurnal ditangani service.
         return $this->viewAny($user)
+            && $user->hasRole(['finance-manager', 'super-admin', 'admin'])
             && $cost->job->status === 'open'
             && $cost->status === 'draft'
             && ! $this->hasPaidInvoice($cost->job)

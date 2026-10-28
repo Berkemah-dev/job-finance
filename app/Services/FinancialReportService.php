@@ -1074,7 +1074,7 @@ class FinancialReportService
         // aggregate revenue from the invoice journal that preceded it.
         $invoices = Journal::with(['entries' => fn ($q) => $q->whereIn('chart_of_account_id', $accounts->keys())])
             ->where('source_type', Job::class)->whereIn('source_id', $jobIds)
-            ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])->whereNull('reversal_of_id')
+            ->whereIn('type', ['job_invoice', 'job_invoice_amendment', 'job_closing'])->whereNull('reversal_of_id')
             ->whereDate('journal_date', '<=', $to)
             ->orderBy('id')->get()->groupBy('source_id');
         $chargeName = function (string $description): ?string {
@@ -1094,7 +1094,7 @@ class FinancialReportService
             $parts = [];
             if ($name = $chargeName($description)) {
                 $parts[] = [$name, $amount];
-            } elseif ($source?->source_type === Job::class && $source->type === 'job_closing'
+            } elseif ($source?->source_type === Job::class && in_array($source->type, ['job_closing', JobClosingService::CLOSING_TRANSFER, JobClosingService::LEGACY_REOPEN_TRANSFER], true)
                 && preg_match('/^(?:Reklasifikasi )?Pendapatan (?:Unclose|Close)\b/i', $description)) {
                 $detailEntries = $source->entries;
                 if (! $detailEntries->contains(fn ($e) => $chargeName((string) $e->description) !== null)) {

@@ -64,6 +64,107 @@ class JournalAuditTest extends TestCase
         }
     }
 
+    public function test_reopen_preserves_invoice_and_all_accounts_except_closed_and_unclosed(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $pay($job->costs()->firstOrFail());
+            $late = $save('Unpaid subsequent cost', '500000', '0');
+            $finalize($late);
+            $invoiceBefore = $invoice->fresh()->only(['id', 'number', 'status', 'total', 'balance', 'paid_amount']);
+            $issuedAtBefore = $invoice->fresh()->getRawOriginal('issued_at');
+            $itemsBefore = $invoice->items()->get()->toArray();
+            $maps = app(JournalService::class)->mapped(['revenue_export_closed', 'revenue_export_unclosed', 'cogs_export_closed', 'cogs_export_unclosed']);
+            $allowed = collect($maps)->pluck('id')->all();
+            $outside = fn () => DB::table('journal_entries')->whereNotIn('chart_of_account_id', $allowed)
+                ->selectRaw('chart_of_account_id, SUM(debit - credit) AS balance')->groupBy('chart_of_account_id')
+                ->orderBy('chart_of_account_id')->get()->mapWithKeys(fn ($row) => [$row->chart_of_account_id => (string) \App\Support\Money::decimal($row->balance)])->all();
+            foreach (range(1, 2) as $cycle) {
+                $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                    'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+                $before = $outside();
+                $protected = \App\Models\Journal::where('type', '!=', JobClosingService::CLOSING_TRANSFER)->whereNull('reversed_at')->get()->pluck('id');
+                $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'reason' => 'Only transfer Close / Unclose'], $manager);
+                $this->assertSame($before, $outside());
+                $this->assertSame($invoiceBefore, $invoice->fresh()->only(array_keys($invoiceBefore)));
+                $this->assertSame($issuedAtBefore, $invoice->fresh()->getRawOriginal('issued_at'));
+                $this->assertSame($itemsBefore, $invoice->items()->get()->toArray());
+                $this->assertSame('open', $job->fresh()->status);
+                $this->assertNull($invoice->fresh()->job_closing_snapshot_id);
+                $this->assertEquals(0, $balance('provision_wip'));
+                $this->assertEquals(600000, $balance('cogs_export_unclosed'));
+                $this->assertEquals(0, $balance('cogs_export_closed'));
+                $this->assertEquals(-700000, $balance('revenue_export_unclosed'));
+                $this->assertEquals(0, $balance('revenue_export_closed'));
+                $this->assertSame(0, \App\Models\Journal::whereIn('id', $protected)->whereNotNull('reversed_at')->count());
+                $last = \App\Models\Journal::with('entries')->where('type', 'journal_reversal')->latest('id')->firstOrFail();
+                $this->assertSame([], $last->entries->pluck('chart_of_account_id')->diff($allowed)->values()->all());
+            }
+            $pay($late);
+            $this->assertEquals(0, $balance('provision_wip'), 'Paying a previously capitalized cost must not credit Provision again.');
+            $this->assertEquals(600000, $balance('cogs_export_unclosed'));
+            $this->assertWipLedgerNeverNegative();
+        });
+    }
+
+    public function test_legacy_mixed_closing_reopens_without_reversing_non_transfer_entries(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $late = $save('Legacy unpaid provision', '500000', '0');
+            $finalize($late);
+            $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+            // Reconstruct an old mixed journal only inside this isolated test database.
+            $legacy = \App\Models\Journal::where('type', JobClosingService::CLOSING_PROVISION)->firstOrFail();
+            $transfer = \App\Models\Journal::where('type', JobClosingService::CLOSING_TRANSFER)->firstOrFail();
+            $transfer->entries()->update(['journal_id' => $legacy->id]);
+            $transfer->delete();
+            $legacy->update(['type' => 'job_closing', 'source_type' => Job::class, 'source_id' => $job->id]);
+            $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version], $manager);
+            $this->assertNull($legacy->fresh()->reversed_at);
+            $this->assertSame('issued', $invoice->fresh()->status);
+            $this->assertEquals(0, $balance('provision_wip'));
+            $this->assertEquals(600000, $balance('cogs_export_unclosed'));
+            $this->assertEquals(0, $balance('cogs_export_closed'));
+            $this->assertEquals(-700000, $balance('revenue_export_unclosed'));
+            $this->assertEquals(0, $balance('revenue_export_closed'));
+            $journal = \App\Models\Journal::with('entries')->where('type', JobClosingService::LEGACY_REOPEN_TRANSFER)->firstOrFail();
+            $maps = app(JournalService::class)->mapped(['revenue_export_closed', 'revenue_export_unclosed', 'cogs_export_closed', 'cogs_export_unclosed']);
+            $this->assertSame([], $journal->entries->pluck('chart_of_account_id')->diff(collect($maps)->pluck('id'))->values()->all());
+            $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+            $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version], $manager);
+            $this->assertEquals(600000, $balance('cogs_export_unclosed'));
+            $this->assertSame(1, \App\Models\Journal::where('type', JobClosingService::LEGACY_REOPEN_TRANSFER)->count());
+        });
+    }
+
+    public function test_reopened_unpaid_cost_can_be_revised_and_paid_without_double_hpp(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $late = $save('Closing capitalized cost', '500000', '0');
+            $finalize($late);
+            $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+            $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version], $manager);
+            $late = $costs->save($job->fresh(), $late->fresh(), [
+                'job_version' => $job->fresh()->lock_version, 'lock_version' => $late->fresh()->lock_version,
+                'description' => $late->description, 'cost_category' => 'payment_request', 'cost_date' => today()->toDateString(),
+                'currency' => 'IDR', 'quantity' => '1', 'unit' => 'Layanan', 'unit_cost' => '600000', 'unit_price' => '0',
+            ], $finance);
+            $this->assertSame('draft', $late->status);
+            $finalize($late);
+            $this->assertEquals(600000, $balance('provision_wip'));
+            $this->assertEquals(100000, $balance('cogs_export_unclosed'));
+            $pay($late);
+            $this->assertEquals(0, $balance('provision_wip'));
+            $this->assertEquals(700000, $balance('cogs_export_unclosed'));
+            $this->assertWipLedgerNeverNegative();
+        });
+    }
+
     public function test_editing_invoiced_unpaid_cost_releases_invoice_before_reversing_recognition(): void
     {
         $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
@@ -77,6 +178,74 @@ class JournalAuditTest extends TestCase
             ], $finance);
             $this->assertWipLedgerNeverNegative();
             $this->assertEquals(0, $balance('provision_wip'));
+        });
+    }
+
+    public function test_reopened_job_invoice_and_cost_edits_require_manager_refinalization(): void
+    {
+        $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
+            $issue();
+            $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+            $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version], $manager);
+            $originalJournal = \App\Models\Journal::where('source_type', Job::class)->where('source_id', $job->id)
+                ->where('type', 'job_invoice')->whereNull('reversed_at')->firstOrFail();
+            $cost = $job->costs()->firstOrFail();
+            $cost = $costs->save($job->fresh(), $cost, [
+                'job_version' => $job->fresh()->lock_version, 'lock_version' => $cost->lock_version,
+                'description' => $cost->description, 'cost_category' => 'payment_request', 'cost_date' => today()->toDateString(),
+                'currency' => 'IDR', 'quantity' => '1', 'unit' => 'Layanan', 'unit_cost' => '100000', 'unit_price' => '900000',
+            ], $finance);
+            $this->assertSame('draft', $invoice->fresh()->status);
+            $this->assertSame('draft', $cost->fresh()->status);
+            $this->assertNull($cost->fresh()->finalized_at);
+            $this->assertNotNull($originalJournal->fresh()->reversed_at);
+            $this->assertSame(0, \App\Models\Journal::where('source_type', Job::class)->where('source_id', $job->id)
+                ->whereIn('type', ['job_invoice', 'job_invoice_amendment'])->whereNull('reversed_at')->whereNull('reversal_of_id')->count());
+            $this->assertEquals(0, $balance('revenue_export_unclosed'));
+            try {
+                app(\App\Http\Controllers\InvoiceController::class)->preview($invoice->fresh());
+                $this->fail('Draft invoice cannot be printed after reopen and edit.');
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $error) {
+                $this->assertSame(403, $error->getStatusCode());
+            }
+            try {
+                $costs->finalize($job->fresh(), $cost->fresh(), ['job_version' => $job->fresh()->lock_version,
+                    'lock_version' => $cost->fresh()->lock_version], $finance);
+                $this->fail('Finance cannot finalize a revised cost.');
+            } catch (\Illuminate\Auth\Access\AuthorizationException $error) {
+                $this->assertSame('draft', $cost->fresh()->status);
+            }
+            $finalize($cost);
+            $this->assertSame($manager->id, $cost->fresh()->finalized_by);
+            try {
+                $closing->finalizeInvoice($invoice->fresh(), ['job_version' => $job->fresh()->lock_version,
+                    'lock_version' => $invoice->fresh()->lock_version], $finance);
+                $this->fail('Finance cannot finalize a revised invoice.');
+            } catch (\Illuminate\Validation\ValidationException $error) {
+                $this->assertArrayHasKey('invoice', $error->errors());
+            }
+            $issue();
+            $this->assertSame('issued', $invoice->fresh()->status);
+            $this->assertSame('900000.00', $invoice->fresh()->total);
+            $this->assertEquals(-900000, $balance('revenue_export_unclosed'));
+            $this->assertEquals(100000, $balance('cogs_export_unclosed'));
+            $this->assertEquals(0, $balance('provision_wip'));
+            $this->assertWipLedgerNeverNegative();
+
+            // Editing invoice stamp duty after a second reopen follows the same approval flow.
+            $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version,
+                'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
+            $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version], $manager);
+            $closing->updateInvoiceStampDuty($invoice->fresh(), ['job_version' => $job->fresh()->lock_version,
+                'lock_version' => $invoice->fresh()->lock_version, 'stamp_duty' => '10000'], $finance);
+            $this->assertSame('draft', $invoice->fresh()->status);
+            $this->assertSame('final', $cost->fresh()->status);
+            $this->assertEquals(0, $balance('revenue_export_unclosed'));
+            $issue();
+            $this->assertSame('910000.00', $invoice->fresh()->total);
+            $this->assertEquals(-900000, $balance('revenue_export_unclosed'));
+            $this->assertWipLedgerNeverNegative();
         });
     }
 
@@ -356,7 +525,7 @@ class JournalAuditTest extends TestCase
                 }
             }
             $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'reason' => 'Report regression'], $manager);
-            $makeInvoice($job);
+            $this->assertSame($invoice->id, $job->fresh()->invoice->id);
             $r = $read();
             $this->assertSame('0.00', $r['totalHppClosed']);
             $this->assertCount(0, $r['hppBreakdown']);
@@ -477,7 +646,7 @@ class JournalAuditTest extends TestCase
         });
     }
 
-    public function test_legacy_closing_repair_preserves_closed_hpp_and_reverses_on_reopen(): void
+    public function test_legacy_closing_repair_is_preserved_when_reopen_only_moves_closed_accounts(): void
     {
         $this->audit(function ($job, $invoice, $finance, $manager, $costs, $closing, $save, $finalize, $pay, $balance, $issue) {
             $issue();
@@ -486,7 +655,7 @@ class JournalAuditTest extends TestCase
             $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
             // Restore the old error: Provisi +500,000 and HPP Unclosed -500,000.
             // In this isolated fixture only, omit the two entries the old code never created.
-            $closingJournal = \App\Models\Journal::where('source_type', Job::class)->where('source_id', $job->id)->where('type', 'job_closing')->firstOrFail();
+            $closingJournal = \App\Models\Journal::where('source_type', \App\Models\JobCost::class)->where('source_id', $late->id)->where('type', JobClosingService::CLOSING_PROVISION)->firstOrFail();
             $closingJournal->entries()->where(fn ($q) => $q->where('description', 'like', 'HPP Unclose · Sisa Provisi saat closing%')->orWhere('description', 'like', 'Reklasifikasi sisa Provisi saat closing%'))->delete();
             $repair = app(\App\Services\LegacyJournalRepairService::class);
             $plan = $repair->inspect($job->fresh());
@@ -500,7 +669,10 @@ class JournalAuditTest extends TestCase
             $this->assertSame([], $repair->repair($job->fresh(), $manager, today()->toDateString())['created_journals']);
             $closing->reopen($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'reason' => 'Test reopen corrected job'], $manager);
             $correction = \App\Models\Journal::where('number', $result['created_journals'][0])->firstOrFail();
-            $this->assertNotNull($correction->reversed_at);
+            $this->assertNull($correction->reversed_at);
+            $this->assertEquals(0, $balance('provision_wip'));
+            $this->assertEquals(0, $balance('cogs_export_closed'));
+            $this->assertEquals(600000, $balance('cogs_export_unclosed'));
         });
     }
 
@@ -512,7 +684,7 @@ class JournalAuditTest extends TestCase
             $finalize($late);
             $closing->close($job->fresh(), ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString()], $manager);
             $job->costs()->whereKey($late->id)->update(['total_cost' => '550000']);
-            $closingJournal = \App\Models\Journal::where('source_type', Job::class)->where('source_id', $job->id)->where('type', 'job_closing')->firstOrFail();
+            $closingJournal = \App\Models\Journal::where('source_type', \App\Models\JobCost::class)->where('source_id', $late->id)->where('type', JobClosingService::CLOSING_PROVISION)->firstOrFail();
             $closingJournal->entries()->where(fn ($q) => $q->where('description', 'like', 'HPP Unclose · Sisa Provisi saat closing%')->orWhere('description', 'like', 'Reklasifikasi sisa Provisi saat closing%'))->delete();
             $repair = app(\App\Services\LegacyJournalRepairService::class);
             $this->assertNotEmpty($repair->inspect($job->fresh())['warnings']);

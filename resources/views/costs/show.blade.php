@@ -52,11 +52,11 @@
     @endcan
     @endif
     @can('finalize',$cost)
-        <form method="POST" action="{{ route('jobs.costs.finalize',[$job,$cost]) }}" data-confirm="Konfirmasi biaya ini setelah diperiksa Finance? Biaya masih dapat disesuaikan sampai Finalisasi Invoice.">
+        <form method="POST" action="{{ route('jobs.costs.finalize',[$job,$cost]) }}" data-confirm="Finalisasi biaya ini setelah diperiksa Finance Manager? Perubahan berikutnya akan memerlukan finalisasi ulang.">
             @csrf
             <input type="hidden" name="job_version" value="{{ $job->lock_version }}">
             <input type="hidden" name="lock_version" value="{{ $cost->lock_version }}">
-            <button class="button button-primary">{{ auth()->user()->hasRole(['finance-manager', 'super-admin', 'admin']) ? 'Finalisasi Biaya' : 'Finance Confirm' }}</button>
+            <button class="button button-primary">Finalisasi Biaya</button>
         </form>
     @endcan
     @can('approve',$cost)
