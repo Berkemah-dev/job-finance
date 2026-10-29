@@ -16,6 +16,7 @@ class Payment extends Model
     {
         return [
             'payment_date' => 'date',
+            'reversed_at' => 'datetime',
             'amount' => 'decimal:2',
             'pph23_amount' => 'decimal:2',
             'exchange_rate' => 'decimal:4',

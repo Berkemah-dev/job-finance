@@ -11,14 +11,18 @@ use App\Models\JobCost;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Services\StatementOfAccountService;
-use Database\Seeders\DatabaseSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\ChartOfAccountSeeder;
+use Database\Seeders\MasterDataSeeder;
+use Database\Seeders\DemoUserSeeder;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class StatementOfAccountTest extends TestCase
 {
-    use RefreshDatabase;
+    private string $previousConnection;
 
     private User $finance;
 
@@ -27,10 +31,24 @@ class StatementOfAccountTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(DatabaseSeeder::class);
+        $this->app->instance('env', 'testing');
+        $this->previousConnection = DB::getDefaultConnection();
+        config(['database.connections.soa_test' => [
+            'driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '', 'foreign_key_constraints' => true,
+        ]]);
+        DB::setDefaultConnection('soa_test');
+        Artisan::call('migrate', ['--database' => 'soa_test', '--force' => true]);
+        foreach ([RolePermissionSeeder::class, ChartOfAccountSeeder::class, MasterDataSeeder::class, DemoUserSeeder::class] as $seeder) app($seeder)->run();
         $this->finance = User::where('email', 'finance@jobfinance.test')->firstOrFail();
         $this->customer = Customer::factory()->create(['code' => 'CUS-SOA', 'name' => 'PT Statement Client', 'created_by' => $this->finance->id, 'updated_by' => $this->finance->id]);
         $this->actingAs($this->finance);
+    }
+
+    protected function tearDown(): void
+    {
+        DB::setDefaultConnection($this->previousConnection);
+        DB::purge('soa_test');
+        parent::tearDown();
     }
 
     private function invoice(string $invoiceDate, string $dueDate): Invoice

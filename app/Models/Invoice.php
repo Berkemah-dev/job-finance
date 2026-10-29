@@ -38,6 +38,11 @@ class Invoice extends Model
 
     public function payments(): HasMany
     {
+        return $this->hasMany(Payment::class)->whereNull('reversed_at')->latest('id');
+    }
+
+    public function paymentHistory(): HasMany
+    {
         return $this->hasMany(Payment::class)->latest('id');
     }
 

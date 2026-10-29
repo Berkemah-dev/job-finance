@@ -145,7 +145,7 @@ class InvoiceController extends Controller
             ->get();
 
         return view('invoices.show', [
-            'invoice' => $invoice->load(['items', 'payments.account', 'job', 'snapshot']),
+            'invoice' => $invoice->load(['items', 'payments.account', 'paymentHistory.account', 'job', 'snapshot']),
             'bankAccounts' => $bankAccounts,
         ]);
     }

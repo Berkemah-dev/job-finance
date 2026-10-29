@@ -537,6 +537,15 @@
 {{-- RIWAYAT PEMBAYARAN --}}
 <div class="section-heading">
     <h2>Riwayat Pembayaran Masuk</h2>
+    @can('payments.manage')
+        @if(in_array($invoice->status, ['paid', 'partially_paid'], true))
+            <form method="POST" action="{{ route('invoices.unpaid', $invoice) }}" onsubmit="return confirm('Batalkan seluruh pembayaran invoice ini? Jurnal penerimaan akan dibalik dan sisa tagihan dikembalikan penuh.');">
+                @csrf
+                <input type="hidden" name="lock_version" value="{{ $invoice->lock_version }}">
+                <button type="submit" class="button button-secondary">Unpaid Invoice</button>
+            </form>
+        @endif
+    @endcan
 </div>
 <section class="panel">
     <div class="table-scroll">
@@ -552,9 +561,9 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($invoice->payments as $payment)
+                @forelse($invoice->paymentHistory as $payment)
                     <tr>
-                        <td><strong>{{ $payment->number }}</strong></td>
+                        <td><strong>{{ $payment->number }}</strong>@if($payment->reversed_at)<br><span class="subtle">Dibatalkan (Unpaid)</span>@endif</td>
                         <td>{{ $payment->payment_date->format('d/m/Y') }}</td>
                         <td><span class="status-badge" style="background:#e0f2fe;color:#0369a1;">{{ ucfirst($payment->method) }}</span></td>
                         <td>{{ $payment->account ? ($payment->account->code . ' — ' . $payment->account->name) : '—' }}</td>

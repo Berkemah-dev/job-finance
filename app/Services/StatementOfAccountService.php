@@ -69,16 +69,19 @@ class StatementOfAccountService
 
     public function statement(Customer $customer, Carbon $from, Carbon $to, bool $paginate = true): array
     {
-        $invoices = Invoice::with(['payments', 'job'])->where('customer_id', $customer->id)->orderBy('invoice_date')->orderBy('id')->get();
+        $invoices = Invoice::with(['paymentHistory', 'job'])->where('customer_id', $customer->id)->orderBy('invoice_date')->orderBy('id')->get();
 
         $opening = Money::decimal(0);
         foreach ($invoices as $invoice) {
             if ($invoice->invoice_date->lt($from)) {
                 $opening = $opening->plus(Money::decimal($invoice->total));
-                foreach ($invoice->payments as $payment) {
+                foreach ($invoice->paymentHistory as $payment) {
                     if ($payment->payment_date->lt($from)) {
                         $deduction = Money::decimal($payment->amount)->plus(Money::decimal($payment->pph23_amount ?? 0));
                         $opening = $opening->minus($deduction);
+                    }
+                    if ($payment->reversed_at && $payment->reversed_at->copy()->startOfDay()->lt($from)) {
+                        $opening = $opening->plus(Money::decimal($payment->amount))->plus(Money::decimal($payment->pph23_amount ?? 0));
                     }
                 }
             }
@@ -101,7 +104,7 @@ class StatementOfAccountService
                     'is_overdue' => $invoice->due_date && Carbon::parse($invoice->due_date)->endOfDay()->isPast() && ! Money::decimal($invoice->balance)->isZero(),
                 ];
             }
-            foreach ($invoice->payments as $payment) {
+            foreach ($invoice->paymentHistory as $payment) {
                 if ($payment->payment_date->between($from, $to)) {
                     $paidAmount = Money::decimal($payment->amount);
                     $pph23Amount = Money::decimal($payment->pph23_amount ?? 0);
@@ -132,6 +135,17 @@ class StatementOfAccountService
                         ];
                     }
                 }
+                if ($payment->reversed_at && $payment->reversed_at->copy()->startOfDay()->between($from, $to)) {
+                    $deduction = Money::decimal($payment->amount)->plus(Money::decimal($payment->pph23_amount ?? 0));
+                    $paid = $paid->minus($deduction);
+                    $rows[] = [
+                        'date' => $payment->reversed_at->copy()->startOfDay(),
+                        'number' => $payment->number.'-UNPAID',
+                        'description' => 'Pembatalan pembayaran '.$payment->number.' (Unpaid)',
+                        'type' => 'payment_reversal', 'debit' => '0.00', 'credit' => (string) $deduction,
+                        'invoice' => $invoice, 'is_overdue' => false,
+                    ];
+                }
             }
         }
         usort($rows, fn ($a, $b) => [$a['date']->toDateString(), $a['number']] <=> [$b['date']->toDateString(), $b['number']]);
@@ -149,10 +163,13 @@ class StatementOfAccountService
             if ($invoice->invoice_date->lte($to)) {
                 $closing = $closing->plus(Money::decimal($invoice->total));
             }
-            foreach ($invoice->payments as $payment) {
+            foreach ($invoice->paymentHistory as $payment) {
                 if ($payment->payment_date->lte($to)) {
                     $deduction = Money::decimal($payment->amount)->plus(Money::decimal($payment->pph23_amount ?? 0));
                     $closing = $closing->minus($deduction);
+                }
+                if ($payment->reversed_at && $payment->reversed_at->copy()->startOfDay()->lte($to)) {
+                    $closing = $closing->plus(Money::decimal($payment->amount))->plus(Money::decimal($payment->pph23_amount ?? 0));
                 }
             }
         }
@@ -184,8 +201,8 @@ class StatementOfAccountService
             'closing' => Money::checked($closing),
             'invoiced' => Money::checked($invoiced),
             'paid' => Money::checked($paid),
-            'total_debit' => Money::checked($paid),
-            'total_credit' => Money::checked($invoiced),
+            'total_debit' => Money::checked(collect($rows)->reduce(fn ($sum, $row) => $sum->plus($row['debit']), Money::decimal(0))),
+            'total_credit' => Money::checked(collect($rows)->reduce(fn ($sum, $row) => $sum->plus($row['credit']), Money::decimal(0))),
             'rows' => $paginate ? $paginatedRows : $rows,
             'all_rows' => $rows,
             'lines' => $rows,

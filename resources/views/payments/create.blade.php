@@ -57,13 +57,14 @@
             <div class="field">
                 <label>Potongan PPH 23 (IDR)</label>
                 <input id="payment_pph23_amount" type="text" inputmode="decimal" name="pph23_amount" value="{{ old('pph23_amount', '0') }}" placeholder="0" data-currency-input>
-                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;" data-payment-pph-calculator>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;" data-payment-pph-calculator data-dpp="{{ $invoice->subtotal }}">
                     <span style="font-size:11.5px;color:#64748b;">Perhitungan cepat:</span>
                     <button type="button" class="button button-secondary" style="font-size:11px;padding:4px 10px;" data-pph-rate="0.005">PPh 0,5%</button>
                     <button type="button" class="button button-secondary" style="font-size:11px;padding:4px 10px;" data-pph-rate="0.02">PPh 2%</button>
                     <button type="button" class="button button-secondary" style="font-size:11px;padding:4px 10px;" data-pph-rate="0.025">PPh 2,5%</button>
                     <button type="button" class="button button-secondary" style="font-size:11px;padding:4px 10px;" data-pph-rate="0">Tanpa PPh</button>
                 </div>
+                <small style="color: #64748b; font-size: 11px;">Dasar perhitungan: DPP invoice Rp {{ \App\Support\Money::format($invoice->subtotal) }} (sebelum PPN dan materai).</small>
                 <small style="color: #64748b; font-size: 11px;">Jurnal ke 11192 - PPH 23 Dimuka</small>
             </div>
             <div class="field">
@@ -109,23 +110,14 @@
 </section>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const amount = document.getElementById('payment_amount');
     const pph = document.getElementById('payment_pph23_amount');
     const calculator = document.querySelector('[data-payment-pph-calculator]');
-    if (!amount || !pph || !calculator) return;
-
-    const readAmount = (value) => {
-        const text = String(value || '').trim();
-        if (!text) return 0;
-        const normalized = text.includes(',')
-            ? text.replace(/\./g, '').replace(',', '.')
-            : text.replace(/\.(?=\d{3}(?:\D|$))/g, '');
-        return Number(normalized.replace(/[^0-9.-]/g, '')) || 0;
-    };
+    if (!pph || !calculator) return;
+    const dpp = Number(calculator.dataset.dpp) || 0;
 
     calculator.querySelectorAll('[data-pph-rate]').forEach((button) => {
         button.addEventListener('click', () => {
-            const value = Math.round(readAmount(amount.value) * Number(button.dataset.pphRate) * 100) / 100;
+            const value = Math.round(dpp * Number(button.dataset.pphRate) * 100) / 100;
             pph.value = value.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
             pph.dispatchEvent(new Event('input', { bubbles: true }));
         });

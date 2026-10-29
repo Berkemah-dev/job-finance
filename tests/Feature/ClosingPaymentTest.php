@@ -129,6 +129,91 @@ class ClosingPaymentTest extends TestCase
         $this->assertDatabaseCount('payments', 1);
     }
 
+    public function test_unpaid_reverses_all_receipts_and_allows_payment_again(): void
+    {
+        $invoice = $this->close();
+        $recognitionIds = Journal::pluck('id')->all();
+        $base = ['payment_date' => today()->toDateString(), 'deposit_account' => 'bank', 'method' => 'transfer'];
+        $this->post(route('payments.store', $invoice), $base + ['lock_version' => 0, 'amount' => '3900000', 'pph23_amount' => '100000'])->assertSessionHasNoErrors();
+        $this->post(route('payments.store', $invoice), $base + ['lock_version' => 1, 'amount' => '6450000'])->assertSessionHasNoErrors();
+        $this->assertSame('paid', $invoice->fresh()->status);
+        $paymentIds = $invoice->payments()->pluck('id');
+        $paymentJournals = Journal::where('source_type', Payment::class)->whereIn('source_id', $paymentIds)->get();
+        $this->get(route('invoices.show', $invoice))->assertOk()->assertSee('Unpaid Invoice');
+        $this->post(route('invoices.unpaid', $invoice), ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame('issued', $invoice->fresh()->status);
+        $this->assertSame('0.00', $invoice->fresh()->paid_amount);
+        $this->assertSame($invoice->total, $invoice->fresh()->balance);
+        $this->assertSame('closed', $this->job->fresh()->status);
+        $this->assertSame(0, $invoice->payments()->count());
+        $this->assertSame(2, $invoice->paymentHistory()->whereNotNull('reversed_at')->count());
+        $soa = app(\App\Services\StatementOfAccountService::class)->statement(
+            $invoice->job->customer, today()->startOfDay(), today()->endOfDay(), false
+        );
+        $this->assertSame($invoice->total, $soa['closing']);
+        $this->assertSame('0.00', $soa['paid']);
+        $this->assertCount(2, array_filter($soa['rows'], fn ($row) => $row['type'] === 'payment_reversal'));
+        $this->assertSame(0, Journal::whereIn('id', $recognitionIds)->whereNotNull('reversed_at')->count());
+        foreach ($paymentJournals as $journal) {
+            $this->assertNotNull($journal->fresh()->reversed_at);
+            $reverse = Journal::with('entries')->where('reversal_of_id', $journal->id)->firstOrFail();
+            foreach ($journal->entries as $entry) {
+                $opposite = $reverse->entries->firstWhere('chart_of_account_id', $entry->chart_of_account_id);
+                $this->assertSame($entry->debit, $opposite->credit);
+                $this->assertSame($entry->credit, $opposite->debit);
+            }
+        }
+        $count = Journal::count();
+        $this->post(route('invoices.unpaid', $invoice), ['lock_version' => 2])->assertSessionHasErrors('lock_version');
+        $this->post(route('invoices.unpaid', $invoice), ['lock_version' => 3])->assertSessionHasErrors('payment');
+        $this->assertSame($count, Journal::count());
+        $this->get(route('invoices.show', $invoice))->assertOk()->assertSee('Dibatalkan (Unpaid)');
+        $this->post(route('payments.store', $invoice), $base + ['lock_version' => 3, 'amount' => '10450000'])->assertSessionHasNoErrors();
+        $this->assertSame('paid', $invoice->fresh()->status);
+        $this->assertSame('0.00', $invoice->fresh()->balance);
+        $receipt = Journal::with('entries.account')->where('source_type', Payment::class)->whereNull('reversed_at')->firstOrFail();
+        $temp = $receipt->entries->first(fn ($entry) => str_contains($entry->account->name, 'Piutang Temporary'));
+        $this->assertSame('5000000.00', $temp->credit);
+    }
+
+    public function test_unpaid_is_atomic_when_a_payment_journal_is_missing_and_requires_permission(): void
+    {
+        $invoice = $this->close();
+        $base = ['payment_date' => today()->toDateString(), 'deposit_account' => 'bank', 'method' => 'transfer'];
+        $this->post(route('payments.store', $invoice), $base + ['lock_version' => 0, 'amount' => '4000000'])->assertSessionHasNoErrors();
+        $this->post(route('payments.store', $invoice), $base + ['lock_version' => 1, 'amount' => '6450000'])->assertSessionHasNoErrors();
+        $oldest = Payment::oldest('id')->firstOrFail();
+        Journal::where('source_type', Payment::class)->where('source_id', $oldest->id)->update(['reversed_at' => now()]);
+        $count = Journal::count();
+        $this->post(route('invoices.unpaid', $invoice), ['lock_version' => 2])->assertSessionHasErrors('payment');
+        $this->assertSame($count, Journal::count());
+        $this->assertSame('paid', $invoice->fresh()->status);
+        $this->assertSame(2, $invoice->payments()->count());
+        $this->actingAs(User::where('email', 'operational@jobfinance.test')->firstOrFail());
+        $this->post(route('invoices.unpaid', $invoice), ['lock_version' => 2])->assertForbidden();
+    }
+
+    public function test_partially_paid_invoice_can_be_unpaid(): void
+    {
+        $invoice = $this->close();
+        $this->post(route('payments.store', $invoice), [
+            'lock_version' => 0, 'payment_date' => today()->toDateString(), 'deposit_account' => 'bank', 'amount' => '1000000',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('partially_paid', $invoice->fresh()->status);
+        $paymentDay = today();
+        $this->travel(1)->days();
+        $this->post(route('invoices.unpaid', $invoice), ['lock_version' => 1])->assertSessionHasNoErrors();
+        $this->assertSame('issued', $invoice->fresh()->status);
+        $this->assertSame($invoice->total, $invoice->fresh()->balance);
+        $service = app(\App\Services\StatementOfAccountService::class);
+        $before = $service->statement($invoice->job->customer, $paymentDay->copy()->startOfDay(), $paymentDay->copy()->endOfDay(), false);
+        $this->assertSame('9450000.00', $before['closing']);
+        $after = $service->statement($invoice->job->customer, today()->startOfDay(), today()->endOfDay(), false);
+        $this->assertSame('9450000.00', $after['opening']);
+        $this->assertSame($invoice->total, $after['closing']);
+        $this->assertSame('1000000.00', $after['total_credit']);
+    }
+
     public function test_closing_requires_final_costs_open_job_and_current_version(): void
     {
         // Job without any costs should fail validation

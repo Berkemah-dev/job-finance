@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ChartOfAccount;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\Journal;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
@@ -15,6 +16,48 @@ use Illuminate\Validation\ValidationException;
 class PaymentService
 {
     public function __construct(private DocumentNumberService $numbers, private JournalService $journals, private MasterDataService $master, private PartyAccountService $partyAccounts) {}
+
+    public function unpaid(Invoice $invoice, array $data, User $actor): void
+    {
+        DB::transaction(function () use ($invoice, $data, $actor) {
+            Gate::forUser($actor)->authorize('payments.manage');
+            $invoice = Invoice::lockForUpdate()->findOrFail($invoice->id);
+            $this->master->checkVersion($invoice, $data);
+            if (! in_array($invoice->status, ['paid', 'partially_paid'], true)) {
+                throw ValidationException::withMessages(['payment' => 'Invoice tidak memiliki pembayaran yang dapat dibatalkan.']);
+            }
+            $payments = $invoice->payments()->lockForUpdate()->get();
+            $paid = $payments->reduce(fn ($sum, $payment) => $sum->plus($payment->amount)->plus($payment->pph23_amount ?? 0), Money::decimal(0));
+            if ($payments->isEmpty() || ! $paid->isEqualTo(Money::decimal($invoice->paid_amount))) {
+                throw ValidationException::withMessages(['payment' => 'Rincian pembayaran tidak sesuai saldo invoice. Periksa pembayaran sebelum Unpaid.']);
+            }
+            $before = $invoice->only(['status', 'paid_amount', 'balance']);
+            foreach ($payments as $payment) {
+                $journals = Journal::where('source_type', Payment::class)->where('source_id', $payment->id)
+                    ->where('type', 'customer_payment')->whereNull('reversed_at')->whereNull('reversal_of_id')
+                    ->lockForUpdate()->get();
+                if ($journals->count() !== 1) {
+                    throw ValidationException::withMessages(['payment' => 'Jurnal pembayaran '.$payment->number.' tidak lengkap. Unpaid dibatalkan.']);
+                }
+                foreach ($journals as $journal) {
+                    $this->journals->reverse($journal, [
+                        'lock_version' => $journal->lock_version,
+                        'reversal_date' => max(today()->toDateString(), $journal->journal_date->toDateString()),
+                        'reason' => 'Unpaid invoice '.$invoice->number.' · '.$payment->number,
+                    ], $actor);
+                }
+                $payment->update(['reversed_at' => now()]);
+            }
+            $invoice->update([
+                'paid_amount' => '0.00', 'balance' => $invoice->total,
+                'status' => 'issued', 'lock_version' => $invoice->lock_version + 1,
+            ]);
+            $this->master->log($actor, 'invoice.unpaid', 'Unpaid '.$invoice->number, [
+                'module' => 'invoice', 'record_id' => $invoice->id, 'before' => $before,
+                'after' => array_merge($invoice->only(['status', 'paid_amount', 'balance']), ['payments' => $payments->pluck('number')->all()]),
+            ]);
+        }, 3);
+    }
 
     public function create(Invoice $invoice, array $data, User $actor): Payment
     {

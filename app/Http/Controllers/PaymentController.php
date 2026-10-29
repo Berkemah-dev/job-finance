@@ -51,4 +51,12 @@ class PaymentController extends Controller
 
         return redirect()->route('invoices.show', $invoice)->with('success', 'Pembayaran dan jurnal berhasil dicatat.');
     }
+
+    public function unpaid(Request $request, Invoice $invoice, PaymentService $service)
+    {
+        $data = $request->validate(['lock_version' => ['required', 'integer', 'min:0']]);
+        $service->unpaid($invoice, $data, $request->user());
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Invoice kembali Unpaid. Pembayaran dibatalkan dan jurnal penerimaan telah dibalik.');
+    }
 }
