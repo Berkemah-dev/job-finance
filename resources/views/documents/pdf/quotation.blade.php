@@ -60,11 +60,11 @@
             margin-bottom: 14px;
         }
         .to-block {
-            width: 70%;
+            width: 65%;
             vertical-align: top;
             font-size: 9pt;
             line-height: 1.25;
-            padding-top: 14px;
+            padding-top: 4px;
         }
         .to-attn {
             font-weight: bold;
@@ -87,10 +87,11 @@
             font-size: 9pt;
         }
         .quo-block {
-            width: 30%;
+            width: 35%;
             vertical-align: top;
             text-align: left;
             padding-left: 5px;
+            padding-top: 24px;
         }
         .quo-title {
             font-family: 'Courier New', Courier, monospace;
@@ -98,7 +99,7 @@
             font-weight: bold;
             letter-spacing: 0.5px;
             line-height: 1.2;
-            margin-top: 3px;
+            margin-top: 0;
             margin-bottom: 5px;
         }
         .quo-meta {
@@ -112,7 +113,7 @@
         .quo-meta td.lbl {
             font-weight: bold;
             text-align: left;
-            width: 88px;
+            width: 95px;
             white-space: nowrap;
         }
         .quo-meta td.colon {
@@ -200,23 +201,8 @@
             font-weight: bold;
             margin-bottom: 2px;
         }
-        .custom-remarks {
-            margin: 6px 0 6px 0;
-            font-size: 8.5pt;
-            line-height: 1.25;
-            color: #000;
-        }
-        .cr-label {
-            font-weight: bold;
-            color: #000;
-        }
-        .cr-content {
-            font-weight: bold;
-            color: #000;
-            text-transform: uppercase;
-        }
         .closing {
-            margin: 8px 0 16px 0;
+            margin: 85px 0 20px 0;
             font-size: 8.5pt;
             line-height: 1.25;
             color: #000;
@@ -231,16 +217,22 @@
             color: #000;
         }
         .sign-logo {
-            margin: 6px 0 6px 0;
+            margin: 6px 0 8px 0;
         }
         .sign-logo img {
             width: 73pt;
             height: auto;
         }
+        .sign-name-line {
+            display: inline-block;
+            border-bottom: 1.2px solid #000;
+            min-width: 140px;
+            margin-bottom: 2px;
+            padding-bottom: 1px;
+        }
         .sign-name {
             font-weight: bold;
             color: #000;
-            text-decoration: underline;
             text-transform: uppercase;
             font-style: normal;
         }
@@ -287,15 +279,16 @@
         <td class="to-block">
             @php
                 $contactName = $quotation->customer_snapshot['contact_name'] ?? ($quotation->customer?->contact_name ?? null);
-                $custName = $quotation->customer_snapshot['name'] ?? ($quotation->customer?->name ?? '—');
+                $custName = $quotation->customer_snapshot['name'] ?? ($quotation->customer?->name ?? '');
                 $custAddress = $quotation->customer_snapshot['address'] ?? ($quotation->customer?->address ?? null);
                 $taxNumber = $quotation->customer_snapshot['tax_number'] ?? ($quotation->customer?->tax_number ?? null);
             @endphp
+            <div style="font-weight: bold; margin-bottom: 2px;">To :</div>
             @if($contactName)
                 <div class="to-attn">Attn. {{ strtoupper($contactName) }}</div>
+            @endif
+            @if(!empty($custName) && $custName !== '—')
                 <div class="to-name">{{ strtoupper($custName) }}</div>
-            @else
-                <div class="to-name"><span style="font-weight: bold;">To : </span>{{ strtoupper($custName) }}</div>
             @endif
             @if(!empty($custAddress))
                 <div class="to-address">{!! nl2br(e($custAddress)) !!}</div>
@@ -418,6 +411,25 @@
         </tr>
         @endforeach
 
+        @php
+            $minItemRows = 3;
+            $itemCount = count($quotation->items);
+            $extraRows = max(0, $minItemRows - $itemCount);
+        @endphp
+        @for($r = 0; $r < $extraRows; $r++)
+        <tr>
+            <td class="center">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td class="center">&nbsp;</td>
+            <td class="right">&nbsp;</td>
+            <td class="center">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td class="center">&nbsp;</td>
+            <td class="right">&nbsp;</td>
+            <td>&nbsp;</td>
+        </tr>
+        @endfor
+
         @if(($quotation->discount ?? 0) > 0)
         <tr>
             <td colspan="7" class="right" style="font-weight:bold;">DISCOUNT:</td>
@@ -438,22 +450,14 @@
 {{-- STANDARD REMARKS --}}
 <div class="remarks">
     <div class="remarks-title">Remarks:</div>
-    1.All fees and charges listed must be paid in IDR (Indonesian Rupiah) according to the Invoice date and subject to PPN 1.1%<br>
-    2.Shipping is not insured unless specifically requested by the customer.<br>
-    3.Importers or exporters are required to prepare NPWP/NIB and other supporting documents to complete the order.<br>
-    4.Term of Payment and penalty for late charges will be implemented according to the general Term and condition.<br>
-    5.Every Cancellation shipment is required to pay a Cancellation Fee if any.<br>
-    6.Payment is made 7 days normally from the invoice received by the customer.<br>
-    7.All prices above are valid according to the available valid date and are not binding if it has passed.
+    1. All fees and charges listed must be paid in IDR (Indonesian Rupiah) according to the Invoice date and subject to PPN 1.1%<br>
+    2. Shipping is not insured unless specifically requested by the customer.<br>
+    3. Importers or exporters are required to prepare NPWP/NIB and other supporting documents to complete the order.<br>
+    4. Term of Payment and penalty for late charges will be implemented according to the general Term and condition.<br>
+    5. Every Cancellation shipment is required to pay a Cancellation Fee if any.<br>
+    6. Payment is made 7 days normally from the invoice received by the customer.<br>
+    7. All prices above are valid according to the available valid date and are not binding if it has passed.
 </div>
-
-{{-- CUSTOM REMARKS / NOTE --}}
-@if(!empty(trim($quotation->notes ?? '')))
-<div class="custom-remarks">
-    <div class="cr-label">NOTE:</div>
-    <div class="cr-content">{!! nl2br(e($quotation->notes)) !!}</div>
-</div>
-@endif
 
 {{-- CLOSING --}}
 <div class="closing">
@@ -469,10 +473,18 @@
     @php
         $salesUser = $quotation->sales ?? ($quotation->creator ?? null);
     @endphp
-    <div class="sign-name">{{ strtoupper($salesUser?->name ?? 'STEVEN JOMAN') }}</div>
+    <div>
+        <span class="sign-name-line">
+            @if(!empty($salesUser?->name))
+                <span class="sign-name">{{ strtoupper($salesUser->name) }}</span>
+            @else
+                &nbsp;
+            @endif
+        </span>
+    </div>
     <div class="sign-role">MARKETING</div>
-    <div class="sign-contact">Mobile : {{ $salesUser?->phone ?? '082246500047' }}</div>
-    <div class="sign-contact">Email : {{ $salesUser?->email ?? 'steven@rdx-interlog.com' }}</div>
+    <div class="sign-contact">Mobile : {{ $salesUser?->phone ?? '' }}</div>
+    <div class="sign-contact">Email : {{ $salesUser?->email ?? '' }}</div>
     <div class="footer-disclaimer">
         This is computer-generated does not require signature
     </div>
