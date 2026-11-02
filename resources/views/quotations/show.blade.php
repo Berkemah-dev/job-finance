@@ -41,6 +41,19 @@
 @can('update',$quotation)<a class="button button-secondary" href="{{ route('quotations.edit',$quotation) }}">{{ in_array($quotation->status, [\App\Enums\QuotationStatus::Approved, \App\Enums\QuotationStatus::Converted, \App\Enums\QuotationStatus::Submitted], true) ? 'Edit Quotation' : 'Edit draft' }}</a>@endcan
 @can('create', \App\Models\Quotation::class)<form method="POST" action="{{ route('quotations.duplicate',$quotation) }}" data-confirm="Buat salinan draft baru dari quotation ini?">@csrf<button class="button button-secondary">Duplikat draft</button></form>@endcan
 <a class="button button-secondary" href="{{ route('quotations.preview',$quotation) }}" target="_blank">🖨 Preview PDF</a>
+@can('updatePdfSettings', $quotation)
+<form method="POST" action="{{ route('quotations.pdf-settings', $quotation) }}" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    @csrf
+    @method('PATCH')
+    <input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}">
+    <input type="hidden" name="show_total_on_pdf" value="0">
+    <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" name="show_total_on_pdf" value="1" style="width:auto;" @checked($quotation->show_total_on_pdf)>
+        Tampilkan Total Penawaran di PDF
+    </label>
+    <button type="submit" class="button button-secondary">Simpan Pengaturan PDF</button>
+</form>
+@endcan
 @can('submit',$quotation)<form method="POST" action="{{ route('quotations.submit',$quotation) }}" data-confirm="Ajukan quotation ini? Draft tidak dapat diedit setelah diajukan.">@csrf<input type="hidden" name="lock_version" value="{{ $quotation->lock_version }}"><button class="button button-primary">Ajukan quotation</button></form>@endcan
 @can('approve',$quotation)
 <button type="button" class="button button-primary" onclick="document.getElementById('modal-approve-quotation').showModal()">Setujui Quotation</button>

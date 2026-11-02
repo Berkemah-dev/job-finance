@@ -20,6 +20,49 @@ class QuotationService
 {
     public function __construct(private DocumentNumberService $numbers, private MasterDataService $master, private PricingService $pricing, private CalculationService $calculation) {}
 
+    public function previewForm(?Quotation $existing, array $data, User $actor): Quotation
+    {
+        return DB::transaction(function () use ($existing, $data, $actor) {
+            Gate::forUser($actor)->authorize($existing ? 'update' : 'create', $existing ?? Quotation::class);
+            $customer = $this->activeCustomer($data['customer_id'], $actor);
+            $calculated = $this->calculate($data['items'], $data['quotation_date']);
+            $preview = $existing ? clone $existing : new Quotation;
+            $preview->setRelations([]);
+            $preview->fill(Arr::only($data, $preview->getFillable()));
+            $preview->number = $existing?->number ?? 'DRAFT';
+            $preview->currency = $data['currency'] ?? 'IDR';
+            $preview->exchange_rate = $preview->currency === 'IDR' ? 1 : ($data['exchange_rate'] ?? 1);
+            $preview->payment_terms = $data['payment_terms'] ?? $customer->default_payment_terms;
+            $preview->customer_snapshot = $customer->only(['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number', 'default_payment_terms']);
+            $preview->forceFill($calculated['totals']);
+            $this->applyTaxAndGrandTotal($preview);
+            $preview->setRelation('customer', $customer);
+            $preview->setRelation('creator', $existing?->creator ?? $actor);
+            $preview->setRelation('sales', ! empty($data['sales_id']) ? User::find($data['sales_id']) : null);
+            $preview->setRelation('items', collect($calculated['items'])->map(fn ($row) => new \App\Models\QuotationItem($row)));
+
+            return $preview;
+        });
+    }
+
+    public function updatePdfSettings(Quotation $quotation, array $data, User $actor): void
+    {
+        DB::transaction(function () use ($quotation, $data, $actor) {
+            $quotation = Quotation::lockForUpdate()->findOrFail($quotation->id);
+            Gate::forUser($actor)->authorize('updatePdfSettings', $quotation);
+            $this->master->checkVersion($quotation, $data);
+            $before = $quotation->only(['show_total_on_pdf']);
+            $quotation->forceFill([
+                'show_total_on_pdf' => (bool) $data['show_total_on_pdf'],
+                'updated_by' => $actor->id, 'lock_version' => $quotation->lock_version + 1,
+            ])->save();
+            $this->master->log($actor, 'quotation.pdf_settings_updated', 'Pengaturan PDF '.$quotation->number, [
+                'module' => 'quotation', 'record_id' => $quotation->id,
+                'before' => $before, 'after' => $quotation->only(['show_total_on_pdf']),
+            ]);
+        }, 3);
+    }
+
     public function save(?Quotation $quotation, array $data, User $actor): Quotation
     {
         return DB::transaction(function () use ($quotation, $data, $actor) {

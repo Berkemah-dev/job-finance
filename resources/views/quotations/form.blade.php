@@ -212,6 +212,7 @@
         <input type="checkbox" name="show_total_on_pdf" value="1" style="width:auto;" @checked(old('show_total_on_pdf', $quotation->show_total_on_pdf ?? false))>
         Tampilkan Total Penawaran di PDF
     </label>
+    <button type="submit" class="button button-secondary" formaction="{{ $quotation->exists ? route('quotations.preview-form', $quotation) : route('quotations.preview-create') }}" formtarget="_blank" @disabled($customers->isEmpty())>Preview Cetakan PDF</button>
     <a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a>
     @if($canManageCost)
         <button type="submit" name="direct_approve" value="0" class="button button-secondary" id="btn_save_draft" @disabled($customers->isEmpty())>

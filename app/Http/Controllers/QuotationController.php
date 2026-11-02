@@ -139,6 +139,9 @@ class QuotationController extends Controller
 
     public function edit(Quotation $quotation)
     {
+        if ($quotation->status === QuotationStatus::Converted && Gate::allows('updatePdfSettings', $quotation)) {
+            return redirect()->route('quotations.show', $quotation)->with('info', 'Quotation sudah dikonversi ke Job. Gunakan pengaturan PDF di halaman detail untuk menampilkan atau menyembunyikan total.');
+        }
         Gate::authorize('update', $quotation);
 
         return view('quotations.form', [
@@ -159,6 +162,18 @@ class QuotationController extends Controller
         $quotation = $service->save($quotation, $request->validated(), $request->user());
 
         return redirect()->route('quotations.show', $quotation)->with('success', 'Draft quotation berhasil diperbarui.');
+    }
+
+    public function updatePdfSettings(Request $request, Quotation $quotation, QuotationService $service)
+    {
+        Gate::authorize('updatePdfSettings', $quotation);
+        $data = $request->validate([
+            'lock_version' => ['required', 'integer', 'min:0'],
+            'show_total_on_pdf' => ['required', 'boolean'],
+        ]);
+        $service->updatePdfSettings($quotation, $data, $request->user());
+
+        return redirect()->route('quotations.show', $quotation)->with('success', 'Pengaturan total pada preview dan PDF quotation berhasil disimpan.');
     }
 
     public function submit(VersionRequest $request, Quotation $quotation, QuotationService $service)
@@ -200,6 +215,18 @@ class QuotationController extends Controller
         $service->transition($quotation, $action, $request->validated(), $request->user());
 
         return redirect()->route('quotations.show', $quotation)->with('success', 'Status quotation berhasil diperbarui.');
+    }
+
+    public function previewForm(QuotationRequest $request, QuotationService $service, ?Quotation $quotation = null)
+    {
+        $preview = $service->previewForm($quotation, $request->validated(), $request->user());
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $preview])->setPaper('a4');
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Preview_Quotation.pdf"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        ]);
     }
 
     public function preview(Quotation $quotation)

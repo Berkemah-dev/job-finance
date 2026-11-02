@@ -42,6 +42,10 @@ class QuotationPdfTotalTest extends TestCase
                         'cost_currency' => 'IDR', 'cost_exchange_rate' => '1'],
                 ],
             ];
+            $sequenceBefore = DB::table('document_sequences')->get()->toArray();
+            $this->post(route('quotations.preview-create'), $data)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+            $this->assertSame(0, Quotation::count());
+            $this->assertSame($sequenceBefore, DB::table('document_sequences')->get()->toArray());
             $this->post(route('quotations.store'), $data)->assertSessionHasNoErrors()->assertRedirect();
             $quotation = Quotation::latest('id')->firstOrFail();
             $this->assertFalse($quotation->show_total_on_pdf);
@@ -77,10 +81,66 @@ class QuotationPdfTotalTest extends TestCase
             $this->get(route('quotations.edit', $quotation))->assertOk()
                 ->assertDontSee('name="show_total_on_pdf" value="1" style="width:auto;" checked', false);
             $off = $this->get(route('quotations.pdf', $quotation))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+            $this->get(route('quotations.edit', $quotation))->assertOk()->assertSee('Preview Cetakan PDF')
+                ->assertSee('formaction="'.route('quotations.preview-form', $quotation).'" formtarget="_blank"', false);
+            $unsaved = $data;
+            $unsaved['items'][0]['unit_price'] = '2000000';
+            $unsaved['show_total_on_pdf'] = '1';
+            $unsaved['lock_version'] = $quotation->lock_version;
+            $beforePreview = $quotation->fresh()->toArray();
+            $itemsBeforePreview = $quotation->items()->get()->toArray();
+            $this->post(route('quotations.preview-form', $quotation), $unsaved + ['_method' => 'PUT'])->assertOk()
+                ->assertHeader('Content-Type', 'application/pdf')->assertHeader('Content-Disposition', 'inline; filename="Preview_Quotation.pdf"');
+            $this->assertSame($beforePreview, $quotation->fresh()->toArray());
+            $this->assertSame($itemsBeforePreview, $quotation->items()->get()->toArray());
+            $draft = app(\App\Services\QuotationService::class)->previewForm($quotation, $unsaved, $actor);
+            $this->assertSame('2640000.00', $draft->grand_total);
+            $draftHtml = view('documents.pdf.quotation', ['quotation' => $draft])->render();
+            $this->assertStringContainsString('TOTAL PENAWARAN (IDR):', $draftHtml);
+            $this->assertStringContainsString('2,640,000.00', $draftHtml);
+            $this->assertFalse($quotation->fresh()->show_total_on_pdf);
+            $unsaved['show_total_on_pdf'] = '0';
+            $hiddenDraft = app(\App\Services\QuotationService::class)->previewForm($quotation, $unsaved, $actor);
+            $this->assertStringNotContainsString('TOTAL PENAWARAN (IDR):', view('documents.pdf.quotation', ['quotation' => $hiddenDraft])->render());
             if (getenv('QUOTATION_TOTAL_PREVIEW')) {
                 \Illuminate\Support\Facades\File::ensureDirectoryExists(base_path('tmp/pdfs'));
                 file_put_contents(base_path('tmp/pdfs/quotation-total-visible.pdf'), $on->getContent());
                 file_put_contents(base_path('tmp/pdfs/quotation-total-hidden.pdf'), $off->getContent());
+            }
+
+            // Print preferences remain editable after conversion without unlocking financial fields.
+            $quotation->forceFill(['status' => \App\Enums\QuotationStatus::Converted])->save();
+            $job = \App\Models\Job::factory()->open()->create([
+                'quotation_id' => $quotation->id, 'customer_id' => $customer->id,
+                'quotation_snapshot' => ['subject' => 'Original snapshot'],
+            ]);
+            $jobBefore = $job->fresh()->toArray();
+            $itemsBefore = $quotation->items()->get()->toArray();
+            $admin = User::where('email', 'admin@jobfinance.test')->firstOrFail();
+            $this->actingAs($admin);
+            $this->get(route('quotations.edit', $quotation))->assertRedirect(route('quotations.show', $quotation));
+            $this->post(route('quotations.preview-form', $quotation), $unsaved + ['_method' => 'PUT'])->assertForbidden();
+            $this->get(route('quotations.show', $quotation))->assertOk()->assertSee('Simpan Pengaturan PDF');
+            $this->put(route('quotations.update', $quotation), $data + ['lock_version' => $quotation->lock_version])->assertForbidden();
+            $settings = ['lock_version' => $quotation->lock_version, 'show_total_on_pdf' => '1'];
+            $this->patch(route('quotations.pdf-settings', $quotation), $settings + ['subject' => 'Must not change'])
+                ->assertSessionHasNoErrors()->assertRedirect(route('quotations.show', $quotation));
+            $quotation->refresh();
+            $this->assertTrue($quotation->show_total_on_pdf);
+            $this->assertSame(\App\Enums\QuotationStatus::Converted, $quotation->status);
+            $this->assertSame('Contoh Penawaran', $quotation->subject);
+            $this->assertSame($originalAmounts, $quotation->only(array_keys($originalAmounts)));
+            $this->assertSame($jobBefore, $job->fresh()->toArray());
+            $this->assertSame($itemsBefore, $quotation->items()->get()->toArray());
+            $this->assertSame(0, \App\Models\Journal::count());
+            $this->assertStringContainsString('TOTAL PENAWARAN (IDR):', $render());
+            $this->patch(route('quotations.pdf-settings', $quotation), $settings)->assertSessionHasErrors('lock_version');
+            $this->patch(route('quotations.pdf-settings', $quotation), ['lock_version' => $quotation->lock_version, 'show_total_on_pdf' => '0'])
+                ->assertSessionHasNoErrors()->assertRedirect();
+            $this->assertFalse($quotation->fresh()->show_total_on_pdf);
+            foreach (['finance@jobfinance.test', 'sales@jobfinance.test'] as $email) {
+                $this->actingAs(User::where('email', $email)->firstOrFail());
+                $this->patch(route('quotations.pdf-settings', $quotation), ['lock_version' => $quotation->fresh()->lock_version, 'show_total_on_pdf' => '1'])->assertForbidden();
             }
         } finally {
             DB::setDefaultConnection($previous);

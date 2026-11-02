@@ -125,8 +125,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/quotations', [QuotationController::class, 'index'])->middleware('can:quotations.view')->name('quotations.index');
     Route::get('/quotations/create', [QuotationController::class, 'create'])->middleware('can:quotations.manage')->name('quotations.create');
     Route::post('/quotations', [QuotationController::class, 'store'])->middleware('can:quotations.manage')->name('quotations.store');
+    Route::post('/quotations/preview-draft', [QuotationController::class, 'previewForm'])->middleware('can:quotations.manage')->name('quotations.preview-create');
+    Route::match(['post', 'put'], '/quotations/{quotation}/preview-draft', [QuotationController::class, 'previewForm'])->middleware('can:quotations.manage')->name('quotations.preview-form');
     Route::get('/quotations/{quotation}/edit', [QuotationController::class, 'edit'])->middleware('can:quotations.manage')->name('quotations.edit');
     Route::put('/quotations/{quotation}', [QuotationController::class, 'update'])->middleware('can:quotations.manage')->name('quotations.update');
+    Route::patch('/quotations/{quotation}/pdf-settings', [QuotationController::class, 'updatePdfSettings'])->middleware('can:quotations.manage')->name('quotations.pdf-settings');
     Route::get('/quotations/{quotation}', [QuotationController::class, 'show'])->middleware('can:quotations.view')->name('quotations.show');
     Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])->middleware('can:quotations.view')->name('quotations.print');
     Route::post('/quotations/{quotation}/submit', [QuotationController::class, 'submit'])->middleware('can:quotations.manage')->name('quotations.submit');

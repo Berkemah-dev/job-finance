@@ -37,6 +37,13 @@ class QuotationPolicy
             && ! $user->hasRole(['customer-service', 'finance', 'finance-manager']);
     }
 
+    public function updatePdfSettings(User $user, Quotation $quotation): bool
+    {
+        return $this->view($user, $quotation)
+            && $this->create($user)
+            && $user->hasPermission('quotations.manage');
+    }
+
     public function update(User $user, Quotation $quotation): bool
     {
         if (! $this->view($user, $quotation)) {
