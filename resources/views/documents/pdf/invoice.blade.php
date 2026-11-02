@@ -42,7 +42,7 @@
             margin-bottom: 2px;
         }
         .header-company .company-label {
-            text-decoration: underline;
+            font-weight: bold;
         }
         .clear {
             clear: both;
@@ -51,7 +51,7 @@
             text-align: center;
             font-size: 16px;
             font-weight: bold;
-            margin: 6px 0 10px 0;
+            margin: 8px 0 12px 0;
             letter-spacing: 1px;
         }
         .doc-title u {
@@ -67,7 +67,6 @@
         }
         .bill-to-title {
             font-weight: bold;
-            text-decoration: underline;
             margin-bottom: 3px;
         }
         .bill-to-name {
@@ -87,23 +86,12 @@
             border-collapse: collapse;
             margin-left: auto;
             font-size: 9.5px;
+            width: 250px;
         }
         .meta-table td {
-            padding: 1.5px 1px;
+            padding: 1.5px 0;
+            text-align: left;
             white-space: nowrap;
-        }
-        .meta-table td.lbl {
-            font-weight: bold;
-            text-decoration: underline;
-            text-align: left;
-        }
-        .meta-table td.colon {
-            width: 12px;
-            text-align: center;
-        }
-        .meta-table td.val {
-            text-align: left;
-            padding-left: 2px;
         }
         .big-amount-box {
             margin-top: 8px;
@@ -124,7 +112,6 @@
         }
         .shipment-details td.field-lbl {
             font-weight: bold;
-            text-decoration: underline;
             white-space: nowrap;
         }
         .shipment-details td.colon {
@@ -134,21 +121,23 @@
         table.items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-size: 9px;
-            border: 1px solid #000;
         }
         table.items-table th {
             background-color: #dddddd;
             border: 1px solid #000;
-            padding: 5px 3px;
+            padding: 4px 3px;
             text-align: center;
             font-weight: bold;
             font-size: 9px;
         }
-        table.items-table td {
-            border: 1px solid #000;
-            padding: 3.5px 4px;
+        table.items-table td.col-cell {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            border-top: none;
+            border-bottom: none;
+            padding: 2.5px 4px;
             vertical-align: top;
         }
         table.items-table td.center {
@@ -158,45 +147,40 @@
             text-align: right;
             white-space: nowrap;
         }
-        table.items-table tr.section-header td {
-            font-weight: bold;
+        table.items-table tr.total-charges-row td {
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            background: #fafafa;
-        }
-        table.items-table tr.subtotal-row td {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            padding: 3px 4px;
             font-weight: bold;
-            border-top: 1px solid #000;
+        }
+        table.items-table tr.compartment-bottom td {
             border-bottom: 1px solid #000;
         }
         table.items-table tr.summary-row td {
+            padding: 2.5px 4px;
             font-weight: bold;
-            border-top: 1px solid #000;
-            border-bottom: 1px solid #000;
         }
         .rate-said-box {
-            margin-top: 6px;
-            margin-bottom: 12px;
+            margin-top: 4px;
+            margin-bottom: 10px;
             font-size: 9.5px;
-            line-height: 1.5;
+            line-height: 1.4;
         }
         .rate-line {
             font-weight: bold;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .said-line {
             font-style: italic;
         }
-        .said-line u {
-            font-weight: bold;
-            font-style: normal;
-        }
         .bottom-section {
-            margin-top: 8px;
+            margin-top: 6px;
         }
         .payment-box {
             float: left;
-            width: 60%;
+            width: 62%;
             font-size: 9px;
             line-height: 1.45;
         }
@@ -221,17 +205,6 @@
         }
         .sign-label {
             font-weight: bold;
-        }
-        .footer {
-            position: fixed;
-            bottom: -6px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 8px;
-            color: #888;
-            border-top: 1px solid #ddd;
-            padding-top: 2px;
         }
     </style>
 </head>
@@ -284,19 +257,13 @@
     <div class="meta-col">
         <table class="meta-table">
             <tr>
-                <td class="lbl">Inv. No</td>
-                <td class="colon">:</td>
-                <td class="val">{{ $invoice->number }}</td>
+                <td style="white-space: nowrap;"><nobr><strong>Inv. No :</strong> {{ $invoice->number }}</nobr></td>
             </tr>
             <tr>
-                <td class="lbl">Inv. Date</td>
-                <td class="colon">:</td>
-                <td class="val">{{ $invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : '—' }}</td>
+                <td style="padding-left: 20px; white-space: nowrap;"><nobr><strong>Inv. Date :</strong> {{ $invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : '—' }}</nobr></td>
             </tr>
             <tr>
-                <td class="lbl">Due. Date</td>
-                <td class="colon">:</td>
-                <td class="val">{{ $invoice->due_date ? $invoice->due_date->format('d-m-Y') : '—' }}</td>
+                <td style="padding-left: 20px; white-space: nowrap;"><nobr><strong>Due. Date :</strong> {{ $invoice->due_date ? $invoice->due_date->format('d-m-Y') : '—' }}</nobr></td>
             </tr>
         </table>
         <div class="big-amount-box">
@@ -388,102 +355,149 @@
     <thead>
         <tr>
             <th style="width: 4%;">NO</th>
-            <th style="width: 29%;">DESCRIPTION</th>
+            <th style="width: 30%;">DESCRIPTION</th>
             <th style="width: 6%;">QTY</th>
             <th style="width: 6%;">CUR</th>
             <th style="width: 13%;">PRICE</th>
             <th style="width: 14%;">AMOUNT</th>
             <th style="width: 13%;">VAT</th>
-            <th style="width: 15%;">TOTAL</th>
+            <th style="width: 14%;">TOTAL</th>
         </tr>
     </thead>
     <tbody>
         @php $no = 1; @endphp
 
         {{-- CHARGES SECTION --}}
-        @if($charges->isNotEmpty())
-            <tr class="section-header">
-                <td></td>
-                <td colspan="7"><strong>CHARGES</strong></td>
-            </tr>
-            @foreach($charges as $item)
-                @php
-                    $itemAmount = (float) $item->amount;
-                    // Proportional VAT if applicable
-                    $itemVat = $chargesAmount > 0 ? ($itemAmount / $chargesAmount) * $chargesTax : 0;
-                    $itemTotal = $itemAmount + $itemVat;
-                    $itemCurrency = strtoupper($item->currency ?? 'IDR');
-                    $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
-                @endphp
-                <tr>
-                    <td class="center">{{ $no++ }}.</td>
-                    <td>{{ strtoupper($item->description) }}</td>
-                    <td class="center">{{ (float)$item->quantity == (int)$item->quantity ? (int)$item->quantity : number_format((float)$item->quantity, 2, '.', ',') }}</td>
-                    <td class="center">{{ $itemCurrency }}</td>
-                    <td class="right">{{ number_format((float)$itemPrice, 2, '.', ',') }}</td>
-                    <td class="right">{{ number_format($itemAmount, 2, '.', ',') }}</td>
-                    <td class="right">{{ number_format($itemVat, 2, '.', ',') }}</td>
-                    <td class="right">{{ number_format($itemTotal, 2, '.', ',') }}</td>
-                </tr>
-            @endforeach
-            <tr class="subtotal-row">
-                <td></td>
-                <td colspan="4"><strong>TOTAL CHARGES</strong></td>
-                <td class="right"><strong>{{ number_format($chargesAmount, 2, '.', ',') }}</strong></td>
-                <td class="right"><strong>{{ number_format($chargesTax, 2, '.', ',') }}</strong></td>
-                <td class="right"><strong>{{ number_format($chargesTotal, 2, '.', ',') }}</strong></td>
-            </tr>
-        @endif
-
-        {{-- REIMBURSEMENT SECTION --}}
-        @if($reimbursements->isNotEmpty())
-            <tr class="section-header">
-                <td></td>
-                <td colspan="7"><strong>REIMBURSMENT</strong></td>
-            </tr>
-            @foreach($reimbursements as $item)
-                @php
-                    $itemAmount = (float) $item->amount;
-                    $itemVat = 0.00;
-                    $itemTotal = $itemAmount;
-                    $itemCurrency = strtoupper($item->currency ?? 'IDR');
-                    $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
-                @endphp
-                <tr>
-                    <td class="center">{{ $no++ }}.</td>
-                    <td>{{ strtoupper($item->description) }}</td>
-                    <td class="center">{{ (float)$item->quantity == (int)$item->quantity ? (int)$item->quantity : number_format((float)$item->quantity, 2, '.', ',') }}</td>
-                    <td class="center">{{ $itemCurrency }}</td>
-                    <td class="right">{{ number_format((float)$itemPrice, 2, '.', ',') }}</td>
-                    <td class="right">{{ number_format($itemAmount, 2, '.', ',') }}</td>
-                    <td class="right">0.00</td>
-                    <td class="right">{{ number_format($itemTotal, 2, '.', ',') }}</td>
-                </tr>
-            @endforeach
-        @endif
-
-        {{-- SUB TOTAL ROW --}}
-        <tr class="summary-row">
-            <td colspan="5" style="text-align: right;"><strong>SUB TOTAL</strong></td>
-            <td class="right"><strong>{{ number_format($subTotalAmount, 2, '.', ',') }}</strong></td>
-            <td class="right"><strong>{{ number_format($subTotalVat, 2, '.', ',') }}</strong></td>
-            <td class="right"><strong>{{ number_format($subTotalSum, 2, '.', ',') }}</strong></td>
+        <tr>
+            <td class="col-cell center"></td>
+            <td class="col-cell" style="font-weight: bold;">CHARGES</td>
+            <td class="col-cell center"></td>
+            <td class="col-cell center"></td>
+            <td class="col-cell right"></td>
+            <td class="col-cell right"></td>
+            <td class="col-cell right"></td>
+            <td class="col-cell right"></td>
         </tr>
 
-        {{-- MATERAI ROW --}}
-        <tr class="summary-row">
-            <td colspan="5" style="text-align: right;"><strong>MATERAI</strong></td>
+        @foreach($charges as $item)
+            @php
+                $itemAmount = (float) $item->amount;
+                $itemVat = $chargesAmount > 0 ? ($itemAmount / $chargesAmount) * $chargesTax : 0;
+                $itemTotal = $itemAmount + $itemVat;
+                $itemCurrency = strtoupper($item->currency ?? 'IDR');
+                $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
+            @endphp
+            <tr>
+                <td class="col-cell center">{{ $no++ }}.</td>
+                <td class="col-cell">{{ strtoupper($item->description) }}</td>
+                <td class="col-cell center">{{ (float)$item->quantity == (int)$item->quantity ? (int)$item->quantity : number_format((float)$item->quantity, 2, '.', ',') }}</td>
+                <td class="col-cell center">{{ $itemCurrency }}</td>
+                <td class="col-cell right">{{ number_format((float)$itemPrice, 2, '.', ',') }}</td>
+                <td class="col-cell right">{{ number_format($itemAmount, 2, '.', ',') }}</td>
+                <td class="col-cell right">{{ number_format($itemVat, 2, '.', ',') }}</td>
+                <td class="col-cell right">{{ number_format($itemTotal, 2, '.', ',') }}</td>
+            </tr>
+        @endforeach
+
+        @php
+            $minChargesRows = 3;
+            $emptyCharges = max(0, $minChargesRows - count($charges));
+        @endphp
+        @for($i = 0; $i < $emptyCharges; $i++)
+            <tr>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+            </tr>
+        @endfor
+
+        {{-- TOTAL CHARGES ROW --}}
+        <tr class="total-charges-row">
+            <td class="center"></td>
+            <td style="font-weight: bold;">TOTAL CHARGES</td>
+            <td class="center"></td>
+            <td class="center"></td>
             <td class="right"></td>
-            <td class="right"></td>
-            <td class="right"><strong>{{ number_format($materai, 2, '.', ',') }}</strong></td>
+            <td class="right">{{ number_format($chargesAmount, 2, '.', ',') }}</td>
+            <td class="right">{{ number_format($chargesTax, 2, '.', ',') }}</td>
+            <td class="right">{{ number_format($chargesTotal, 2, '.', ',') }}</td>
         </tr>
 
-        {{-- GRAND TOTAL ROW --}}
-        <tr class="summary-row" style="background-color: #f5f5f5;">
-            <td colspan="5" style="text-align: right; font-size: 10px;"><strong>TOTAL</strong></td>
-            <td class="right"></td>
-            <td class="right"></td>
-            <td class="right" style="font-size: 10px;"><strong>{{ number_format((float)$invoice->total, 2, '.', ',') }}</strong></td>
+        {{-- REIMBURSMENT SECTION --}}
+        <tr>
+            <td class="col-cell center"></td>
+            <td class="col-cell" style="font-weight: bold;">REIMBURSMENT</td>
+            <td class="col-cell center"></td>
+            <td class="col-cell center"></td>
+            <td class="col-cell right"></td>
+            <td class="col-cell right"></td>
+            <td class="col-cell right"></td>
+            <td class="col-cell right"></td>
+        </tr>
+
+        @foreach($reimbursements as $item)
+            @php
+                $itemAmount = (float) $item->amount;
+                $itemVat = 0.00;
+                $itemTotal = $itemAmount;
+                $itemCurrency = strtoupper($item->currency ?? 'IDR');
+                $itemPrice = $item->foreign_unit_price ?? $item->unit_price;
+            @endphp
+            <tr>
+                <td class="col-cell center">{{ $no++ }}.</td>
+                <td class="col-cell">{{ strtoupper($item->description) }}</td>
+                <td class="col-cell center">{{ (float)$item->quantity == (int)$item->quantity ? (int)$item->quantity : number_format((float)$item->quantity, 2, '.', ',') }}</td>
+                <td class="col-cell center">{{ $itemCurrency }}</td>
+                <td class="col-cell right">{{ number_format((float)$itemPrice, 2, '.', ',') }}</td>
+                <td class="col-cell right">{{ number_format($itemAmount, 2, '.', ',') }}</td>
+                <td class="col-cell right">0.00</td>
+                <td class="col-cell right">{{ number_format($itemTotal, 2, '.', ',') }}</td>
+            </tr>
+        @endforeach
+
+        @php
+            $minReimburseRows = 6;
+            $emptyReimburse = max(0, $minReimburseRows - count($reimbursements));
+        @endphp
+        @for($i = 0; $i < $emptyReimburse; $i++)
+            <tr @if($i === $emptyReimburse - 1) class="compartment-bottom" @endif>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+                <td class="col-cell">&nbsp;</td>
+            </tr>
+        @endfor
+
+        {{-- SUMMARY ROWS (RIGHT-ALIGNED 4 COLUMNS BOX) --}}
+        <tr class="summary-row">
+            <td colspan="4" style="border: none; background: transparent;"></td>
+            <td style="border: 1px solid #000; text-align: center;">SUB TOTAL</td>
+            <td class="right" style="border: 1px solid #000;">{{ number_format($subTotalAmount, 2, '.', ',') }}</td>
+            <td class="right" style="border: 1px solid #000;">{{ number_format($subTotalVat, 2, '.', ',') }}</td>
+            <td class="right" style="border: 1px solid #000;">{{ number_format($subTotalSum, 2, '.', ',') }}</td>
+        </tr>
+        <tr class="summary-row">
+            <td colspan="4" style="border: none; background: transparent;"></td>
+            <td style="border: 1px solid #000; text-align: center;">MATERAI</td>
+            <td style="border: 1px solid #000;"></td>
+            <td style="border: 1px solid #000;"></td>
+            <td class="right" style="border: 1px solid #000;">{{ number_format($materai, 2, '.', ',') }}</td>
+        </tr>
+        <tr class="summary-row">
+            <td colspan="4" style="border: none; background: transparent;"></td>
+            <td style="border: 1px solid #000; text-align: center;">TOTAL</td>
+            <td style="border: 1px solid #000;"></td>
+            <td style="border: 1px solid #000;"></td>
+            <td class="right" style="border: 1px solid #000;">{{ number_format((float)$invoice->total, 2, '.', ',') }}</td>
         </tr>
     </tbody>
 </table>
@@ -501,7 +515,7 @@
         EXC. RATE : {{ $itemExchangeRates->isEmpty() ? '1.00' : $itemExchangeRates->implode(' · ') }}
     </div>
     <div class="said-line">
-        <u>Said :</u> <strong>{{ \App\Support\Money::terbilang($invoice->total, $invoice->currency) }}</strong>
+        Said : <strong>{{ \App\Support\Money::terbilang($invoice->total, $invoice->currency) }}</strong>
     </div>
 </div>
 
@@ -510,10 +524,10 @@
     <div class="payment-box">
         <div class="payment-title">INFORMASI PEMBAYARAN/PAYMENT DETAILS:</div>
         <div>NAMA AKUN/ACCOUNT NAME : <strong>PT RADIX INTERNATIONAL LOGISTICS</strong></div>
-        <div class="bank-detail">1. <span style="text-decoration: underline;">NAMA BANK/BANK DETAILS</span> : <strong>BANK CENTRAL ASIA - CENGKEH</strong></div>
-        <div style="padding-left: 16px;"><span style="text-decoration: underline;">NOMOR REKENING/ACCOUNT NUMBER</span> : <strong>240-0375-758</strong></div>
-        <div class="bank-detail">2. <span style="text-decoration: underline;">NAMA BANK/BANK DETAILS</span> : <strong>BANK MANDIRI - JAKARTA KOTA</strong></div>
-        <div style="padding-left: 16px;"><span style="text-decoration: underline;">NOMOR REKENING/ACCOUNT NUMBER</span> : <strong>115-00-1053704-3</strong></div>
+        <div class="bank-detail">1. NAMA BANK/BANK DETAILS : <strong>BANK CENTRAL ASIA - CENGKEH</strong></div>
+        <div style="padding-left: 16px;">NOMOR REKENING/ACCOUNT NUMBER : <strong>240-0375-758</strong></div>
+        <div class="bank-detail">2. NAMA BANK/BANK DETAILS : <strong>BANK MANDIRI - JAKARTA KOTA</strong></div>
+        <div style="padding-left: 16px;">NOMOR REKENING/ACCOUNT NUMBER : <strong>115-00-1053704-3</strong></div>
     </div>
     <div class="signature-box">
         <div class="sign-line"></div>
@@ -521,9 +535,6 @@
     </div>
     <div class="clear"></div>
 </div>
-
-{{-- FOOTER --}}
-<div class="footer">Page <script type="text/php">if(isset($pdf)){echo $PAGE_NUM.' of '.$PAGE_COUNT;}</script></div>
 
 </body>
 </html>

@@ -201,7 +201,7 @@
             text-align: center;
         }
         .sign-space {
-            height: 48px;
+            height: 80px;
         }
     </style>
 </head>
