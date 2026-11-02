@@ -15,6 +15,13 @@ use Tests\TestCase;
 
 class QuotationPdfTotalTest extends TestCase
 {
+    private function pdfTextStreams(string $pdf): string
+    {
+        preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf, $matches);
+
+        return implode("\n", array_map(fn ($stream) => @gzuncompress($stream) ?: $stream, $matches[1]));
+    }
+
     public function test_saved_checkbox_controls_total_in_preview_download_and_print_without_changing_amounts(): void
     {
         $previous = DB::getDefaultConnection();
@@ -89,8 +96,10 @@ class QuotationPdfTotalTest extends TestCase
             $unsaved['lock_version'] = $quotation->lock_version;
             $beforePreview = $quotation->fresh()->toArray();
             $itemsBeforePreview = $quotation->items()->get()->toArray();
-            $this->post(route('quotations.preview-form', $quotation), $unsaved + ['_method' => 'PUT'])->assertOk()
+            $draftResponse = $this->post(route('quotations.preview-form', $quotation), $unsaved + ['_method' => 'PUT'])->assertOk()
                 ->assertHeader('Content-Type', 'application/pdf')->assertHeader('Content-Disposition', 'inline; filename="Preview_Quotation.pdf"');
+            $this->assertStringContainsString('TOTAL PENAWARAN', $this->pdfTextStreams($draftResponse->getContent()));
+            $this->assertStringContainsString('2,640,000.00', $this->pdfTextStreams($draftResponse->getContent()));
             $this->assertSame($beforePreview, $quotation->fresh()->toArray());
             $this->assertSame($itemsBeforePreview, $quotation->items()->get()->toArray());
             $draft = app(\App\Services\QuotationService::class)->previewForm($quotation, $unsaved, $actor);
@@ -100,6 +109,8 @@ class QuotationPdfTotalTest extends TestCase
             $this->assertStringContainsString('2,640,000.00', $draftHtml);
             $this->assertFalse($quotation->fresh()->show_total_on_pdf);
             $unsaved['show_total_on_pdf'] = '0';
+            $hiddenResponse = $this->post(route('quotations.preview-form', $quotation), $unsaved + ['_method' => 'PUT'])->assertOk();
+            $this->assertStringNotContainsString('TOTAL PENAWARAN', $this->pdfTextStreams($hiddenResponse->getContent()));
             $hiddenDraft = app(\App\Services\QuotationService::class)->previewForm($quotation, $unsaved, $actor);
             $this->assertStringNotContainsString('TOTAL PENAWARAN (IDR):', view('documents.pdf.quotation', ['quotation' => $hiddenDraft])->render());
             if (getenv('QUOTATION_TOTAL_PREVIEW')) {

@@ -220,7 +220,10 @@ class QuotationController extends Controller
     public function previewForm(QuotationRequest $request, QuotationService $service, ?Quotation $quotation = null)
     {
         $preview = $service->previewForm($quotation, $request->validated(), $request->user());
-        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', ['quotation' => $preview])->setPaper('a4');
+        $pdf = app('dompdf.wrapper')->loadView('documents.pdf.quotation', [
+            'quotation' => $preview,
+            'showTotalOnPdf' => $request->boolean('show_total_on_pdf'),
+        ])->setPaper('a4');
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',

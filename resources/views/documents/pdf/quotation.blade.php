@@ -444,7 +444,7 @@
             <td></td>
         </tr>
         @endif
-        @if($quotation->show_total_on_pdf)
+        @if($showTotalOnPdf ?? $quotation->show_total_on_pdf)
         <tr>
             <td colspan="7" class="right" style="font-weight:bold;">TOTAL PENAWARAN (IDR):</td>
             <td class="right" style="font-weight:bold;">{{ number_format((float)$quotation->grand_total, 2, '.', ',') }}</td>
