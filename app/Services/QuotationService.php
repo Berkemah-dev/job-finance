@@ -51,7 +51,7 @@ class QuotationService
                 'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address',
                 'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms',
                 'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity',
-                'discount', 'tax_rate',
+                'discount', 'tax_rate', 'show_total_on_pdf',
             ]));
             $quotation->customer_snapshot = $customer->only(['code', 'name', 'contact_name', 'email', 'phone', 'address', 'tax_number', 'default_payment_terms']);
             $quotation->forceFill($calculated['totals']);

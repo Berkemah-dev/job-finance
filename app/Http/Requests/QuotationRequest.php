@@ -18,6 +18,7 @@ class QuotationRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->merge(['show_total_on_pdf' => $this->input('show_total_on_pdf', '0')]);
         $user = $this->user();
         if ($user && $user->hasRole('sales') && ! $user->hasRole(['sales-manager', 'super-admin', 'admin'])) {
             $this->merge(['sales_id' => $user->id]);
@@ -72,6 +73,7 @@ class QuotationRequest extends FormRequest
             'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lock_version' => [$this->isMethod('PUT') ? 'required' : 'nullable', 'integer', 'min:0'],
             'direct_approve' => ['nullable', 'boolean'],
+            'show_total_on_pdf' => ['required', 'boolean'],
             'items' => ['required', 'array', 'min:1', 'max:100'], 'items.*' => ['required', 'array'],
             'items.*.description' => ['required', 'string', 'max:255'],
             'items.*.note' => ['nullable', 'string', 'max:255'],

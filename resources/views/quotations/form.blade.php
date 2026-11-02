@@ -206,7 +206,12 @@
 <div class="summary-box" aria-live="polite">
     <div class="summary-row"><span>Total Penawaran (Jual)</span><strong data-preview-total>Rp 0,00</strong></div>
 </div>
-<div class="form-actions" style="display:flex; gap:10px; align-items:center;">
+<div class="form-actions" style="display:flex; gap:10px; align-items:center;flex-wrap:wrap;">
+    <label style="display:flex;align-items:center;gap:8px;margin-right:auto;">
+        <input type="hidden" name="show_total_on_pdf" value="0">
+        <input type="checkbox" name="show_total_on_pdf" value="1" style="width:auto;" @checked(old('show_total_on_pdf', $quotation->show_total_on_pdf ?? false))>
+        Tampilkan Total Penawaran di PDF
+    </label>
     <a class="button button-secondary" href="{{ route('quotations.index') }}">Batal</a>
     @if($canManageCost)
         <button type="submit" name="direct_approve" value="0" class="button button-secondary" id="btn_save_draft" @disabled($customers->isEmpty())>

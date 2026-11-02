@@ -18,12 +18,12 @@ class Quotation extends Model
         'shipper_name', 'shipper_address', 'consignee_name', 'consignee_address',
         'service_type', 'origin', 'destination', 'currency', 'exchange_rate', 'payment_terms',
         'terms_of_delivery', 'cargo_qty', 'weight_meas', 'commodity',
-        'discount', 'tax_rate',
+        'discount', 'tax_rate', 'show_total_on_pdf',
     ];
 
     protected function casts(): array
     {
-        return ['status' => QuotationStatus::class, 'customer_snapshot' => 'array', 'quotation_date' => 'date', 'valid_until' => 'date',
+        return ['show_total_on_pdf' => 'boolean', 'status' => QuotationStatus::class, 'customer_snapshot' => 'array', 'quotation_date' => 'date', 'valid_until' => 'date',
             'submitted_at' => 'datetime', 'approved_at' => 'datetime', 'rejected_at' => 'datetime', 'converted_at' => 'datetime', 'revised_at' => 'datetime',
             'total_temporary' => 'decimal:2', 'total_provision_cost' => 'decimal:2', 'total_provision_sell' => 'decimal:2', 'subtotal' => 'decimal:2', 'profit' => 'decimal:2', 'margin' => 'decimal:2',
             'discount' => 'decimal:2', 'tax_rate' => 'decimal:2', 'tax_amount' => 'decimal:2', 'grand_total' => 'decimal:2', 'exchange_rate' => 'decimal:2'];
