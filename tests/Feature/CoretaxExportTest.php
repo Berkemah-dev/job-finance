@@ -54,15 +54,18 @@ class CoretaxExportTest extends TestCase
         $this->post('/quotations/'.$q->id.'/submit', ['lock_version' => 0])->assertSessionHasNoErrors();
         $this->actingAs($this->manager);
         $this->post('/quotations/'.$q->id.'/approve', ['lock_version' => 1])->assertSessionHasNoErrors();
-        $this->actingAs($this->operator);
+        $admin = User::where('email', 'admin@jobfinance.test')->firstOrFail();
+        $this->actingAs($admin);
         $this->post('/quotations/'.$q->id.'/convert', ['lock_version' => 2])->assertSessionHasNoErrors()->assertRedirect();
+        $this->actingAs($this->operator);
         $job = Job::latest('id')->firstOrFail();
         $this->post('/jobs/'.$job->id.'/open', ['lock_version' => 0])->assertSessionHasNoErrors();
-        $this->actingAs($this->finance);
+        $this->actingAs($admin);
         foreach ($job->costs()->get() as $cost) {
             $job->refresh();
             $this->post('/jobs/'.$job->id.'/costs/'.$cost->id.'/finalize', ['job_version' => $job->lock_version, 'lock_version' => $cost->lock_version])->assertSessionHasNoErrors();
         }
+        $this->actingAs($this->finance);
         $this->post('/closing/'.$job->id, ['lock_version' => $job->fresh()->lock_version, 'closing_date' => today()->toDateString(), 'due_date' => today()->addDays(30)->toDateString(), 'funding_account' => 'bank', 'tax' => $tax])->assertSessionHasNoErrors()->assertRedirect();
 
         return $job->fresh()->invoice;
@@ -78,19 +81,19 @@ class CoretaxExportTest extends TestCase
         $this->assertStringContainsString('application/xml', $response->headers->get('Content-Type'));
         $this->assertStringContainsString('faktur-'.$invoice->number.'.xml', $response->headers->get('Content-Disposition'));
         $xml = $response->getContent();
-        $this->assertStringContainsString('<CoretaxImport', $xml);
-        $this->assertStringContainsString('<DocumentType>FakturKeluaran</DocumentType>', $xml);
-        $this->assertStringContainsString(config('accounting.coretax.seller_npwp'), $xml);
-        $this->assertStringContainsString(config('accounting.coretax.seller_name'), $xml);
-        $this->assertStringContainsString('<NPWP>0200000000000000</NPWP>', $xml);
-        $this->assertStringContainsString('<Name>'.$invoice->customer_snapshot['name'].'</Name>', $xml);
-        $this->assertStringContainsString('<NoFaktur>'.$invoice->number.'</NoFaktur>', $xml);
-        $this->assertStringContainsString('<Dpp>9.500.000,00</Dpp>', $xml);
-        $this->assertStringContainsString('<Ppn>1.100.000,00</Ppn>', $xml);
-        $this->assertStringContainsString('<PpnRate>11.58</PpnRate>', $xml);
-        $this->assertStringContainsString('<Currency>IDR</Currency>', $xml);
-        $this->assertStringContainsString('<ExchangeRate>1.00</ExchangeRate>', $xml);
-        $this->assertStringContainsString('<GrandTotal>10.600.000,00</GrandTotal>', $xml);
+        $this->assertStringContainsString('<TaxInvoiceBulk', $xml);
+        $this->assertStringContainsString('<TIN>'.config('accounting.coretax.seller_npwp').'</TIN>', $xml);
+        $this->assertStringContainsString('<RefDesc>'.$invoice->number.'</RefDesc>', $xml);
+        $this->assertStringContainsString('<SellerIDTKU>'.config('accounting.coretax.seller_npwp').'000000</SellerIDTKU>', $xml);
+        $this->assertStringContainsString('<BuyerTin>0200000000000000</BuyerTin>', $xml);
+        $this->assertStringContainsString('<BuyerName>'.$invoice->customer_snapshot['name'].'</BuyerName>', $xml);
+        $this->assertStringNotContainsString('Dokumen', $xml);
+        $this->assertStringContainsString('Ongkir laut', $xml);
+        $this->assertStringContainsString('<GoodService>', $xml);
+        $this->assertStringContainsString('<Opt>B</Opt>', $xml);
+        $this->assertStringContainsString('<Code>060000</Code>', $xml);
+        $this->assertStringContainsString('<Price>4500000</Price>', $xml);
+        $this->assertStringContainsString('<VAT>1100000</VAT>', $xml);
         $this->assertDatabaseHas('activity_logs', ['action' => 'invoice.coretax.exported', 'user_id' => $this->finance->id]);
     }
 
@@ -114,7 +117,7 @@ class CoretaxExportTest extends TestCase
         $preview = $this->get('/invoices/'.$withTax->id.'/coretax/preview');
         $preview->assertOk();
         $this->assertStringContainsString('text/plain', $preview->headers->get('Content-Type'));
-        $this->assertStringContainsString('<CoretaxImport', $preview->getContent());
+        $this->assertStringContainsString('<TaxInvoiceBulk', $preview->getContent());
         $this->assertDatabaseMissing('activity_logs', ['action' => 'invoice.coretax.exported']);
     }
 

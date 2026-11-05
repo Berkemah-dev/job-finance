@@ -36,11 +36,11 @@ return [
     ],
     'coretax' => [
         // Profil PKP penjual untuk ekspor XML Coretax (NPWP 16 digit).
-        'seller_npwp' => '0100000000000000',
-        'seller_name' => 'PT Jasa Logistik Nusantara',
-        'seller_address' => 'Jl. Raya Pelabuhan No. 1',
-        'seller_city' => 'Jakarta',
-        'seller_postal_code' => '10110',
+        'seller_npwp' => env('CORETAX_SELLER_NPWP', '0270189186032000'),
+        'seller_name' => env('CORETAX_SELLER_NAME', 'PT Jasa Logistik Nusantara'),
+        'seller_address' => env('CORETAX_SELLER_ADDRESS', 'Jl. Raya Pelabuhan No. 1'),
+        'seller_city' => env('CORETAX_SELLER_CITY', 'Jakarta'),
+        'seller_postal_code' => env('CORETAX_SELLER_POSTAL_CODE', '10110'),
         'vat_rate' => 11,
     ],
 ];
