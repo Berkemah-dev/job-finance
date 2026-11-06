@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Services\CoretaxService;
 use App\Services\JobClosingService;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class InvoiceController extends Controller
 {
@@ -173,6 +174,55 @@ class InvoiceController extends Controller
         $items = $invoice->items()->whereIn('id', $data['item_ids'])->where('type', 'provision')->get();
         $xml = $service->generate($invoice, $request->user(), true, $items);
         return response($xml, 200, ['Content-Type' => 'application/xml', 'Content-Disposition' => 'attachment; filename=faktur-'.$invoice->number.'-charges.xml']);
+    }
+
+    public function coretaxBulkXml(Request $request, CoretaxService $service)
+    {
+        $data = $request->validate([
+            'invoice_ids' => ['required', 'array', 'min:1'],
+            'invoice_ids.*' => ['integer', 'exists:invoices,id'],
+        ], [
+            'invoice_ids.required' => 'Pilih minimal satu invoice untuk diekspor.',
+            'invoice_ids.min' => 'Pilih minimal satu invoice untuk diekspor.',
+        ]);
+
+        $invoices = Invoice::with(['items', 'job'])->whereIn('id', $data['invoice_ids'])->where('status', '!=', 'draft')->get();
+        if ($invoices->isEmpty()) {
+            return back()->with('error', 'Tidak ada invoice yang memenuhi syarat untuk diekspor ke Coretax.');
+        }
+
+        $xml = $service->generateBulk($invoices, $request->user());
+        $filename = 'faktur-bulk-'.now()->format('Ymd-His').'.xml';
+
+        return response($xml, 200, [
+            'Content-Type' => 'application/xml',
+            'Content-Disposition' => 'attachment; filename='.$filename,
+        ]);
+    }
+
+    public function coretaxBulkExcel(Request $request, CoretaxService $service)
+    {
+        $data = $request->validate([
+            'invoice_ids' => ['required', 'array', 'min:1'],
+            'invoice_ids.*' => ['integer', 'exists:invoices,id'],
+        ], [
+            'invoice_ids.required' => 'Pilih minimal satu invoice untuk diekspor.',
+            'invoice_ids.min' => 'Pilih minimal satu invoice untuk diekspor.',
+        ]);
+
+        $invoices = Invoice::with(['items', 'job'])->whereIn('id', $data['invoice_ids'])->where('status', '!=', 'draft')->get();
+        if ($invoices->isEmpty()) {
+            return back()->with('error', 'Tidak ada invoice yang memenuhi syarat untuk diekspor ke Excel.');
+        }
+
+        $spreadsheet = $service->exportExcel($invoices, $request->user());
+        $filename = 'coretax-faktur-'.now()->format('Ymd-His').'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function preview(Invoice $invoice)

@@ -54,6 +54,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/closing/{job}', [ClosingController::class, 'create'])->middleware('can:jobs.close')->name('closing.create');
     Route::post('/closing/{job}', [ClosingController::class, 'store'])->middleware('can:jobs.close')->name('closing.store');
     Route::get('/invoices/coretax', [InvoiceController::class, 'coretaxIndex'])->middleware('can:invoices.manage')->name('invoices.coretax.index');
+    Route::post('/invoices/coretax/bulk-xml', [InvoiceController::class, 'coretaxBulkXml'])->middleware('can:invoices.manage')->name('invoices.coretax.bulk-xml');
+    Route::post('/invoices/coretax/bulk-excel', [InvoiceController::class, 'coretaxBulkExcel'])->middleware('can:invoices.manage')->name('invoices.coretax.bulk-excel');
     Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->middleware('can:invoices.manage')->name('invoices.preview');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->middleware('can:invoices.manage')->name('invoices.pdf');
     Route::post('/invoices/{invoice}/delivery', [InvoiceController::class, 'updateDelivery'])->middleware('can:invoices.manage')->name('invoices.delivery');

@@ -135,4 +135,78 @@ class CoretaxExportTest extends TestCase
         $this->actingAs($this->management);
         $this->get('/invoices/'.$invoice->id.'/coretax')->assertForbidden();
     }
+
+    public function test_bulk_xml_export_with_selected_invoices(): void
+    {
+        $inv1 = $this->closedInvoice('1100000');
+        $inv2 = $this->closedInvoice('550000');
+
+        $this->actingAs($this->finance);
+        $response = $this->post('/invoices/coretax/bulk-xml', [
+            'invoice_ids' => [$inv1->id, $inv2->id],
+        ]);
+
+        $response->assertOk();
+        $this->assertStringContainsString('application/xml', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('faktur-bulk-', $response->headers->get('Content-Disposition'));
+
+        $xml = $response->getContent();
+        $this->assertStringContainsString('<TaxInvoiceBulk', $xml);
+        $this->assertStringContainsString('<RefDesc>'.$inv1->number.'</RefDesc>', $xml);
+        $this->assertStringContainsString('<RefDesc>'.$inv2->number.'</RefDesc>', $xml);
+        $this->assertStringContainsString('<TIN>'.config('accounting.coretax.seller_npwp').'</TIN>', $xml);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'invoice.coretax.bulk_exported',
+            'user_id' => $this->finance->id,
+        ]);
+    }
+
+    public function test_bulk_excel_export_with_selected_invoices(): void
+    {
+        $inv1 = $this->closedInvoice('1100000');
+        $inv2 = $this->closedInvoice('550000');
+
+        $this->actingAs($this->finance);
+        $response = $this->post('/invoices/coretax/bulk-excel', [
+            'invoice_ids' => [$inv1->id, $inv2->id],
+        ]);
+
+        $response->assertOk();
+        $this->assertStringContainsString('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('coretax-faktur-', $response->headers->get('Content-Disposition'));
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'invoice.coretax.excel_exported',
+            'user_id' => $this->finance->id,
+        ]);
+    }
+
+    public function test_bulk_export_requires_invoice_selection(): void
+    {
+        $this->actingAs($this->finance);
+        $response = $this->post('/invoices/coretax/bulk-xml', [
+            'invoice_ids' => [],
+        ]);
+        $response->assertSessionHasErrors('invoice_ids');
+
+        $responseExcel = $this->post('/invoices/coretax/bulk-excel', [
+            'invoice_ids' => [],
+        ]);
+        $responseExcel->assertSessionHasErrors('invoice_ids');
+    }
+
+    public function test_non_finance_roles_cannot_bulk_export_coretax(): void
+    {
+        $inv = $this->closedInvoice('1100000');
+        $this->actingAs($this->management);
+
+        $this->post('/invoices/coretax/bulk-xml', [
+            'invoice_ids' => [$inv->id],
+        ])->assertForbidden();
+
+        $this->post('/invoices/coretax/bulk-excel', [
+            'invoice_ids' => [$inv->id],
+        ])->assertForbidden();
+    }
 }
