@@ -41,6 +41,6 @@ return [
         'seller_address' => env('CORETAX_SELLER_ADDRESS', 'Jl. Raya Pelabuhan No. 1'),
         'seller_city' => env('CORETAX_SELLER_CITY', 'Jakarta'),
         'seller_postal_code' => env('CORETAX_SELLER_POSTAL_CODE', '10110'),
-        'vat_rate' => 11,
+        'vat_rate' => env('CORETAX_VAT_RATE', 12),
     ],
 ];

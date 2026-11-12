@@ -17,6 +17,11 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class CoretaxService
 {
+    public const ITEM_OPT = 'B';
+    public const ITEM_CODE = '060000';
+    public const ITEM_NAME = 'Jasa Angkutan Barang';
+    public const ITEM_UNIT = 'UM.0033';
+
     public function __construct(private MasterDataService $master) {}
 
     public function generate(Invoice $invoice, User $actor, bool $log = true, ?iterable $selectedItems = null): string
@@ -144,7 +149,7 @@ class CoretaxService
         $rawSellerNpwp = preg_replace('/\D/', '', (string) ($seller['seller_npwp'] ?? '0270189186032000'));
         $sellerTin = str_pad($rawSellerNpwp, 16, '0', STR_PAD_LEFT);
         $sellerIdtku = $sellerTin.'000000';
-        $vatRate = (int) round((float) ($seller['vat_rate'] ?? 11));
+        $vatRate = (int) round((float) ($seller['vat_rate'] ?? 12));
 
         $spreadsheet = new Spreadsheet();
 
@@ -152,25 +157,32 @@ class CoretaxService
         $fakturSheet = $spreadsheet->getActiveSheet();
         $fakturSheet->setTitle('Faktur');
 
+        // Metadata Penjual di baris 1
+        $fakturSheet->setCellValue('A1', 'NPWP Penjual');
+        $fakturSheet->setCellValueExplicit('C1', $sellerTin, DataType::TYPE_STRING);
+
+        // Header kolom Faktur di baris 3 sesuai template resmi DJP
         $fakturHeaders = [
             'Baris',
-            'Nomor Invoice / Ref',
             'Tanggal Faktur',
             'Jenis Faktur',
             'Kode Transaksi',
             'Keterangan Tambahan',
             'Dokumen Pendukung',
-            'NPWP Penjual',
+            'Period Dok Pendukung',
+            'Referensi',
+            'Cap Fasilitas',
             'NITKU Penjual',
             'NPWP Pembeli',
-            'NITKU Pembeli',
+            'Jenis ID Pembeli',
+            'Negara Pembeli',
+            'Nomor Dokumen Pembeli',
             'Nama Pembeli',
             'Alamat Pembeli',
             'Email Pembeli',
-            'Total DPP',
-            'Total PPN',
+            'NITKU Pembeli',
         ];
-        $fakturSheet->fromArray([$fakturHeaders], null, 'A1');
+        $fakturSheet->fromArray([$fakturHeaders], null, 'A3');
 
         // 2. Sheet DetailFaktur
         $detailSheet = $spreadsheet->createSheet();
@@ -178,7 +190,7 @@ class CoretaxService
 
         $detailHeaders = [
             'Baris',
-            'Nomor Invoice',
+            'Barang/Jasa',
             'Kode Barang / Jasa',
             'Nama Barang / Jasa',
             'Satuan Ukur',
@@ -186,12 +198,15 @@ class CoretaxService
             'Jumlah (Qty)',
             'Diskon',
             'DPP',
+            'DPP Nilai Lain',
             'Tarif PPN (%)',
             'PPN',
+            'Tarif PPnBM',
+            'PPnBM',
         ];
         $detailSheet->fromArray([$detailHeaders], null, 'A1');
 
-        $fakturRow = 2;
+        $fakturRow = 4;
         $detailRow = 2;
         $barisIndex = 1;
 
@@ -217,69 +232,61 @@ class CoretaxService
             $buyerIdtku = $buyerTin !== '' ? $buyerTin.'000000' : '';
             $invoiceDate = $invoice->invoice_date ? $invoice->invoice_date->format('d/m/Y') : now()->format('d/m/Y');
 
-            // Populate Faktur Row
+            // Populate Faktur Row (mulai baris 4)
             $fakturSheet->setCellValue("A{$fakturRow}", $barisIndex);
-            $fakturSheet->setCellValueExplicit("B{$fakturRow}", $invoice->number, DataType::TYPE_STRING);
-            $fakturSheet->setCellValue("C{$fakturRow}", $invoiceDate);
-            $fakturSheet->setCellValue("D{$fakturRow}", 'Normal');
-            $fakturSheet->setCellValueExplicit("E{$fakturRow}", '05', DataType::TYPE_STRING);
+            $fakturSheet->setCellValue("B{$fakturRow}", $invoiceDate);
+            $fakturSheet->setCellValue("C{$fakturRow}", 'Normal');
+            $fakturSheet->setCellValueExplicit("D{$fakturRow}", '05', DataType::TYPE_STRING);
+            $fakturSheet->setCellValue("E{$fakturRow}", '');
             $fakturSheet->setCellValue("F{$fakturRow}", '');
             $fakturSheet->setCellValue("G{$fakturRow}", '');
-            $fakturSheet->setCellValueExplicit("H{$fakturRow}", $sellerTin, DataType::TYPE_STRING);
-            $fakturSheet->setCellValueExplicit("I{$fakturRow}", $sellerIdtku, DataType::TYPE_STRING);
-            $fakturSheet->setCellValueExplicit("J{$fakturRow}", $buyerTin, DataType::TYPE_STRING);
-            $fakturSheet->setCellValueExplicit("K{$fakturRow}", $buyerIdtku, DataType::TYPE_STRING);
-            $fakturSheet->setCellValue("L{$fakturRow}", (string) ($buyer['name'] ?? ''));
-            $fakturSheet->setCellValue("M{$fakturRow}", (string) ($buyer['address'] ?? ''));
-            $fakturSheet->setCellValue("N{$fakturRow}", (string) ($buyer['email'] ?? ''));
-            $fakturSheet->setCellValue("O{$fakturRow}", (float) (string) $subtotal);
-            $fakturSheet->setCellValue("P{$fakturRow}", (float) (string) $tax);
+            $fakturSheet->setCellValueExplicit("H{$fakturRow}", $invoice->number, DataType::TYPE_STRING);
+            $fakturSheet->setCellValue("I{$fakturRow}", '');
+            $fakturSheet->setCellValueExplicit("J{$fakturRow}", $sellerIdtku, DataType::TYPE_STRING);
+            $fakturSheet->setCellValueExplicit("K{$fakturRow}", $buyerTin, DataType::TYPE_STRING);
+            $fakturSheet->setCellValue("L{$fakturRow}", 'TIN');
+            $fakturSheet->setCellValue("M{$fakturRow}", 'IDN');
+            $fakturSheet->setCellValue("N{$fakturRow}", '-');
+            $fakturSheet->setCellValue("O{$fakturRow}", (string) ($buyer['name'] ?? ''));
+            $fakturSheet->setCellValue("P{$fakturRow}", (string) ($buyer['address'] ?? ''));
+            $fakturSheet->setCellValue("Q{$fakturRow}", (string) ($buyer['email'] ?? ''));
+            $fakturSheet->setCellValueExplicit("R{$fakturRow}", $buyerIdtku, DataType::TYPE_STRING);
 
-            // Populate DetailFaktur Rows
-            $totalTaxInt = (int) round((float) (string) $tax);
-            $allocatedTax = 0;
-            $totalItems = $selected->count();
-
-            foreach ($selected as $index => $item) {
-                $itemAmount = (float) $item->amount;
-                if ($index === $totalItems - 1) {
-                    $itemVat = $totalTaxInt - $allocatedTax;
-                } else {
-                    $itemVat = $subtotal->isPositive()
-                        ? (int) round($itemAmount * $totalTaxInt / (float) (string) $subtotal)
-                        : 0;
-                    $allocatedTax += $itemVat;
-                }
-
-                $detailSheet->setCellValue("A{$detailRow}", $barisIndex);
-                $detailSheet->setCellValueExplicit("B{$detailRow}", $invoice->number, DataType::TYPE_STRING);
-                $detailSheet->setCellValueExplicit("C{$detailRow}", '060000', DataType::TYPE_STRING);
-                $detailSheet->setCellValue("D{$detailRow}", $item->description);
-                $detailSheet->setCellValueExplicit("E{$detailRow}", 'UM.0033', DataType::TYPE_STRING);
-                $detailSheet->setCellValue("F{$detailRow}", (float) $itemAmount);
-                $detailSheet->setCellValue("G{$detailRow}", max(1, (int) round((float) $item->quantity)));
-                $detailSheet->setCellValue("H{$detailRow}", 0);
-                $detailSheet->setCellValue("I{$detailRow}", (float) $itemAmount);
-                $detailSheet->setCellValue("J{$detailRow}", $vatRate);
-                $detailSheet->setCellValue("K{$detailRow}", max(0, $itemVat));
-
-                $detailRow++;
-            }
+            // Populate DetailFaktur: Tepat 1 baris terkonsolidasi dengan nama jasa terkunci "Jasa Angkutan Barang"
+            $detailSheet->setCellValue("A{$detailRow}", $barisIndex);
+            $detailSheet->setCellValueExplicit("B{$detailRow}", self::ITEM_OPT, DataType::TYPE_STRING);
+            $detailSheet->setCellValueExplicit("C{$detailRow}", self::ITEM_CODE, DataType::TYPE_STRING);
+            $detailSheet->setCellValue("D{$detailRow}", self::ITEM_NAME);
+            $detailSheet->setCellValueExplicit("E{$detailRow}", self::ITEM_UNIT, DataType::TYPE_STRING);
+            $detailSheet->setCellValue("F{$detailRow}", (float) (string) $subtotal);
+            $detailSheet->setCellValue("G{$detailRow}", 1);
+            $detailSheet->setCellValue("H{$detailRow}", 0);
+            $detailSheet->setCellValue("I{$detailRow}", (float) (string) $subtotal);
+            $detailSheet->setCellValue("J{$detailRow}", null);
+            $detailSheet->setCellValue("K{$detailRow}", $vatRate);
+            $detailSheet->setCellValue("L{$detailRow}", (float) (string) $tax);
+            $detailSheet->setCellValue("M{$detailRow}", 0);
+            $detailSheet->setCellValue("N{$detailRow}", "=M{$detailRow}*J{$detailRow}/100");
 
             $totalDpp = $totalDpp->plus($subtotal);
             $totalTax = $totalTax->plus($tax);
             $exportedInvoices[] = $invoice;
             $barisIndex++;
             $fakturRow++;
+            $detailRow++;
         }
 
         if (empty($exportedInvoices)) {
             throw ValidationException::withMessages(['invoice_ids' => 'Tidak ada invoice terpilih yang memiliki PPN dan biaya non-reimbursement valid.']);
         }
 
-        // Apply styles to both sheets
-        $this->styleExcelSheet($fakturSheet, $fakturRow - 1, ['O', 'P']);
-        $this->styleExcelSheet($detailSheet, $detailRow - 1, ['F', 'H', 'I', 'K']);
+        // Baris penutup 'END'
+        $fakturSheet->setCellValue("A{$fakturRow}", 'END');
+        $detailSheet->setCellValue("A{$detailRow}", 'END');
+
+        // Apply styles ke kedua sheet
+        $this->styleFakturSheet($fakturSheet, $fakturRow);
+        $this->styleDetailSheet($detailSheet, $detailRow);
 
         $spreadsheet->setActiveSheetIndex(0);
 
@@ -327,68 +334,81 @@ class CoretaxService
         $this->leaf($doc, $taxInvoice, 'SellerIDTKU', $sellerIdtku);
         $this->leaf($doc, $taxInvoice, 'BuyerTin', $buyerTin);
         $this->leaf($doc, $taxInvoice, 'BuyerDocument', 'TIN');
-        $this->leaf($doc, $taxInvoice, 'BuyerCountry', 'IND');
-        $this->leaf($doc, $taxInvoice, 'BuyerDocumentNumber', '');
+        $this->leaf($doc, $taxInvoice, 'BuyerCountry', 'IDN');
+        $this->leaf($doc, $taxInvoice, 'BuyerDocumentNumber', '-');
         $this->leaf($doc, $taxInvoice, 'BuyerName', (string) ($buyer['name'] ?? ''));
-        $this->leaf($doc, $taxInvoice, 'BuyerAdress', (string) ($buyer['address'] ?? ''));
+        $this->leaf($doc, $taxInvoice, 'BuyerAddress', (string) ($buyer['address'] ?? ''));
         $this->leaf($doc, $taxInvoice, 'BuyerEmail', (string) ($buyer['email'] ?? ''));
         $this->leaf($doc, $taxInvoice, 'BuyerIDTKU', $buyerIdtku);
 
         $listOfGoodService = $this->element($doc, 'ListOfGoodService', $taxInvoice);
 
+        $vatRate = (int) round((float) ($seller['vat_rate'] ?? 12));
+        $itemAmount = (float) (string) $subtotal;
         $totalTaxInt = (int) round((float) (string) $tax);
-        $allocatedTax = 0;
-        $totalItems = count($selectedItems);
 
-        foreach ($selectedItems as $index => $item) {
-            $itemAmount = (float) $item->amount;
-            if ($index === $totalItems - 1) {
-                $itemVat = $totalTaxInt - $allocatedTax;
-            } else {
-                $itemVat = $subtotal->isPositive()
-                    ? (int) round($itemAmount * $totalTaxInt / (float) (string) $subtotal)
-                    : 0;
-                $allocatedTax += $itemVat;
-            }
-
-            $goodService = $this->element($doc, 'GoodService', $listOfGoodService);
-            $this->leaf($doc, $goodService, 'Opt', 'B');
-            $this->leaf($doc, $goodService, 'Code', '060000');
-            $this->leaf($doc, $goodService, 'Name', $item->description);
-            $this->leaf($doc, $goodService, 'Unit', 'UM.0033');
-            $this->leaf($doc, $goodService, 'Price', (string) (int) round($itemAmount));
-            $this->leaf($doc, $goodService, 'Qty', (string) max(1, (int) round((float) $item->quantity)));
-            $this->leaf($doc, $goodService, 'TotalDiscount', '0');
-            $this->leaf($doc, $goodService, 'TaxBase', '0');
-            $this->leaf($doc, $goodService, 'OtherTaxBase', '0');
-            $this->leaf($doc, $goodService, 'VATRate', (string) (int) round((float) ($seller['vat_rate'] ?? 11)));
-            $this->leaf($doc, $goodService, 'VAT', (string) max(0, $itemVat));
-            $this->leaf($doc, $goodService, 'STLGRate', '0');
-            $this->leaf($doc, $goodService, 'STLG', '0');
-        }
+        $goodService = $this->element($doc, 'GoodService', $listOfGoodService);
+        $this->leaf($doc, $goodService, 'Opt', self::ITEM_OPT);
+        $this->leaf($doc, $goodService, 'Code', self::ITEM_CODE);
+        $this->leaf($doc, $goodService, 'Name', self::ITEM_NAME);
+        $this->leaf($doc, $goodService, 'Unit', self::ITEM_UNIT);
+        $this->leaf($doc, $goodService, 'Price', (string) (int) round($itemAmount));
+        $this->leaf($doc, $goodService, 'Qty', '1');
+        $this->leaf($doc, $goodService, 'TotalDiscount', '0');
+        $this->leaf($doc, $goodService, 'TaxBase', (string) (int) round($itemAmount));
+        $this->leaf($doc, $goodService, 'OtherTaxBase', '0');
+        $this->leaf($doc, $goodService, 'VATRate', (string) $vatRate);
+        $this->leaf($doc, $goodService, 'VAT', (string) max(0, $totalTaxInt));
+        $this->leaf($doc, $goodService, 'STLGRate', '0');
+        $this->leaf($doc, $goodService, 'STLG', '0');
     }
 
-    private function styleExcelSheet(Worksheet $sheet, int $lastRow, array $currencyColumns = []): void
+    private function styleFakturSheet(Worksheet $sheet, int $endRow): void
     {
-        $lastColumn = $sheet->getHighestColumn();
-        $sheet->freezePane('A2');
-        $sheet->setAutoFilter('A1:'.$lastColumn.max(1, $lastRow));
+        $sheet->freezePane('A4');
+        if ($endRow > 4) {
+            $sheet->setAutoFilter('A3:R'.($endRow - 1));
+        }
 
-        $headerStyle = $sheet->getStyle('A1:'.$lastColumn.'1');
+        $sheet->getStyle('A1')->getFont()->setBold(true);
+
+        $headerStyle = $sheet->getStyle('A3:R3');
         $headerStyle->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
         $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FF0F1F3D');
         $headerStyle->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
 
-        foreach ($currencyColumns as $col) {
-            if ($lastRow >= 2) {
-                $sheet->getStyle("{$col}2:{$col}{$lastRow}")
+        foreach ($sheet->getColumnIterator('A', 'R') as $column) {
+            $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
+        }
+    }
+
+    private function styleDetailSheet(Worksheet $sheet, int $endRow): void
+    {
+        $sheet->freezePane('A2');
+        if ($endRow > 2) {
+            $sheet->setAutoFilter('A1:N'.($endRow - 1));
+        }
+
+        $headerStyle = $sheet->getStyle('A1:N1');
+        $headerStyle->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FF0F1F3D');
+        $headerStyle->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+
+        if ($endRow > 2) {
+            $dataLastRow = $endRow - 1;
+            foreach (['F', 'I', 'L'] as $col) {
+                $sheet->getStyle("{$col}2:{$col}{$dataLastRow}")
                     ->getNumberFormat()
                     ->setFormatCode('#,##0');
             }
+            $sheet->getStyle("N2:N{$dataLastRow}")
+                ->getNumberFormat()
+                ->setFormatCode('0.00');
         }
 
-        foreach ($sheet->getColumnIterator() as $column) {
+        foreach ($sheet->getColumnIterator('A', 'N') as $column) {
             $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
         }
     }

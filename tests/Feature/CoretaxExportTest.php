@@ -88,7 +88,9 @@ class CoretaxExportTest extends TestCase
         $this->assertStringContainsString('<BuyerTin>0200000000000000</BuyerTin>', $xml);
         $this->assertStringContainsString('<BuyerName>'.$invoice->customer_snapshot['name'].'</BuyerName>', $xml);
         $this->assertStringNotContainsString('Dokumen', $xml);
-        $this->assertStringContainsString('Ongkir laut', $xml);
+        $this->assertStringNotContainsString('Ongkir laut', $xml);
+        $this->assertStringContainsString('<Name>Jasa Angkutan Barang</Name>', $xml);
+        $this->assertStringContainsString('<BuyerAddress>'.$invoice->customer_snapshot['address'].'</BuyerAddress>', $xml);
         $this->assertStringContainsString('<GoodService>', $xml);
         $this->assertStringContainsString('<Opt>B</Opt>', $xml);
         $this->assertStringContainsString('<Code>060000</Code>', $xml);
@@ -175,6 +177,36 @@ class CoretaxExportTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $response->headers->get('Content-Type'));
         $this->assertStringContainsString('coretax-faktur-', $response->headers->get('Content-Disposition'));
+
+        $file = tempnam(sys_get_temp_dir(), 'test_coretax_excel');
+        file_put_contents($file, $response->streamedContent());
+        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+        $spreadsheet = $reader->load($file);
+        unlink($file);
+
+        $fakturSheet = $spreadsheet->getSheetByName('Faktur');
+        $this->assertNotNull($fakturSheet);
+        $this->assertEquals('NPWP Penjual', $fakturSheet->getCell('A1')->getValue());
+        $this->assertEquals('Baris', $fakturSheet->getCell('A3')->getValue());
+        $this->assertEquals('Tanggal Faktur', $fakturSheet->getCell('B3')->getValue());
+        $this->assertEquals('Alamat Pembeli', $fakturSheet->getCell('P3')->getValue());
+        $this->assertEquals('1', $fakturSheet->getCell('A4')->getValue());
+        $this->assertEquals($inv1->number, $fakturSheet->getCell('H4')->getValue());
+        $this->assertEquals($inv1->customer_snapshot['address'], $fakturSheet->getCell('P4')->getValue());
+        $this->assertEquals('2', $fakturSheet->getCell('A5')->getValue());
+        $this->assertEquals($inv2->number, $fakturSheet->getCell('H5')->getValue());
+        $this->assertEquals('END', $fakturSheet->getCell('A6')->getValue());
+
+        $detailSheet = $spreadsheet->getSheetByName('DetailFaktur');
+        $this->assertNotNull($detailSheet);
+        $this->assertEquals('Baris', $detailSheet->getCell('A1')->getValue());
+        $this->assertEquals('Nama Barang / Jasa', $detailSheet->getCell('D1')->getValue());
+        $this->assertEquals('DPP Nilai Lain', $detailSheet->getCell('J1')->getValue());
+        $this->assertEquals('1', $detailSheet->getCell('A2')->getValue());
+        $this->assertEquals('Jasa Angkutan Barang', $detailSheet->getCell('D2')->getValue());
+        $this->assertEquals('2', $detailSheet->getCell('A3')->getValue());
+        $this->assertEquals('Jasa Angkutan Barang', $detailSheet->getCell('D3')->getValue());
+        $this->assertEquals('END', $detailSheet->getCell('A4')->getValue());
 
         $this->assertDatabaseHas('activity_logs', [
             'action' => 'invoice.coretax.excel_exported',
