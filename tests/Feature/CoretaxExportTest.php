@@ -90,7 +90,7 @@ class CoretaxExportTest extends TestCase
         $this->assertStringNotContainsString('Dokumen', $xml);
         $this->assertStringNotContainsString('Ongkir laut', $xml);
         $this->assertStringContainsString('<Name>Jasa Angkutan Barang</Name>', $xml);
-        $this->assertStringContainsString('<BuyerAddress>'.$invoice->customer_snapshot['address'].'</BuyerAddress>', $xml);
+        $this->assertStringContainsString('<BuyerAdress>'.$invoice->customer_snapshot['address'].'</BuyerAdress>', $xml);
         $this->assertStringContainsString('<GoodService>', $xml);
         $this->assertStringContainsString('<Opt>B</Opt>', $xml);
         $this->assertStringContainsString('<Code>060000</Code>', $xml);

@@ -247,8 +247,9 @@ class CoretaxService
             $fakturSheet->setCellValue("L{$fakturRow}", 'TIN');
             $fakturSheet->setCellValue("M{$fakturRow}", 'IDN');
             $fakturSheet->setCellValue("N{$fakturRow}", '-');
+            $buyerAddress = trim((string) ($buyer['address'] ?? ''));
             $fakturSheet->setCellValue("O{$fakturRow}", (string) ($buyer['name'] ?? ''));
-            $fakturSheet->setCellValue("P{$fakturRow}", (string) ($buyer['address'] ?? ''));
+            $fakturSheet->setCellValue("P{$fakturRow}", $buyerAddress !== '' ? $buyerAddress : '-');
             $fakturSheet->setCellValue("Q{$fakturRow}", (string) ($buyer['email'] ?? ''));
             $fakturSheet->setCellValueExplicit("R{$fakturRow}", $buyerIdtku, DataType::TYPE_STRING);
 
@@ -337,7 +338,8 @@ class CoretaxService
         $this->leaf($doc, $taxInvoice, 'BuyerCountry', 'IDN');
         $this->leaf($doc, $taxInvoice, 'BuyerDocumentNumber', '-');
         $this->leaf($doc, $taxInvoice, 'BuyerName', (string) ($buyer['name'] ?? ''));
-        $this->leaf($doc, $taxInvoice, 'BuyerAddress', (string) ($buyer['address'] ?? ''));
+        $buyerAddress = trim((string) ($buyer['address'] ?? ''));
+        $this->leaf($doc, $taxInvoice, 'BuyerAdress', $buyerAddress !== '' ? $buyerAddress : '-');
         $this->leaf($doc, $taxInvoice, 'BuyerEmail', (string) ($buyer['email'] ?? ''));
         $this->leaf($doc, $taxInvoice, 'BuyerIDTKU', $buyerIdtku);
 
